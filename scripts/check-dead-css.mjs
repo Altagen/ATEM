@@ -19,8 +19,9 @@
  *   node scripts/check-dead-css.mjs           # barrière : échoue s'il en reste
  *   node scripts/check-dead-css.mjs --list    # liste, pour trier
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
+import { files, lineOf, readMarkup, rules } from "./lib/dead-css.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "apps", "web", "src");
 const STYLES = path.join(ROOT, "design");
@@ -31,107 +32,7 @@ const STYLES = path.join(ROOT, "design");
  */
 const HORS_BALISAGE = new Set([]);
 
-/**
- * `design/staged/` contient les feuilles qui attendent leur écran. Elles ne
- * sont importées nulle part, donc pas livrées — les juger ici les déclarerait
- * mortes à juste titre, et on les perdrait pour rien.
- */
-const IGNORED = new Set(["staged"]);
-
-function files(dir, ext, acc = []) {
-  for (const name of readdirSync(dir)) {
-    if (IGNORED.has(name)) continue;
-    const full = path.join(dir, name);
-    if (statSync(full).isDirectory()) files(full, ext, acc);
-    else if (full.endsWith(ext)) acc.push(full);
-  }
-  return acc;
-}
-
-/**
- * Les commentaires ne posent rien.
- *
- * ATEM-old s'est fait avoir quatre fois par ce détail : l'en-tête d'un fichier
- * énumérait « classes reprises de guild.css : .guild-hero-banner… », et cette
- * liste suffisait à les tenir toutes pour vivantes. Retirer le balisage de
- * l'une d'elles ne déclenchait plus rien.
- */
-const stripComments = (src) =>
-  src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
-
-const sources = files(ROOT, ".ts").filter((f) => !f.endsWith(".test.ts"));
-const markup = sources.map((f) => stripComments(readFileSync(f, "utf8"))).join("\n");
-const tokens = new Set(markup.match(/[A-Za-z][\w-]*/g) ?? []);
-
-/**
- * Les classes assemblées à l'exécution — `star-badge-${kind}`, `"toast-" + tone`
- * — n'apparaissent nulle part en entier.
- *
- * On relève les fragments littéraux qui précèdent une interpolation, et l'on
- * tient pour vivante toute classe qui commence par l'un d'eux et dont le reste
- * est un jeton du code. Sans cette règle, une première purge chez ATEM-old
- * avait emporté `.toast-ok` et `.toast-err` : le message s'affichait ensuite
- * sans fond, transparent.
- */
-const prefixes = new Set();
-for (const match of markup.matchAll(/class="([^"]*?)\$\{/g)) {
-  const last = match[1].trim().split(/\s+/).at(-1);
-  if (last?.endsWith("-")) prefixes.add(last);
-}
-for (const match of markup.matchAll(/["']([^"'\n]*?[a-z][\w-]*-)["']\s*[+,]/g)) {
-  const last = match[1].trim().split(/\s+/).at(-1);
-  if (last && /^[a-z][\w-]*-$/.test(last)) prefixes.add(last);
-}
-
-function alive(cls) {
-  if (tokens.has(cls) || HORS_BALISAGE.has(cls)) return true;
-  for (const prefix of prefixes) {
-    if (!cls.startsWith(prefix)) continue;
-    const rest = cls.slice(prefix.length);
-    if (!rest || tokens.has(rest)) return true;
-  }
-  return false;
-}
-
-/**
- * Un sélecteur est vivant si **toutes** ses classes le sont : `.chip.chip-level`
- * ne s'applique jamais si `chip-level` n'est posée nulle part, même si `.chip`
- * l'est. Une règle est vivante dès qu'un seul de ses sélecteurs l'est.
- */
-function selectorAlive(selector) {
-  const classes = selector.match(/\.(-?[a-zA-Z][\w-]*)/g) ?? [];
-  if (classes.length === 0) return true;
-  return classes.every((c) => alive(c.slice(1)));
-}
-
-const ruleAlive = (selectors) => selectors.split(",").some(selectorAlive);
-
-/** Découpe une feuille en règles de premier niveau, en suivant les accolades. */
-function rules(css) {
-  const out = [];
-  let depth = 0;
-  let selectorStart = 0;
-  let selector = "";
-
-  for (let i = 0; i < css.length; i += 1) {
-    const ch = css[i];
-    if (ch === "{") {
-      if (depth === 0) selector = css.slice(selectorStart, i);
-      depth += 1;
-    } else if (ch === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        // `from` pointe le sélecteur, pas l'accolade : c'est ce qui permet à la
-        // purge de retirer la règle entière.
-        out.push({ selector: selector.trim(), from: selectorStart, to: i + 1 });
-        selectorStart = i + 1;
-      }
-    }
-  }
-  return out;
-}
-
-const lineOf = (css, index) => css.slice(0, index).split("\n").length;
+const { ruleAlive } = readMarkup(ROOT, HORS_BALISAGE);
 
 const listOnly = process.argv.includes("--list");
 let deadRules = 0;

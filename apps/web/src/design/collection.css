@@ -1,16 +1,4 @@
-/*
- * Les règles de « app-dialog » ont vécu ici : la boîte de confirmation que la
- * Collection rendait sans jamais l'ouvrir, et celle des decks. Les deux sont
- * parties le 8 septembre 2026, quand les trois mécanismes de confirmation de
- * l'application ont été ramenés à un seul — components/confirm-modal.ts, qui
- * sait désormais demander un mot à recopier. Le contrôle du CSS mort a nommé
- * ces règles le jour même.
- */
-/* Collection page — clean focus layout (UX.md) */
 
-.app-body {
-  min-height: 100vh;
-}
 
 /* —— App bar —— */
 .app-bar {
@@ -863,7 +851,6 @@
 
 /* Drawer */
 
-
 .inspect-art-empty {
   width: 100%;
   max-width: 200px;
@@ -1655,20 +1642,6 @@
  * occuperait une case et se lirait comme une carte. */
 .group-header-gallery {
   grid-column: 1 / -1;
-}
-
-/* ══ Règles portées de la maquette — 3 septembre 2026 ══════════════════════
- *
- * Le portage de la veille ne comparait que les blocs `@media` : toute la
- * moitié « de base » était restée dehors. Trente et un sélecteurs manquaient,
- * et quatre-vingt-onze règles existantes étaient incomplètes — celles-là ont
- * été complétées sur place, une seconde déclaration les aurait fait diverger.
- */
-
-.deck-detail-actions .icon-btn {
-  width: 2.4rem;
-  height: 2.4rem;
-  font-size: 1.05rem;
 }
 
 .effect {

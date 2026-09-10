@@ -187,7 +187,10 @@ export function authScreen(mode: Mode) {
           { method: "POST", body },
         );
         setUser(user);
-        toast(`Bienvenue, ${user.displayName}.`, "success");
+        // Un accueil n'est pas un succès : le vert est réservé à ce qui vient
+        // d'être enregistré — une carte ajoutée, une note gardée. L'arrivée sur
+        // sa collection porte le doré de la maison.
+        toast(`Bienvenue, ${user.displayName}.`);
         navigate(next, { replace: true });
       } catch (err) {
         errorBanner.textContent =

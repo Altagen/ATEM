@@ -8,88 +8,18 @@
  *
  * Usage : node scripts/prune-dead-css.mjs [--dry]
  */
-import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
+import { files, readMarkup, rules } from "./lib/dead-css.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "apps", "web", "src");
 const STYLES = path.join(ROOT, "design");
 const PRUNED = path.join(STYLES, "staged", "pruned");
-const IGNORED = new Set(["staged"]);
 const dry = process.argv.includes("--dry");
 
-function files(dir, ext, acc = []) {
-  for (const name of readdirSync(dir)) {
-    if (IGNORED.has(name)) continue;
-    const full = path.join(dir, name);
-    if (statSync(full).isDirectory()) files(full, ext, acc);
-    else if (full.endsWith(ext)) acc.push(full);
-  }
-  return acc;
-}
+// Le même jugement que la barrière, au sens propre : la même fonction.
+const { ruleAlive } = readMarkup(ROOT);
 
-const stripComments = (src) =>
-  src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
-
-const sources = files(ROOT, ".ts").filter((f) => !f.endsWith(".test.ts"));
-const markup = sources.map((f) => stripComments(readFileSync(f, "utf8"))).join("\n");
-const tokens = new Set(markup.match(/[A-Za-z][\w-]*/g) ?? []);
-
-const prefixes = new Set();
-for (const match of markup.matchAll(/class="([^"]*?)\$\{/g)) {
-  const last = match[1].trim().split(/\s+/).at(-1);
-  if (last?.endsWith("-")) prefixes.add(last);
-}
-for (const match of markup.matchAll(/["']([^"'\n]*?[a-z][\w-]*-)["']\s*[+,]/g)) {
-  const last = match[1].trim().split(/\s+/).at(-1);
-  if (last && /^[a-z][\w-]*-$/.test(last)) prefixes.add(last);
-}
-
-function alive(cls) {
-  if (tokens.has(cls)) return true;
-  for (const prefix of prefixes) {
-    if (!cls.startsWith(prefix)) continue;
-    const rest = cls.slice(prefix.length);
-    if (!rest || tokens.has(rest)) return true;
-  }
-  return false;
-}
-
-const selectorAlive = (selector) => {
-  const classes = selector.match(/\.(-?[a-zA-Z][\w-]*)/g) ?? [];
-  return classes.length === 0 || classes.every((c) => alive(c.slice(1)));
-};
-const ruleAlive = (selectors) => selectors.split(",").some(selectorAlive);
-
-/**
- * Découpe une feuille en règles, **sélecteur compris**.
- *
- * `from` pointe le début du sélecteur, pas l'accolade ouvrante. La distinction
- * n'est pas cosmétique : découper sur l'accolade laissait le sélecteur derrière
- * lui à chaque suppression, et produisait des feuilles que PostCSS refusait de
- * lire — `@media (max-width: 900px)` sans corps, `.edition-set,` sans règle.
- */
-function rules(css) {
-  const out = [];
-  let depth = 0;
-  let selectorStart = 0;
-  let selector = "";
-  for (let i = 0; i < css.length; i += 1) {
-    const ch = css[i];
-    if (ch === "{") {
-      if (depth === 0) selector = css.slice(selectorStart, i);
-      depth += 1;
-    } else if (ch === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        out.push({ selector: selector.trim(), from: selectorStart, to: i + 1 });
-        selectorStart = i + 1;
-      }
-    }
-  }
-  return out;
-}
-
-if (!dry) mkdirSync(PRUNED, { recursive: true });
 let removedRules = 0;
 
 for (const sheet of files(STYLES, ".css")) {

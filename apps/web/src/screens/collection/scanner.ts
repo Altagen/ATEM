@@ -12,6 +12,12 @@
  * endroits sans rien qui les relie est ce qui avait produit, chez ATEM-old, un
  * viseur qui montrait une zone que l'OCR ne lisait pas.
  *
+ * **Le champ ne prend jamais le focus tout seul.** Sur téléphone, un focus fait
+ * monter le clavier, qui recouvre la moitié de l'écran — dont la barre de
+ * déclenchement. Il fallait alors taper à côté pour le refermer avant de
+ * reprendre une photo, à chaque carte. Le champ reste là, à portée du doigt de
+ * qui veut corriger ; il n'appelle plus le clavier de lui-même.
+ *
  * **Le contrat reste non négociable : l'OCR n'est jamais autoritaire.** Il
  * propose, l'utilisateur confirme par « +1 » ou corrige le champ. Rien n'entre
  * en collection sans un geste explicite — une reconnaissance sûre à 95 % laisse
@@ -82,6 +88,19 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
       el("span", { class: "btn-scan-shutter-core", "aria-hidden": "true" }),
     ],
   );
+  /**
+   * Recommencer : on efface la lecture, pas la carte.
+   *
+   * Après une lecture douteuse, le champ garde un code faux et la bande reste
+   * verrouillée dessus. Reprendre une photo par-dessus ne suffit pas toujours —
+   * il faut d'abord repartir de rien. Ce bouton ne touche ni la caméra ni la
+   * collection : il remet l'écran dans l'état où il s'est ouvert.
+   */
+  const restart = el(
+    "button",
+    { type: "button", class: "btn-scan-shutter-side", "aria-label": "Recommencer" },
+    [el("span", { class: "i-restart", "aria-hidden": "true" }, ["↺"])],
+  );
   const minus = el(
     "button",
     { type: "button", class: "btn-scan-shutter-side", "aria-label": "Retirer un exemplaire" },
@@ -92,7 +111,14 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     { type: "button", class: "btn-scan-add-lg", "aria-label": "Ajouter un exemplaire" },
     ["+1"],
   );
-  const shutterBar = el("div", { class: "scan-shutter-bar" }, [minus, shutter, plus]);
+  // L'obturateur reste au centre : c'est la convention de tout appareil photo,
+  // et le pouce le trouve sans regarder. Les deux boutons secondaires se
+  // groupent à sa gauche, le « +1 » garde sa place et sa taille à droite.
+  const shutterBar = el("div", { class: "scan-shutter-bar" }, [
+    el("div", { class: "scan-shutter-side-group" }, [restart, minus]),
+    shutter,
+    plus,
+  ]);
 
   const close = el("button", { type: "button", class: "icon-btn", "aria-label": "Fermer" }, ["✕"]);
 
@@ -182,7 +208,6 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
         ? "L'accès à la caméra a été refusé. Vous pouvez saisir le set code à la main."
         : "Aucune caméra disponible. Vous pouvez saisir le set code à la main.";
     shutter.disabled = true;
-    codeInput.focus();
   }
 
   function setLocked(code: string | null, strong: boolean): void {
@@ -197,7 +222,6 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
       chip.addEventListener("click", () => {
         codeInput.value = code;
         setLocked(code, false);
-        codeInput.focus();
       });
       candidates.append(chip);
     }
@@ -207,6 +231,16 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     if (busy || !stream) return;
     busy = true;
     shutter.disabled = true;
+    /**
+     * Le cœur de l'obturateur pulse pendant la lecture.
+     *
+     * L'habillage existait — `.btn-scan-shutter.is-busy` — mais rien ne posait
+     * la classe : le bouton se contentait de griser, ce qui se lit comme une
+     * panne plutôt que comme un travail en cours. La lecture prend une à trois
+     * secondes, et le pourcentage affiché à côté ne se voit pas quand on tient
+     * l'appareil au-dessus d'une carte.
+     */
+    shutter.classList.add("is-busy");
     errorLine.textContent = "";
     setCandidates([]);
 
@@ -261,7 +295,6 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
       } else {
         setLocked(null, false);
         status.textContent = "Rien de lisible. Rapprochez la carte, ou saisissez le code.";
-        codeInput.focus();
       }
     } catch (err) {
       errorLine.textContent =
@@ -271,6 +304,7 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     } finally {
       busy = false;
       shutter.disabled = !stream;
+      shutter.classList.remove("is-busy");
     }
   }
 
@@ -278,7 +312,6 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     const setCode = codeInput.value.trim().toUpperCase();
     if (!setCode) {
       errorLine.textContent = "Aucun set code à enregistrer.";
-      codeInput.focus();
       return;
     }
     minus.disabled = true;
@@ -310,5 +343,12 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
   shutter.addEventListener("click", () => void capture());
   plus.addEventListener("click", () => void apply(1));
   minus.addEventListener("click", () => void apply(-1));
+  restart.addEventListener("click", () => {
+    codeInput.value = "";
+    setLocked(null, false);
+    setCandidates([]);
+    errorLine.textContent = "";
+    status.textContent = "Alignez le set code dans la bande.";
+  });
   codeInput.addEventListener("input", () => setLocked(codeInput.value.trim(), false));
 }

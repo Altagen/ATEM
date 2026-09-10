@@ -1,7 +1,5 @@
 @import url("./tokens.css");
 
-
-
 .panel {
   background: var(--card);
   border: 1px solid var(--border);
@@ -110,114 +108,6 @@ h2 {
   [aria-busy="true"]::after { animation: none; opacity: 0.5; }
 }
 
-/* ── Pastilles d'état ─────────────────────────────────────────────────────
- *
- * Portées depuis `design/styles/components.css`, qui est la référence. Les
- * variantes « gold » et « info » n'ont pas d'appelant ici : une règle sans
- * balisage qui la pose est du CSS mort, et `check-design-dead-css.js` le
- * refuse du côté maquette pour cette raison.
- */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-/* ── Le bandeau de service ────────────────────────────────────────────────
- *
- * Il ne paraît que quand quelque chose ne va pas. Deux tons, et la
- * distinction porte : orange, le service lit encore et l'on peut continuer ;
- * rouge, plus rien ne passe et ce qu'on voit date d'avant.
- *
- * Il est large et il coupe la page, volontairement. Un voyant discret se
- * regarde quand on le cherche ; ce message-ci arrive au moment où l'on va
- * faire quelque chose qui ne marchera pas.
- */
-.service-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-block-end: 1px solid var(--border);
-  font-size: var(--fs-sm);
-}
-
-/* ── Porté de la maquette ──────────────────────────────────────────────
- *
- * Ces classes étaient posées par l'application et habillées nulle part :
- * l'écran avait été construit en recopiant le balisage de la maquette sans
- * ses règles. Elles ne cassaient rien de visible — elles laissaient
- * simplement des éléments sans forme, et faisaient croire qu'une règle
- * existait quelque part.
- */
-
-/* depuis design/styles/components.css */
-.field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: var(--space-3); }
-/*
- * La rangée d'actions se replie plutôt que de sortir de la boîte.
- *
- * Les trois boîtes des Réglages se cachaient par `display: none` : leurs
- * commandes n'avaient aucune géométrie, et l'invariant « un contrôle sort de
- * son cadre » ne les voyait pas. En passant à `visibility`, il les a mesurées
- * — et « Annuler » sortait de dix-huit à quatre-vingt-neuf pixels selon la
- * boîte, poussé dehors par un bouton de validation trop long à côté de lui.
- * Le défaut était là depuis le début ; c'est sa mesure qui manquait.
- */
-.modal-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 1.25rem;
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  padding: 0.85rem 0 0;
-  background: linear-gradient(to top, var(--card) 72%, transparent);
-}
-.modal-actions button[disabled],
-/*
- * Le bouton d'action principale — et la règle qui manquait.
- *
- * `apps/web` ne portait que `.btn-hero[disabled]`. La règle de base, elle,
- * était restée dans `design/styles/components.css`, que cette application
- * n'importe pas. Résultat : tous les `btn-hero` de l'écran des scanlistes —
- * « Nouveau scan », « Enregistrer la scanliste » — se rendaient en `<button>`
- * nu, gris, à côté du reste de l'interface. Ange : « le bouton "New scan" en
- * gris moche au lieu d'utiliser nos boutons ».
- *
- * `check-classes-habillees.mjs` ne pouvait pas le voir : la classe *est*
- * citée par la feuille, dans sa règle d'état. Une classe dont seul l'état
- * désactivé est décrit passe pour habillée alors qu'elle n'a aucune forme.
- */
-.btn-hero {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-top: 0.85rem;
-  padding: 0.85rem 1.4rem;
-  border: none;
-  border-radius: 12px;
-  background: var(--gold);
-  color: var(--ombre);
-  font-weight: 900;
-  font-size: 1.02rem;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--gold) 35%, transparent);
-  opacity: 0.5;
-}
-
 /*
  * La coque de modale de la maquette, portée pour les mêmes raisons.
  *
@@ -318,29 +208,6 @@ h2 {
 }
 @media (max-width: 850px) {
   /* La barre est fixe : sans cette réserve, elle recouvre la fin de la page. */ body { padding-bottom: 74px; }
-  /*
-   * Les tables défilent latéralement, elles seules.  Une table de sept colonnes ne se
-   * replie pas : à 390px, celle des membres de guilde en réclame 713 et poussait toute
-   * la page avec elle. Elle défile maintenant dans son propre cadre — le corps de la
-   * page ne bouge plus, et l'on garde les colonnes plutôt que de les empiler, ce qui
-   * ferait perdre la lecture en lignes.  `overflow-x: auto` demande de lever
-   * `overflow: hidden`, qui existait pour les coins arrondis ; c'est `auto` sur les
-   * deux axes qui les tient.
-   */
-  .admin-table-container {
-    overflow: auto;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-@media (max-width: 850px) {
-  /*
-   * La bannière et l'identité.  L'emblème remontait de 48px dans la bannière — un
-   * décalage prévu pour une bannière de 165px, qui en fait 110 ici : il chevauchait le
-   * motif au lieu de s'y poser. Et la puce du mode de recrutement, ancrée en bas de
-   * bannière, s'y retrouvait au milieu.
-   */
-  .showcase-banner-bg { height: 110px; min-height: 110px; }
 }
 @media (max-width: 850px) {
 }
@@ -369,32 +236,6 @@ h2 {
   }
 }
 
-/* ══ Règles portées de la maquette — 3 septembre 2026 ══════════════════════
- *
- * Le portage de la veille ne comparait que les blocs `@media` : toute la
- * moitié « de base » était restée dehors. Trente et un sélecteurs manquaient,
- * et quatre-vingt-onze règles existantes étaient incomplètes — celles-là ont
- * été complétées sur place, une seconde déclaration les aurait fait diverger.
- */
-
-.btn-member-menu-toggle {
-  appearance: none;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--info) 10%, transparent);
-  color: var(--info);
-  width: 2rem;
-  height: 2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 0.3rem 0.6rem;
-  vertical-align: middle;
-}
-
 /*
  * L'état vide, là où huit écrans peuvent le lire.
  *
@@ -414,126 +255,6 @@ h2 {
 }
 
 /*
- * La variante encadrée : un pointillé qui dit « ici, il n'y a rien encore ».
- *
- * Le profil l'écrivait deux fois en style en ligne, à l'identique, pour ses
- * decks et ses trophées.
- */
-.empty-state.is-encadre {
-  border: 1px dashed var(--border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--fg-fort) 1%, transparent);
-  padding: 2.5rem;
-  color: var(--muted);
-}
-
-/*
- * L'en-tête d'une modale : une icône, un titre, une phrase.
- *
- * Le motif était écrit sept fois en styles en ligne — quatre dans la guilde,
- * deux dans la communauté, une dans l'administration — à l'identique au pixel
- * près. Sept copies d'un même dessin, dont aucune ne savait que les six autres
- * existaient : le jour où l'on change le rayon de l'icône, on en change une.
- *
- * La maquette a le vocabulaire des modales — `.modal-title`, `.modal-subtitle`
- * — mais pas cet en-tête à icône, que l'application est seule à employer. Il
- * vit donc ici, dans la feuille commune, et non recopié dans chaque écran.
- */
-.modal-head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-/* La variante d'information : inviter, postuler, écrire à quelqu'un. */
-.modal-head-ico.is-info {
-  background: color-mix(in srgb, var(--info) 15%, transparent);
-  border-color: var(--info);
-}
-
-/* La variante d'alerte : dissoudre une guilde, effacer une collection. */
-.modal-head-ico.is-danger {
-  background: color-mix(in srgb, var(--danger) 15%, transparent);
-  border-color: var(--danger);
-}
-
-/*
- * L'étiquette d'un champ, hors d'un `.field`.
- *
- * Elle existait en trois écritures presque identiques — 0.45rem, 0.35rem,
- * 0.4rem de marge, 800 ou 700 de graisse — répétées vingt-deux fois dans quatre
- * écrans. Trois façons de dire la même chose, qu'aucun regard ne distingue et
- * qu'aucune retouche ne changera ensemble.
- *
- * La maquette a `.field label` pour les formulaires structurés ; ceci est pour
- * les étiquettes qui vivent hors d'un champ — au-dessus d'un groupe de cases, ou
- * d'une liste de permissions.
- */
-.champ-libelle {
-  display: block;
-  margin-bottom: 0.4rem;
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
-/*
- * Quatre rôles qui revenaient sans nom.
- *
- * Une légende sous une valeur, une rangée d'éléments alignés, une colonne
- * espacée, un emblème d'une ligne : chacun était réécrit à l'identique entre
- * six et quatorze fois dans les cinq écrans. Ce ne sont pas des utilitaires —
- * ils disent un rôle, et c'est pour ça qu'ils portent un nom plutôt qu'une
- * mesure.
- */
-.legende {
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-/*
- * Une valeur, son état, et l'emblème qui l'accompagne.
- *
- * Une fiche affiche partout la même chose : un libellé discret, la valeur en
- * dessous, parfois un état coloré à côté. C'était écrit à la main trente-huit
- * fois, avec quatre nuances de taille que rien ne justifiait.
- */
-.valeur {
-  display: block;
-  font-size: 0.98rem;
-  color: var(--fg-fort);
-}
-
-/* L'état d'une chose : bon, ou méritant l'œil. Jamais une couleur en ligne. */
-.etat {
-  font-weight: 800;
-}
-
-/*
- * Deux cartes, un surtitre, une case à cocher.
- *
- * L'administration, les paramètres et la guilde dessinaient chacun leur cadre :
- * un fond très légèrement clair pour un bloc d'information, un fond creusé pour
- * un encart secondaire. Écrits treize fois, à quelques pixels près.
- */
-.carte-douce {
-  background: color-mix(in srgb, var(--fg-fort) 3%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 1.1rem 1.25rem;
-}
-
-/* Une case à cocher qui prend la couleur de la maison, et la taille du doigt. */
-.case-doree {
-  margin-top: 4px;
-  accent-color: var(--gold);
-  width: 18px;
-  height: 18px;
-}
-
-/*
  * Le message éphémère. Il vivait dans la feuille de la Collection, alors que
  * huit écrans l'affichent — et un neuvième s'en dessinait un autre à la main.
  */
@@ -546,265 +267,46 @@ h2 {
   max-width: min(92vw, 26rem);
   padding: 0.65rem 1rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
   font-size: 0.88rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   gap: 0.6rem;
+
+  /*
+   * Un fond **opaque**, et doré par défaut.
+   *
+   * La règle de base ne posait aucun fond : le message flottait par-dessus la
+   * collection, illisible, et se lisait comme un défaut d'affichage plutôt que
+   * comme une information. Les tons existaient bien plus bas — mais dans une
+   * classe `.toast-ok` que le balisage ne posait jamais, puisqu'il écrit
+   * `data-kind`. Trois sortes de messages s'affichaient donc à l'identique, et
+   * transparents.
+   *
+   * `color-mix` entre deux couleurs opaques rend une couleur opaque : rien ne
+   * traverse, quelle que soit la page derrière.
+   */
+  background: color-mix(in srgb, var(--gold) 16%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--border));
+  color: var(--gold-clair);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
 }
 
 /*
- * Les deux tons, repris de la maquette.
+ * Les deux écarts au ton doré, sur l'attribut que le balisage écrit vraiment.
  *
- * L'application n'en avait aucun : son toast tirait ses couleurs d'un
- * `style.cssText`, et celui de la Collection s'en remettait à des classes qui
- * n'existaient pas — un message de succès et un message d'échec s'affichaient
- * donc à l'identique. `--ok` et `--err` sont les alias que la maquette emploie.
+ * `ui.ts` pose `data-kind`, pas une classe : viser `.toast-ok` ne touchait
+ * rien. C'est la deuxième fois que ce défaut se produit — ATEM-old tirait ses
+ * couleurs d'un `style.cssText` et la Collection s'en remettait à des classes
+ * inexistantes. Le sélecteur suit désormais le balisage.
  */
-.toast-ok {
-  background: color-mix(in srgb, var(--success) 14%, var(--card));
-  border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+.toast[data-kind="success"] {
+  background: color-mix(in srgb, var(--success) 16%, var(--card));
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border));
   color: var(--success);
 }
 
-/*
- * Le champ de recherche sans son icône.
- *
- * `.search-input-gaming` réserve 2.8rem à gauche pour la loupe. Les champs qui
- * n'en portent pas — l'adresse d'un nouveau compte, le titre d'une annonce —
- * annulaient ce retrait à la main, chacun avec sa valeur. Le retrait devient
- * symétrique du droit, qui est de 1.2rem.
- */
-.search-input-gaming.is-nue {
-  padding-left: 1.2rem;
-}
-
-/** Un bloc qui respire avant le suivant, à la mesure des cartes. */
-.espace-dessous {
-  margin-bottom: 1.25rem;
-}
-
-/** La part souple d'une rangée, qui laisse sa place au bloc d'à côté. */
-.colonne-large {
-  flex: 1;
-  padding-right: 1rem;
-}
-
-/** Le champ de recherche et sa loupe, qui se posent l'un sur l'autre. */
-.champ-cherche {
-  position: relative;
-  flex: 1;
-  min-width: 260px;
-}
-
-/** Une case à cocher plus large, pour une action qui engage. */
-.case-doree.is-grande {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-}
-
-/*
- * Débloquer, c'est rendre — la bascule le dit en vert, et non dans le rouge du
- * blocage. Les deux tons vivaient en `style=` sur la balise, avec un vert écrit
- * en rgba littéral que rien ne reliait à `--success`.
- */
-.btn-modal-block-toggle.is-debloquer {
-  border-color: var(--success);
-  background: color-mix(in srgb, var(--success) 15%, transparent);
-  color: var(--success);
-}
-
-/* ── Titres, intitulés et champs ───────────────────────────────────────────
- *
- * Les mêmes objets s'écrivaient balise par balise, avec une mesure différente
- * à chaque fois : cinq tailles de titre de section — 1.25, 1.35, 1.4, 1.45 et
- * 1.5rem — pour un seul rôle, et trois façons d'écrire l'intitulé d'un champ.
- */
-
-/** Le titre d'une section de page. */
-.titre-section {
-  margin: 0 0 0.35rem;
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: var(--fg-fort);
-}
-/** Souligné d'un filet, quand la section ouvre un panneau encadré. */
-.titre-section.is-souligne {
-  margin: 0 0 1.25rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid var(--border);
-}
-/** Porté par un emblème, qui se pose à hauteur du texte. */
-.titre-section.is-emblemee {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  line-height: 1.2;
-}
-
-/** L'intitulé d'un champ, en petites capitales. */
-.champ-libelle.is-espacee {
-  letter-spacing: 0.04em;
-  margin-bottom: 0.5rem;
-}
-/** L'intitulé d'un champ, sans capitales — plus proche d'une phrase. */
-.champ-libelle.is-douce {
-  font-size: 0.83rem;
-  font-weight: 700;
-  text-transform: none;
-  margin-bottom: 0.4rem;
-}
-
-/**
- * Une option qu'on choisit en cliquant sa carte entière, et non sa seule case.
- * La cible fait toute la largeur : au doigt, une case à cocher de 18px ne se
- * vise pas.
- */
-.carte-choix {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--fg-fort) 3%, transparent);
-  cursor: pointer;
-}
-
-/** Les tons d'une case à cocher, quand le choix a une couleur. */
-.case-doree.is-info {
-  accent-color: var(--info);
-}
-
-/** Un champ de saisie douce : formulaires de réglages, hors recherche. */
-.champ-doux {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-douce);
-  color: var(--fg-fort);
-  font-size: 0.9rem;
-  font-weight: 700;
-  outline: none;
-}
-/** Une zone de texte, qui ne se redimensionne qu'en hauteur. */
-.champ-doux.is-zone {
-  resize: vertical;
-  min-height: 75px;
-  line-height: 1.5;
-  font-weight: 600;
-}
-
-/* ── Dispositions et espacements ───────────────────────────────────────────
- *
- * Les rangées, les colonnes et les blocs de formulaire s'écrivaient en clair
- * sur chaque `<div>`, avec des écarts pris au hasard : 0.35, 0.4, 0.45, 0.5,
- * 0.65, 0.9, 1.1, 1.2, 1.25 et 1.5rem pour trois rôles distincts. Ces
- * modificateurs figent les trois.
- */
-
-/** Une rangée très serrée — un emblème et son mot. */
-.rangee.is-menue {
-  gap: 0.5rem;
-}
-/** Une rangée dont les blocs s'alignent par le haut, pas par le milieu. */
-.rangee.is-haute {
-  align-items: flex-start;
-}
-
-/** Le bloc d'un champ de formulaire, et l'écart qui le sépare du suivant. */
-.bloc-champ {
-  margin-bottom: 1.25rem;
-}
-
-/** La plus petite légende : une date, un identifiant technique. */
-.legende.is-menue {
-  font-size: 0.72rem;
-}
-
-/* ── États dits par une classe, non par un style calculé ───────────────────
- *
- * Une couleur ou un affichage calculés dans le gabarit ne se cherchent pas :
- * ni la feuille ni la barrière des couleurs ne les voient, et deux écrans qui
- * disent le même état finissent par le dire de deux façons.
- */
-
-/** La pastille de présence, et son mot. */
-.presence {
-  font-weight: 700;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-/*
- * Une vue d'onglet, montrée ou cachée par l'attribut `hidden` plutôt que par un
- * `display` calculé dans le gabarit. Le navigateur cache déjà `[hidden]` ; la
- * règle est ici pour que le jour où quelqu'un donne un `display` à
- * `.community-tab-view`, l'onglet caché le reste.
- */
-.community-tab-view[hidden] {
-  display: none;
-}
-
-/* ── La confirmation, aux mesures de la maquette ───────────────────────────
- *
- * Portées de `design/styles/components.css`, que l'application n'importe pas.
- * Elles remplacent sept attributs `style=` — dont deux couleurs calculées dans
- * le gabarit, invisibles à la barrière des couleurs littérales.
- */
-.modal-confirm-backdrop {
-  z-index: var(--z-confirm);
-  background: color-mix(in srgb, var(--ombre) 75%, transparent);
-}
-
-/* Le mot à recopier, quand l'action ne se refait pas. */
-.modal-confirm-recopie {
-  display: block;
-  margin: 0.75rem 0;
-}
-
-/** Un titre de bloc souligné d'un filet, quand il ouvre un panneau. */
-.titre-bloc.is-souligne {
-  margin: 0 0 1.1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
-}
-
-/** Une légende sans marge propre, quand son parent l'espace déjà. */
-.legende.is-collee {
-  margin: 0;
-}
-/** Une légende appuyée, sans pour autant changer de taille. */
-.legende.is-appuyee {
-  font-weight: 700;
-}
-/** Une rangée aérée, quand ses blocs sont larges. */
-.rangee.is-aeree {
-  gap: 1rem;
-}
-
-/** Un écran qui n'a rien à montrer, centré dans sa page. */
-.page-centree {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-}
-
-/** Une carte de modale étroite, pour une décision plutôt qu'un contenu. */
-.shadow-profile-modal-card.is-etroite {
-  max-width: 540px;
-  padding: 1.75rem;
-}
-
-/** Une valeur sous son intitulé, dans une fiche. */
-.valeur.is-menue {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.75rem;
-  font-weight: 700;
+.toast[data-kind="error"] {
+  background: color-mix(in srgb, var(--err) 16%, var(--card));
+  border-color: color-mix(in srgb, var(--err) 45%, var(--border));
+  color: var(--err);
 }

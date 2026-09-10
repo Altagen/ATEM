@@ -259,6 +259,80 @@ test.describe("Mise en page", () => {
     ).toBeLessThanOrEqual(référence);
   });
 
+  test("le message d'accueil est opaque, et doré", async ({ page }) => {
+    /**
+     * Il ne l'était pas : `.toast` ne posait aucun fond, et les tons vivaient
+     * dans une classe `.toast-ok` que le balisage — qui écrit `data-kind` — n'a
+     * jamais posée. Le message flottait par-dessus la collection, illisible, et
+     * se lisait comme un défaut d'affichage plutôt que comme une information.
+     */
+    await signUp(page);
+    const toast = page.locator(".toast");
+    await expect(toast).toBeVisible();
+
+    const fond = await toast.evaluate((node) => getComputedStyle(node).backgroundColor);
+    expect(fond, "le fond ne doit pas être transparent").not.toBe("rgba(0, 0, 0, 0)");
+    expect(fond, "aucune transparence partielle non plus").not.toMatch(/^rgba\(.*,\s*0?\.\d+\)$/);
+
+    // Doré, et non le vert réservé à ce qui vient d'être enregistré.
+    const texte = await toast.evaluate((node) => getComputedStyle(node).color);
+    expect(texte).toBe("rgb(251, 191, 36)");
+  });
+
+  test("la barre du scanner : recommencer, et un « +1 » qui se voit", async ({ page }) => {
+    await signUp(page);
+    await page.getByRole("button", { name: "Scanner" }).click();
+    await page.locator(".scan-modal").waitFor();
+
+    const champ = page.locator(".scan-code-input");
+    await champ.fill("LTGY-FR008");
+
+    // « Recommencer » remet l'écran dans l'état où il s'est ouvert, sans
+    // toucher ni à la caméra ni à la collection.
+    await page.getByRole("button", { name: "Recommencer" }).click();
+    await expect(champ).toHaveValue("");
+
+    /**
+     * Le « +1 » n'avait aucune couleur : le navigateur lui donnait son gris par
+     * défaut, indistinguable du « −1 » d'à côté — alors que l'un ajoute une
+     * carte à l'inventaire et l'autre l'en retire.
+     */
+    const plus = page.getByRole("button", { name: "Ajouter un exemplaire" });
+    const fond = await plus.evaluate((node) => getComputedStyle(node).backgroundColor);
+    expect(fond, "le « +1 » porte le bleu du « + » de la barre d'ajout").toBe("rgb(110, 200, 255)");
+
+    // Les quatre cibles restent au doigt : 44 px, c'est le minimum tenable pour
+    // une barre qu'on vise sans regarder.
+    for (const nom of ["Recommencer", "Retirer un exemplaire", "Lire la carte", "Ajouter un exemplaire"]) {
+      const boite = (await page.getByRole("button", { name: nom }).boundingBox())!;
+      expect(Math.min(boite.width, boite.height), `cible « ${nom} »`).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  test("le clavier ne monte pas tout seul dans le scanner", async ({ page }) => {
+    /**
+     * Un focus sur téléphone fait monter le clavier, qui recouvre la moitié de
+     * l'écran — dont la barre de déclenchement. Il fallait taper à côté pour le
+     * refermer avant de reprendre une photo, à chaque carte.
+     */
+    await signUp(page);
+    await page.getByRole("button", { name: "Scanner" }).click();
+    await page.locator(".scan-modal").waitFor();
+
+    const focalisé = await page.evaluate(() =>
+      document.activeElement?.classList.contains("scan-code-input") ?? false,
+    );
+    expect(focalisé, "le champ ne doit pas s'emparer du focus à l'ouverture").toBe(false);
+
+    // Il le prend quand on le lui demande, évidemment.
+    await page.locator(".scan-code-input").click();
+    expect(
+      await page.evaluate(() =>
+        document.activeElement?.classList.contains("scan-code-input") ?? false,
+      ),
+    ).toBe(true);
+  });
+
   test("la fiche de carte tient dans l'écran", async ({ page }) => {
     await signUp(page);
     await addBySetCode(page, "LTGY-FR008");

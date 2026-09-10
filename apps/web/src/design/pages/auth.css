@@ -36,45 +36,11 @@
   letter-spacing: 0.12em;
   color: var(--gold);
 }
-
-/* ── Accueil ──────────────────────────────────────────────────────────────
- * Deux colonnes au-dessus de 900px, empilées en dessous — et c'est le texte qui
- * passe en premier : sur un téléphone, l'illustration ne doit pas repousser
- * hors de l'écran ce qui explique de quoi il s'agit.
- */
-.landing-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(1.5rem, 5vw, 4rem);
-  flex: 1 1 auto;
-}
-/* Ce sont des liens, pas des boutons : ils mènent ailleurs, et le clic milieu
-   comme l'ouverture en nouvel onglet doivent fonctionner. */
-.btn-landing-primary,
-.btn-landing-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.75rem 1.35rem;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 0.95rem;
-  text-decoration: none;
-  border: 1px solid transparent;
-}
 @keyframes auth-rays { to { transform: rotate(360deg); } }
 /* Le réglage système fait foi : ce halo tourne pour le plaisir, rien d'autre. */
 @media (prefers-reduced-motion: reduce) {
   .black-hole-rays { animation: none; }
 }
-/* Le retournement s'ajoute à l'inclinaison plutôt que de la remplacer : deux
-   `transform` sur la même règle, la seconde effacerait la première. */
-.card-3d-inner.is-flipped {
-  transform: rotateX(var(--tilt-x, 0deg)) rotateY(calc(var(--tilt-y, 0deg) + 180deg));
-}
-/* La carte est l'illustration, pas une imitation de cadre par-dessus. */
-.card-inspection-tip { margin: 0; font-size: 0.78rem; text-align: center; }
 
 /* ── Connexion et inscription ─────────────────────────────────────────────── */
 .auth-main-wrapper {
@@ -141,11 +107,6 @@
 }
 .auth-submit-btn:hover:not(:disabled) { filter: brightness(1.08); }
 .auth-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Les comptes d'essai. Dans l'application, chacun portait dix-huit
-   déclarations de style écrites dans son attribut, avec sa propre couleur
-   littérale ; ici c'est une puce, et le rôle suffit à les distinguer. */
-.auth-demo { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .auth-toggle { margin: 1.1rem 0 0; font-size: 0.84rem; text-align: center; }
 /* Le lien de bascule est tantôt un `a`, tantôt un `button` — « Se déconnecter »
    agit, il ne mène pas ailleurs. Les deux doivent se lire pareil : sans cette
