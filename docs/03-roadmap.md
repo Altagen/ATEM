@@ -124,9 +124,25 @@ refusé, `?level=abc` répondait 500, la borne de corps ne tenait pas sans
 partait sans contrôle, et `check-dead-exports` était aveugle à toute la surface
 publique des modules. Une barrière de plus : `check-outbound.mjs`.
 
-**Reste à faire** — la scanliste (P1), et **l'essai du scan sur des cartes
-physiques**. Les réglages OCR sont mesurés, l'ergonomie du geste ne l'est pas :
-aucun navigateur d'épreuve n'a de caméra.
+**Le scan a été essayé sur cartes physiques le 2026-09-10**, au téléphone, sur
+le réseau local. C'était le dernier point qu'aucune épreuve ne pouvait couvrir :
+aucun navigateur d'épreuve n'a de caméra, et les réglages OCR étaient mesurés
+sans que l'ergonomie du geste le soit. Verdict d'Ange : « l'expérience
+utilisateur est très confortable ».
+
+Trois défauts trouvés là, et nulle part ailleurs :
+
+- **le champ prenait le focus tout seul** après chaque lecture, ce qui faisait
+  monter le clavier par-dessus la barre de déclenchement — il fallait taper à
+  côté pour le refermer avant chaque nouvelle photo ;
+- **le « +1 » n'avait aucune couleur**, indistinguable du « −1 » d'à côté ;
+- **rien ne disait que la lecture travaillait** : l'obturateur grisait, ce qui
+  se lit comme une panne. Sa pulsation existait en CSS, branchée nulle part.
+
+Aucun ne se voyait à l'écran d'un ordinateur, et aucune barrière ne pouvait les
+signaler. C'est l'argument pour continuer à valider au doigt, écran par écran.
+
+**Reste à faire** — la scanliste (P1).
 
 > Le prétraitement de l'image avant OCR est le vrai point dur de ce jalon, pas
 > `tesseract.js` lui-même. Ce que fait ATEM-old ici est probablement l'actif le plus
