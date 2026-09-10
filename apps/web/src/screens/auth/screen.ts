@@ -41,10 +41,25 @@ function fieldGroup(
   return el("div", { class: "auth-field-group" }, [labelNode, input]);
 }
 
+/**
+ * La destination d'après connexion, ramenée à un chemin de chez nous.
+ *
+ * `?suite=` vient de l'URL : c'est une entrée, pas une donnée de confiance.
+ * `history.pushState` refuse déjà une autre origine — mais en **levant**, ce qui
+ * laissait la connexion à moitié faite sur un lien forgé. Un seul `/` en tête,
+ * jamais deux (`//ailleurs.example` est une autre origine, `/\` aussi une fois
+ * l'URL normalisée), et on retombe sinon là où l'on va de toute façon.
+ */
+function safeSuite(raw: string | null): string {
+  if (!raw || !raw.startsWith("/")) return "/collection";
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/collection";
+  return raw;
+}
+
 export function authScreen(mode: Mode) {
   return (root: HTMLElement, params: URLSearchParams) => {
     const isRegister = mode === "register";
-    const next = params.get("suite") ?? "/collection";
+    const next = safeSuite(params.get("suite"));
 
     root.className = "auth-page";
 

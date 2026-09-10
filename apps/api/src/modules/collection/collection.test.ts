@@ -580,3 +580,25 @@ test("une ligne tombée à zéro n'est pas reprise au démarrage", async () => {
     "plus personne ne la possède : il n'y a rien à identifier",
   );
 });
+
+test("un filtre de niveau illisible ne fait pas tomber la requête", async () => {
+  const user = await newUser();
+  await seedCard(99999904, "LVLX-FR001", { en: "Niveau lisible", fr: "Niveau lisible" });
+  await adjustQuantity(db, user.id, { setCode: "LVLX-FR001", delta: 1 });
+
+  /**
+   * `?level=abc` arrivait jusqu'ici en liste non vide de valeurs non
+   * numériques : le gabarit écrivait `in ()`, que PostgreSQL refuse, et la
+   * requête entière partait en 500 avec une trace. Une valeur de filtre
+   * illisible est une demande à laquelle rien ne correspond, pas une panne.
+   */
+  const niveaux = await listCollection(db, user.id, { levels: ["abc"] });
+  assert.equal(niveaux.total, 0);
+
+  const rangs = await listCollection(db, user.id, { ranks: ["xyz", ""] });
+  assert.equal(rangs.total, 0);
+
+  // Et une liste où quelques valeurs tiennent reste un filtre normal.
+  const mixte = await listCollection(db, user.id, { levels: ["abc", "9"] });
+  assert.equal(mixte.total, 1);
+});

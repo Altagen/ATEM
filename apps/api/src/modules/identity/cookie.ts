@@ -1,16 +1,19 @@
 /**
  * Le transport du jeton.
  *
- * Le jeton lui-même est `httpOnly` : aucun script de la page ne peut le lire, ce
- * qui le met hors de portée d'une injection. Mais le front a besoin de savoir
- * s'il y a une session pour choisir quoi afficher — d'où un second cookie,
- * lisible et **sans valeur secrète**, qui ne dit que « oui, il y en a une ».
+ * Le jeton est `httpOnly` : aucun script de la page ne peut le lire, ce qui le
+ * met hors de portée d'une injection.
+ *
+ * Il y avait ici un second cookie, lisible, censé dire au front qu'une session
+ * existe. Personne ne l'a jamais lu — le front demande `/auth/me`, ce qui lui
+ * rend l'identité en même temps que la réponse. Il partait donc à chaque
+ * requête pour rien, avec un commentaire qui décrivait un rôle que rien ne
+ * jouait.
  */
 import type { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
 
 export const SESSION_COOKIE = "atem_session";
-export const SESSION_HINT_COOKIE = "atem_signed_in";
 
 /**
  * `Secure` est levé sur localhost uniquement : en développement, le navigateur
@@ -31,16 +34,8 @@ export function setSessionCookie(c: Context, token: string): void {
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
-  setCookie(c, SESSION_HINT_COOKIE, "1", {
-    httpOnly: false,
-    secure,
-    sameSite: "Strict",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
 }
 
 export function clearSessionCookie(c: Context): void {
   deleteCookie(c, SESSION_COOKIE, { path: "/" });
-  deleteCookie(c, SESSION_HINT_COOKIE, { path: "/" });
 }

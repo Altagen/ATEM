@@ -18,7 +18,9 @@ s'inscrit, se connecte, et cherche une carte dans le référentiel complet.
 - Job d'amorçage du référentiel : 2 dumps → tables → index de set codes normalisés
 - Téléchargement des images en tâche de fond, reprenable
 - Inscription / connexion / déconnexion (scrypt)
-- Une page : recherche de carte par nom, avec image
+- Une page : recherche de carte par nom, avec image *(retirée en M1 : l'écran
+  Catalogue qu'elle servait n'existait pas dans ATEM-old et doublait la
+  collection — voir plus bas)*
 
 **Archéologie ciblée.** Configuration du monorepo, compose, client API YGOPRODeck,
 socle d'authentification.
@@ -33,7 +35,7 @@ manuelle. Le référentiel contient les 14 524 cartes et 44 517 impressions.
 | Import du catalogue complet | **12,4 s** — 14 524 cartes, 44 496 impressions, 12 codes malformés écartés |
 | Résolution d'un set code français déjà en base | **39 ms**, zéro appel réseau |
 | Découpage des set codes réels | **100 %** (44 505 / 44 517), contre 88,2 % pour ATEM-old |
-| Tests | 11 dans `shared`, 7 dans `api`, tous au vert |
+| Tests | 11 dans `shared`, 7 dans `api`, tous au vert *(68 dans `api` au 2026-09-10)* |
 | Poids du front construit | 7,9 ko de JS, 4,5 ko de CSS |
 
 Parcours validé de bout en bout à travers le proxy du front : inscription →
@@ -112,6 +114,15 @@ inventorier des centaines de cartes au pouce.
 recherche, sens du tri, densité, regroupement par type, filtres de rang Xyz et
 de valeur de Lien, note d'exemplaire. L'écran Catalogue, qui n'existait pas dans
 ATEM-old et doublait la collection sans permettre d'agir, est supprimé.
+
+**Audit du 2026-09-10.** Passé sur tout ce qui était livré. Corrigés : la file
+de résolution ne reprenait rien au redémarrage (109 lignes en attente l'ont été
+au premier lancement corrigé), l'état `unidentified` n'était jamais écrit, les
+appels sortants n'avaient pas de délai d'attente, un 429 ne retenait que l'appel
+refusé, `?level=abc` répondait 500, la borne de corps ne tenait pas sans
+`Content-Length`, le scanner laissait deux écouteurs par ouverture, `?suite=`
+partait sans contrôle, et `check-dead-exports` était aveugle à toute la surface
+publique des modules. Une barrière de plus : `check-outbound.mjs`.
 
 **Reste à faire** — la scanliste (P1), et **l'essai du scan sur des cartes
 physiques**. Les réglages OCR sont mesurés, l'ergonomie du geste ne l'est pas :

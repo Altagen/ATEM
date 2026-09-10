@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { addBySetCode, expectNoHorizontalOverflow, signUp, useGalleryView } from "./helpers.js";
+import {
+  addBySetCode, expectNoHorizontalOverflow, freshAccount, signUp, useGalleryView,
+} from "./helpers.js";
 
 test.describe("Collection", () => {
   test("un compte neuf arrive sur une collection vide", async ({ page }) => {
@@ -215,6 +217,48 @@ test.describe("Mise en page", () => {
     }
   });
 
+  test("ouvrir et refermer le scanner ne laisse rien derrière", async ({ page }) => {
+    /**
+     * Le scanner se branchait sur `popstate` et sur `atem:navigated` en
+     * `{ once: true }` — donc jamais consommés quand on ferme au bouton. Chaque
+     * ouverture laissait donc deux écouteurs vivants, et la navigation suivante
+     * rappelait la fermeture autant de fois qu'on avait ouvert le scanner,
+     * chacune relançant le rechargement complet de la collection.
+     *
+     * **La navigation doit être interne.** Un `goto` recharge le document et
+     * emporte tous les écouteurs avec lui : la fuite ne se voit que sur un
+     * changement de route côté client, celui que fait un clic dans la barre.
+     */
+    await signUp(page);
+
+    const requêtesDUnChangementDÉcran = async (): Promise<number> => {
+      let requêtes = 0;
+      const écouter = (request: { url: () => string }) => {
+        if (request.url().includes("/api/collection")) requêtes += 1;
+      };
+      page.on("request", écouter);
+      await page.locator("a[href='/collection']").first().dispatchEvent("click");
+      await page.waitForTimeout(800);
+      page.off("request", écouter);
+      return requêtes;
+    };
+
+    const référence = await requêtesDUnChangementDÉcran();
+
+    for (let tour = 0; tour < 3; tour += 1) {
+      await page.getByRole("button", { name: "Scanner" }).click();
+      await page.locator(".scan-modal").waitFor();
+      await page.locator(".scan-modal .icon-btn").click();
+      await expect(page.locator(".scan-modal")).toHaveCount(0);
+    }
+
+    const après = await requêtesDUnChangementDÉcran();
+    expect(
+      après,
+      `trois ouvertures du scanner : le changement d'écran a produit ${après} requêtes contre ${référence}`,
+    ).toBeLessThanOrEqual(référence);
+  });
+
   test("la fiche de carte tient dans l'écran", async ({ page }) => {
     await signUp(page);
     await addBySetCode(page, "LTGY-FR008");
@@ -226,6 +270,41 @@ test.describe("Mise en page", () => {
     const box = (await sheet.boundingBox())!;
     const viewport = page.viewportSize()!;
     expect(box.width).toBeLessThanOrEqual(viewport.width);
+  });
+});
+
+test.describe("Redirection après connexion", () => {
+  /** Crée un compte depuis `/inscription?suite=…` et rend l'URL d'arrivée. */
+  async function inscrireAvecSuite(page: import("@playwright/test").Page, suite: string) {
+    const compte = freshAccount();
+    await page.goto(`/inscription?suite=${encodeURIComponent(suite)}`);
+    await page.getByLabel("Pseudo").fill(compte.displayName);
+    await page.getByLabel("Adresse e-mail").fill(compte.email);
+    await page.getByLabel("Mot de passe", { exact: false }).first().fill(compte.password);
+    await page.getByLabel("Confirmation du mot de passe").fill(compte.password);
+    await page.getByRole("button", { name: "Créer mon compte" }).click();
+    await page.waitForURL(/\/collection/, { timeout: 10_000 });
+    return page.url();
+  }
+
+  test("une destination de chez nous est suivie", async ({ page }) => {
+    const arrivée = await inscrireAvecSuite(page, "/collection?depuis=test");
+    expect(arrivée).toContain("/collection?depuis=test");
+  });
+
+  test("une destination d'ailleurs ne quitte pas le site", async ({ page }) => {
+    /**
+     * `?suite=` vient de l'URL, donc de n'importe qui. `pushState` refuse déjà
+     * une autre origine — mais en **levant**, ce qui laissait la connexion à
+     * moitié faite au lieu de retomber sur la collection. Les trois formes
+     * comptent : deux barres, la barre inversée que la normalisation d'URL
+     * transforme en barre, et une adresse absolue.
+     */
+    for (const suite of ["//exemple.invalid", "/\\exemple.invalid", "https://exemple.invalid"]) {
+      const arrivée = await inscrireAvecSuite(page, suite);
+      expect(arrivée, `suite = ${suite}`).not.toContain("exemple.invalid");
+      expect(arrivée).toContain("/collection");
+    }
   });
 });
 

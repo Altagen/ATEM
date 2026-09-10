@@ -120,11 +120,29 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
   let stream: MediaStream | null = null;
   let busy = false;
 
+  /**
+   * Fermer, une seule fois, et sans rien laisser derrière.
+   *
+   * Le garde n'est pas une précaution de style : `dismiss` est branché sur
+   * quatre sources, et la fermeture normale n'en consomme qu'une. Sans lui, un
+   * scanner ouvert puis refermé au bouton laissait ses écouteurs de navigation
+   * en place — et la navigation suivante rappelait `onClose()` autant de fois
+   * qu'on avait ouvert le scanner, chacune relançant trois requêtes. C'est la
+   * même famille de défaut que l'écouteur qui s'accumulait sur la grille.
+   */
+  let dismissed = false;
   function dismiss(): void {
+    if (dismissed) return;
+    dismissed = true;
+
     unlockScroll();
     for (const track of stream?.getTracks() ?? []) track.stop();
     stream = null;
+
     document.removeEventListener("keydown", onKey);
+    window.removeEventListener("popstate", dismiss);
+    document.removeEventListener("atem:navigated", dismiss);
+
     modal.remove();
     backdrop.remove();
     options.onClose();
@@ -144,8 +162,8 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
    * l'écran suivant, sans moyen de le fermer au doigt — et **la caméra
    * allumée**, témoin compris.
    */
-  window.addEventListener("popstate", dismiss, { once: true });
-  document.addEventListener("atem:navigated", dismiss, { once: true });
+  window.addEventListener("popstate", dismiss);
+  document.addEventListener("atem:navigated", dismiss);
 
   try {
     stream = await navigator.mediaDevices.getUserMedia({

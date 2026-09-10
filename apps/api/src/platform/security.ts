@@ -7,6 +7,7 @@
  * navigateur — l'exiger là serait du bruit sans gain.
  */
 import type { MiddlewareHandler } from "hono";
+import { bodyLimit as honoBodyLimit } from "hono/body-limit";
 import { forbidden } from "./errors.js";
 
 export const securityHeaders: MiddlewareHandler = async (c, next) => {
@@ -62,13 +63,21 @@ export const csrfGuard: MiddlewareHandler = async (c, next) => {
   await next();
 };
 
-/** Une requête sans corps borné peut saturer la mémoire du serveur. */
+/**
+ * Une requête sans corps borné peut saturer la mémoire du serveur.
+ *
+ * La version d'origine ne lisait que le `Content-Length` **annoncé**. Une
+ * requête en transfert par morceaux n'en porte pas : `Number(undefined ?? 0)`
+ * valait zéro, et elle passait entière. Un en-tête non numérique donnait `NaN`,
+ * dont la comparaison est fausse — elle passait aussi.
+ *
+ * Celle de Hono compte les octets au fil de l'eau et s'arrête au dépassement,
+ * quel que soit ce que la requête annonce. Notre réponse d'erreur garde la
+ * forme des autres : un corps JSON avec un code, que le client sait déjà lire.
+ */
 export function bodyLimit(maxBytes: number): MiddlewareHandler {
-  return async (c, next) => {
-    const declared = Number(c.req.header("Content-Length") ?? 0);
-    if (declared > maxBytes) {
-      return c.json({ error: "payload_too_large" }, 413);
-    }
-    await next();
-  };
+  return honoBodyLimit({
+    maxSize: maxBytes,
+    onError: (c) => c.json({ error: "payload_too_large" }, 413),
+  });
 }

@@ -83,7 +83,7 @@ python3 scripts/ocr-lab/build-set-dict.py --full
 
 ## Server note (related, not in `ocr.ts`)
 
-`POST /collection` accepts the set code quickly; catalogue resolve + image cache run in a background queue (`apps/api/src/collection/resolve-queue.ts`) so the scan UX is not blocked on YGOPRODeck.
+`POST /collection` accepts the set code quickly; catalogue resolve + image cache run in a background queue (`apps/api/src/modules/collection/resolve-queue.ts`) so the scan UX is not blocked on YGOPRODeck.
 
 ## Tests
 

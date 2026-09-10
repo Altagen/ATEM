@@ -261,7 +261,7 @@ const levelBadge = (kind: "level" | "rank"): SafeHtml =>
  * L'attribut de données est passé **en deux morceaux**, nom et valeur, jamais
  * comme un fragment d'HTML déjà écrit. La version précédente interpolait une
  * chaîne d'attributs par `raw()`, et les appelants la construisaient au gabarit
- * ordinaire : une rareté vaut ce que l'utilisateur a saisi à l'ajout, et une
+ * ordinaire : une rareté vaut ce que le catalogue distant a écrit, et une
  * valeur comme `" onmouseover="…` fermait l'attribut pour en ouvrir un autre.
  *
  * C'est exactement l'échappée de secours que `platform/ui.ts` dit ne pas avoir.

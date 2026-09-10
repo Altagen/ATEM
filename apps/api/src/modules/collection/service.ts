@@ -172,16 +172,28 @@ function buildFilters(
     );
   }
 
+  /**
+   * Une liste de nombres, débarrassée de ce qui n'en est pas.
+   *
+   * Le résultat peut être **vide** — `?level=abc` — et c'est ce cas qui
+   * comptait : le gabarit écrivait alors `in ()`, que PostgreSQL refuse, et la
+   * requête entière partait en 500 avec une trace. Une valeur de filtre
+   * illisible est une demande à laquelle rien ne correspond, pas une panne du
+   * serveur ; on rend donc une clause toujours fausse, comme le fait déjà
+   * `inArray` pour les marqueurs de Lien.
+   */
   const numbers = (values: string[]) => values.map(Number).filter(Number.isFinite);
+  const anyOf = (column: PrintIndex["level"], values: number[]) =>
+    values.length > 0 ? sql`${column} in ${values}` : sql`false`;
 
   if (filters.levels?.length) {
     // Le niveau, à l'exclusion des Xyz : eux ont un rang.
     clauses.push(
-      sql`${idx.level} in ${numbers(filters.levels)} and ${idx.type} not like '%XYZ%'`,
+      sql`${anyOf(idx.level, numbers(filters.levels))} and ${idx.type} not like '%XYZ%'`,
     );
   }
   if (filters.ranks?.length) {
-    clauses.push(sql`${idx.level} in ${numbers(filters.ranks)} and ${idx.type} like '%XYZ%'`);
+    clauses.push(sql`${anyOf(idx.level, numbers(filters.ranks))} and ${idx.type} like '%XYZ%'`);
   }
   if (filters.links?.length) {
     clauses.push(inArray(idx.linkValue, numbers(filters.links)));

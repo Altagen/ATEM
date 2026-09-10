@@ -85,6 +85,14 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): SafeH
   return new SafeHtml(out);
 }
 
-/** `html` conditionnel : rend le fragment seulement si la condition tient. */
-export const when = (condition: unknown, fragment: SafeHtml | string): SafeHtml =>
-  condition ? (fragment instanceof SafeHtml ? fragment : raw(fragment)) : raw("");
+/**
+ * `html` conditionnel : rend le fragment seulement si la condition tient.
+ *
+ * Il n'accepte que du `SafeHtml`. Il acceptait aussi une chaîne simple, qu'il
+ * passait à `raw()` — donc en HTML de confiance, sans échappement. Aucun
+ * appelant ne s'en servait ainsi, mais c'était exactement l'échappée de secours
+ * que ce fichier déclare ne pas avoir, et elle ne se voyait pas : `when(x, nom)`
+ * a l'air inoffensif. Ce qui doit passer en HTML passe par `raw()`, qui se voit.
+ */
+export const when = (condition: unknown, fragment: SafeHtml): SafeHtml =>
+  condition ? fragment : raw("");

@@ -55,8 +55,26 @@ const sources = AREAS.flatMap((area) => files(path.join(ROOT, area)));
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
 
+/**
+ * Un ré-export ne consomme rien non plus.
+ *
+ * `export { requireAdmin } from "./middleware.js"` mentionne le symbole sans
+ * l'appeler : il l'expose, c'est tout. Compter cette mention comme un usage
+ * rendait le contrôle **aveugle à toute la surface publique** — et comme
+ * l'architecture impose que rien ne traverse un module autrement que par son
+ * `index.ts`, cet angle mort couvrait l'essentiel du code.
+ *
+ * Trouvé en cherchant à la main ce que la barrière laissait passer : cinq
+ * exports morts s'y cachaient, dont une garde d'administration que personne ne
+ * monte et le reste d'un écran supprimé.
+ */
+const stripReExports = (src) =>
+  src.replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;?/g, " ");
+
 const contents = new Map(sources.map((f) => [f, readFileSync(f, "utf8")]));
-const stripped = new Map([...contents].map(([f, src]) => [f, stripComments(src)]));
+const stripped = new Map(
+  [...contents].map(([f, src]) => [f, stripReExports(stripComments(src))]),
+);
 
 /** Compte les occurrences d'un identifiant, hors sa propre ligne de déclaration. */
 function countIn(src, symbol, declarationLine) {
