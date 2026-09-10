@@ -4,7 +4,6 @@ export {
   normalizeSetCode,
   parseSetCode,
   toEnglishLookupSetCode,
-  type SetCodeParts,
 } from "./set-code.js";
 export { LIMITS } from "./limits.js";
 export {

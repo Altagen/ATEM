@@ -6,7 +6,7 @@
  * implémentations concurrentes de « carte pas encore résolue ». Les autres
  * modules passent désormais par les fonctions exportées ici.
  */
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   canonicalSetCode, languageFromSetCode, normalizeSetCode, toEnglishLookupSetCode,
 } from "@atem/shared";
@@ -253,6 +253,40 @@ export async function ensurePlaceholderPrint(
 }
 
 /**
+ * Inscrit qu'un code n'existe pas chez YGOPRODeck.
+ *
+ * Trois états, et le troisième ne servait à rien : la base déclarait
+ * `unidentified`, la collection le comptait, l'écran l'affichait — mais rien ne
+ * l'écrivait jamais. Une impression que la file avait renoncé à identifier
+ * restait `pending`, donc indistinguable d'une résolution simplement
+ * interrompue. Conséquence : chaque redémarrage la remettait en file, pour
+ * redemander un code dont on savait déjà qu'il n'existe pas.
+ *
+ * C'est l'état terminal des codes suffixés du wiki français — voir
+ * `docs/01-domain-model.md`.
+ *
+ * On ne touche que les lignes `pending` : une impression identifiée entre-temps
+ * par un autre chemin ne doit pas être défaite.
+ */
+export async function markUnidentified(db: Database, rawSetCode: string): Promise<number> {
+  const setCode = normalizeSetCode(rawSetCode);
+  if (!setCode) return 0;
+
+  const touched = await db
+    .update(cardPrints)
+    .set({ resolveStatus: "unidentified" })
+    .where(
+      and(
+        eq(cardPrints.canonicalSetCode, canonicalSetCode(setCode)),
+        eq(cardPrints.resolveStatus, "pending"),
+      ),
+    )
+    .returning({ id: cardPrints.id });
+
+  return touched.length;
+}
+
+/**
  * Cherche une impression déjà connue localement.
  *
  * On tente le code exact, puis son équivalent anglais : une carte française dont
@@ -369,30 +403,6 @@ export async function resolvePrintBySetCode(
   }
 
   return print;
-}
-
-export type CardSearchResult = { cards: CardDetail[]; total: number };
-
-/** Recherche par nom, dans les deux langues, sur le catalogue local. */
-export async function searchCardsByName(
-  db: Database,
-  query: string,
-  options: { locale?: string; limit?: number; offset?: number } = {},
-): Promise<CardSearchResult> {
-  const term = `%${query.trim()}%`;
-  const limit = Math.min(Math.max(options.limit ?? 40, 1), 100);
-  const offset = Math.max(options.offset ?? 0, 0);
-  const matches = or(ilike(cards.nameEn, term), ilike(cards.nameFr, term));
-
-  const [rows, [counted]] = await Promise.all([
-    db.select().from(cards).where(matches).orderBy(cards.nameEn).limit(limit).offset(offset),
-    db.select({ total: sql<number>`count(*)::int` }).from(cards).where(matches),
-  ]);
-
-  return {
-    cards: rows.map((row) => toCardDetail(row, options.locale ?? "fr")),
-    total: counted?.total ?? 0,
-  };
 }
 
 export async function getCard(

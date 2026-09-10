@@ -19,6 +19,7 @@ step() {
 step "Bande de visée du scanner" node scripts/check-scan-band.mjs
 step "Frontières de modules" node scripts/check-module-boundaries.mjs
 step "Routes atteintes" node scripts/check-routes.mjs
+step "Appels sortants bornés" node scripts/check-outbound.mjs
 step "CSS mort" node scripts/check-dead-css.mjs
 step "Classes sans style" node scripts/check-unstyled-classes.mjs
 step "Exports morts" node scripts/check-dead-exports.mjs

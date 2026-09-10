@@ -12,6 +12,18 @@
  */
 type Attempt = (userId: string, setCode: string) => Promise<boolean>;
 
+/**
+ * Ce qu'on fait d'un code dont on sait qu'il n'existe pas.
+ *
+ * Une absence est **définitive** : le code n'est pas chez YGOPRODeck, et le
+ * redemander demain ne l'y mettra pas. Sans ce signal, la ligne restait
+ * `pending` — indistinguable d'une résolution interrompue — et chaque
+ * redémarrage la remettait en file. Sur une collection qui en compte
+ * quelques-unes, c'est une rafale d'appels inutiles à chaque démarrage, vers
+ * l'API même qu'on prend soin de ne pas saturer.
+ */
+type Abandon = (userId: string, setCode: string) => Promise<void>;
+
 type Entry = { userId: string; setCode: string; attempts: number; readyAt: number };
 
 const MAX_ATTEMPTS = 4;
@@ -20,6 +32,7 @@ const BASE_DELAY_MS = 2_000;
 const queue = new Map<string, Entry>();
 let running = false;
 let attemptFn: Attempt | null = null;
+let abandonFn: Abandon | null = null;
 let timer: NodeJS.Timeout | null = null;
 
 /**
@@ -31,8 +44,12 @@ let timer: NodeJS.Timeout | null = null;
  */
 const keyOf = (userId: string, setCode: string) => `${userId}|${setCode}`;
 
-export function configureResolveQueue(attempt: Attempt): void {
-  attemptFn = attempt;
+export function configureResolveQueue(handlers: {
+  attempt: Attempt;
+  abandon: Abandon;
+}): void {
+  attemptFn = handlers.attempt;
+  abandonFn = handlers.abandon;
 }
 
 export function enqueueResolve(userId: string, setCode: string): void {
@@ -62,9 +79,14 @@ async function drain(): Promise<void> {
       queue.delete(key);
       try {
         const resolved = await attemptFn(entry.userId, entry.setCode);
-        // Un échec **sans erreur** est une absence, pas une panne : ce code
-        // n'existe pas chez YGOPRODeck. Le réessayer ne le fera pas apparaître.
         if (resolved) continue;
+        /**
+         * Un échec **sans erreur** est une absence, pas une panne : ce code
+         * n'existe pas chez YGOPRODeck. Le réessayer ne le fera pas apparaître,
+         * et on l'inscrit pour que plus personne ne le redemande — ni cette
+         * file, ni la reprise du prochain démarrage.
+         */
+        await abandonFn?.(entry.userId, entry.setCode);
       } catch (err) {
         const next = entry.attempts + 1;
         if (next < MAX_ATTEMPTS) {
@@ -73,6 +95,12 @@ async function drain(): Promise<void> {
           const delay = BASE_DELAY_MS * 2 ** next * (0.5 + Math.random());
           queue.set(key, { ...entry, attempts: next, readyAt: Date.now() + delay });
         } else {
+          /**
+           * Quatre pannes d'affilée : on lâche pour cette fois, **sans**
+           * marquer le code absent. La différence compte — une coupure réseau
+           * n'est pas une carte inexistante, et la ligne doit repartir en file
+           * au prochain démarrage.
+           */
           console.warn(`[atem] résolution abandonnée pour ${entry.setCode} :`, err);
         }
       }

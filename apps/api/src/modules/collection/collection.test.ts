@@ -4,8 +4,12 @@ import { eq } from "drizzle-orm";
 import { createTestApp, freshEmail } from "../../test-support.js";
 import { registerUser } from "../identity/service.js";
 import { cardPrints, cards } from "../referential/schema.js";
-import { upsertCard, upsertPrint } from "../referential/index.js";
-import { adjustQuantity, listCollection, reresolve, setFavorite, setNotes } from "./service.js";
+import { markUnidentified, upsertCard, upsertPrint } from "../referential/index.js";
+import {
+  adjustQuantity, listCollection, requeuePendingResolves, reresolve, resolveStatus,
+  setFavorite, setNotes,
+} from "./service.js";
+import { configureResolveQueue, drainNow, resetResolveQueue } from "./resolve-queue.js";
 import { ownedCards } from "./schema.js";
 
 const { db } = createTestApp();
@@ -478,4 +482,101 @@ test("une carte traduite ne signale rien", async () => {
   const { items } = await listCollection(db, user.id, {});
   assert.equal(items[0]?.card?.desc, "Détruisez un monstre.");
   assert.equal(items[0]?.card?.frenchPending, false);
+});
+
+/**
+ * La reprise au démarrage.
+ *
+ * La file de résolution ne vit qu'en mémoire. Une ligne entrée juste avant un
+ * redéploiement — ou un `docker compose down` — restait « en attente
+ * d'identification » **pour toujours** : rien ne reprenait le travail, et rien
+ * ne le signalait. Le commentaire de la file promettait pourtant l'inverse.
+ */
+
+/**
+ * Rejoue un redémarrage et rend les codes que la file redemanderait.
+ *
+ * La base est partagée par toutes les épreuves du fichier : compter les entrées
+ * ne dirait rien, puisqu'on y verrait aussi celles des autres. On regarde donc
+ * **quels** codes la reprise met en file, et on cherche le nôtre.
+ */
+async function codesReprisAuDemarrage(): Promise<string[]> {
+  resetResolveQueue();
+  const demandés: string[] = [];
+  configureResolveQueue({
+    attempt: async (_userId, setCode) => {
+      demandés.push(setCode);
+      return true;
+    },
+    abandon: async () => {},
+  });
+
+  await requeuePendingResolves(db);
+  await drainNow();
+  resetResolveQueue();
+  return demandés;
+}
+
+test("les lignes encore en attente repartent en file au démarrage", async () => {
+  const user = await newUser();
+  await adjustQuantity(db, user.id, { setCode: "QQQQ-FR001", delta: 1 });
+
+  assert.ok(
+    (await codesReprisAuDemarrage()).includes("QQQQ-FR001"),
+    "la ligne en attente doit être reprise",
+  );
+});
+
+test("un code déclaré inexistant n'est pas redemandé au démarrage", async () => {
+  const user = await newUser();
+  await adjustQuantity(db, user.id, { setCode: "QQQQ-FR002", delta: 1 });
+
+  // Ce que fait la file quand YGOPRODeck répond « rien » : une absence, pas
+  // une panne. Sans cette marque, chaque redémarrage relançait l'appel.
+  assert.equal(await markUnidentified(db, "QQQQ-FR002"), 1);
+
+  assert.ok(
+    !(await codesReprisAuDemarrage()).includes("QQQQ-FR002"),
+    "on ne redemande pas un code dont on sait qu'il n'existe pas",
+  );
+});
+
+test("une ligne inexistante reste comptée comme en attente à l'écran", async () => {
+  const user = await newUser();
+  await adjustQuantity(db, user.id, { setCode: "QQQQ-FR003", delta: 1 });
+  await markUnidentified(db, "QQQQ-FR003");
+
+  /**
+   * L'écran additionne les deux états : pour le joueur, une carte non
+   * identifiée reste une carte non identifiée, qu'on ait renoncé ou non. Le
+   * partage `pending` / `unidentified` sert la file, pas l'affichage.
+   */
+  const état = await resolveStatus(db, user.id);
+  assert.equal(état.unidentified, 1);
+  assert.equal(état.pending, 0);
+});
+
+test("marquer un code absent ne défait pas une impression identifiée", async () => {
+  await seedCard(99999903, "QQQQ-FR004", { en: "Bien connue", fr: "Bien connue" });
+
+  const marquées = await markUnidentified(db, "QQQQ-FR004");
+  assert.equal(marquées, 0, "seules les lignes encore provisoires sont concernées");
+
+  const [print] = await db
+    .select()
+    .from(cardPrints)
+    .where(eq(cardPrints.setCode, "QQQQ-FR004"))
+    .limit(1);
+  assert.equal(print?.resolveStatus, "resolved");
+});
+
+test("une ligne tombée à zéro n'est pas reprise au démarrage", async () => {
+  const user = await newUser();
+  await adjustQuantity(db, user.id, { setCode: "QQQQ-FR005", delta: 1 });
+  await adjustQuantity(db, user.id, { setCode: "QQQQ-FR005", delta: -1 });
+
+  assert.ok(
+    !(await codesReprisAuDemarrage()).includes("QQQQ-FR005"),
+    "plus personne ne la possède : il n'y a rien à identifier",
+  );
 });

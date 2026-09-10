@@ -13,9 +13,21 @@
  *   n'est pas une panne, c'est une absence : il faut la lire, pas la propager.
  */
 import { z } from "zod";
-import { withOutboundSlot } from "./outbound-rate.js";
+import { retryAfterMs, throttleOutbound, withOutboundSlot } from "./outbound-rate.js";
 
 const BASE = "https://db.ygoprodeck.com/api/v7";
+
+/**
+ * Le délai au bout duquel on renonce à attendre.
+ *
+ * `fetch` sans signal n'abandonne **jamais**. La file de résolution attend son
+ * appel, son verrou reste pris, et un seul appel qui pend suffit à figer toute
+ * identification jusqu'au redémarrage du processus. Le dump complet est le cas
+ * long — 22 s mesurées, 21 Mo — d'où deux budgets distincts plutôt qu'un seul,
+ * généreux pour tout le monde.
+ */
+const TIMEOUT_MS = 15_000;
+const DUMP_TIMEOUT_MS = 120_000;
 
 const CardSetSchema = z.object({
   set_name: z.string().nullish(),
@@ -65,11 +77,25 @@ const SetInfoSchema = z.object({
 
 export type YgoSetInfo = z.infer<typeof SetInfoSchema>;
 
-async function getJson(url: string): Promise<unknown | null> {
-  const response = await withOutboundSlot(() => fetch(url, { redirect: "follow" }));
+async function getJson(url: string, timeoutMs = TIMEOUT_MS): Promise<unknown | null> {
+  const response = await withOutboundSlot(() =>
+    fetch(url, { redirect: "follow", signal: AbortSignal.timeout(timeoutMs) }),
+  );
   if (response.status === 400) {
     // « No card matching your query » : une absence, pas une panne.
     return null;
+  }
+  /**
+   * Un 429 met **tout** le seau au pas, pas seulement cet appel.
+   *
+   * Le serveur ne dit pas « cette requête est de trop », il dit « vous parlez
+   * trop ». Continuer à plein débit pendant qu'on réessaie celle-ci vaut le
+   * blocage d'adresse d'une heure, pendant laquelle plus rien ne s'identifie.
+   */
+  if (response.status === 429) {
+    const delay = retryAfterMs(response.headers.get("Retry-After")) ?? 60_000;
+    throttleOutbound(delay);
+    throw new Error(`YGOPRODeck limite le débit (429), pause de ${Math.round(delay / 1000)} s`);
   }
   if (!response.ok) {
     throw new Error(`YGOPRODeck a répondu ${response.status} sur ${url}`);
@@ -109,7 +135,7 @@ export async function fetchCardById(
  */
 export async function fetchAllCards(language?: "fr"): Promise<YgoCard[]> {
   const lang = language ? `?language=${language}` : "";
-  const body = await getJson(`${BASE}/cardinfo.php${lang}`);
+  const body = await getJson(`${BASE}/cardinfo.php${lang}`, DUMP_TIMEOUT_MS);
   if (!body) return [];
   const parsed = z.object({ data: z.array(YgoCardSchema) }).safeParse(body);
   if (!parsed.success) {

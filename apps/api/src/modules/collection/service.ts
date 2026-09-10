@@ -418,6 +418,38 @@ export async function resolveStatus(
 }
 
 /**
+ * Remet en file tout ce qui attendait encore, au démarrage.
+ *
+ * Une ligne entre en collection immédiatement, en `pending`, et la file
+ * l'identifie ensuite. Si le processus s'arrête entre les deux — un
+ * redéploiement, un `docker compose down`, une coupure — la file meurt avec
+ * lui : elle ne vit qu'en mémoire. **Rien ne reprenait ce travail**, et la
+ * ligne restait « en attente d'identification » pour toujours, sans que rien
+ * ne le signale. Le commentaire de `resolve-queue.ts` promettait pourtant
+ * qu'elle serait « reprise au démarrage suivant ».
+ *
+ * Les codes déjà déclarés `unidentified` sont laissés où ils sont : on sait
+ * qu'ils n'existent pas, et les redemander à chaque démarrage saturerait pour
+ * rien l'API qu'on prend soin de ménager.
+ */
+export async function requeuePendingResolves(db: Database): Promise<number> {
+  const idx = printIndex(db);
+  const rows = await db
+    .selectDistinct({ userId: ownedCards.userId, setCode: ownedCards.setCode })
+    .from(ownedCards)
+    .innerJoin(idx, eq(ownedCards.printId, idx.printId))
+    .where(
+      and(
+        gt(ownedCards.quantity, 0),
+        eq(idx.resolveStatus, "pending"),
+      ),
+    );
+
+  for (const row of rows) enqueueResolve(row.userId, row.setCode);
+  return rows.length;
+}
+
+/**
  * Reprend une impression restée provisoire, et raccroche à la vraie édition les
  * lignes qui pointaient vers elle.
  *

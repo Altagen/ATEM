@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 import type { Database } from "../../db/client.js";
-import { forbidden, unauthorized } from "../../platform/errors.js";
+import { unauthorized } from "../../platform/errors.js";
 import { SESSION_COOKIE } from "./cookie.js";
 import { users } from "./schema.js";
 import { readToken } from "./token.js";
@@ -60,12 +60,5 @@ export function attachViewer(db: Database): MiddlewareHandler {
 /** Exige une session. À monter après `attachViewer`. */
 export const requireViewer: MiddlewareHandler = async (c, next) => {
   if (!c.get("viewer")) throw unauthorized();
-  await next();
-};
-
-export const requireAdmin: MiddlewareHandler = async (c, next) => {
-  const viewer = c.get("viewer");
-  if (!viewer) throw unauthorized();
-  if (viewer.role !== "admin") throw forbidden();
   await next();
 };
