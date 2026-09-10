@@ -26,7 +26,6 @@
  */
 import { lockScroll, unlockScroll } from "../../platform/scroll-lock.js";
 import { el, toast } from "../../platform/ui.js";
-import type { CollectionItem } from "./state.js";
 import {
   captureScanPhoto,
   ensureSetDictLoaded,
@@ -36,9 +35,28 @@ import {
   type OcrProgressStatus,
 } from "./ocr/engine.js";
 
+/**
+ * Ce que rend un « +1 » ou un « −1 », quel que soit ce qu'on inventorie.
+ *
+ * Le scanner ne connaît ni la collection ni les lots : il lit un code et
+ * rapporte le geste à qui le lui a demandé. C'est ce qui permet à la scanliste
+ * de le réutiliser sans une ligne de changement — et surtout, c'est ce qui rend
+ * son « −1 » incapable de toucher la collection. Il n'y a pas de chemin.
+ */
+export type ScanOutcome = {
+  setCode: string;
+  quantity: number;
+  /** Le nom de la carte, quand on le connaît — sinon c'est le code qui parle. */
+  label: string | null;
+  /** Une précision, quand l'issue en mérite une : « identification en cours ». */
+  hint?: string;
+};
+
 export type ScannerOptions = {
-  onConfirm: (setCode: string, delta: number) => Promise<CollectionItem>;
+  onConfirm: (setCode: string, delta: number) => Promise<ScanOutcome>;
   onClose: () => void;
+  /** Ce que compte le total annoncé : « en collection », « dans le lot ». */
+  tallyLabel: string;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -318,14 +336,15 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     plus.disabled = true;
     errorLine.textContent = "";
     try {
-      const item = await options.onConfirm(setCode, delta);
+      const outcome = await options.onConfirm(setCode, delta);
+      const nom = outcome.label ?? outcome.setCode;
       toast(
-        item.card
-          ? `${item.card.name} — ${item.quantity} ex.`
-          : `${item.setCode} enregistré, identification en cours.`,
+        outcome.hint
+          ? `${nom} — ${outcome.quantity} ex. · ${outcome.hint}`
+          : `${nom} — ${outcome.quantity} ex.`,
         "success",
       );
-      status.textContent = `${item.setCode} : ${item.quantity} en collection.`;
+      status.textContent = `${outcome.setCode} : ${outcome.quantity} ${options.tallyLabel}.`;
       // On enchaîne : c'est une pile qu'on inventorie, pas une carte. La caméra
       // reste ouverte et le champ se vide, prêt pour la suivante.
       codeInput.value = "";

@@ -9,6 +9,7 @@ import { knownUser, loadUser, setUser } from "./platform/session.js";
 import { el, toast } from "./platform/ui.js";
 import { authScreen } from "./screens/auth/screen.js";
 import { collectionScreen } from "./screens/collection/screen.js";
+import { scanlistScreen } from "./screens/scanlist/screen.js";
 
 register("/connexion", authScreen("login"));
 register("/inscription", authScreen("register"));
@@ -21,6 +22,10 @@ register("/inscription", authScreen("register"));
 register("/collection", collectionScreen, {
   requiresSession: true,
   nav: { label: "Collection", icon: "🗃️", group: "main" },
+});
+register("/scanlistes", scanlistScreen, {
+  requiresSession: true,
+  nav: { label: "Scanlistes", icon: "🗂️", group: "main" },
 });
 
 registerFallback((root) => {

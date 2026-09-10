@@ -12,3 +12,4 @@
 export * from "../modules/identity/schema.js";
 export * from "../modules/referential/schema.js";
 export * from "../modules/collection/schema.js";
+export * from "../modules/scanlist/schema.js";

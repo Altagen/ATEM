@@ -15,6 +15,13 @@
       "when": 1788912696205,
       "tag": "0001_cold_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789076224458,
+      "tag": "0002_messy_skrulls",
+      "breakpoints": true
     }
   ]
 }

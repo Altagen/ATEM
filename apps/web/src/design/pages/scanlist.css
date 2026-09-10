@@ -53,7 +53,6 @@
 .scan-actions .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .scan-trash { margin-left: auto; }
 .scan-note { margin: 0 0 1.25rem; font-size: 0.8rem; }
-.scan-page .admin-table th.is-right, .scan-page .admin-table td.is-right { text-align: right; }
 
 /* ── Cadre de visée ────────────────────────────────────────────────────────
  * Il ne fait rien — la maquette n'a pas de lecteur — mais il dit où regarder,
@@ -84,24 +83,62 @@
 .scan-draft-empty { padding: 0.5rem; font-size: 0.84rem; font-style: italic; }
 
 /**
- * L'aperçu du fichier, dans la modale d'export.
+ * Le lot en cours, encadré.
  *
- * À 22rem il repoussait le bouton de téléchargement sous le pli à toutes les
- * tailles d'écran : la modale défilait bien, mais on n'y voyait pas ce qu'on
- * était venu faire. Un aperçu sert à reconnaître un format, pas à relire tout
- * le fichier — huit lignes suffisent, et il défile pour le reste.
+ * Il se détache de la liste des lots enregistrés parce qu'il n'a pas le même
+ * statut : celui-ci n'existe que dans ce navigateur, et disparaîtra si l'on
+ * ferme l'onglet sans l'enregistrer. Le cadre le dit sans une phrase de plus.
  */
-.scan-export {
-  margin: 0 0 0.85rem;
-  padding: 0.9rem 1rem;
-  background: rgba(0, 0, 0, 0.4);
+.scan-draft-panel {
+  margin: 0 0 1.5rem;
+  padding: 1.1rem 1.15rem;
+  background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  font-family: ui-monospace, monospace;
-  font-size: 0.78rem;
-  line-height: 1.5;
-  color: var(--fg);
-  max-height: 11rem;
-  overflow: auto;
-  white-space: pre;
+  border-radius: 14px;
+}
+
+.scan-draft-panel .scan-actions:last-of-type {
+  margin-bottom: 0;
+}
+
+/*
+ * Le champ prend la place, les boutons gardent la leur — **sur une seule
+ * rangée**.
+ *
+ * À `14rem` de base, la rangée du code passait à la ligne dès qu'elle portait
+ * deux boutons : le scanner se retrouvait seul en dessous, détaché du champ
+ * qu'il remplit. Le champ se rétrécit plutôt que de les repousser.
+ */
+.scan-draft-panel .add-field {
+  flex: 1 1 6rem;
+  min-width: 0;
+}
+
+.scan-draft-panel .scan-actions {
+  flex-wrap: nowrap;
+}
+
+/* Les deux actions du lot, elles, ont le droit de se replier. */
+.scan-draft-panel .scan-actions:last-of-type {
+  flex-wrap: wrap;
+}
+
+/**
+ * Le compteur d'une ligne, et non celui de la page.
+ *
+ * Il portait `.scan-count`, qui est un paragraphe de bilan — avec sa marge
+ * basse de 1,25rem. Dans une rangée alignée au centre, cette marge poussait le
+ * « ×2 » au-dessus des boutons « − » et « + », comme un défaut d'alignement
+ * qu'on aurait cherché dans la grille.
+ */
+.scan-line-qty {
+  min-width: 2.2rem;
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Les actions du lot se détachent de sa dernière ligne. */
+.scan-draft-panel .scan-draft {
+  margin-bottom: 1rem;
 }

@@ -1,0 +1,35 @@
+/**
+ * Règles retirées de `design/pages/scanlist.css`.
+ *
+ * Rien ne les posait dans le balisage livré : elles habillaient des écrans
+ * qui n'existent pas encore ici (guildes, réglages, administration, accueil).
+ * Conservées telles quelles — quand leur écran arrive, elles remontent.
+ */
+
+
+.scan-page .admin-table th.is-right, .scan-page .admin-table td.is-right { text-align: right; }
+
+
+
+/**
+ * L'aperçu du fichier, dans la modale d'export.
+ *
+ * À 22rem il repoussait le bouton de téléchargement sous le pli à toutes les
+ * tailles d'écran : la modale défilait bien, mais on n'y voyait pas ce qu'on
+ * était venu faire. Un aperçu sert à reconnaître un format, pas à relire tout
+ * le fichier — huit lignes suffisent, et il défile pour le reste.
+ */
+.scan-export {
+  margin: 0 0 0.85rem;
+  padding: 0.9rem 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--fg);
+  max-height: 11rem;
+  overflow: auto;
+  white-space: pre;
+}

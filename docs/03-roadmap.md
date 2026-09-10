@@ -142,7 +142,35 @@ Trois défauts trouvés là, et nulle part ailleurs :
 Aucun ne se voyait à l'écran d'un ordinateur, et aucune barrière ne pouvait les
 signaler. C'est l'argument pour continuer à valider au doigt, écran par écran.
 
-**Reste à faire** — la scanliste (P1).
+### Scanlistes — livré le 2026-09-11
+
+Inventorier un lot sans le verser : un arrivage, un échange, une boîte à trier.
+
+**Le lot en cours ne quitte pas le navigateur.** C'est ce qui rend sa règle
+propre au lieu d'en faire un cas particulier : le « −1 » d'un lot décrémente sa
+ligne, plancher à zéro, et ne peut pas atteindre la collection — il n'existe
+aucun chemin. La ligne reste visible à zéro, pour montrer ce qu'on vient
+d'annuler ; elle est écartée à l'enregistrement.
+
+**Rien ne survit sans validation explicite** (décision d'Ange) : pas de
+`localStorage`, pas de demi-état qu'on retrouve trois jours plus tard sans
+savoir ce qu'il contient. Le brouillon traverse une navigation interne et meurt
+avec l'onglet.
+
+**Le nom n'attend jamais l'ajout.** La ligne entre avec son set code, que le
+navigateur tient déjà ; une résolution part en arrière-plan avec 2,5 s de délai.
+Si le nom arrive, il se pose ; sinon le code reste et dit l'essentiel.
+
+Le scanner est réutilisé **sans changement de logique** — il rapporte
+`{ setCode, quantity, label }` à qui l'a ouvert, au lieu de rendre un objet de
+collection.
+
+Trois défauts trouvés en construisant : `resetView()` remplaçait l'objet d'état
+que l'écran avait capturé (plus aucun bouton ne répondait) ; une repeinture
+asynchrone effaçait la saisie en cours quand un nom arrivait ; et le compteur
+d'une ligne portait le style du compteur de page, marge basse comprise.
+
+**Reste à faire** — rien pour M1.
 
 > Le prétraitement de l'image avant OCR est le vrai point dur de ce jalon, pas
 > `tesseract.js` lui-même. Ce que fait ATEM-old ici est probablement l'actif le plus

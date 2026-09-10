@@ -14,6 +14,7 @@ import { bodyLimit, csrfGuard, securityHeaders } from "./platform/security.js";
 import { attachViewer, identityRoutes } from "./modules/identity/index.js";
 import { referentialRoutes } from "./modules/referential/index.js";
 import { collectionRoutes } from "./modules/collection/index.js";
+import { scanlistRoutes } from "./modules/scanlist/index.js";
 
 export function createApp(db: Database) {
   const app = new Hono();
@@ -40,6 +41,7 @@ export function createApp(db: Database) {
   app.route("/auth", identityRoutes(db));
   app.route("/catalogue", referentialRoutes(db));
   app.route("/collection", collectionRoutes(db));
+  app.route("/scanlistes", scanlistRoutes(db));
 
   return app;
 }

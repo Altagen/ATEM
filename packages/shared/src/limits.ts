@@ -20,4 +20,5 @@ export const LIMITS = {
   quantity: { min: 0, max: 1000 },
   csvImport: { maxBytes: 5 * 1024 * 1024 },
   scanlist: { maxLines: 2000 },
+  scanlistName: { min: 1, max: 60 },
 } as const;

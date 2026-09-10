@@ -1102,13 +1102,6 @@
  * 1.5rem — pour un seul rôle, et trois façons d'écrire l'intitulé d'un champ.
  */
 
-/** Le titre d'une section de page. */
-.titre-section {
-  margin: 0 0 0.35rem;
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: var(--fg-fort);
-}
 
 
 /** Souligné d'un filet, quand la section ouvre un panneau encadré. */

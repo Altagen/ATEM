@@ -339,10 +339,16 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
       // mégaoctets, et la plupart des visites n'ouvrent jamais la caméra.
       const { openScanner } = await import("./scanner.js");
       await openScanner({
+        tallyLabel: "en collection",
         onConfirm: async (setCode, delta) => {
           const item = await adjust(setCode, delta);
           if (!item) throw new Error("L'enregistrement a échoué.");
-          return item;
+          return {
+            setCode: item.setCode,
+            quantity: item.quantity,
+            label: item.card?.name ?? null,
+            hint: item.card ? undefined : "identification en cours",
+          };
         },
         onClose: () => {
           void Promise.all([load(true), refreshPending(), loadFacets()]);
