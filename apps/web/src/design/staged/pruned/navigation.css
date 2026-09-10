@@ -1,0 +1,32 @@
+/**
+ * Règles retirées de `design/navigation.css`.
+ *
+ * Rien ne les posait dans le balisage livré : elles habillaient des écrans
+ * qui n'existent pas encore ici (guildes, réglages, administration, accueil).
+ * Conservées telles quelles — quand leur écran arrive, elles remontent.
+ */
+
+
+
+.account-sheet-value { margin-left: auto; font-size: 0.82rem; }
+
+
+
+.account-sheet-count {
+  margin-left: auto;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+
+
+.account-sheet-count + .account-sheet-chev { margin-left: 0.5rem; }

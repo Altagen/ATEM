@@ -1,0 +1,23 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+data/
+media/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Le moteur OCR : sept mégaoctets de binaires, téléchargés et vérifiés par
+# empreinte au build (scripts/vendor-tesseract.sh). Le dépôt garde l'empreinte,
+# pas le binaire.
+apps/web/public/tesseract/
+
+# Playwright
+test-results/
+playwright-report/
+e2e/shots/
+
+# Certificat de développement, propre à chaque machine.
+apps/web/.certs/

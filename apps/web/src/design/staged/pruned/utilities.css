@@ -1,0 +1,10 @@
+/**
+ * Règles retirées de `design/utilities.css`.
+ *
+ * Rien ne les posait dans le balisage livré : elles habillaient des écrans
+ * qui n'existent pas encore ici (guildes, réglages, administration, accueil).
+ * Conservées telles quelles — quand leur écran arrive, elles remontent.
+ */
+
+
+.u-gap-2          { gap: 0.5rem; }

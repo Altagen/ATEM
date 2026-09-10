@@ -1,0 +1,1987 @@
+/*
+ * Les règles de « app-dialog » ont vécu ici : la boîte de confirmation que la
+ * Collection rendait sans jamais l'ouvrir, et celle des decks. Les deux sont
+ * parties le 8 septembre 2026, quand les trois mécanismes de confirmation de
+ * l'application ont été ramenés à un seul — components/confirm-modal.ts, qui
+ * sait désormais demander un mot à recopier. Le contrôle du CSS mort a nommé
+ * ces règles le jour même.
+ */
+/* Collection page — clean focus layout (UX.md) */
+
+.app-body {
+  min-height: 100vh;
+}
+
+/* —— App bar —— */
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  backdrop-filter: blur(10px);
+}
+
+.app-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.brand:hover {
+  color: var(--accent);
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.15rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+}
+
+.nav-link:hover {
+  color: var(--fg);
+}
+
+.nav-link.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.app-bar-right {
+  position: relative;
+}
+
+/* —— Icon buttons —— */
+.icon-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  font: inherit;
+}
+
+.icon-btn:hover {
+  color: var(--fg);
+  background: var(--input);
+  border-color: var(--border);
+}
+
+.icon-btn.is-active,
+.icon-btn[aria-pressed="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+/* CSS icons (no font pack) */.i-list,
+.i-grid,
+.i-more,
+.chevron{
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  position: relative;
+}
+
+.i-list::before {
+  content: "";
+  position: absolute;
+  inset: 0.15rem 0;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  box-shadow: 0 0.28rem 0 currentColor;
+  height: 0.2rem;
+}
+
+.i-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0.1rem;
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 40% 40%,
+    linear-gradient(currentColor, currentColor) 100% 0 / 40% 40%,
+    linear-gradient(currentColor, currentColor) 0 100% / 40% 40%,
+    linear-gradient(currentColor, currentColor) 100% 100% / 40% 40%;
+  background-repeat: no-repeat;
+}
+
+.i-more::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.22rem;
+  height: 0.22rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 -0.35rem 0 currentColor, 0 0.35rem 0 currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.chevron::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(-50%, -50%) rotate(45deg);
+  transition: transform 0.15s ease, top 0.15s ease;
+}
+
+.add-chevron[aria-expanded="true"] .chevron::before {
+  top: 58%;
+  transform: translate(-50%, -50%) rotate(225deg);
+}
+
+/* [hidden] must win over display:flex on menus / panels */
+[hidden] {
+  display: none !important;
+}
+
+.menu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 0.35rem 0.5rem;
+}
+
+.menu-field select {
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  color: var(--fg);
+  padding: 0.35rem;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+/* —— Page —— */
+.collection-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-sizing: border-box;
+  padding-inline: 1rem;
+}
+
+/* Search + add rail — sticky only when user pins it */
+.pin-rail {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.75rem 1.25rem 0.65rem;
+  margin: 0;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  box-shadow: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.pin-rail[data-pinned="true"] {
+  position: sticky;
+  top: 3.25rem; /* under app-bar */
+  z-index: 35;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom-color: var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 520px) {
+  .pin-rail {
+    padding: 0.55rem 0.85rem 0.55rem;
+    gap: 0.5rem;
+  }
+
+  .pin-rail[data-pinned="true"] {
+    top: 3.1rem;
+  }
+}
+
+/* Pin control — stronger active state, clearer icon */
+#btn-pin {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid transparent;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+#btn-pin:not(.is-active) {
+  color: var(--muted);
+  opacity: 0.9;
+}
+
+#btn-pin:not(.is-active):hover {
+  color: var(--fg);
+  opacity: 1;
+  border-color: var(--border);
+  background: var(--input);
+}
+
+#btn-pin.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent),
+    0 2px 10px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+#btn-pin.is-active:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent);
+}
+
+/* Classic pushpin silhouette (CSS) */
+.i-pin {
+  display: block;
+  width: 1.05rem;
+  height: 1.15rem;
+  position: relative;
+}
+
+/* head */
+.i-pin::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 0.72rem;
+  height: 0.72rem;
+  border: 2px solid currentColor;
+  border-radius: 50% 50% 45% 45%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* needle */
+.i-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0.62rem;
+  width: 0;
+  height: 0;
+  border-left: 0.2rem solid transparent;
+  border-right: 0.2rem solid transparent;
+  border-top: 0.48rem solid currentColor;
+  transform: translateX(-50%);
+}
+
+#btn-pin.is-active .i-pin::before {
+  background: color-mix(in srgb, currentColor 28%, transparent);
+}
+
+/* Tools bar */.tools-bar {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search {
+  flex: 1;
+  min-width: 12rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+}
+
+.search-icon {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.search input {
+  flex: 1;
+  /*
+   * Un `<input>` a une largeur intrinsèque d'une vingtaine de caractères, que
+   * `flex: 1` ne fait pas céder : sans `min-width: 0`, il débordait de son
+   * étiquette. Mesuré à 390 px : la bulle s'arrêtait à 188, le champ allait à
+   * 218 — trente pixels dehors, par-dessus la bascule d'affichage.
+   *
+   * La règle vient de `design/styles/components.css`, qui la porte avec le
+   * même constat. Elle n'avait jamais été portée : mon relevé de la veille ne
+   * comparait que les blocs `@media`, et celle-ci est une règle de base.
+   */
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.35rem 0;
+  outline: none;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* Add bar — unified field (input + chevron inside) · + outside */
+.add-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  max-width: 32rem;
+}
+
+.add-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.add-field:focus-within {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.add-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.7rem 0.25rem 0.7rem 1.1rem;
+  outline: none;
+}
+
+.add-chevron {
+  appearance: none;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0.12rem 0.18rem 0.12rem 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.add-chevron:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.add-chevron[aria-expanded="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.btn-add {
+  appearance: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #061018;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.btn-add:hover {
+  filter: brightness(1.08);
+}
+
+.btn-scan {
+  appearance: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.btn-scan:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--card));
+}
+
+.i-scan {
+  width: 1.2rem;
+  height: 1.2rem;
+  display: block;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2'/%3E%3Cpath d='M17 3h2a2 2 0 0 1 2 2v2'/%3E%3Cpath d='M21 17v2a2 2 0 0 1-2 2h-2'/%3E%3Cpath d='M7 21H5a2 2 0 0 1-2-2v-2'/%3E%3Crect x='7' y='7' width='10' height='10' rx='1'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2'/%3E%3Cpath d='M17 3h2a2 2 0 0 1 2 2v2'/%3E%3Cpath d='M21 17v2a2 2 0 0 1-2 2h-2'/%3E%3Cpath d='M7 21H5a2 2 0 0 1-2-2v-2'/%3E%3Crect x='7' y='7' width='10' height='10' rx='1'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.add-advanced {
+  display: none;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 28rem;
+  padding: 0.2rem 2.9rem 0 0.1rem;
+  align-items: flex-end;
+}
+
+.add-advanced.is-open {
+  display: flex;
+}
+
+.add-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.add-select-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-left: 0.65rem;
+}
+
+.add-advanced select,
+.add-advanced input {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.85rem;
+  width: 100%;
+  min-height: 2.35rem;
+}
+
+.add-advanced select {
+  cursor: pointer;
+  padding-right: 1.5rem;
+}
+
+.add-advanced select:focus,
+.add-advanced input:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+}
+
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  min-height: 1.25rem;
+}
+
+/* Content scrolls under pin-rail */
+.content {
+  flex: 1;
+  min-height: 50vh;
+  padding: 0.85rem 1.25rem 0;
+}
+
+/* List */
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0;
+}
+
+.item:first-child {
+  padding-top: 0.25rem;
+}
+
+.item-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.item-main {
+  flex: 1;
+  display: flex;
+  gap: 0.85rem;
+  min-width: 0;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+}
+
+.item-main:hover strong {
+  color: var(--accent);
+}
+
+.item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.item-text strong {
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.item-text code {
+  font-size: 0.78rem;
+  color: var(--accent);
+  width: fit-content;
+}
+
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.7rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.stats-line {
+  font-size: 0.78rem;
+}
+
+.ok-tag {
+  color: var(--ok);
+  font-size: 0.72rem;
+}
+
+.warn {
+  color: var(--err);
+  font-size: 0.72rem;
+}
+
+.thumb {
+  width: 52px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--input);
+  background-image: url("../assets/cards/back.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.thumb-empty {
+  width: 52px;
+  height: 76px;
+  border-radius: 0.3rem;
+  border: 1px dashed var(--border);
+  background: var(--input);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.btn-qty {
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btn-qty:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+.btn-qty-danger:hover {
+  border-color: color-mix(in srgb, var(--err) 50%, var(--border));
+  color: var(--err);
+}
+
+/* Gallery */
+.gallery {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.gallery[data-cols="2"] {
+  grid-template-columns: repeat(2, 1fr);
+}
+.gallery[data-cols="3"] {
+  grid-template-columns: repeat(3, 1fr);
+}
+.gallery[data-cols="4"] {
+  grid-template-columns: repeat(4, 1fr);
+}
+.gallery[data-cols="5"] {
+  grid-template-columns: repeat(5, 1fr);
+}
+.gallery[data-cols="6"] {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+@media (max-width: 480px) {
+  .gallery[data-cols="3"],
+  .gallery[data-cols="4"],
+  .gallery[data-cols="5"],
+  .gallery[data-cols="6"] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .app-nav .nav-link:not(.is-active) {
+    display: none;
+  }
+}
+
+.tile {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 0.55rem;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+.tile:hover {
+  border-color: var(--accent-dim);
+  transform: translateY(-1px);
+}
+
+.tile-art {
+  position: relative;
+  aspect-ratio: var(--art-ratio);
+  background: #05070a;
+  overflow: hidden;
+}
+
+.tile-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background-image: url("../assets/cards/back.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.tile-art-empty {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 1.5rem;
+}
+
+.tile-qty {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+/**
+ * L'étoile de favori, sur la vignette.
+ *
+ * Même pastille que la quantité, dans le coin opposé, et l'or de `.fav-tag` :
+ * c'est la même information, elle a la même couleur. Posée à nu, elle se lisait
+ * par-dessus le nom imprimé sur la carte et en mangeait la première lettre.
+ */
+
+.tile-body {
+  padding: 0.55rem 0.6rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.tile-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tile-body code {
+  font-size: 0.68rem;
+  color: var(--accent);
+}.tile-star {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  line-height: 1;
+  font-size: 0.8rem;
+  color: var(--gold, var(--gold));
+  gap: 0.2rem;
+}
+
+/*
+ * L'intertitre de groupe, enfin posé.
+ *
+ * Cette règle était habillée et jamais employée : la case « Grouper par
+ * monstre » se souvenait de son état et ne changeait rien à l'écran.
+ */
+.group-header {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0 0.4rem;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-block-start: var(--space-1);
+}
+
+/* Drawer */
+
+
+.inspect-art-empty {
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto 1rem;
+  aspect-ratio: var(--art-ratio);
+  border-radius: 0.4rem;
+  border: 1px dashed var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.detail-grid dt {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-grid dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--fg);
+}
+
+.effect h3 {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.effect p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+/* —— App dialog (themed confirm / alert — never window.confirm) —— */
+
+/* Toast / lightbox / utils */
+
+/* Destructive action: 5s undo window */
+
+@keyframes toast-undo-shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* —— Inspect view: full-viewport ZOOM (not a small modal) —— */
+.inspect-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(4, 8, 14, 0.78);
+  backdrop-filter: blur(14px) saturate(0.85);
+  -webkit-backdrop-filter: blur(14px) saturate(0.85);
+}
+
+.inspect-panel {
+  position: fixed;
+  z-index: var(--z-modal-panel);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* wide stage so the card can grow */
+  padding: 1.5rem 2.5rem;
+  pointer-events: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.inspect-panel > * {
+  pointer-events: auto;
+}
+
+.inspect-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  width: 2.4rem;
+  height: 2.4rem;
+  background: rgba(20, 28, 40, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f2f5fa;
+}
+
+.inspect-close:hover {
+  background: rgba(40, 55, 75, 0.9);
+}
+
+.inspect-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  /* almost full viewport — not a 1100px modal shell */
+  width: min(1680px, 100%);
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  --inspect-part-fiche: 0.55;
+  --inspect-gap: clamp(1.25rem, 3.5cqw, 3.25rem);
+  --inspect-h: min( 94vh, calc((100cqw - var(--inspect-gap) - 0.75rem) / 1.236) );
+  --inspect-fiche: calc(var(--inspect-h) * var(--inspect-part-fiche));
+  font-size: clamp(0.8rem, calc(var(--inspect-h) / 62), 1.35rem);
+}
+
+.inspect-art-col {
+  flex: 1 1 58%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-height: 100%;
+}
+
+.inspect-art {
+  /* height-driven zoom: fill most of the screen */
+  max-height: min(94vh, 1100px);
+  /* allow wide cards when viewport allows (ratio ~0.69) */
+  max-width: min(62vw, 720px);
+  width: auto;
+  height: auto;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(0, 0, 0, 0.4);
+  object-fit: contain;
+  background: transparent;
+  aspect-ratio: 59 / 86;
+  background-image: url("../assets/cards/back.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Info lives on the blur layer — no floating “dialog card” */
+.inspect-info-col {
+  flex: 0 1 32rem;
+  width: min(100%, 36rem);
+  max-width: 38rem;
+  max-height: min(94vh, 1100px);
+  overflow: auto;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.35rem 0.35rem 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: #eef2f8;
+  scrollbar-gutter: stable;
+}
+
+.inspect-info-head h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 2.6vw, 2.15rem);
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+
+.inspect-sub {
+  margin: 0.45rem 0 0;
+  font-size: 1.15rem;
+  color: rgba(220, 228, 240, 0.78) !important;
+}
+
+.inspect-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.inspect-actions .btn {
+  font-size: 0.95rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.inspect-info-body {
+  font-size: 1.15rem;
+  line-height: 1.55;
+}
+
+.inspect-info-body .detail-grid {
+  font-size: 1.15rem;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1.15rem;
+}
+
+.inspect-info-body .detail-grid dt {
+  font-size: 0.88rem;
+  color: rgba(200, 210, 225, 0.65);
+  letter-spacing: 0.04em;
+}
+
+.inspect-info-body .detail-grid dd {
+  margin-top: 0.25rem;
+  font-size: 1.12rem;
+  color: #f4f7fb;
+}
+
+.inspect-info-body .effect h3 {
+  font-size: 1rem;
+  margin-top: 1.15rem;
+  margin-bottom: 0.4rem;
+  color: rgba(200, 210, 225, 0.75);
+}
+
+.inspect-info-body .effect p {
+  font-size: 1.12rem;
+  line-height: 1.55;
+  color: rgba(235, 240, 248, 0.95);
+}
+
+.inspect-info-body .muted {
+  color: rgba(190, 200, 215, 0.7) !important;
+}
+
+/* Very wide screens: even bigger art + roomier info */
+@media (min-width: 1400px) {
+  .inspect-art {
+    max-width: min(58vw, 780px);
+    max-height: min(95vh, 1200px);
+  }
+
+  .inspect-info-col {
+    flex-basis: 36rem;
+    max-width: 40rem;
+  }
+
+  .inspect-info-head h2 {
+    font-size: 2.25rem;
+  }
+
+  .inspect-info-body {
+    font-size: 1.2rem;
+  }
+
+  .inspect-info-body .detail-grid dd,
+  .inspect-info-body .effect p {
+    font-size: 1.18rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .inspect-panel {
+    padding: 0.75rem 1rem 1.25rem;
+    align-items: flex-start;
+    overflow: auto;
+    pointer-events: auto;
+  }
+
+  .inspect-layout {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 1.15rem;
+  }
+
+  .inspect-art-col {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .inspect-art {
+    max-width: min(94vw, 400px);
+    max-height: min(52vh, 520px);
+  }
+
+  .inspect-info-col {
+    width: 100%;
+    max-width: min(94vw, 36rem);
+    max-height: none;
+    padding: 0 0.25rem 1rem;
+  }
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* —— Filter panel (wide modal) —— */
+.filter-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: var(--z-modal);
+}
+
+.filter-panel {
+  position: fixed;
+  z-index: var(--z-modal-panel);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(920px, calc(100vw - 1.5rem));
+  max-height: min(88vh, 820px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  /* La hauteur était bornée, mais rien ne défilait : le contenu passait
+     simplement par-dessus le bord. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.filter-panel[hidden] {
+  display: none !important;
+}
+
+.filter-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.filter-panel-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.filter-panel-body {
+  overflow: auto;
+  padding: 0.85rem 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.filter-panel-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--input) 50%, var(--card));
+}
+
+.filter-foot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+/* Race filter chips */
+.chip-row-races {
+  max-height: 9.5rem;
+  overflow: auto;
+}
+
+.chip-race img {
+  width: 1.05rem;
+  height: 1.05rem;
+  object-fit: contain;
+  border-radius: 0.15rem;
+  filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.3));
+}
+
+/* —— Scan modal —— */
+/*
+ * La modale de scan — et les deux raisons pour lesquelles elle ne marchait pas.
+ *
+ * **Elle passait sous la barre de navigation mobile.** `z-index: 113` et
+ * `112` étaient écrits en clair, hors de l'échelle nommée de `tokens.css`.
+ * La barre du bas est à `--z-header` (300), avec `!important` : elle passait
+ * donc devant la modale, et recouvrait exactement la rangée des boutons de
+ * prise de vue. On ne pouvait plus déclencher la photo sur téléphone. C'est
+ * précisément ce que l'échelle nommée existe pour empêcher, et le seul écran
+ * qui ne s'en servait pas est le seul qui avait le problème.
+ *
+ * **Vingt et une de ses classes n'avaient aucune règle.** Le balisage les
+ * posait — viseur, bande de visée, barre de déclenchement, puces de
+ * suggestion — et rien ne les habillait. Un `<video>` sans règle prend sa
+ * taille intrinsèque, celle du flux de la caméra : d'où le débordement et la
+ * barre de défilement horizontale. `check-classes-habillees.mjs` les
+ * signalait toutes ; c'est le plafond du cliquet, posé sur le nombre mesuré,
+ * qui les absorbait. Une classe posée sans règle n'est pas une dette
+ * cosmétique, c'est un écran qui ne fonctionne pas.
+ */
+.scan-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: color-mix(in srgb, var(--ombre) 55%, transparent);
+}
+
+.scan-modal {
+  position: fixed;
+  z-index: var(--z-modal-panel);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(26rem, calc(100vw - 1.5rem));
+  max-height: min(90vh, 42rem);
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.scan-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.95rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: inherit;
+  z-index: 1;
+}
+
+.scan-modal-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.scan-modal-body {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+@keyframes scan-sweep {
+  0% {
+    top: 12%;
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 88%;
+    opacity: 0.3;
+  }
+}
+
+/* —— Import CSV modal —— */
+
+/* Settings — danger + history */
+
+.btn-danger {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--err, #e55) 55%, var(--border));
+  background: color-mix(in srgb, var(--err, #e55) 18%, transparent);
+  color: color-mix(in srgb, var(--err, #f88) 90%, var(--fg));
+  border-radius: var(--radius-sm, 0.35rem);
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--err, #e55) 30%, transparent);
+}
+
+.filter-block-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.filter-row .grow {
+  flex: 1;
+  min-width: 10rem;
+}
+
+/* Chips */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--input);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  line-height: 1.2;
+  transition: border-color 0.1s ease, background 0.1s ease, color 0.1s ease;
+}
+
+.chip:hover {
+  border-color: var(--accent-dim);
+}
+
+.chip.is-active {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.chip-level {
+  min-width: 2.6rem;
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* Shared YGO icon images (attr, level, rank, ST props) */
+.ygo-ico {
+  width: 1.15rem;
+  height: 1.15rem;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+.meta-bit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.meta-bit + .meta-bit::before {
+  content: "·";
+  margin: 0 0.35rem;
+  opacity: 0.45;
+  font-weight: 600;
+}
+
+.stats-line-rich {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0;
+  line-height: 1.35;
+}
+
+/* Frame color dots (YGO card frames) */
+
+@media (max-width: 600px) {
+  .filter-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 0.85rem 0.85rem 0 0;
+  }
+}
+
+/* Help control — explicit pill, not a tiny hard-to-spot circle */
+.help-q {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.65rem;
+  min-height: 1.65rem;
+  padding: 0 0.55rem 0 0.3rem;
+  margin: 0;
+  border-radius: 999px;
+  border: 1.5px solid #5ec8ff;
+  background: #1a3a55;
+  color: #e8f6ff;
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: none !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Hand trap — no official card-corner icon in API */
+
+@media (max-width: 850px) {
+  /* Le bandeau se resserre : 0.75rem/1.25rem de marge intérieure sur un
+     téléphone, c'est vingt pixels pris aux cartes. Valeurs de la maquette. */
+  .pin-rail {
+    padding: 0.5rem 0.85rem;
+    gap: 0.4rem;
+  }
+
+  /*
+   * Le décalage de cinquante pixels en haut de page, et d'où il venait.
+   *
+   * Le bandeau est `sticky` avec `top: 3.25rem` — la hauteur de la barre du
+   * haut, sous laquelle il doit se caler sur grand écran. Mais un élément
+   * collant ne descend pas seulement quand on défile : il est *contraint* de
+   * rester à cette distance du haut, y compris au repos. Premier enfant de la
+   * page, sa position naturelle est zéro, donc il est repoussé à 49,6 px et
+   * laisse un vide au-dessus de lui.
+   *
+   * Sur téléphone la barre du haut n'existe pas — `display: none` — et il n'y a
+   * donc rien sous quoi se glisser. La maquette pose `top: 0` ici depuis le
+   * début ; c'est la ligne que je n'avais pas portée avec les autres.
+   */
+  .pin-rail[data-pinned="true"] { top: 0; }
+
+  /* Le libellé « Scanlistes » cède la place à sa seule icône : le `title` du
+     lien la nomme, et la rangée gagne 90px. Le libellé est masqué dans le
+     balisage plutôt que par `font-size: 0`, qui avalait aussi l'emoji. */
+  .scanlist-link-label { display: none; }
+  .scanlist-link { padding-inline: 0.7rem; }
+
+  /*
+   * La rangée d'outils, portée de la maquette — qui l'avait déjà réglée.
+   *
+   * `apps/web` laissait `flex-wrap: wrap` et un `min-width: 12rem` sur la
+   * recherche : 389px de largeur demandée pour 363 disponibles sur un téléphone
+   * de 390. Le « ⋮ » et le lien des scanlistes passaient donc à une deuxième
+   * rangée presque vide — quarante pixels de hauteur pour deux cibles. Ange :
+   * « ça prend beaucoup de pixels en hauteur pour rien dans la barre ».
+   *
+   * `design/styles/pages/collection.css` porte ces règles depuis le début.
+   * Elles n'avaient jamais été portées ici. Le `min-width: 0` est la moitié
+   * qu'on oublie : sans elle, un élément flexible refuse de descendre sous la
+   * largeur de son contenu, et la rangée se casse quand même.
+   */
+  .pin-rail .tools-bar { flex-wrap: nowrap; gap: 0.35rem; }
+  .pin-rail .search { flex: 1 1 auto; min-width: 0; }
+  /* C'est le champ qui porte la hauteur de la cible, non son étiquette :
+     mesuré, un clic sur le bord bas de l'étiquette ne donnait pas le focus. */
+  .pin-rail .search { padding-block: 0; }
+  .pin-rail .search input { font-size: 0.85rem; min-height: 40px; padding-block: 0; }
+
+  /* Épingler n'a pas de sens ici : le bandeau suit toujours le défilement, et
+     le bouton coûtait une cible de plus dans une rangée déjà pleine. Mesuré à
+     320px, les quatre autres contrôles ne laissaient que 64 pixels au champ de
+     recherche — quatre lettres. */
+  [data-pin] { display: none; }
+
+  .add-bar { gap: 0.35rem; }
+  .add-bar .add-input { font-size: 0.85rem; min-height: 36px; }
+}
+
+/* ── Autres éditions ──────────────────────────────────────────────────────
+ *
+ * Une ligne par édition connue, l'édition possédée marquée. La question à
+ * laquelle ce bloc répond se pose la carte à la main : « celle-ci, je l'ai
+ * déjà ? » — d'où le compte à droite, et le tiret à sa place quand la réponse
+ * est non. Une case vide se lirait comme une donnée manquante.
+ */
+.editions h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+/* La rareté et la langue sont des repères, pas le sujet : elles ne prennent
+ * que la place qu'il leur faut et ne s'alignent pas sur une grille. */
+.edition-rarity,
+.edition-lang {
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  /* Sur un téléphone, l'extension et la langue disparaissent : le code et la
+   * rareté suffisent à reconnaître la carte qu'on tient. */
+  .edition-row {
+    grid-template-columns: auto 1fr auto;
+  }
+}
+
+/* ── La boussole des marqueurs de Lien ────────────────────────────────────
+ *
+ * Trois par trois, comme sur la carte : les huit directions autour, le rang au
+ * centre. Les flèches éteintes restent visibles — c'est leur absence qui porte
+ * l'information autant que leur présence, et une grille à trous se lirait mal.
+ */
+.link-compass-block h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+.link-compass {
+  display: grid;
+  grid-template-columns: repeat(3, 1.6rem);
+  grid-template-rows: repeat(3, 1.6rem);
+  gap: 2px;
+  justify-content: start;
+}
+
+.link-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  /* Éteinte, la flèche s'efface sans disparaître : c'est la comparaison avec
+   * les allumées qui renseigne. */
+  opacity: 0.35;
+}
+
+.link-arrow.is-on {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  opacity: 1;
+}
+
+.link-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-sm);
+  background: var(--input);
+}
+
+/* En galerie, l'intertitre traverse la grille entière — sans quoi il
+ * occuperait une case et se lirait comme une carte. */
+.group-header-gallery {
+  grid-column: 1 / -1;
+}
+
+/* ══ Règles portées de la maquette — 3 septembre 2026 ══════════════════════
+ *
+ * Le portage de la veille ne comparait que les blocs `@media` : toute la
+ * moitié « de base » était restée dehors. Trente et un sélecteurs manquaient,
+ * et quatre-vingt-onze règles existantes étaient incomplètes — celles-là ont
+ * été complétées sur place, une seconde déclaration les aurait fait diverger.
+ */
+
+.deck-detail-actions .icon-btn {
+  width: 2.4rem;
+  height: 2.4rem;
+  font-size: 1.05rem;
+}
+
+.effect {
+  margin: 0 0 1.1em;
+}
+
+.inspect-panel .inspect-sub {
+  font-size: 0.85em;
+}
+
+/* ── Autres éditions d'une carte ──────────────────────────────────────── */
+
+.editions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.edition-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+}
+
+.edition-row.is-owned {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.edition-code {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le nom de l'extension cède la place en premier : c'est la seule colonne
+ * dont on peut se passer pour reconnaître une édition. */
+.edition-set {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edition-owned {
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.edition-missing {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Icônes et blocs de filtre ─────────────────────────────────────────── */
+
+/* disc matches attr badge; star almost fills disc */
+.tile-star .star-badge {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.tile-star .star-badge img {
+  width: 0.88rem;
+  height: 0.88rem;
+}
+
+.inspect-info-body .meta-ico {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.inspect-info-body .meta-ico.star-badge {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.inspect-info-body .meta-ico.star-badge img {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.filter-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+}
+
+.attr-ico-img {
+  border-radius: 50%;
+  /* soft ring so icons read on dark UI */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+/* Level / Rank: disc = same size as attr icons (1.15rem); star fills most of the disc */
+.star-badge {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.star-badge img {
+  /* large star inside fixed disc — almost edge-to-edge */
+  width: 0.95rem;
+  height: 0.95rem;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.35));
+}
+
+.star-badge-level {
+  background: radial-gradient(circle at 35% 30%, #ff6b6b, #c62828 55%, #7f1010);
+}
+
+.star-badge-rank {
+  background: radial-gradient(circle at 35% 30%, #3a3a3a, #141414 60%, #000);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.chip-level.is-active .star-badge-level {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 0 6px color-mix(in srgb, #e53935 40%, transparent);
+}
+
+/* Icônes en ligne des métadonnées — même diamètre que celles d'attribut. */
+.meta-ico.star-badge {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.15rem;
+  vertical-align: -0.2em;
+  display: inline-grid;
+}
+
+.meta-ico.star-badge img {
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
+.chip-attr.is-active .attr-ico-img {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
+    0 0 6px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Icônes en ligne des statistiques de la liste. */
+.meta-ico {
+  width: 1rem;
+  height: 1rem;
+  object-fit: contain;
+  vertical-align: -0.18em;
+  margin-right: 0.2rem;
+  display: inline-block;
+}
+
+.meta-ico.race {
+  /* YGOPRODeck race icons — often dark; slight lift on dark UI */
+  filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.35));
+  border-radius: 0.15rem;
+}
+
+.meta-ico.attr {
+  border-radius: 50%;
+  width: 1rem;
+  height: 1rem;
+}
+
+.help-q-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: #5ec8ff;
+  color: #0a1620;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.help-q-text {
+  text-transform: none;
+  font-weight: 700;
+}
+
+.help-q:hover,
+.help-q:focus-visible {
+  border-color: #9adbff;
+  background: #24506f;
+  color: #fff;
+  outline: 2px solid #5ec8ff;
+  outline-offset: 2px;
+}
+
+/* ensure filter head doesn't clip the pill */.filter-block-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.45rem;
+  flex-wrap: wrap;
+}
+
+/* Real YGO spell/trap property icons (local copy of YGOPRODeck icons) */
+.st-ico-img {
+  /* inherits .ygo-ico when both classes present */
+  width: 1.15rem;
+  height: 1.15rem;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+  filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.35));
+}
+
+.chip-st.is-active .st-ico-img {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 60%, transparent));
+}
+
+/* ── Champs avancés, réglages et note d'exemplaire ─────────────────────── */
+
+.menu-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--fg);
+  padding: 0.45rem 0.5rem;
+  cursor: pointer;
+}
+
+.add-select-wrap:not(.add-select-passcode) {
+  flex: 0 1 auto;
+}
+
+.add-select-passcode {
+  flex: 1 1 7rem;
+  min-width: 6.5rem;
+}
+
+.inspect-notes {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.inspect-notes input {
+  flex: 1;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  padding: 0.4rem 0.55rem;
+  font: inherit;
+  min-width: 0;
+  font-size: 0.9em;
+}
+
+.inspect-info-body .inspect-notes {
+  margin-top: 1rem;
+  gap: 0.5rem;
+}
+
+.inspect-info-body .inspect-notes input {
+  background: rgba(12, 18, 28, 0.55);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f2f5fa;
+  font-size: 1.05rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.inspect-info-body .inspect-notes .btn {
+  font-size: 0.95rem;
+  padding: 0.45rem 0.85rem;
+}
+
+.inspect-notes input:focus {
+  outline: none;
+  border-style: solid;
+  border-color: var(--gold);
+}
+
+/* ── Densité compacte ──────────────────────────────────────────────────── */
+
+/*
+ * Posée sur `<body>` : ces règles la cherchent là, et les déplacer demanderait
+ * de toutes les réécrire pour un gain nul.
+ */
+
+/* Density */
+body.density-compact .item {
+  padding: 0.4rem 0;
+}
+
+body.density-compact .stats-line {
+  display: none;
+}
+
+body.density-compact .thumb {
+  width: 40px;
+  height: 58px;
+}
+
+body.density-compact .gallery {
+  gap: 0.65rem;
+}

@@ -1,0 +1,229 @@
+/**
+ * La coquille de navigation.
+ *
+ * Trois surfaces pour un seul état : la barre du haut sur écran large, la barre
+ * du bas sur téléphone qui la remplace **entièrement**, et la feuille de compte
+ * que la seconde ouvre.
+ *
+ * Remplacer plutôt qu'adapter est le choix d'ATEM-old, et il tient : sur
+ * téléphone, la barre du haut ne gardait que la marque, l'état du service et
+ * l'avatar — cinq cibles dans une bande de 62 px, pour des réglages qu'on ne
+ * visite pas en boucle. Le pouce, lui, est en bas de l'écran.
+ *
+ * Les règles de la pastille d'état et de la feuille de compte viennent de
+ * `shared-nav.css` d'ATEM-old. Celles de la barre du bas y étaient injectées
+ * dans une balise `<style>`, chaque déclaration marquée `!important` — non par
+ * choix, mais parce qu'une feuille injectée doit l'emporter sur celles déjà
+ * chargées. Écrites ici, elles n'en ont plus besoin.
+ */
+
+.api-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.api-pill.api-ok {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+  border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+}
+
+/* Et le pendant rouge, qui n'existait pas : le voyant ne pouvait pas être
+ * autre chose que vert, donc cette règle n'avait pas de raison d'être. */
+.api-pill.api-err {
+  background: color-mix(in srgb, var(--err) 15%, transparent);
+  color: var(--err);
+  border: 1px solid color-mix(in srgb, var(--err) 40%, transparent);
+}
+
+/* ── Feuille « Compte » ────────────────────────────────────────────────────
+ * Reprise de la maquette. Elle porte ce que la barre du haut portait sur
+ * téléphone — marque, identité, boîte de réception, paramètres, administration
+ * et langue — et monte depuis le bas, comme la barre qui l'ouvre.
+ */
+.account-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.account-sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: var(--z-modal-panel);
+  display: flex;
+  flex-direction: column;
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--card);
+  border-top: 1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.55);
+  /* La barre de gestes du système mord le bas de l'écran. */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  /* Le glissement pose un `transform` : la transition ramène le panneau en
+     place quand on relâche trop tôt, et l'emporte quand le seuil est franchi.
+     `touch-action` réserve le geste vertical au panneau. */
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: pan-y;
+}
+
+/* La poignée : trois pixels de haut, mais c'est elle qui annonce que le
+   panneau se tire. Sans repère, le geste n'existe que pour qui l'a deviné. */
+.account-sheet-grip {
+  width: 2.5rem;
+  height: 4px;
+  margin: 0.5rem auto 0.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  flex-shrink: 0;
+}
+
+.account-sheet-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* La marque coiffe le panneau, seule sur sa ligne : c'est le seul endroit où
+   elle reste sur téléphone, et elle y ramène à l'accueil. */
+.account-sheet-brand {
+  grid-column: 1 / -1;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.account-sheet-identity { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+
+.account-sheet-identity strong { font-size: 0.95rem; }
+
+.account-sheet-identity .muted {
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-sheet-list { display: flex; flex-direction: column; padding: 0.35rem 0; }
+
+.account-sheet-item {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  /* 52px : au-dessus du seuil du doigt, et assez espacé pour qu'on ne vise pas
+     la ligne voisine. */
+  min-height: 52px;
+  padding: 0 1.1rem;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-sheet-item:hover,
+.account-sheet-item:focus-visible { background: rgba(255, 255, 255, 0.05); }
+
+.account-sheet-chev { margin-left: auto; color: var(--muted); font-size: 1.15rem; }
+
+.account-sheet-foot { padding: 0.6rem 1.1rem 1.1rem; border-top: 1px solid var(--border); }
+
+.account-sheet-logout { width: 100%; justify-content: center; color: var(--danger); }
+
+/* ── La barre du bas, sur téléphone ────────────────────────────────────── */
+
+.global-mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 46rem) {
+  /**
+   * La barre du haut cède la place, en entier.
+   *
+   * On ne garde pas une version réduite : ce serait deux navigations à tenir
+   * d'accord, et l'une des deux finirait par mentir sur la page courante.
+   */
+  .app-bar {
+    display: none;
+  }
+
+  /* De quoi ne pas cacher la dernière ligne d'une liste sous la barre. */
+  body {
+    padding-bottom: 74px;
+  }
+
+  .global-mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: var(--z-header);
+    height: 64px;
+    align-items: center;
+    justify-content: space-around;
+    background: var(--surface-haute, #12121c);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px color-mix(in srgb, var(--ombre) 70%, transparent);
+    /* La barre est posée par-dessus la page : sans ça, le fond de l'écran
+       transparaît entre les entrées pendant un défilement. */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .global-mobile-nav-item {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .global-mobile-nav-item span:first-child {
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .global-mobile-nav-item.is-active {
+    color: var(--gold);
+  }
+
+  /* Le trait qui marque la page courante, accroché en haut de l'entrée. */
+  .global-mobile-nav-item.is-active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 3px;
+    background: var(--gold);
+    border-radius: 0 0 4px 4px;
+  }
+}

@@ -1,0 +1,810 @@
+@import url("./tokens.css");
+
+
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+}
+
+h1 {
+  font-size: var(--fs-lg);
+  letter-spacing: 0.04em;
+  margin: 0 0 var(--space-1);
+}
+
+h2 {
+  margin: 0 0 0.85rem;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+.btn-primary {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
+.btn-sm {
+  padding: 0.3rem 0.55rem;
+  font-size: var(--fs-sm);
+}
+
+.tag {
+  display: inline-block;
+  font-size: var(--fs-xs);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  margin-right: 0.25rem;
+}
+
+/* ── Une action partie, et pas encore revenue ─────────────────────────────
+ *
+ * `aria-busy` est posé par `pendantLAction` le temps de l'aller-retour. Sans
+ * habillage, ce serait un état que l'écran connaît et que personne ne voit :
+ * le bouton resterait identique, on recliquerait, et c'est exactement ce
+ * qu'on cherche à éviter.
+ *
+ * Le trait tourne plutôt qu'un simple grisé parce qu'un bouton grisé dit « pas
+ * disponible » et non « en cours ». La différence compte quand l'attente dure
+ * une seconde : dans un cas on attend, dans l'autre on s'en va.
+ *
+ * L'attribut est aussi ce que lisent les lecteurs d'écran, qui annoncent
+ * l'occupation sans qu'on ait rien à ajouter.
+ */
+[aria-busy="true"] {
+  position: relative;
+  cursor: progress;
+  opacity: 0.72;
+}
+
+[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: var(--space-2);
+  inset-block-start: calc(50% - 0.45em);
+  inline-size: 0.9em;
+  block-size: 0.9em;
+  border: 2px solid currentColor;
+  border-block-start-color: transparent;
+  border-radius: 50%;
+  animation: atem-attente 0.7s linear infinite;
+}
+
+@keyframes atem-attente {
+  to { transform: rotate(360deg); }
+}
+
+/* Le mouvement se retire quand le système le demande ; l'état, lui, reste
+ * visible par l'opacité et le curseur. */
+@media (prefers-reduced-motion: reduce) {
+  [aria-busy="true"]::after { animation: none; opacity: 0.5; }
+}
+
+/* ── Pastilles d'état ─────────────────────────────────────────────────────
+ *
+ * Portées depuis `design/styles/components.css`, qui est la référence. Les
+ * variantes « gold » et « info » n'ont pas d'appelant ici : une règle sans
+ * balisage qui la pose est du CSS mort, et `check-design-dead-css.js` le
+ * refuse du côté maquette pour cette raison.
+ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* ── Le bandeau de service ────────────────────────────────────────────────
+ *
+ * Il ne paraît que quand quelque chose ne va pas. Deux tons, et la
+ * distinction porte : orange, le service lit encore et l'on peut continuer ;
+ * rouge, plus rien ne passe et ce qu'on voit date d'avant.
+ *
+ * Il est large et il coupe la page, volontairement. Un voyant discret se
+ * regarde quand on le cherche ; ce message-ci arrive au moment où l'on va
+ * faire quelque chose qui ne marchera pas.
+ */
+.service-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-block-end: 1px solid var(--border);
+  font-size: var(--fs-sm);
+}
+
+/* ── Porté de la maquette ──────────────────────────────────────────────
+ *
+ * Ces classes étaient posées par l'application et habillées nulle part :
+ * l'écran avait été construit en recopiant le balisage de la maquette sans
+ * ses règles. Elles ne cassaient rien de visible — elles laissaient
+ * simplement des éléments sans forme, et faisaient croire qu'une règle
+ * existait quelque part.
+ */
+
+/* depuis design/styles/components.css */
+.field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: var(--space-3); }
+/*
+ * La rangée d'actions se replie plutôt que de sortir de la boîte.
+ *
+ * Les trois boîtes des Réglages se cachaient par `display: none` : leurs
+ * commandes n'avaient aucune géométrie, et l'invariant « un contrôle sort de
+ * son cadre » ne les voyait pas. En passant à `visibility`, il les a mesurées
+ * — et « Annuler » sortait de dix-huit à quatre-vingt-neuf pixels selon la
+ * boîte, poussé dehors par un bouton de validation trop long à côté de lui.
+ * Le défaut était là depuis le début ; c'est sa mesure qui manquait.
+ */
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 0.85rem 0 0;
+  background: linear-gradient(to top, var(--card) 72%, transparent);
+}
+.modal-actions button[disabled],
+/*
+ * Le bouton d'action principale — et la règle qui manquait.
+ *
+ * `apps/web` ne portait que `.btn-hero[disabled]`. La règle de base, elle,
+ * était restée dans `design/styles/components.css`, que cette application
+ * n'importe pas. Résultat : tous les `btn-hero` de l'écran des scanlistes —
+ * « Nouveau scan », « Enregistrer la scanliste » — se rendaient en `<button>`
+ * nu, gris, à côté du reste de l'interface. Ange : « le bouton "New scan" en
+ * gris moche au lieu d'utiliser nos boutons ».
+ *
+ * `check-classes-habillees.mjs` ne pouvait pas le voir : la classe *est*
+ * citée par la feuille, dans sa règle d'état. Une classe dont seul l'état
+ * désactivé est décrit passe pour habillée alors qu'elle n'a aucune forme.
+ */
+.btn-hero {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+  padding: 0.85rem 1.4rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--gold);
+  color: var(--ombre);
+  font-weight: 900;
+  font-size: 1.02rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--gold) 35%, transparent);
+  opacity: 0.5;
+}
+
+/*
+ * La coque de modale de la maquette, portée pour les mêmes raisons.
+ *
+ * L'écran des scanlistes pose `.modal-panel` et `.modal-head`, que rien
+ * n'habille ni ici ni dans la maquette : ce sont des noms inventés au moment
+ * du portage, à côté de `.modal` et `.modal-body` qui, eux, existent. On
+ * reprend le vocabulaire de la maquette plutôt que d'habiller l'invention.
+ */
+.modal {
+  position: relative;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
+  border-radius: 18px;
+  width: min(36rem, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--ombre) 55%, transparent);
+}
+
+/* depuis design/styles/pages/auth.css */
+.landing-brand { text-decoration: none; }
+
+/* depuis design/styles/pages/admin.css */
+
+/* Passe mobile portée de design/styles/components.css — voir le relevé du 3 septembre 2026. */
+@media (max-width: 560px) {
+  .pager { flex-wrap: wrap; justify-content: center; }
+  .pager span { order: 3; flex: 1 0 100%; text-align: center; }
+}
+@media (max-width: 900px) {
+  .inspect-panel {
+    /* Aligné en haut : centrer un contenu plus grand que la fenêtre le pousse
+       hors de la zone défilable, et le haut de la carte devient inatteignable. */
+    align-items: flex-start;
+    padding: 1rem 1rem 2.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+  }
+  /* Le bouton de fermeture ne défile pas avec le contenu : sinon il disparaît dès qu'on descend vers le texte. */ .inspect-close {
+    position: fixed;
+  }
+  .inspect-layout {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    /* Le plafond de la rangée est ce qui recadrait : empilée, elle doit pouvoir
+       dépasser la fenêtre, puisque le panneau défile. */
+    max-height: none;
+    gap: 1.15rem;
+    /* Plus de rapport à tenir entre deux colonnes : le texte reprend l'échelle
+       de l'application. */
+    font-size: 1rem;
+  }
+  .inspect-art-col {
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: none;
+  }
+  .inspect-art {
+    /**
+     * 72vh, et non toute la hauteur : il reste ainsi une amorce du titre sous
+     * la carte, qui dit qu'il y a quelque chose à faire défiler. Une carte
+     * pleine hauteur donne un écran qui a l'air complet et cache sa fiche.
+     *
+     * Le calcul reste celui du côte-à-côte — la hauteur déduite de la largeur
+     * disponible, jamais l'inverse — pour la même raison : une hauteur imposée
+     * avec une largeur plafonnée écrase la carte.
+     */
+    height: min(72vh, calc((100cqw - 0.5rem) * 86 / 59));
+    width: auto;
+    max-width: 100%;
+    max-height: none;
+  }
+  .inspect-info-col {
+    flex: 0 0 auto;
+    width: 100%;
+    /* Largeur de lecture : une ligne qui court sur toute la fenêtre se suit mal. */
+    max-width: min(100%, 34rem);
+    max-height: none;
+    /* C'est le panneau qui défile, pas la fiche : deux zones de défilement
+       imbriquées obligeraient à viser la bonne. */
+    overflow: visible;
+    padding: 0 0.25rem 1rem;
+  }
+}
+@media (max-width: 600px) {
+  .filter-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 0.85rem 0.85rem 0 0;
+  }
+}
+@media (max-width: 850px) {
+  /* La barre est fixe : sans cette réserve, elle recouvre la fin de la page. */ body { padding-bottom: 74px; }
+  /*
+   * Les tables défilent latéralement, elles seules.  Une table de sept colonnes ne se
+   * replie pas : à 390px, celle des membres de guilde en réclame 713 et poussait toute
+   * la page avec elle. Elle défile maintenant dans son propre cadre — le corps de la
+   * page ne bouge plus, et l'on garde les colonnes plutôt que de les empiler, ce qui
+   * ferait perdre la lecture en lignes.  `overflow-x: auto` demande de lever
+   * `overflow: hidden`, qui existait pour les coins arrondis ; c'est `auto` sur les
+   * deux axes qui les tient.
+   */
+  .admin-table-container {
+    overflow: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+@media (max-width: 850px) {
+  /*
+   * La bannière et l'identité.  L'emblème remontait de 48px dans la bannière — un
+   * décalage prévu pour une bannière de 165px, qui en fait 110 ici : il chevauchait le
+   * motif au lieu de s'y poser. Et la puce du mode de recrutement, ancrée en bas de
+   * bannière, s'y retrouvait au milieu.
+   */
+  .showcase-banner-bg { height: 110px; min-height: 110px; }
+}
+@media (max-width: 850px) {
+}
+@media (max-width: 560px) {
+  /* Sur un téléphone, l'extension et la langue disparaissent : le code et la * rareté suffisent à reconnaître la carte qu'on tient. */ .edition-row {
+    grid-template-columns: auto 1fr auto;
+  }
+}
+
+/*
+ * Cibles tactiles, portées de design/styles/components.css.
+ *
+ * Mesuré là-bas : l'engrenage d'un deck à 30×30, sous le seuil du doigt. Les
+ * recommandations d'Apple et de Google donnent 44 et 48 points ; la maquette
+ * tient 40, qui rentre dans les hauteurs existantes sans les déformer.
+ *
+ * Seules les classes que ce balisage pose sont reprises : la marque, la
+ * pastille de langue et l'avatar de l'en-tête appartiennent à la barre du
+ * haut, que l'application masque en entier sur téléphone.
+ */
+@media (max-width: 850px) {
+  .icon-btn,
+  .deck-portrait-settings {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+
+/* ══ Règles portées de la maquette — 3 septembre 2026 ══════════════════════
+ *
+ * Le portage de la veille ne comparait que les blocs `@media` : toute la
+ * moitié « de base » était restée dehors. Trente et un sélecteurs manquaient,
+ * et quatre-vingt-onze règles existantes étaient incomplètes — celles-là ont
+ * été complétées sur place, une seconde déclaration les aurait fait diverger.
+ */
+
+.btn-member-menu-toggle {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--info) 10%, transparent);
+  color: var(--info);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0.3rem 0.6rem;
+  vertical-align: middle;
+}
+
+/*
+ * L'état vide, là où huit écrans peuvent le lire.
+ *
+ * Il vivait dans la feuille de la Collection, et servait aussi aux decks, aux
+ * scanlistes et au profil : une règle partagée rangée chez l'un d'eux finit par
+ * être modifiée pour lui seul.
+ */
+.empty-state {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.empty-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+/*
+ * La variante encadrée : un pointillé qui dit « ici, il n'y a rien encore ».
+ *
+ * Le profil l'écrivait deux fois en style en ligne, à l'identique, pour ses
+ * decks et ses trophées.
+ */
+.empty-state.is-encadre {
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--fg-fort) 1%, transparent);
+  padding: 2.5rem;
+  color: var(--muted);
+}
+
+/*
+ * L'en-tête d'une modale : une icône, un titre, une phrase.
+ *
+ * Le motif était écrit sept fois en styles en ligne — quatre dans la guilde,
+ * deux dans la communauté, une dans l'administration — à l'identique au pixel
+ * près. Sept copies d'un même dessin, dont aucune ne savait que les six autres
+ * existaient : le jour où l'on change le rayon de l'icône, on en change une.
+ *
+ * La maquette a le vocabulaire des modales — `.modal-title`, `.modal-subtitle`
+ * — mais pas cet en-tête à icône, que l'application est seule à employer. Il
+ * vit donc ici, dans la feuille commune, et non recopié dans chaque écran.
+ */
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+/* La variante d'information : inviter, postuler, écrire à quelqu'un. */
+.modal-head-ico.is-info {
+  background: color-mix(in srgb, var(--info) 15%, transparent);
+  border-color: var(--info);
+}
+
+/* La variante d'alerte : dissoudre une guilde, effacer une collection. */
+.modal-head-ico.is-danger {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  border-color: var(--danger);
+}
+
+/*
+ * L'étiquette d'un champ, hors d'un `.field`.
+ *
+ * Elle existait en trois écritures presque identiques — 0.45rem, 0.35rem,
+ * 0.4rem de marge, 800 ou 700 de graisse — répétées vingt-deux fois dans quatre
+ * écrans. Trois façons de dire la même chose, qu'aucun regard ne distingue et
+ * qu'aucune retouche ne changera ensemble.
+ *
+ * La maquette a `.field label` pour les formulaires structurés ; ceci est pour
+ * les étiquettes qui vivent hors d'un champ — au-dessus d'un groupe de cases, ou
+ * d'une liste de permissions.
+ */
+.champ-libelle {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/*
+ * Quatre rôles qui revenaient sans nom.
+ *
+ * Une légende sous une valeur, une rangée d'éléments alignés, une colonne
+ * espacée, un emblème d'une ligne : chacun était réécrit à l'identique entre
+ * six et quatorze fois dans les cinq écrans. Ce ne sont pas des utilitaires —
+ * ils disent un rôle, et c'est pour ça qu'ils portent un nom plutôt qu'une
+ * mesure.
+ */
+.legende {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/*
+ * Une valeur, son état, et l'emblème qui l'accompagne.
+ *
+ * Une fiche affiche partout la même chose : un libellé discret, la valeur en
+ * dessous, parfois un état coloré à côté. C'était écrit à la main trente-huit
+ * fois, avec quatre nuances de taille que rien ne justifiait.
+ */
+.valeur {
+  display: block;
+  font-size: 0.98rem;
+  color: var(--fg-fort);
+}
+
+/* L'état d'une chose : bon, ou méritant l'œil. Jamais une couleur en ligne. */
+.etat {
+  font-weight: 800;
+}
+
+/*
+ * Deux cartes, un surtitre, une case à cocher.
+ *
+ * L'administration, les paramètres et la guilde dessinaient chacun leur cadre :
+ * un fond très légèrement clair pour un bloc d'information, un fond creusé pour
+ * un encart secondaire. Écrits treize fois, à quelques pixels près.
+ */
+.carte-douce {
+  background: color-mix(in srgb, var(--fg-fort) 3%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.1rem 1.25rem;
+}
+
+/* Une case à cocher qui prend la couleur de la maison, et la taille du doigt. */
+.case-doree {
+  margin-top: 4px;
+  accent-color: var(--gold);
+  width: 18px;
+  height: 18px;
+}
+
+/*
+ * Le message éphémère. Il vivait dans la feuille de la Collection, alors que
+ * huit écrans l'affichent — et un neuvième s'en dessinait un autre à la main.
+ */
+.toast {
+  position: fixed;
+  top: 4.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  max-width: min(92vw, 26rem);
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 0.88rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/*
+ * Les deux tons, repris de la maquette.
+ *
+ * L'application n'en avait aucun : son toast tirait ses couleurs d'un
+ * `style.cssText`, et celui de la Collection s'en remettait à des classes qui
+ * n'existaient pas — un message de succès et un message d'échec s'affichaient
+ * donc à l'identique. `--ok` et `--err` sont les alias que la maquette emploie.
+ */
+.toast-ok {
+  background: color-mix(in srgb, var(--success) 14%, var(--card));
+  border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+  color: var(--success);
+}
+
+/*
+ * Le champ de recherche sans son icône.
+ *
+ * `.search-input-gaming` réserve 2.8rem à gauche pour la loupe. Les champs qui
+ * n'en portent pas — l'adresse d'un nouveau compte, le titre d'une annonce —
+ * annulaient ce retrait à la main, chacun avec sa valeur. Le retrait devient
+ * symétrique du droit, qui est de 1.2rem.
+ */
+.search-input-gaming.is-nue {
+  padding-left: 1.2rem;
+}
+
+/** Un bloc qui respire avant le suivant, à la mesure des cartes. */
+.espace-dessous {
+  margin-bottom: 1.25rem;
+}
+
+/** La part souple d'une rangée, qui laisse sa place au bloc d'à côté. */
+.colonne-large {
+  flex: 1;
+  padding-right: 1rem;
+}
+
+/** Le champ de recherche et sa loupe, qui se posent l'un sur l'autre. */
+.champ-cherche {
+  position: relative;
+  flex: 1;
+  min-width: 260px;
+}
+
+/** Une case à cocher plus large, pour une action qui engage. */
+.case-doree.is-grande {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/*
+ * Débloquer, c'est rendre — la bascule le dit en vert, et non dans le rouge du
+ * blocage. Les deux tons vivaient en `style=` sur la balise, avec un vert écrit
+ * en rgba littéral que rien ne reliait à `--success`.
+ */
+.btn-modal-block-toggle.is-debloquer {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
+}
+
+/* ── Titres, intitulés et champs ───────────────────────────────────────────
+ *
+ * Les mêmes objets s'écrivaient balise par balise, avec une mesure différente
+ * à chaque fois : cinq tailles de titre de section — 1.25, 1.35, 1.4, 1.45 et
+ * 1.5rem — pour un seul rôle, et trois façons d'écrire l'intitulé d'un champ.
+ */
+
+/** Le titre d'une section de page. */
+.titre-section {
+  margin: 0 0 0.35rem;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--fg-fort);
+}
+/** Souligné d'un filet, quand la section ouvre un panneau encadré. */
+.titre-section.is-souligne {
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+/** Porté par un emblème, qui se pose à hauteur du texte. */
+.titre-section.is-emblemee {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  line-height: 1.2;
+}
+
+/** L'intitulé d'un champ, en petites capitales. */
+.champ-libelle.is-espacee {
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+/** L'intitulé d'un champ, sans capitales — plus proche d'une phrase. */
+.champ-libelle.is-douce {
+  font-size: 0.83rem;
+  font-weight: 700;
+  text-transform: none;
+  margin-bottom: 0.4rem;
+}
+
+/**
+ * Une option qu'on choisit en cliquant sa carte entière, et non sa seule case.
+ * La cible fait toute la largeur : au doigt, une case à cocher de 18px ne se
+ * vise pas.
+ */
+.carte-choix {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--fg-fort) 3%, transparent);
+  cursor: pointer;
+}
+
+/** Les tons d'une case à cocher, quand le choix a une couleur. */
+.case-doree.is-info {
+  accent-color: var(--info);
+}
+
+/** Un champ de saisie douce : formulaires de réglages, hors recherche. */
+.champ-doux {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-douce);
+  color: var(--fg-fort);
+  font-size: 0.9rem;
+  font-weight: 700;
+  outline: none;
+}
+/** Une zone de texte, qui ne se redimensionne qu'en hauteur. */
+.champ-doux.is-zone {
+  resize: vertical;
+  min-height: 75px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+/* ── Dispositions et espacements ───────────────────────────────────────────
+ *
+ * Les rangées, les colonnes et les blocs de formulaire s'écrivaient en clair
+ * sur chaque `<div>`, avec des écarts pris au hasard : 0.35, 0.4, 0.45, 0.5,
+ * 0.65, 0.9, 1.1, 1.2, 1.25 et 1.5rem pour trois rôles distincts. Ces
+ * modificateurs figent les trois.
+ */
+
+/** Une rangée très serrée — un emblème et son mot. */
+.rangee.is-menue {
+  gap: 0.5rem;
+}
+/** Une rangée dont les blocs s'alignent par le haut, pas par le milieu. */
+.rangee.is-haute {
+  align-items: flex-start;
+}
+
+/** Le bloc d'un champ de formulaire, et l'écart qui le sépare du suivant. */
+.bloc-champ {
+  margin-bottom: 1.25rem;
+}
+
+/** La plus petite légende : une date, un identifiant technique. */
+.legende.is-menue {
+  font-size: 0.72rem;
+}
+
+/* ── États dits par une classe, non par un style calculé ───────────────────
+ *
+ * Une couleur ou un affichage calculés dans le gabarit ne se cherchent pas :
+ * ni la feuille ni la barrière des couleurs ne les voient, et deux écrans qui
+ * disent le même état finissent par le dire de deux façons.
+ */
+
+/** La pastille de présence, et son mot. */
+.presence {
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/*
+ * Une vue d'onglet, montrée ou cachée par l'attribut `hidden` plutôt que par un
+ * `display` calculé dans le gabarit. Le navigateur cache déjà `[hidden]` ; la
+ * règle est ici pour que le jour où quelqu'un donne un `display` à
+ * `.community-tab-view`, l'onglet caché le reste.
+ */
+.community-tab-view[hidden] {
+  display: none;
+}
+
+/* ── La confirmation, aux mesures de la maquette ───────────────────────────
+ *
+ * Portées de `design/styles/components.css`, que l'application n'importe pas.
+ * Elles remplacent sept attributs `style=` — dont deux couleurs calculées dans
+ * le gabarit, invisibles à la barrière des couleurs littérales.
+ */
+.modal-confirm-backdrop {
+  z-index: var(--z-confirm);
+  background: color-mix(in srgb, var(--ombre) 75%, transparent);
+}
+
+/* Le mot à recopier, quand l'action ne se refait pas. */
+.modal-confirm-recopie {
+  display: block;
+  margin: 0.75rem 0;
+}
+
+/** Un titre de bloc souligné d'un filet, quand il ouvre un panneau. */
+.titre-bloc.is-souligne {
+  margin: 0 0 1.1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/** Une légende sans marge propre, quand son parent l'espace déjà. */
+.legende.is-collee {
+  margin: 0;
+}
+/** Une légende appuyée, sans pour autant changer de taille. */
+.legende.is-appuyee {
+  font-weight: 700;
+}
+/** Une rangée aérée, quand ses blocs sont larges. */
+.rangee.is-aeree {
+  gap: 1rem;
+}
+
+/** Un écran qui n'a rien à montrer, centré dans sa page. */
+.page-centree {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+/** Une carte de modale étroite, pour une décision plutôt qu'un contenu. */
+.shadow-profile-modal-card.is-etroite {
+  max-width: 540px;
+  padding: 1.75rem;
+}
+
+/** Une valeur sous son intitulé, dans une fiche. */
+.valeur.is-menue {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}

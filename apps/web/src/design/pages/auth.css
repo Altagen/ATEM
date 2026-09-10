@@ -1,0 +1,174 @@
+/* ── Écrans d'avant-connexion : accueil, connexion, inscription ────────────
+ *
+ * Ces trois pages n'ont pas la coque de l'application. Avant d'être connecté il
+ * n'y a rien à naviguer : une bande avec la marque et le choix de langue, et le
+ * contenu au centre. Les noms de classes sont ceux d'`apps/web`, qui reste la
+ * référence de structure.
+ */
+.auth-page {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.landing-container {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2rem, 6vw, 4.5rem);
+  padding: clamp(1rem, 4vw, 3rem) clamp(1rem, 5vw, 4rem) 4rem;
+  box-sizing: border-box;
+}
+
+/* ── Bande de tête ────────────────────────────────────────────────────────── */
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(0.85rem, 2.5vw, 1.4rem) clamp(1rem, 5vw, 4rem);
+}
+.landing-brand { text-decoration: none; }
+.landing-logo {
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+}
+
+/* ── Accueil ──────────────────────────────────────────────────────────────
+ * Deux colonnes au-dessus de 900px, empilées en dessous — et c'est le texte qui
+ * passe en premier : sur un téléphone, l'illustration ne doit pas repousser
+ * hors de l'écran ce qui explique de quoi il s'agit.
+ */
+.landing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.5rem, 5vw, 4rem);
+  flex: 1 1 auto;
+}
+/* Ce sont des liens, pas des boutons : ils mènent ailleurs, et le clic milieu
+   comme l'ouverture en nouvel onglet doivent fonctionner. */
+.btn-landing-primary,
+.btn-landing-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.35rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+@keyframes auth-rays { to { transform: rotate(360deg); } }
+/* Le réglage système fait foi : ce halo tourne pour le plaisir, rien d'autre. */
+@media (prefers-reduced-motion: reduce) {
+  .black-hole-rays { animation: none; }
+}
+/* Le retournement s'ajoute à l'inclinaison plutôt que de la remplacer : deux
+   `transform` sur la même règle, la seconde effacerait la première. */
+.card-3d-inner.is-flipped {
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(calc(var(--tilt-y, 0deg) + 180deg));
+}
+/* La carte est l'illustration, pas une imitation de cadre par-dessus. */
+.card-inspection-tip { margin: 0; font-size: 0.78rem; text-align: center; }
+
+/* ── Connexion et inscription ─────────────────────────────────────────────── */
+.auth-main-wrapper {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  padding: 1rem 0 2rem;
+}
+.auth-card {
+  width: 100%;
+  max-width: 26rem;
+  box-sizing: border-box;
+  padding: clamp(1.35rem, 4vw, 2.1rem);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+/* L'inscription porte deux champs de plus et une jauge : elle respire un peu
+   plus large, comme dans l'application. */
+.auth-card.is-wide { max-width: 31rem; }
+.auth-card-title { margin: 0; font-size: 1.5rem; font-weight: 900; color: #fff; }
+.auth-subtitle { margin: 0.3rem 0 1.35rem; font-size: 0.84rem; }
+.auth-error-banner {
+  margin: 0 0 1.1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  color: var(--danger);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+.auth-form { display: flex; flex-direction: column; gap: 1rem; }
+.auth-field-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.auth-field-group label { font-size: 0.8rem; font-weight: 800; color: var(--fg); }
+.auth-field-group .field-hint { font-weight: 600; color: var(--muted); margin-left: 0.35rem; }
+.auth-input {
+  appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.92rem;
+}
+.auth-input:focus { outline: 2px solid var(--accent-dim); outline-offset: 1px; }
+.auth-input:disabled { opacity: 0.55; cursor: not-allowed; }
+.auth-submit-btn {
+  appearance: none;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-radius: 12px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+.auth-submit-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.auth-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Les comptes d'essai. Dans l'application, chacun portait dix-huit
+   déclarations de style écrites dans son attribut, avec sa propre couleur
+   littérale ; ici c'est une puce, et le rôle suffit à les distinguer. */
+.auth-demo { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.auth-toggle { margin: 1.1rem 0 0; font-size: 0.84rem; text-align: center; }
+/* Le lien de bascule est tantôt un `a`, tantôt un `button` — « Se déconnecter »
+   agit, il ne mène pas ailleurs. Les deux doivent se lire pareil : sans cette
+   remise à zéro, le bouton garde le fond gris du navigateur. */
+.auth-link-btn {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 800;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.auth-link-btn:hover { color: var(--gold); }
+
+/* La jauge de mot de passe est celle des Paramètres, dont l'inscription se sert
+   aussi. Elle est déclarée ici pour que cette page la porte elle-même : une
+   feuille qu'on ne charge pas n'habille rien. */
+.field-note { margin: 0.35rem 0 0; font-size: 0.76rem; }
+
+/* La place du message est rendue une fois, et disparaît tant qu'elle est vide :
+   un cadre rouge sans texte se lit comme une erreur qu'on n'arrive pas à lire. */
+.auth-error-banner:empty { display: none; }
+.auth-input:disabled { opacity: 0.6; }

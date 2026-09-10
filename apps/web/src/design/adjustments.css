@@ -1,0 +1,245 @@
+/**
+ * Nos écarts délibérés par rapport aux feuilles reprises d'ATEM-old.
+ *
+ * Elles sont dans un fichier à part, et non fondues dans les feuilles
+ * d'origine : quand on se demandera plus tard « est-ce que ça vient d'ATEM-old
+ * ou est-ce nous ? », la réponse doit être lisible sans faire d'archéologie.
+ *
+ * Chaque règle ici doit dire pourquoi elle existe.
+ */
+
+/**
+ * L'obturateur du scanner reste sous la main.
+ *
+ * La modale d'origine défile (`max-height: 90vh; overflow: auto`), et sur un
+ * téléphone la barre d'obturateur passe sous la ligne de flottaison. Or c'est
+ * le geste qu'on répète à chaque carte : on inventorie une pile, pas une carte.
+ * Faire défiler entre chaque prise rend l'opération pénible.
+ */
+.scan-shutter-bar {
+  position: sticky;
+  bottom: 0;
+  padding-block: 0.6rem;
+  background: var(--card);
+}
+
+@media (max-height: 900px) {
+  /* Le viseur cède la hauteur dont la barre a besoin. Viser demande de la
+     place, pas tout l'écran. */
+  .scan-zoom-viewport {
+    max-height: 40vh;
+  }
+}
+
+/**
+ * La barre applicative respire sur les côtés.
+ *
+ * Le pseudo et le bouton de déconnexion touchaient le bord droit de l'écran :
+ * `.app-bar` d'origine vit dans une page qui portait son propre rembourrage.
+ */
+.app-bar {
+  padding-inline: var(--space-3);
+  gap: var(--space-3);
+}
+
+/**
+ * Le bloc de droite se met en ligne et respire.
+ *
+ * `.app-bar-right` ne portait que `position: relative` dans la feuille
+ * d'origine : la mise en page venait d'un `style="display:flex; gap:0.8rem"`
+ * écrit sur la balise. Sans lui, le pseudo venait toucher le bouton de
+ * déconnexion.
+ */
+.app-bar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.app-bar-right .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/**
+ * La mention « en attente » existe toujours dans le DOM, vide quand il n'y a
+ * rien à dire — c'est ce qui permet de la remplir sans la recréer. Elle se
+ * cache d'elle-même quand elle n'a pas de texte, comme le bandeau d'erreur des
+ * écrans d'authentification.
+ */
+.meta-line .warn:empty {
+  display: none;
+}
+
+/**
+ * Les boutons de quantité atteignent la cible tactile.
+ *
+ * `.btn-qty` fait 32 px dans la feuille d'origine. `base.css` note pourtant, à
+ * propos d'un autre bouton, que « les recommandations d'Apple et de Google
+ * donnent 44 et 48 points » — la remarque valait aussi ici et n'y a pas été
+ * appliquée.
+ *
+ * Or c'est le bouton le plus pressé de l'application : on inventorie des
+ * centaines de cartes au pouce, le téléphone dans une main et la pile dans
+ * l'autre. À 32 px on rate la cible une fois sur cinq, et un « −1 » raté au
+ * lieu d'un « +1 » se voit rarement tout de suite.
+ *
+ * Seulement sur pointeur grossier : à la souris, 32 px suffit et la densité de
+ * la liste vaut mieux.
+ */
+@media (pointer: coarse) {
+  .btn-qty {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/**
+ * L'en-tête sur écran étroit : plus rien à ajuster.
+ *
+ * Il portait ici une mise en page sur deux rangées, pour que la marque, la
+ * navigation et le compte cessent de se chevaucher. La coquille de navigation
+ * a rendu ce raccommodage sans objet : sous 46 rem, la barre du haut disparaît
+ * et la barre du bas la remplace. Deux règles qui se contredisaient — l'une
+ * cachant la barre, l'autre la remettant en grille — et c'est la seconde qui
+ * l'emportait, étant chargée après.
+ */
+
+/**
+ * Un titre de page, lu mais non vu.
+ *
+ * L'écran d'origine n'a pas de titre de niveau 1 : la barre applicative dit
+ * « Collection », mais c'est un lien de navigation, pas un titre de document.
+ * La maquette d'ATEM-old avait corrigé exactement ce défaut sur les écrans
+ * d'authentification, en passant de `h2` à `h1` ; la remarque vaut ici.
+ *
+ * Il n'est pas affiché : la mise en page valide n'en a pas besoin, et l'ajouter
+ * visuellement changerait un écran qui fonctionne.
+ */
+.page-heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/**
+ * La barre d'outils se cale sous l'en-tête, quelle que soit sa hauteur.
+ *
+ * `collection.css` fixe `top: 3.25rem` avec le commentaire « under app-bar » —
+ * une valeur juste tant que l'en-tête tient sur une rangée. Sur téléphone il en
+ * prend deux, et la barre d'outils glissait dessous : la recherche et les
+ * onglets se recouvraient.
+ *
+ * La hauteur devient un jeton, réglé au même endroit que la mise en page qui la
+ * change. Recopier une mesure d'un fichier à l'autre est ce qui avait produit
+ * la divergence de la bande de visée du scanner ; on ne recommence pas.
+ */
+:root {
+  --app-bar-height: 3.25rem;
+}
+
+.pin-rail[data-pinned="true"] {
+  top: var(--app-bar-height);
+}
+
+@media (max-width: 46rem) {
+  /**
+   * Sous 46 rem, la barre du haut n'existe plus : elle ne réserve donc plus
+   * rien. La valeur y était de 6,25 rem, du temps où elle tenait sur deux
+   * rangées — et depuis que la barre du bas l'a remplacée, ces cent pixels
+   * n'étaient qu'un vide en tête d'écran.
+   */
+  :root {
+    --app-bar-height: 0rem;
+  }
+}
+
+/**
+ * Deux classes que le balisage d'ATEM-old posait sans qu'aucune règle ne les
+ * habille — l'audit l'avait relevé, et le contrôle des classes sans style le
+ * confirme.
+ */
+.web-loading {
+  padding: var(--space-4);
+  text-align: center;
+}
+
+/**
+ * Le bloc de filtre : ATEM-old n'en habillait que le titre, et les sections
+ * se touchaient. Il lui manquait sa propre respiration.
+ */
+.filter-block {
+  display: block;
+}
+
+.filter-block + .filter-block {
+  margin-top: var(--space-3);
+}
+
+/**
+ * L'étiquette de la note se centre sur son champ.
+ *
+ * `.inspect-notes` est un rang souple dont les enfants s'étirent par défaut :
+ * l'étiquette occupait toute la hauteur et son texte se posait en haut, à côté
+ * d'un champ et d'un bouton centrés. Trois éléments sur une ligne, trois
+ * alignements différents.
+ */
+.inspect-notes {
+  align-items: center;
+}
+
+/* Assez de place pour « Note » sans que le mot se coupe, pas plus. */
+.inspect-notes > label {
+  flex: 0 0 auto;
+}
+
+/**
+ * « Autres éditions » respire, et se sépare de ce qui précède.
+ *
+ * Le bloc arrive après la note, sans marge ni trait : les deux se touchaient et
+ * l'on ne voyait pas où l'un finissait. C'est pourtant l'information qu'on vient
+ * chercher devant une carte qu'on trie — « est-ce que je l'ai déjà, et dans
+ * quelle édition ? ».
+ *
+ * Cet espacement est une étape : la liste mérite sa propre place dans la fiche,
+ * et un design à part le jour où l'on voudra y cocher les éditions possédées.
+ */
+.editions {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.editions-list {
+  margin-top: var(--space-2);
+}
+
+/**
+ * Le nombre d'éditions se lit dans le titre.
+ *
+ * Un Dragon Blanc en compte soixante-dix-huit, et la liste occupe alors plus de
+ * deux mille pixels — davantage que tout le reste de la fiche réuni. Annoncer
+ * le compte ne raccourcit rien, mais évite que la longueur surprenne.
+ *
+ * Pas de défilement propre à ce bloc : une troisième barre dans une fiche qui
+ * en a déjà une serait exactement ce qu'on vient de corriger ailleurs.
+ */
+.editions h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.editions h3 .muted {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}

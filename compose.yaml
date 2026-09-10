@@ -1,0 +1,64 @@
+# Le déploiement complet, en une commande.
+#
+# `docker compose up` sur une machine vierge doit suffire. C'est le critère de
+# sortie de M0 — et précisément ce qu'ATEM-old ne savait pas faire : son propre
+# compose.yaml portait l'avertissement « Dev-only. Not the application ship
+# stack », et le déploiement réel demandait neuf étapes manuelles.
+
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: atem
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atem}
+      POSTGRES_DB: atem
+    volumes:
+      - atem_pg_data:/var/lib/postgresql/data
+    ports:
+      # Publiée sur la boucle locale seulement : de quoi inspecter la base ou
+      # la sauvegarder depuis la machine hôte, sans jamais l'exposer au réseau.
+      - "127.0.0.1:${ATEM_DB_PORT:-55432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atem -d atem"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Les migrations tournent une fois, jusqu'au bout, avant que l'API démarre.
+  # Sans ce séquencement, l'API sert des requêtes sur un schéma incomplet.
+  migrate:
+    build: { context: ., dockerfile: Containerfile }
+    command: ["node", "dist/db/migrate.js"]
+    environment:
+      DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD:-atem}@db:5432/atem
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    build: { context: ., dockerfile: Containerfile }
+    environment:
+      DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD:-atem}@db:5432/atem
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET est requise — générez-la avec « openssl rand -base64 32 »}
+      # Dans le réseau du compose, l'API doit accepter les connexions du proxy :
+      # 127.0.0.1 ne serait joignable que depuis son propre conteneur.
+      ATEM_HOST: 0.0.0.0
+      ATEM_PORT: 3000
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  web:
+    build: { context: ., dockerfile: Containerfile.web }
+    ports:
+      - "${ATEM_PUBLIC_PORT:-8080}:80"
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  atem_pg_data:

@@ -1,0 +1,19 @@
+/**
+ * L'ordre de chargement, repris de `design/styles/app.css` d'ATEM-old.
+ *
+ * Il n'est pas indifférent : `collection.css` redéfinit `.muted`, `.btn` et
+ * `.btn-primary` déjà posées par `base.css`, et compte sur le fait d'être
+ * chargée après. Les intervertir change le rendu.
+ */
+@import "./tokens.css";
+@import "./base.css";
+@import "./utilities.css";
+@import "./password-meter.css";
+
+@import "./pages/auth.css";
+@import "./collection.css";
+@import "./components/scanner.css";
+@import "./navigation.css";
+
+/* Nos écarts assumés, en dernier pour qu'ils l'emportent. */
+@import "./adjustments.css";

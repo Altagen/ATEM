@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="r" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#3a3d46"/>
+      <stop offset="100%" stop-color="#12141a"/>
+    </radialGradient>
+  </defs>
+  <!-- inverted: point down (rank stars on Xyz cards) -->
+  <g transform="rotate(180 32 32)">
+    <path fill="url(#r)" stroke="#c5cad4" stroke-width="1.8" stroke-linejoin="round"
+      d="M32 6 L38.5 24.5 L58 25 L42.5 36.5 L48 55 L32 44 L16 55 L21.5 36.5 L6 25 L25.5 24.5 Z"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    // `node` est nécessaire aux fichiers de test, qui tournent sous le lanceur
+    // natif de Node même si le code testé vise le navigateur.
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src/**/*"]
+}

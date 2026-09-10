@@ -1,0 +1,107 @@
+/**
+ * Scanlistes — une liste datée, sur le modèle de la page d'import.
+ * On y retrouve un lot par sa date ; l'action principale est en haut à droite,
+ * là où on la cherche.
+ */
+.scan-page { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem var(--fond-de-page); }
+
+.scan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.scan-head .page-title { margin: 0 0 0.3rem; }
+.scan-head p { margin: 0; max-width: 46rem; }
+.scan-new { width: auto; margin: 0; flex-shrink: 0; padding: 0.6rem 1.2rem; }
+.scan-count { margin: 0 0 1.25rem; font-size: 0.85rem; }
+
+.scan-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.scan-row {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.15rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.scan-row:hover { border-color: var(--accent-dim); }
+.scan-row-ico { font-size: 1.3rem; }
+.scan-row-text strong { color: #fff; font-weight: 800; font-size: 0.98rem; }
+.scan-row-text .muted { font-size: 0.82rem; }
+
+/* Versée ou en attente : c'est la seule chose qu'on cherche du regard en
+   parcourant la page, donc elle porte sa couleur. */
+.scan-state { font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+.scan-state.is-poured { color: var(--success); }
+.scan-state.is-pending { color: var(--caution); }
+.scan-state-big { font-size: 0.9rem; }
+.scan-li.is-poured .scan-row { opacity: 0.82; }
+
+.scan-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
+.scan-actions .btn-hero { width: auto; margin: 0; padding: 0.55rem 1.1rem; }
+.scan-actions .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.scan-trash { margin-left: auto; }
+.scan-note { margin: 0 0 1.25rem; font-size: 0.8rem; }
+.scan-page .admin-table th.is-right, .scan-page .admin-table td.is-right { text-align: right; }
+
+/* ── Cadre de visée ────────────────────────────────────────────────────────
+ * Il ne fait rien — la maquette n'a pas de lecteur — mais il dit où regarder,
+ * et c'est ce que l'écran réel montrera à sa place.
+ */
+
+.scan-draft {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+.scan-draft-li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  font-size: 0.84rem;
+}
+.scan-draft-li .muted { font-size: 0.76rem; }
+.scan-draft-empty { padding: 0.5rem; font-size: 0.84rem; font-style: italic; }
+
+/**
+ * L'aperçu du fichier, dans la modale d'export.
+ *
+ * À 22rem il repoussait le bouton de téléchargement sous le pli à toutes les
+ * tailles d'écran : la modale défilait bien, mais on n'y voyait pas ce qu'on
+ * était venu faire. Un aperçu sert à reconnaître un format, pas à relire tout
+ * le fichier — huit lignes suffisent, et il défile pour le reste.
+ */
+.scan-export {
+  margin: 0 0 0.85rem;
+  padding: 0.9rem 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--fg);
+  max-height: 11rem;
+  overflow: auto;
+  white-space: pre;
+}

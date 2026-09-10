@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5eb8ff"/>
+      <stop offset="55%" stop-color="#1a7ad4"/>
+      <stop offset="100%" stop-color="#0a3f7a"/>
+    </linearGradient>
+  </defs>
+  <!-- rounded diamond / link arrow head -->
+  <path fill="url(#lg)" stroke="#9ed4ff" stroke-width="1.6" stroke-linejoin="round"
+    d="M32 6 L54 32 L32 58 L10 32 Z"/>
+  <path fill="#e8f4ff" opacity="0.9"
+    d="M32 18 L42 32 L32 46 L22 32 Z"/>
+  <path fill="#0a4a8a"
+    d="M32 24 L38 32 L32 40 L26 32 Z"/>
+</svg>

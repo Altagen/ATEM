@@ -1,0 +1,173 @@
+/**
+ * ATEM design tokens — source of truth for mock AND apps/web.
+ * When palette changes: update here first, then sync apps/web/src/style.css :root.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #0b0e13;
+  --card: #121822;
+  --input: #0a0d12;
+  --border: #243044;
+
+  /* Text */
+  --fg: #e8edf5;
+  --muted: #8b97a8;
+
+  /* Accents / status */
+  --accent: #6ec8ff;
+  --accent-dim: #3a7eab;
+  --ok: #5ddea0;
+  --err: #ff7b8a;
+  --warn: #e6c07b;
+
+  /* Layout */
+  --radius: 0.75rem;
+  --radius-sm: 0.45rem;
+  --shell-max: 44rem;
+  --space-1: 0.35rem;
+  --space-2: 0.65rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+
+  /* Type */
+  --font: "Segoe UI", system-ui, sans-serif;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.85rem;
+  --fs-md: 0.95rem;
+  --fs-lg: 1.85rem;
+
+
+  /* ── Palette signature ATEM ────────────────────────────────────────────────
+   * Ajoutés le 2026-08-21. Ces couleurs étaient jusque-là écrites en dur :
+   * #f5c542 apparaissait 104 fois dans le TypeScript, 85 fois dans le CSS web
+   * et 52 fois dans celui du mock, sans jamais être un jeton. Changer l'or du
+   * projet demandait donc 240 modifications.
+   *
+   * Les jetons historiques --accent / --ok / --err / --warn décrivent une palette
+   * antérieure (bleu clair, vert menthe) encore utilisée par ~106 règles CSS.
+   * Les deux cohabitent volontairement : les aligner changerait le rendu existant,
+   * ce qui est une décision de design, pas un nettoyage.
+   */
+  --gold: #f5c542;
+  --gold-ink: #0b0b14;
+  --danger: #ef4444;
+  /* Orange d'alerte, distinct de l'or : sur un fond doré, un avertissement en
+     --gold se lit comme une variante de la marque, pas comme un signal. */
+  --caution: #f59e0b;
+  --success: #4ade80;
+  --info: #60a5fa;
+
+  /* Card art (physical YGO aspect ~ 59×86 mm ≈ 0.686) */
+  /*
+   * Ce que la palette n'avait pas et que les écrans écrivaient à la main.
+   *
+   * Cinq cent quarante-cinq couleurs littérales vivaient dans des attributs
+   * `style`. Les nommer une par une n'aurait pas rendu la palette plus
+   * lisible ; ces huit-là reviennent assez souvent pour mériter un nom, et
+   * elles couvrent à elles seules la moitié du compte.
+   */
+
+  /** Blanc pur, sur fond sombre : les titres et les libellés qui doivent
+   *  ressortir plus que `--fg`. Cent six emplois. */
+  --fg-fort: #fff;
+  /** Les fonds de panneau empilés, du plus profond au plus clair. */
+  --surface: #141420;
+  --surface-haute: #181826;
+  --surface-douce: #1a1a2b;
+  /** Le violet des cartes et des bannières d'événement. */
+  --violet-nuit: #1e1b4b;
+  --violet-profond: #311b92;
+  --violet-royal: #4a148c;
+  /** Le rouge pâle d'un texte d'alerte sur fond sombre — `--danger` est le
+   *  rouge d'un fond ou d'une bordure, pas d'un texte à lire. */
+  --danger-clair: #fca5a5;
+  /** Le vert d'un état confirmé, plus soutenu que `--success`. */
+  --succes-fonce: #10b981;
+  /** Le gris-bleu d'un texte secondaire sur fond sombre. */
+  --ardoise: #cbd5e1;
+
+  /** Le noir des voiles et des ombres portées. Il n'a pas de valeur propre —
+   *  c'est toujours du noir à telle ou telle opacité — mais le nommer évite
+   *  d'écrire trois canaux là où l'on ne parle que d'un fond qui s'assombrit. */
+  --ombre: #000;
+
+  /* Le doré du survol : la même teinte, montée d'un cran en clarté. */
+  --gold-clair: #fbbf24;
+
+  /*
+   * Les tons clairs d'une annonce, pour ce qui s'écrit **sur** un fond teinté.
+   *
+   * Les quatre natures d'annonce — information, événement, maintenance,
+   * urgence — avaient chacune sa teinte écrite en clair, et aux trois endroits
+   * qui les emploient : le bandeau, le formulaire de diffusion et la
+   * communauté. Dix littéraux pour quatre tons.
+   *
+   * Ils sont plus clairs que `--info` et `--caution`, parce qu'un texte posé
+   * sur un fond de la même famille doit s'en détacher.
+   */
+  --info-clair: #93c5fd;
+  --jaune-clair: #fde047;
+  --caution-clair: #fdba74;
+  --violet-clair: #a78bfa;
+
+  --art-ratio: 59 / 86;
+  --thumb-w: 48px;
+  --thumb-h: 70px;
+
+  /* ── Échelle d'empilement ────────────────────────────────────────────────
+   * Reprise de la maquette. `apps/web` n'en avait aucune : la feuille
+   * « Compte » référençait `--z-modal` et `--z-modal-panel`, qui n'existaient
+   * pas — les deux tombaient à `auto` et le bandeau d'annonce passait devant.
+   * Personne ne peut arbitrer entre « 35 » et « 10000 » sans lire tout le
+   * projet ; ces huit noms le disent une fois pour toutes.
+   */
+  --z-sticky: 100;      /* barres collantes dans le flux (recherche épinglée) */
+  --z-row-menu: 200;    /* menus d'action ouverts dans une ligne de tableau */
+  --z-header: 300;
+  --z-modal: 500;       /* fond des modales, des panneaux et du tiroir */
+  --z-modal-panel: 510; /* le panneau lui-même, juste au-dessus de son fond */
+  --z-confirm: 600;     /* confirmation empilée par-dessus une modale */
+  --z-toast: 700;       /* messages : rien ne doit les masquer */
+
+  /*
+   * Le fond d'une page, sous son dernier bloc.
+   *
+   * Il s'écrivait à six endroits, en deux valeurs — 3rem d'un côté, 90px de
+   * l'autre — sans qu'aucune raison ne sépare les deux. La barre de navigation
+   * fixe est déjà réservée par `body { padding-bottom: 74px }` sous 850px : ce
+   * fond-ci n'est que de l'air, et il n'a besoin que d'une seule mesure.
+   */
+  --fond-de-page: 3rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font);
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, #1a2a40 0%, transparent 55%),
+    var(--bg);
+}
+
+a {
+  color: var(--accent);
+}
+
+code {
+  font-size: 0.9em;
+  color: var(--accent);
+}

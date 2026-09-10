@@ -1,0 +1,273 @@
+/**
+ * Règles retirées de `design/pages/auth.css`.
+ *
+ * Rien ne les posait dans le balisage livré : elles habillaient des écrans
+ * qui n'existent pas encore ici (guildes, réglages, administration, accueil).
+ * Conservées telles quelles — quand leur écran arrive, elles remontent.
+ */
+
+
+.landing-lang-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+}
+
+
+.btn-lang {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+
+.btn-lang.is-active {
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
+  color: var(--gold);
+}
+
+
+@media (max-width: 900px) {
+  .landing-hero { grid-template-columns: minmax(0, 1fr); }
+}
+
+
+.landing-hero-content { display: flex; flex-direction: column; gap: 1.1rem; align-items: flex-start; }
+
+
+.landing-badge {
+  margin: 0;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, var(--border));
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: var(--gold);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+
+.landing-title {
+  margin: 0;
+  font-size: clamp(3rem, 11vw, 6.5rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+
+.landing-subtitle {
+  margin: 0;
+  max-width: 34rem;
+  font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+
+.landing-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+
+
+.btn-landing-primary { background: var(--gold); color: var(--gold-ink); }
+
+
+.btn-landing-primary:hover { filter: brightness(1.08); }
+
+
+.btn-landing-secondary { border-color: var(--border); background: var(--card); color: var(--fg); }
+
+
+.btn-landing-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+
+
+/* ── Le décor et la carte ─────────────────────────────────────────────────── */
+.landing-hero-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  /* La perspective vit sur le parent : posée sur l'élément qui tourne, elle
+     tourne avec lui et l'effet de profondeur disparaît. */
+  perspective: 1400px;
+}
+
+
+.black-hole-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* Purement visuel : sans cela, il intercepterait les clics de la carte. */
+  pointer-events: none;
+}
+
+
+.black-hole-vortex,
+.black-hole-rays,
+.black-hole-core {
+  position: absolute;
+  border-radius: 50%;
+}
+
+
+.black-hole-vortex {
+  width: min(30rem, 90%);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, color-mix(in srgb, var(--gold) 18%, transparent) 0%, transparent 62%);
+  filter: blur(28px);
+}
+
+
+.black-hole-rays {
+  width: min(24rem, 78%);
+  aspect-ratio: 1;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--gold) 22%, transparent) 18deg,
+    transparent 42deg,
+    transparent 130deg,
+    color-mix(in srgb, var(--gold) 16%, transparent) 156deg,
+    transparent 190deg,
+    transparent 280deg,
+    color-mix(in srgb, var(--gold) 20%, transparent) 302deg,
+    transparent 336deg
+  );
+  filter: blur(14px);
+  animation: auth-rays 26s linear infinite;
+}
+
+
+.black-hole-core {
+  width: min(12rem, 42%);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, #05060b 45%, transparent 72%);
+}
+
+
+
+.card-3d-wrapper {
+  position: relative;
+  width: min(19rem, 74vw);
+  aspect-ratio: 59 / 86;
+  cursor: pointer;
+}
+
+
+.card-3d-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+
+.card-3d-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+
+.card-3d-back { transform: rotateY(180deg); }
+
+
+
+/* ── Les trois atouts ─────────────────────────────────────────────────────── */
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+
+.feature-card {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+
+.feature-icon { font-size: 1.6rem; }
+
+
+.feature-title { margin: 0; font-size: 1rem; font-weight: 900; color: #fff; }
+
+
+.auth-closed-banner {
+  margin: 0 0 1.1rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--border));
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+
+.auth-field-group.is-invite label { color: var(--gold); }
+
+
+.auth-field-group.is-invite .auth-input { border-color: color-mix(in srgb, var(--gold) 40%, var(--border)); }
+
+
+.auth-demo-label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+
+.btn-demo-fill {
+  appearance: none;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+
+.btn-demo-fill:hover { background: color-mix(in srgb, var(--gold) 22%, transparent); }
+
+
+
+.auth-notice-banner {
+  margin: 0 0 1.1rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--gold) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
