@@ -23,10 +23,16 @@ register("/collection", collectionScreen, {
   requiresSession: true,
   nav: { label: "Collection", icon: "🗃️", group: "main" },
 });
-register("/scanlistes", scanlistScreen, {
-  requiresSession: true,
-  nav: { label: "Scanlistes", icon: "🗂️", group: "main" },
-});
+/**
+ * Les scanlistes n'ont **pas** de destination de navigation.
+ *
+ * On y arrive depuis la barre d'outils de la collection. Un onglet de même
+ * rang que « Collection » laissait croire à deux inventaires côte à côte,
+ * alors qu'une scanliste est une antichambre : on y range un lot avant de
+ * décider s'il entre en collection. C'est la place qu'elles avaient dans
+ * ATEM-old, et elle porte cette lecture.
+ */
+register("/scanlistes", scanlistScreen, { requiresSession: true });
 
 registerFallback((root) => {
   root.append(

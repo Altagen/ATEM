@@ -279,6 +279,24 @@ test.describe("Mise en page", () => {
     expect(texte).toBe("rgb(251, 191, 36)");
   });
 
+  test("le message ne recouvre pas ce qu'on manipule", async ({ page }, info) => {
+    /**
+     * Le toast est posé sous la barre du haut. Sur téléphone, cette barre
+     * n'existe pas : il retombait pile sur la barre d'ajout, masquant le champ
+     * de code au moment précis où l'on vient s'en servir.
+     */
+    await signUp(page);
+    const toast = page.locator(".toast");
+    await expect(toast).toBeVisible();
+
+    const message = (await toast.boundingBox())!;
+    const champ = (await page.getByLabel("Ajouter par set code").boundingBox())!;
+
+    const chevauche =
+      message.y < champ.y + champ.height && champ.y < message.y + message.height;
+    expect(chevauche, `${info.project.name} : le message ne doit rien recouvrir`).toBe(false);
+  });
+
   test("la barre du scanner : recommencer, et un « +1 » qui se voit", async ({ page }) => {
     await signUp(page);
     await page.getByRole("button", { name: "Scanner" }).click();

@@ -667,6 +667,18 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
                 aria-pressed="${String(state.pinned)}"><span class="i-pin" aria-hidden="true"></span></button>
         <button type="button" class="icon-btn" id="btn-more" title="Trier et filtrer"
                 aria-label="Trier et filtrer" aria-haspopup="dialog"><span class="i-more" aria-hidden="true"></span></button>
+        <!--
+          Les scanlistes se rejoignent d'ici, et non par un onglet de la barre
+          du bas — c'est la place qu'elles avaient dans ATEM-old, et elle dit
+          juste : on répertorie un lot **avant** de décider s'il entre en
+          collection. Un onglet de même rang que « Collection » laissait croire
+          à deux inventaires côte à côte.
+        -->
+        <a class="btn scanlist-link" href="/scanlistes"
+           title="Répertorier un lot sans l'ajouter à la collection">
+          <span aria-hidden="true">🗂️</span>
+          <span class="scanlist-link-label">Scanlistes</span>
+        </a>
       </div>
 
       <div class="add-bar">

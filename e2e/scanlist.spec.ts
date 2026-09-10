@@ -163,3 +163,36 @@ test("le champ de code et ses boutons tiennent sur une rangée", async ({ page }
     ).toBeLessThanOrEqual(4);
   }
 });
+
+test("les scanlistes se rejoignent depuis la collection, pas par un onglet", async ({ page }, info) => {
+  /**
+   * Un onglet de même rang que « Collection » laissait croire à deux
+   * inventaires côte à côte. Une scanliste est une antichambre : on y range un
+   * lot **avant** de décider s'il entre en collection. C'est la place qu'elle
+   * avait dans ATEM-old, et elle porte cette lecture.
+   */
+  await signUp(page);
+  const barre = info.project.name === "mobile" ? ".global-mobile-bottom-nav" : ".app-bar";
+
+  await expect(page.locator(barre).getByRole("link", { name: /Scanliste/ })).toHaveCount(0);
+
+  const lien = page.locator(".tools-bar .scanlist-link");
+  await expect(lien).toBeVisible();
+  await lien.click();
+  await expect(page).toHaveURL(/\/scanlistes/);
+  await expect(page.getByRole("heading", { name: "Scanlistes" })).toBeVisible();
+});
+
+test("sur téléphone, le lien se réduit à son icône", async ({ page }, info) => {
+  test.skip(info.project.name !== "mobile", "règle propre au téléphone");
+
+  await signUp(page);
+  const libellé = page.locator(".scanlist-link-label");
+  await expect(libellé).toHaveCount(1);
+  // Masqué dans le balisage, pas rétréci : `font-size: 0` avalerait aussi
+  // l'emoji, qui est justement ce qui reste.
+  await expect(libellé).toBeHidden();
+
+  // La rangée d'outils ne doit pas déborder pour autant.
+  expect(await expectNoHorizontalOverflow(page)).toBeLessThanOrEqual(0);
+});

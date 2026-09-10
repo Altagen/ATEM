@@ -243,3 +243,19 @@
   font-size: var(--fs-xs);
   font-weight: 600;
 }
+
+/**
+ * Sur téléphone, le message passe en bas.
+ *
+ * Il est posé à `4.25rem` du haut, la hauteur de la barre du haut — qui
+ * n'existe pas sur téléphone. Il retombait donc pile sur la barre d'ajout,
+ * recouvrant le champ de code au moment précis où l'on vient s'en servir. En
+ * bas, au-dessus de la barre de navigation, il ne cache rien de ce qu'on
+ * manipule — et c'est là qu'on attend ce genre de message au doigt.
+ */
+@media (max-width: 46rem) {
+  .toast {
+    top: auto;
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+}
