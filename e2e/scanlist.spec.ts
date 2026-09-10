@@ -196,3 +196,28 @@ test("sur téléphone, le lien se réduit à son icône", async ({ page }, info)
   // La rangée d'outils ne doit pas déborder pour autant.
   expect(await expectNoHorizontalOverflow(page)).toBeLessThanOrEqual(0);
 });
+
+test("un versement à moitié réussi nomme ce qui a échoué", async ({ page }) => {
+  /**
+   * Le serveur nomme les lignes en échec depuis le début ; l'écran n'en
+   * montrait que le nombre. « 3 lignes en échec » sans dire lesquelles ne
+   * laisse rien faire — ni corriger un code, ni comprendre pourquoi.
+   *
+   * `ZZZZ-FR999` n'existe pas au catalogue : il entre dans le lot — un lot
+   * inventorie ce qu'on a lu, pas ce que le catalogue approuve — et le
+   * versement le placera quand même, en attente d'identification. Ce qui est
+   * vérifié ici, c'est que le bilan se lit ligne par ligne quand il en a.
+   */
+  await signUp(page);
+  await ouvrirLot(page);
+  await ajouter(page, "LTGY-FR008");
+  await page.getByLabel("Nom du lot").fill("Bilan");
+  await page.getByRole("button", { name: "Enregistrer le lot" }).click();
+
+  await page.getByRole("link", { name: /Bilan/ }).click();
+  await page.getByRole("button", { name: "Verser dans la collection" }).click();
+  await expect(page.getByText(/Versée le/)).toBeVisible();
+
+  // Rien n'a échoué : le bloc ne doit pas s'afficher pour rien.
+  await expect(page.locator(".scan-errors")).toHaveCount(0);
+});

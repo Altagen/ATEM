@@ -142,3 +142,22 @@
 .scan-draft-panel .scan-draft {
   margin-bottom: 1rem;
 }
+
+/**
+ * Ce que le versement n'a pas su placer.
+ *
+ * Encadré et détaché de la liste du lot : ce sont les seules lignes sur
+ * lesquelles il reste quelque chose à faire, et les chercher au milieu de
+ * quarante autres reviendrait à ne pas les avoir nommées.
+ */
+.scan-errors {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--caution) 45%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--caution) 8%, var(--card));
+}
+
+.scan-errors .scan-note {
+  margin-bottom: 0.6rem;
+}

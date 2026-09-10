@@ -172,6 +172,29 @@ d'une ligne portait le style du compteur de page, marge basse comprise.
 
 **Reste à faire** — rien pour M1.
 
+### Limite connue — l'interface n'est pas traduisible en l'état
+
+Mesuré le 2026-09-11, avant qu'on la croie prête pour l'anglais.
+
+| | |
+|---|---|
+| Chaînes visibles en dur, côté front | **86** |
+| Messages français renvoyés par l'API et affichés tels quels | **33** |
+
+Il n'existe **aucune couche de traduction** — pas de `t()`, rien. Le champ
+`locale` existe pourtant de bout en bout (colonne contrainte à `fr`/`en`, porté
+par le `viewer`, exposé dans `PublicUser`), mais il ne pilote qu'une seule
+chose : la langue du nom et du texte d'une carte dans sa fiche.
+
+**Traduire le front ne suffira pas.** `err.message` de l'API est affiché
+verbatim : « Ce lot a déjà été versé », « Scanliste introuvable », la règle du
+mot de passe. Il faudra que l'API renvoie un **code** que le front traduit
+plutôt qu'une phrase — la réponse d'erreur porte déjà un champ `error` à côté
+du `message`, la structure est là et n'est pas exploitée.
+
+C'est un chantier à part entière, pas un réglage. Noté ici pour qu'on ne le
+découvre pas au moment de basculer un compte en anglais.
+
 > Le prétraitement de l'image avant OCR est le vrai point dur de ce jalon, pas
 > `tesseract.js` lui-même. Ce que fait ATEM-old ici est probablement l'actif le plus
 > précieux de l'ancien projet.

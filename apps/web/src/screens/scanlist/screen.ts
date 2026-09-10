@@ -180,14 +180,18 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
   async function pourOpened(): Promise<void> {
     const lot = state.opened;
     if (!lot || lot.pouredAt) return;
+    state.pourErrors = [];
 
     const bouton = root.querySelector<HTMLButtonElement>("#lot-pour");
     if (bouton) bouton.disabled = true;
     try {
-      const bilan = await api<{ poured: number; failed: number }>(
-        `/scanlistes/${encodeURIComponent(lot.id)}/verser`,
-        { method: "POST" },
-      );
+      const bilan = await api<{
+        poured: number;
+        failed: number;
+        errors: { setCode: string; error: string }[];
+      }>(`/scanlistes/${encodeURIComponent(lot.id)}/verser`, { method: "POST" });
+      // Gardées pour l'écran : les compter sans les nommer ne laisse rien faire.
+      state.pourErrors = bilan.errors;
       // Un versement à moitié réussi se lit comme tel, pas comme un succès.
       toast(
         bilan.failed > 0

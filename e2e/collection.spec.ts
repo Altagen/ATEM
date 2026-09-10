@@ -279,6 +279,38 @@ test.describe("Mise en page", () => {
     expect(texte).toBe("rgb(251, 191, 36)");
   });
 
+  test("le favori se dit d'une seule voix, et il tient", async ({ page }) => {
+    /**
+     * Le favori s'affiche à deux endroits : le bouton étoile s'allume, et une
+     * pastille « ★ » se pose à côté du nom. Seul le bouton était basculé à la
+     * main ; la pastille attendait la repeinture suivante. L'écran donnait donc
+     * deux réponses différentes sur le même fait, et cela se lisait comme un
+     * favori non enregistré — il l'était pourtant.
+     */
+    await signUp(page);
+    await addBySetCode(page, "LTGY-FR008");
+
+    const étoile = page.locator(".js-fav").first();
+    await expect(page.locator(".fav-tag")).toHaveCount(0);
+
+    await étoile.click();
+    await expect(page.locator(".js-fav").first()).toHaveClass(/is-fav/);
+    await expect(page.locator(".fav-tag"), "la pastille suit le bouton, sans attendre")
+      .toHaveCount(1);
+
+    // Et le serveur l'a bien gardé.
+    await page.reload();
+    await expect(page.locator(".js-fav").first()).toHaveClass(/is-fav/);
+    await expect(page.locator(".fav-tag")).toHaveCount(1);
+
+    // Le retour en arrière vaut aussi des deux côtés.
+    await page.locator(".js-fav").first().click();
+    await expect(page.locator(".js-fav").first()).not.toHaveClass(/is-fav/);
+    await expect(page.locator(".fav-tag")).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator(".js-fav").first()).not.toHaveClass(/is-fav/);
+  });
+
   test("le message ne recouvre pas ce qu'on manipule", async ({ page }, info) => {
     /**
      * Le toast est posé sous la barre du haut. Sur téléphone, cette barre

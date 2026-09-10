@@ -92,7 +92,7 @@ function ligneListe(item: ScanlistSummary): SafeHtml {
   </li>`;
 }
 
-function detailHtml(lot: ScanlistDetail): SafeHtml {
+function detailHtml(lot: ScanlistDetail, échecs: ScanlistState["pourErrors"]): SafeHtml {
   const versée = lot.pouredAt !== null;
   return html`
     <div class="scan-head">
@@ -117,6 +117,25 @@ function detailHtml(lot: ScanlistDetail): SafeHtml {
       <button type="button" class="btn scan-trash" id="lot-delete">Jeter ce lot</button>
     </div>
 
+    ${when(
+      échecs.length > 0,
+      html`<div class="scan-errors">
+        <p class="scan-note warn">
+          ${échecs.length} ligne(s) n'ont pas pu être versées. Les autres sont entrées.
+        </p>
+        <ul class="scan-draft">
+          ${échecs.map(
+            (échec) => html`<li class="scan-draft-li">
+              <span><strong>${échec.setCode}</strong></span>
+              <span class="muted">${échec.error}</span>
+              <span></span>
+              <span></span>
+            </li>`,
+          )}
+        </ul>
+      </div>`,
+    )}
+
     <ul class="scan-draft">
       ${lot.lines.map(
         (line) => html`<li class="scan-draft-li">
@@ -135,7 +154,7 @@ function detailHtml(lot: ScanlistDetail): SafeHtml {
 
 export function scanlistHtml(state: ScanlistState): SafeHtml {
   if (state.opened) {
-    return html`<div class="scan-page">${detailHtml(state.opened)}</div>`;
+    return html`<div class="scan-page">${detailHtml(state.opened, state.pourErrors)}</div>`;
   }
 
   return html`

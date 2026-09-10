@@ -21,6 +21,14 @@ export type Draft = {
 export type ScanlistState = {
   loading: boolean;
   items: ScanlistSummary[];
+  /**
+   * Les lignes que le dernier versement n'a pas su placer.
+   *
+   * Le serveur les nomme depuis le début ; l'écran n'en montrait que le
+   * nombre. « 3 lignes en échec » sans dire lesquelles ne laisse rien faire —
+   * ni corriger un code, ni comprendre pourquoi.
+   */
+  pourErrors: { setCode: string; error: string }[];
   /** Le lot ouvert en consultation, quand l'URL en désigne un. */
   opened: ScanlistDetail | null;
   /** Le lot en cours de constitution, ou `null` si l'on n'en a pas commencé. */
@@ -42,6 +50,7 @@ export type ScanlistState = {
 const state: ScanlistState = {
   loading: true,
   items: [],
+  pourErrors: [],
   opened: null,
   draft: null,
   error: "",
@@ -60,6 +69,8 @@ export function resetView(): void {
   state.items = [];
   state.opened = null;
   state.error = "";
+  // Les échecs appartiennent au versement qu'on vient de voir, pas au suivant.
+  state.pourErrors = [];
 }
 
 export function startDraft(): void {

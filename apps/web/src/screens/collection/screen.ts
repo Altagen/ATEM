@@ -267,7 +267,7 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
     }
 
     const fav = target.closest<HTMLElement>(".js-fav");
-    if (fav?.dataset.id) void toggleFavorite(Number(fav.dataset.id), fav);
+    if (fav?.dataset.id) void toggleFavorite(Number(fav.dataset.id));
   });
 
   let searchTimer: number | undefined;
@@ -409,24 +409,33 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
     await refreshPending();
   }
 
-  async function toggleFavorite(id: number, button: HTMLElement): Promise<void> {
+  async function toggleFavorite(id: number): Promise<void> {
     const item = state.items.find((candidate) => candidate.id === id);
     if (!item) return;
     const next = !item.isFavorite;
 
-    // L'état bascule avant la réponse : en inventaire continu, attendre un
-    // aller-retour à chaque geste rend l'écran poussif. En cas d'échec, il
-    // revient et un message le dit — on ne laisse jamais un état faux.
+    /**
+     * L'état bascule avant la réponse, et **toute la ligne suit**.
+     *
+     * Le favori se dit à deux endroits : le bouton étoile s'allume, et une
+     * pastille « ★ » se pose à côté du nom — en galerie, c'est une étoile sur
+     * la vignette. Seul le bouton était basculé à la main : la pastille
+     * n'apparaissait qu'à la repeinture suivante, si bien que l'écran donnait
+     * deux réponses différentes sur le même fait. Ange l'a lu comme un favori
+     * non enregistré, ce qui est la conclusion raisonnable — il l'était
+     * pourtant, et il revenait bien après un rechargement.
+     *
+     * On repeint donc la liste depuis l'état, comme le fait déjà un « +1 » :
+     * une seule source de vérité, et plus rien à tenir d'accord à la main.
+     */
     item.isFavorite = next;
-    button.classList.toggle("is-fav", next);
-    button.setAttribute("aria-pressed", String(next));
+    repaintContent();
 
     try {
       await api(`/collection/${id}/favorite`, { method: "PATCH", body: { isFavorite: next } });
     } catch {
       item.isFavorite = !next;
-      button.classList.toggle("is-fav", !next);
-      button.setAttribute("aria-pressed", String(!next));
+      repaintContent();
       toast("Le favori n'a pas pu être enregistré.", "error");
     }
   }
