@@ -30,6 +30,31 @@ export type DeckZone = (typeof DECK_ZONES)[number];
  */
 export const DECK_MAX_COPIES = 3;
 
+/**
+ * Les tailles de zone, telles que les règles du jeu les fixent.
+ *
+ * **Le maximum se refuse, le minimum se signale.** Une soixante-et-unième carte
+ * au Main Deck n'est légale dans aucune situation : on la refuse. Un deck à
+ * douze cartes, lui, est un deck en cours de construction — le refuser
+ * empêcherait de le construire. La distinction est la même que pour la règle
+ * des trois exemplaires : ce qui ne peut jamais être vrai est interdit, ce qui
+ * n'est pas encore vrai est dit.
+ */
+export const DECK_ZONE_LIMITS = {
+  main: { min: 40, max: 60 },
+  extra: { min: 0, max: 15 },
+  side: { min: 0, max: 15 },
+} as const satisfies Record<DeckZone, { min: number; max: number }>;
+
+/** Un deck est-il jouable en l'état ? Tailles tenues, et rien qui manque. */
+export function deckIsPlayable(counts: Record<DeckZone, number>, missing: number): boolean {
+  if (missing > 0) return false;
+  return DECK_ZONES.every((zone) => {
+    const { min, max } = DECK_ZONE_LIMITS[zone];
+    return counts[zone] >= min && counts[zone] <= max;
+  });
+}
+
 export type BanlistStatus = "unlimited" | "semi_limited" | "limited" | "forbidden";
 
 /**

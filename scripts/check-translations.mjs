@@ -216,6 +216,20 @@ for (const file of [...files(WEB), ...files(API)]) {
   }
 
   /**
+   * Les libellés déclarés ailleurs que dans un gabarit.
+   *
+   * `register("/decks", écran, { nav: { label: "Decks" } })` : le mot s'affiche
+   * dans la barre de navigation, mais il est écrit dans une déclaration de
+   * route, loin de tout balisage. « Collection » a masqué le défaut longtemps —
+   * il s'écrit pareil dans les deux langues.
+   */
+  for (const étiquette of source.matchAll(/\blabel:\s*"((?:[^"\\]|\\.)+)"/g)) {
+    if (estBalisage(étiquette[1])) {
+      employees.add(étiquette[1]);
+    }
+  }
+
+  /**
    * Les tableaux d'étiquettes — `[string, string][]`.
    *
    * Une fiche de carte est une suite de couples « intitulé, valeur » déclarés

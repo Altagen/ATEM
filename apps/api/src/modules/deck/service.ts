@@ -12,7 +12,7 @@
  */
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
-  checkDeckAdd, DECK_MAX_COPIES, isExtraDeckCard, missingCopies,
+  checkDeckAdd, DECK_MAX_COPIES, DECK_ZONE_LIMITS, isExtraDeckCard, missingCopies,
   type DeckBlockReason, type DeckZone,
 } from "@atem/shared";
 import type { Database } from "../../db/client.js";
@@ -304,6 +304,21 @@ export async function setDeckCard(
     }
   }
 
+  /**
+   * La zone ne déborde pas.
+   *
+   * Une soixante-et-unième carte au Main n'est légale dans aucune situation ;
+   * un deck à douze cartes, en revanche, est un deck en cours. On refuse donc
+   * le maximum et on laisse le minimum se dire ailleurs.
+   */
+  const totalZone =
+    lignes.reduce((somme, ligne) => somme + ligne[`${input.zone}Qty`], 0) -
+    (existante?.[`${input.zone}Qty`] ?? 0) +
+    quantity;
+  if (totalZone > DECK_ZONE_LIMITS[input.zone].max) {
+    throw invalidInput(ZONE_PLEINE_LABELS[input.zone]);
+  }
+
   const zones = {
     mainQty: input.zone === "main" ? quantity : (existante?.mainQty ?? 0),
     extraQty: input.zone === "extra" ? quantity : (existante?.extraQty ?? 0),
@@ -354,4 +369,11 @@ const REFUS_LABELS: Record<DeckBlockReason, string> = {
   banlist: "La banlist n'en autorise pas autant.",
   not_owned: "Vous ne possédez pas assez d'exemplaires de cette carte.",
   max_copies: "Un deck ne porte pas plus de 3 exemplaires d'une carte.",
+};
+
+/** Une zone pleine se dit par son nom : « le Main Deck » parle, « main » non. */
+const ZONE_PLEINE_LABELS: Record<DeckZone, string> = {
+  main: "Le Main Deck est plein — 60 cartes au maximum.",
+  extra: "L'Extra Deck est plein — 15 cartes au maximum.",
+  side: "Le Side Deck est plein — 15 cartes au maximum.",
 };

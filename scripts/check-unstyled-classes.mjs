@@ -32,6 +32,8 @@ const SANS_HABILLAGE = new Set([
   "js-fav",
   "js-delta",
   "js-draft",
+  "js-add",
+  "js-zone",
 ]);
 
 function files(dir, ext, acc = []) {

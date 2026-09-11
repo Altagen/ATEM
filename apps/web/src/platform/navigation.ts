@@ -100,11 +100,19 @@ async function switchLanguage(locale: "fr" | "en"): Promise<void> {
   }
 }
 
+/**
+ * Un lien de navigation — **et son libellé traduit**.
+ *
+ * Les destinations viennent du routeur, où elles sont déclarées en français.
+ * Elles s'affichaient telles quelles : « Collection » est identique dans les
+ * deux langues, ce qui a masqué le défaut jusqu'à ce qu'une autre destination
+ * arrive.
+ */
 function link(path: string, label: string, className: string, icon?: string): HTMLElement {
   const isActive = window.location.pathname === path;
   const node = el("a", { class: className, href: path }, []);
   if (icon) node.append(el("span", { "aria-hidden": "true" }, [icon]));
-  node.append(el("span", {}, [label]));
+  node.append(el("span", {}, [t(label)]));
   if (isActive) {
     node.classList.add("is-active");
     node.setAttribute("aria-current", "page");
@@ -176,7 +184,7 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
     list.append(
       el("a", { class: "account-sheet-item", href: path }, [
         el("span", { "aria-hidden": "true" }, [destination.icon]),
-        el("span", {}, [destination.label]),
+        el("span", {}, [t(destination.label)]),
         el("span", { class: "account-sheet-chev", "aria-hidden": "true" }, ["›"]),
       ]),
     );

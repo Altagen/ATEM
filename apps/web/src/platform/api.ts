@@ -77,6 +77,8 @@ export type CardDetail = {
   /** Vrai quand la carte n'est pas encore traduite dans le catalogue. */
   frenchPending: boolean;
   type: string | null;
+  /** Le cadre — `fusion`, `synchro`, `xyz`, `link`… Il décide de l'Extra Deck. */
+  frameType: string | null;
   race: string | null;
   attribute: string | null;
   atk: number | null;
@@ -85,6 +87,8 @@ export type CardDetail = {
   linkValue: number | null;
   linkMarkers: string[] | null;
   archetype: string | null;
+  /** Le statut de banlist, tel que le catalogue l'écrit. */
+  banlistTcg: string | null;
   imageUrl: string | null;
   imageUrlSmall: string | null;
 };

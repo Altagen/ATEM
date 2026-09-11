@@ -1,10 +1,22 @@
+/**
+ * Règles retirées de `design/pages/decks.css`.
+ *
+ * Rien ne les posait dans le balisage livré : elles habillaient des écrans
+ * qui n'existent pas encore ici (guildes, réglages, administration, accueil).
+ * Conservées telles quelles — quand leur écran arrive, elles remontent.
+ */
+
 /* Decks — manage list + builder */.folder-node.is-drag-over{
   background: color-mix(in srgb, var(--accent, #5b8def) 16%, transparent);
   box-shadow: inset 0 0 0 1px var(--accent, #5b8def);
 }
+
+
 .folder-gal-card:hover .folder-gal-actions {
   opacity: 1;
 }
+
+
 .folder-inline-form,
 .folder-move-panel {
   display: flex;
@@ -17,118 +29,48 @@
   border: 1px solid var(--border, #2a3344);
   border-radius: 10px;
 }
+
+
 .deck-opts-backdrop.is-hidden {
   display: none;
 }
+
+
 .deck-opts-modal.is-hidden {
   display: none;
 }
-.deck-stepper-qty.is-in-deck,
-.qty-pill.is-in-deck {
-  color: #6ec8ff !important;
-  font-weight: 800;
-  text-shadow: 0 0 8px rgba(80, 180, 255, 0.65);
-}
+
+
 .folder-modal-backdrop.is-hidden {
   display: none;
 }
+
+
 .folder-modal.is-hidden {
   display: none;
 }
+
+
 .zone-ico,
 .deck-ico {
   display: inline-block;
   vertical-align: -0.15em;
   flex-shrink: 0;
 }
-.qty-pill,
-.zone-pill {
-  font-size: 0.75rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-  background: var(--input, #0e131a);
-  border: 1px solid var(--border, #2a3344);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
+
+
 @media (max-width: 900px) {
   .deck-edit-layout {
     grid-template-columns: 1fr;
   }
 }
-/**
- * Les deux panneaux de l'atelier ne sont plus des cartes.
- *
- * Chacune coûtait deux bords : le sien (bordure + 0.85rem de remplissage) et
- * celui de la page, qui devait rester assez large pour qu'on voie la carte se
- * détacher. Sur un téléphone de 390px, 46px partaient à gauche et autant à
- * droite avant la première vignette — un quart de l'écran pour du décor.
- *
- * La Collection ne s'encadre pas non plus : la page est le panneau. Ce qui
- * sépare les deux colonnes, c'est leur en-tête et son filet, pas une boîte.
- */
-.deck-edit-collection,
-.deck-edit-zones {
-  min-width: 0;
-}
-.zone-qty {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  white-space: nowrap;
-}
-.menu-check {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.9rem;
-}
-.btn-qty.is-fav,
-.btn-qty.js-fav.is-fav {
-  color: var(--gold);
-}
-.fav-tag {
-  color: var(--gold) !important;
-}
 
-/* Banlist badges (deck atelier) */
-.ban-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  padding: 0.12rem 0.35rem;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-.ban-badge-forbidden {
-  color: #ffb4b4;
-  background: rgba(200, 40, 40, 0.25);
-  border-color: rgba(255, 80, 80, 0.45);
-}
-.ban-badge-limited {
-  color: #ffd9a8;
-  background: rgba(200, 120, 20, 0.22);
-  border-color: rgba(255, 160, 40, 0.4);
-}
-.ban-badge-semi {
-  color: #ffe9a0;
-  background: rgba(180, 160, 20, 0.2);
-  border-color: rgba(220, 200, 40, 0.35);
-}
-.ban-badge-over {
-  color: #ffc9c9;
-  background: rgba(160, 20, 20, 0.35);
-  border-color: rgba(255, 60, 60, 0.55);
-}
+
 .card-ban-forbidden {
   opacity: 0.72;
 }
+
+
 .ban-slash {
   display: inline-block;
   width: 1em;
@@ -145,75 +87,46 @@
   border: 1.5px solid #ff5555;
   border-radius: 50%;
 }
+
+
 .btn-force-add {
   font-size: 0.75rem;
   border-style: dashed;
 }
 
-/* ── Vue liste, façon explorateur ──────────────────────────────────────────
- * Reprise de la maquette à l'identique. L'arborescence dépliait tous les
- * dossiers d'un coup, avec leur imbrication et leurs decks : à trois niveaux,
- * on lisait une carte de métro pour trouver un deck. La liste montre un seul
- * endroit à la fois, et partage sa position avec la galerie.
- */
-.drive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.drive-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 8px;
-  border-bottom: 1px solid var(--border);
-}
-.drive-row:last-child { border-bottom: 0; }
-.drive-row:hover { background: rgba(255, 255, 255, 0.04); }
-.drive-row.is-drag-over { background: color-mix(in srgb, var(--gold) 12%, transparent); }
-.drive-row[draggable="true"] { cursor: grab; }
 
-.drive-main {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.7rem;
-  min-width: 0;
-  padding: 0.55rem 0.4rem;
-}
-.drive-ico { font-size: 1.1rem; line-height: 1; text-align: center; }
+.drive-row.is-drag-over { background: color-mix(in srgb, var(--gold) 12%, transparent); }
+
+
 /* La couverture d'un deck garde le rapport d'une carte, en tout petit : c'est
    ce qui distingue une ligne de deck d'une ligne de dossier au premier regard. */
 .drive-ico-cover { width: 1.55rem; height: 2.25rem; display: block; border-radius: 3px; overflow: hidden; }
+
+
 .drive-ico-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.drive-text { display: flex; flex-direction: column; min-width: 0; }
-.drive-name {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--fg);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.drive-main:hover .drive-name { color: var(--accent); }
-.drive-meta { font-size: 0.75rem; white-space: nowrap; }
+
+
 /* Les comptes ne bougent pas d'une ligne à l'autre. */
 .drive-actions { display: flex; align-items: center; gap: 0.2rem; position: relative; }
+
+
 /* Remonter d'un cran se distingue : c'est une navigation, pas un contenu. */
 .drive-row.is-parent .drive-name { color: var(--muted); }
+
+
 /* La jaquette d'un deck dans une rangée : `deckCoverHtml` rend une image ou le
    dos de carte, les deux doivent remplir la vignette. */
 .drive-cover, .drive-cover img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 3px; }
+
+
 
 /* ── Lecteur de banlist ────────────────────────────────────────────────────
  * Reprise de la maquette. Le contrôle se fait à l'ajout, carte par carte, et
  * l'on ne voyait jamais la règle entière — seulement son refus.
  */
 .banlist-list { list-style: none; margin: 0 0 0.85rem; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+
+
 .banlist-row {
   display: grid;
   grid-template-columns: 8.5rem minmax(0, 1fr) auto auto;
@@ -225,14 +138,32 @@
   border: 1px solid var(--border);
   font-size: 0.85rem;
 }
+
+
 .banlist-statut { font-weight: 800; font-size: 0.78rem; white-space: nowrap; }
+
+
 .banlist-row.is-forbidden { border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
+
+
 .banlist-row.is-forbidden .banlist-statut { color: var(--danger); }
+
+
 .banlist-row.is-limited .banlist-statut { color: var(--gold); }
+
+
 .banlist-nom { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
 .banlist-code { font-size: 0.75rem; color: var(--accent); }
+
+
 .banlist-max { font-size: 0.75rem; white-space: nowrap; }
+
+
 .deck-opts-note { font-size: 0.78rem; line-height: 1.5; margin: 0.9rem 0 0; }
+
+
 .link-btn {
   appearance: none;
   padding: 0;
@@ -245,12 +176,16 @@
   text-decoration: underline;
 }
 
+
+
 /* ── Bascule des panneaux de l'atelier, sur téléphone ──────────────────────
  * Empilés, la collection et le deck obligent à faire défiler toute la première
  * pour atteindre le second — c'est-à-dire à chaque carte ajoutée. Au-dessus de
  * 900px les deux tiennent côte à côte : la bascule n'y a rien à faire.
  */
 .deck-panel-switch { display: none; }
+
+
 
 @media (max-width: 900px) {
   .deck-panel-switch {
@@ -263,6 +198,8 @@
   .deck-edit-layout.is-panneau-coll .deck-edit-zones,
   .deck-edit-layout.is-panneau-zone .deck-edit-collection { display: none; }
 }
+
+
 
 /* ──────────────────────────────────────────────────────────────────────────
    Reprise de la feuille que `decks/app.ts` injectait à chaud.
@@ -282,50 +219,74 @@
   max-width:1280px;
   margin:0 auto;
   padding:1rem 1.25rem 3rem;
-}.app-bar-right {
-  display:flex;
-  align-items:center;
-  gap:.65rem;
-}.decks-manage-head h1 {
+}
+
+.decks-manage-head h1 {
   margin:0 0 .25rem;
   font-size:1.35rem;
-}.decks-toolbar {
+}
+
+.decks-toolbar {
   display:flex;
   flex-wrap:wrap;
   gap:.75rem;
   align-items:flex-end;
   margin:1rem 0 1.25rem;
-}.decks-toolbar .search {
+}
+
+.decks-toolbar .search {
   flex:1;
   min-width:160px;
 }
-.decks-toolbar-build{flex-shrink:0;white-space:nowrap;margin-left:auto}.folder-node {
+
+
+.decks-toolbar-build{flex-shrink:0;white-space:nowrap;margin-left:auto}
+
+.folder-node {
   margin:0;
   padding-left:calc((var(--folder-depth,1) - 1) * 1rem);
   border-radius:10px;
   transition:background .12s,box-shadow .12s;
-}.folder-node.is-drag-over{background:color-mix(in srgb,var(--accent,#5b8def) 16%,transparent);box-shadow:inset 0 0 0 1px var(--accent,#5b8def)}.decks-gallery-wrap {
+}
+
+.folder-node.is-drag-over{background:color-mix(in srgb,var(--accent,#5b8def) 16%,transparent);box-shadow:inset 0 0 0 1px var(--accent,#5b8def)}
+
+.decks-gallery-wrap {
   display:flex;
   flex-direction:column;
   gap:.85rem;
   position:relative;
-}.gallery-nav {
+}
+
+.gallery-nav {
   display:flex;
   align-items:center;
   gap:.75rem;
   flex-wrap:wrap;
   min-height:2rem;
 }
+
+
 .gallery-nav-path{font-size:.95rem;
   display: flex;
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
 }
+
+
 .gallery-nav-here{font-size:.95rem}
+
+
 .gallery-empty-hint{margin:.5rem 0 0;font-size:.85rem}
+
+
 .gallery-browser-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:1rem}
-.folder-gal-li{list-style:none}.folder-gal-card {
+
+
+.folder-gal-li{list-style:none}
+
+.folder-gal-card {
   display:flex;
   flex-direction:column;
   gap:.35rem;
@@ -339,23 +300,31 @@
   padding:.55rem;
   position:relative;
   transition:border-color .12s,box-shadow .12s,transform .12s,background .12s;
-}.folder-gal-card-parent {
+}
+
+.folder-gal-card-parent {
   background:
   radial-gradient(ellipse at 50% 35%,rgba(200,180,80,.12),transparent 55%),
   linear-gradient(165deg,#1c1a14 0%,#12100c 100%);
   border-style:dashed;
-}.folder-gal-card:hover {
+}
+
+.folder-gal-card:hover {
   border-color:var(--accent,#5b8def);
   transform:translateY(-2px);
   box-shadow:0 8px 20px rgba(0,0,0,.3);
 }
+
+
 .folder-gal-li.is-drag-over .folder-gal-card,
 .folder-gal-card.is-drag-over{
   border-color:var(--accent,#5b8def);
   border-style:solid;
   background:color-mix(in srgb,var(--accent,#5b8def) 22%,#121820);
   box-shadow:0 0 0 2px var(--accent,#5b8def),0 0 20px color-mix(in srgb,var(--accent,#5b8def) 40%,transparent);
-}.folder-gal-open {
+}
+
+.folder-gal-open {
   appearance:none;
   border:0;
   background:transparent;
@@ -371,29 +340,49 @@
   width:100%;
   padding:0;
   min-height:0;
-}.folder-gal-ico {
+}
+
+.folder-gal-ico {
   font-size:2rem;
   line-height:1;
   margin-top:.35rem;
-}.folder-gal-name {
+}
+
+.folder-gal-name {
   font-size:.95rem;
   line-height:1.2;
   word-break:break-word;
-}.folder-gal-meta {
+}
+
+.folder-gal-meta {
   font-size:.72rem;
-}.folder-gal-actions {
+}
+
+.folder-gal-actions {
   display:flex;
   gap:.2rem;
   margin-top:auto;
   justify-content:flex-end;
   opacity:.7;
 }
+
+
 .folder-gal-card:hover .folder-gal-actions,.folder-gal-card:focus-within .folder-gal-actions{opacity:1}
+
+
 .deck-portrait-li{list-style:none;cursor:grab}
-.deck-portrait-wrap{position:relative}.deck-portrait-li.is-dragging {
+
+
+.deck-portrait-wrap{position:relative}
+
+.deck-portrait-li.is-dragging {
   opacity:.45;
 }
-.deck-portrait-li:active{cursor:grabbing}.deck-portrait-settings {
+
+
+.deck-portrait-li:active{cursor:grabbing}
+
+.deck-portrait-settings {
   position:absolute;
   top:.35rem;
   right:.35rem;
@@ -413,13 +402,23 @@
   transition:opacity .12s,background .12s;
   box-shadow:0 2px 8px rgba(0,0,0,.35);
 }
+
+
 .deck-portrait-wrap:hover .deck-portrait-settings,
 .deck-portrait-wrap:focus-within .deck-portrait-settings{
   opacity:1;pointer-events:auto;
 }
+
+
 .deck-portrait-settings:hover{background:var(--accent,#5b8def);border-color:transparent;color:#fff}
+
+
 .folder-act{width:1.7rem;height:1.7rem;font-size:.95rem;line-height:1}
-.folder-menu-anchor{position:relative}.folder-ctx-menu {
+
+
+.folder-menu-anchor{position:relative}
+
+.folder-ctx-menu {
   position:absolute;
   right:0;
   top:calc(100% + 4px);
@@ -433,7 +432,9 @@
   display:flex;
   flex-direction:column;
   gap:.1rem;
-}.folder-ctx-menu .menu-item {
+}
+
+.folder-ctx-menu .menu-item {
   text-align:left;
   width:100%;
   border:0;
@@ -443,17 +444,29 @@
   padding:.45rem .6rem;
   border-radius:7px;
   cursor:pointer;
-}.folder-ctx-menu .menu-item:hover {
+}
+
+.folder-ctx-menu .menu-item:hover {
   background:rgba(255,255,255,.06);
 }
-.folder-ctx-menu .menu-item-danger{color:#f08080}.folder-ctx-menu .menu-sep {
+
+
+.folder-ctx-menu .menu-item-danger{color:#f08080}
+
+.folder-ctx-menu .menu-sep {
   height:1px;
   margin:.2rem .35rem;
   background:var(--border,#2a3344);
 }
-.folder-inline-form,.folder-move-panel{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;padding:.45rem .55rem;margin:.25rem 0 .45rem .85rem;background:rgba(255,255,255,.03);border:1px solid var(--border,#2a3344);border-radius:10px}.folder-root-create {
+
+
+.folder-inline-form,.folder-move-panel{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;padding:.45rem .55rem;margin:.25rem 0 .45rem .85rem;background:rgba(255,255,255,.03);border:1px solid var(--border,#2a3344);border-radius:10px}
+
+.folder-root-create {
   margin-bottom:.5rem;
-}.folder-inline-input {
+}
+
+.folder-inline-input {
   flex:1;
   min-width:140px;
   max-width:280px;
@@ -464,18 +477,27 @@
   color:inherit;
   font:inherit;
 }
+
+
 .folder-rename-input{max-width:200px;min-width:100px}
+
+
 .folder-move-panel .menu-field{flex:1;min-width:160px;margin:0}
-.folder-move-hint{font-size:.75rem;width:100%}.btn-sm {
-  font-size:.8rem;
-  padding:.3rem .55rem;
-}
-.folder-pick-btn{display:block;width:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.folder-modal-backdrop {
+
+
+.folder-move-hint{font-size:.75rem;width:100%}
+
+
+.folder-pick-btn{display:block;width:100%;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.folder-modal-backdrop {
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.55);
   z-index:80;
-}.folder-modal {
+}
+
+.folder-modal {
   position:fixed;
   left:50%;
   top:50%;
@@ -489,14 +511,20 @@
   border:1px solid var(--border,#2a3344);
   border-radius:12px;
   box-shadow:0 16px 48px rgba(0,0,0,.45);
-}.folder-modal-head {
+}
+
+.folder-modal-head {
   display:flex;
   align-items:center;
   justify-content:space-between;
   padding:.85rem 1rem;
   border-bottom:1px solid var(--border,#2a3344);
 }
-.folder-modal-head h2{margin:0;font-size:1.05rem}.folder-modal-body {
+
+
+.folder-modal-head h2{margin:0;font-size:1.05rem}
+
+.folder-modal-body {
   padding:.85rem 1rem;
   overflow:auto;
   flex:1;
@@ -504,7 +532,11 @@
   flex-direction:column;
   gap:.75rem;
 }
-.folder-modal-hint{margin:0;font-size:.85rem}.folder-tree {
+
+
+.folder-modal-hint{margin:0;font-size:.85rem}
+
+.folder-tree {
   max-height:min(36vh,280px);
   overflow:auto;
   padding:.15rem;
@@ -515,7 +547,9 @@
   flex-direction:column;
   gap:.15rem;
   margin: 0.75rem 0 1rem;
-}.folder-tree-row {
+}
+
+.folder-tree-row {
   display:flex;
   align-items:center;
   gap:.4rem;
@@ -529,24 +563,44 @@
   font:inherit;
   cursor:pointer;
   text-align:left;
-}.folder-tree-row:hover {
+}
+
+.folder-tree-row:hover {
   background:rgba(255,255,255,.04);
 }
+
+
 .folder-tree-row.is-selected{border-color:var(--accent,#5b8def);background:color-mix(in srgb,var(--accent,#5b8def) 12%,transparent)}
-.folder-tree-name{font-weight:600}.folder-tree-path {
+
+
+.folder-tree-name{font-weight:600}
+
+.folder-tree-path {
   font-size:.72rem;
   margin-left:auto;
   opacity:.7;
 }
+
+
 .folder-tree-depth{font-size:.68rem}
+
+
 .fm-tree-node{display:flex;flex-direction:column}
-.fm-tree-children{display:flex;flex-direction:column}.fm-tree-empty {
+
+
+.fm-tree-children{display:flex;flex-direction:column}
+
+.fm-tree-empty {
   margin:.5rem;
   font-size:.85rem;
-}.folder-modal-sel {
+}
+
+.folder-modal-sel {
   margin:.35rem 0 0;
   font-size:.85rem;
-}.folder-modal-foot {
+}
+
+.folder-modal-foot {
   display:flex;
   flex-wrap: wrap;
   justify-content:flex-end;
@@ -554,7 +608,9 @@
   padding:.75rem 1rem;
   border-top:1px solid var(--border,#2a3344);
   align-items:center;
-}.deck-portrait {
+}
+
+.deck-portrait {
   display:flex;
   flex-direction:column;
   gap:.45rem;
@@ -565,18 +621,26 @@
   color:inherit;
   cursor:pointer;
   text-align:left;
-}.deck-portrait:hover .deck-cover {
+}
+
+.deck-portrait:hover .deck-cover {
   transform:translateY(-3px);
   box-shadow:0 8px 24px rgba(0,0,0,.35);
-}.deck-portrait-label {
+}
+
+.deck-portrait-label {
   display:flex;
   flex-direction:column;
   gap:.1rem;
   font-size:.78rem;
-}.deck-portrait-label strong {
+}
+
+.deck-portrait-label strong {
   font-size:.85rem;
   line-height:1.2;
-}.deck-cover {
+}
+
+.deck-cover {
   aspect-ratio:59/86;
   width:100%;
   border-radius:8px;
@@ -585,8 +649,14 @@
   background:#1a1028;
   transition:transform .15s,box-shadow .15s;
 }
+
+
 .deck-cover img{width:100%;height:100%;object-fit:cover;display:block}
-.deck-cover-sm{width:64px;flex-shrink:0}.deck-cover-default {
+
+
+.deck-cover-sm{width:64px;flex-shrink:0}
+
+.deck-cover-default {
   display:flex;
   align-items:center;
   justify-content:center;
@@ -595,51 +665,56 @@
     repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px),
     linear-gradient(160deg,#2a1848 0%,#12081f 50%,#1a0e30 100%);
   border:2px solid rgba(200,160,80,.45);
-}.deck-cover-ygo {
+}
+
+.deck-cover-ygo {
   font-size:.72rem;
   letter-spacing:.12em;
   color:rgba(255,220,140,.75);
   font-weight:700;
   text-shadow:0 1px 2px #000;
-}.deck-detail-top {
+}
+
+.deck-detail-top {
   display:flex;
   justify-content:space-between;
   align-items:flex-start;
   gap:1rem;
   margin-bottom:.5rem;
   flex-wrap: wrap;
-}.deck-detail-identity {
+}
+
+.deck-detail-identity {
   display:flex;
   gap:.85rem;
   align-items:center;
   min-width: 0;
-}.deck-detail-identity h1 {
+}
+
+.deck-detail-identity h1 {
   margin:0 0 .25rem;
   font-size:1.35rem;
-}.deck-detail-actions {
+}
+
+.deck-detail-actions {
   display:flex;
   gap:.35rem;
   flex-shrink: 0;
-}.zone-tabs {
-  display:flex;
-  flex-wrap:wrap;
-  gap:.35rem;
-  align-items:center;
-}.chip-zone {
-  display:inline-flex;
-  align-items:center;
-  gap:.3rem;
 }
+
+
 .zone-ico,.deck-ico{display:inline-block;vertical-align:-.15em;flex-shrink:0}
+
+
 .zone-ico-main{color:#7eb6ff}
+
+
 .zone-ico-extra{color:#e8c36a}
+
+
 .zone-ico-side{color:#9ad4a8}
-.deck-zone-summary{display:flex;flex-wrap:wrap;gap:.65rem;align-items:center;
-  margin: 0;
-  font-size: 0.85rem;
-}
-.deck-zone-summary span{display:inline-flex;align-items:center;gap:.25rem}
-.qty-pill,.zone-pill{font-size:.75rem;padding:.1rem .4rem;border-radius:999px;background:var(--input,#0e131a);border:1px solid var(--border,#2a3344);display:inline-flex;align-items:center;gap:.25rem}.deck-detail-gallery .tile-zone {
+
+.deck-detail-gallery .tile-zone {
   position:absolute;
   top:.35rem;
   left:.35rem;
@@ -648,9 +723,17 @@
   padding:.15rem;
   line-height:0;
 }
+
+
 .deck-detail-tile .tile-art{position:relative}
+
+
 .btn-icon-danger{color:#f08080}
+
+
 .btn-icon-danger:hover{color:#ffb0b0}
+
+
 /* In-deck selection ring (blue frame + ×N) */
 .item.in-deck-selected,
 .tile.in-deck-selected,
@@ -661,7 +744,11 @@
   box-shadow:0 0 0 1px color-mix(in srgb,var(--accent,#5b8def) 35%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent,#5b8def) 20%,transparent);
   background:color-mix(in srgb,var(--accent,#5b8def) 8%,transparent);
 }
-.item.in-deck-selected .item-main{position:relative}.in-deck-qty {
+
+
+.item.in-deck-selected .item-main{position:relative}
+
+.in-deck-qty {
   color:#eaf6ff;
   background:linear-gradient(160deg,#3d9fff 0%,#1a6fe0 100%);
   border:1px solid rgba(160,220,255,.55);
@@ -683,95 +770,85 @@
   border-radius:999px;
   z-index:2;
 }
+
+
 .tile.in-deck-selected .in-deck-qty,
 .deck-coll-tile .in-deck-qty{
   top:.35rem;right:.35rem;left:auto;
 }
-/* List: stepper stays on the RIGHT (never wrap under the row) */
-.deck-edit-coll-list .item-row{display:flex;align-items:center;gap:.65rem;flex-wrap:nowrap}
+
+
 .deck-edit-coll-list .item-main.js-open-card{
   flex:1 1 auto;min-width:0;width:auto !important;max-width:none;
   cursor:pointer;border:0;background:transparent;color:inherit;text-align:left;
   font:inherit;padding:.25rem;display:flex;gap:.65rem;align-items:center;position:relative;
 }
-.deck-edit-coll-list .deck-stepper{flex:0 0 auto;margin-left:auto}
+
+
 .js-open-entry{cursor:pointer;border:0;background:transparent;color:inherit;font:inherit;text-align:left}
-/* Gallery 6 columns + overlay on art */
-.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(6,minmax(0,1fr));gap:.55rem}
-@media(max-width:1100px){.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:700px){.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.deck-coll-tile{display:flex;flex-direction:column;gap:0;overflow:hidden;min-width:0}
+
+
 .deck-coll-tile .tile-art-wrap{position:relative}
+
+
 .deck-coll-tile .tile-open{display:block;width:100%;border:0;padding:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
-.deck-coll-tile .tile-body{padding:.35rem .4rem .45rem;display:flex;flex-direction:column;gap:.12rem}
+
+
 .deck-coll-tile .tile-qty.muted-own{opacity:.85;font-size:.68rem}
+
+
 .deck-stepper-overlay{
   position:absolute;left:0;right:0;bottom:0;z-index:3;
   display:flex;align-items:center;justify-content:space-between;
   gap:.1rem;padding:.22rem .25rem;
   background:linear-gradient(to top,rgba(8,10,16,.94),rgba(8,10,16,.5) 75%,transparent);
 }
+
+
 .deck-stepper-overlay .btn-qty,.deck-stepper-overlay .btn{
   min-width:1.55rem;height:1.45rem;padding:0 .15rem;font-size:.75rem;font-weight:700;
   background:rgba(20,24,32,.9);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:6px;
 }
+
+
 .deck-stepper-overlay .btn-qty:disabled{opacity:.35}
+
+
 .deck-stepper-overlay .btn-qty:not(:disabled):hover,.deck-stepper-overlay .btn:hover{background:var(--accent,#5b8def);border-color:transparent}
+
+
 .deck-stepper-overlay .deck-stepper-qty{min-width:1.45rem;color:#fff;font-size:.82rem;font-weight:800;text-align:center}
+
+
 .deck-stepper-overlay .deck-stepper-qty.is-in-deck{color:#8fd4ff;text-shadow:0 0 8px rgba(100,200,255,.95)}
-/* Right zone panel: name left, stepper right */.zone-edit-list {
-  max-height:min(65vh,560px);
-  overflow:auto;
-  list-style:none;
-  margin:0;
-  padding:0;
-}
-.zone-edit-row{display:flex;align-items:center;gap:.5rem;padding:.4rem .15rem;border-bottom:1px solid rgba(42,51,68,.55);
-  grid-template-columns: minmax(0, 1fr) auto;
-  border-radius: 8px;
-}
-.zone-edit-row:last-child{border-bottom:0}
-.zone-edit-main{flex:1;min-width:0;display:flex;align-items:center;gap:.5rem;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:.15rem;
-  grid-template-columns: 2.2rem minmax(0, 1fr);
-  appearance: none;
-}
-.zone-edit-text{display:flex;flex-direction:column;gap:.1rem;min-width:0;
-  font-size: 0.82rem;
-}
-.zone-edit-text strong{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  color: #fff;
-}
-.zone-edit-text code{font-size:.72rem}
-.zone-edit-row .deck-stepper{flex:0 0 auto}
-.thumb-sm,.thumb-empty.thumb-sm{width:36px;height:52px;
-  border-radius: 4px;
-  display: block;
-}.zone-hint {
-  font-size:.75rem;
-  margin:.4rem 0 .65rem;
-  line-height:1.35;
-}
+
+
 .deck-open-actions{margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--border,#2a3344)}
+
+
 .deck-open-btns{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
-.in-deck-qty-label{color:#6ec8ff;font-weight:800;text-shadow:0 0 8px rgba(80,180,255,.55)}
-.deck-stepper{display:inline-flex;align-items:center;gap:.25rem;flex-shrink:0}
-.deck-stepper .btn-qty,.deck-stepper .btn{min-width:2rem}
-.deck-stepper-qty{min-width:1.7rem;text-align:center;font-size:.85rem;font-weight:800;color:var(--muted,#9aa)}
-.deck-stepper-qty.is-in-deck{color:#6ec8ff;text-shadow:0 0 8px rgba(80,180,255,.65)}.deck-edit-head {
+
+.deck-edit-head {
   display:flex;
   flex-wrap:wrap;
   justify-content:space-between;
   gap:.75rem;
   align-items:flex-end;
   margin-bottom:.5rem;
-}.deck-edit-fields {
+}
+
+.deck-edit-fields {
   display:flex;
   flex-wrap:wrap;
   gap:.65rem;
   flex:1;
   align-items:flex-end;
 }
-.deck-edit-fields .grow{flex:1;min-width:160px}.deck-opts-trigger {
+
+
+.deck-edit-fields .grow{flex:1;min-width:160px}
+
+.deck-opts-trigger {
   display:inline-flex;
   align-items:center;
   gap:.4rem;
@@ -781,17 +858,25 @@
   padding: 0.45rem 0.8rem;
   font-size: 0.82rem;
 }
-.deck-opts-trigger-ico{opacity:.85;flex-shrink:0}.deck-opts-trigger-text {
+
+
+.deck-opts-trigger-ico{opacity:.85;flex-shrink:0}
+
+.deck-opts-trigger-text {
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
   font-size:.82rem;
-}.deck-opts-backdrop {
+}
+
+.deck-opts-backdrop {
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.55);
   z-index:70;
-}.deck-opts-modal {
+}
+
+.deck-opts-modal {
   position:fixed;
   left:50%;
   top:50%;
@@ -804,64 +889,69 @@
   box-shadow:0 16px 48px rgba(0,0,0,.45);
   display:flex;
   flex-direction:column;
-}.deck-opts-head {
+}
+
+.deck-opts-head {
   display:flex;
   align-items:center;
   justify-content:space-between;
   padding:.85rem 1rem;
   border-bottom:1px solid var(--border,#2a3344);
 }
-.deck-opts-head h2{margin:0;font-size:1.05rem}.deck-opts-body {
+
+
+.deck-opts-head h2{margin:0;font-size:1.05rem}
+
+.deck-opts-body {
   padding:1rem;
   display:flex;
   flex-direction:column;
   gap:.85rem;
-}.deck-opts-sizes {
+}
+
+.deck-opts-sizes {
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:.55rem;
-}.deck-opts-foot {
+}
+
+.deck-opts-foot {
   display:flex;
   justify-content:flex-end;
   padding:.75rem 1rem;
   border-top:1px solid var(--border,#2a3344);
-}.deck-edit-actions {
+}
+
+.deck-edit-actions {
   display:flex;
   gap:.4rem;
   flex-wrap:wrap;
   flex-shrink: 0;
 }
+
+
 .deck-counts{margin:.25rem 0 1rem;display:flex;flex-wrap:wrap;gap:.65rem 1rem;align-items:center}
+
+
 .deck-counts .count-full{color:var(--accent,#5b8def)}
-.deck-counts .count-over{color:var(--err,#f08080);font-weight:600}.deck-edit-layout {
+
+
+.deck-counts .count-over{color:var(--err,#f08080);font-weight:600}
+
+.deck-edit-layout {
   display:grid;
   grid-template-columns:minmax(0,1.55fr) minmax(280px,.9fr);
   gap:1rem;
   align-items:start;
 }
+
+
 @media(max-width:900px){.deck-edit-layout{grid-template-columns:1fr}}
-/* Les panneaux de l'atelier ne sont plus des cartes — voir styles/decks.css. */
-.deck-edit-collection,.deck-edit-zones{min-width:0}
 
-/* ── Porté de la maquette ──────────────────────────────────────────────
- *
- * Ces classes étaient posées par l'application et habillées nulle part :
- * l'écran avait été construit en recopiant le balisage de la maquette sans
- * ses règles. Elles ne cassaient rien de visible — elles laissaient
- * simplement des éléments sans forme, et faisaient croire qu'une règle
- * existait quelque part.
- */
 
-/* depuis design/styles/pages/decks.css */
-.zone-edit-empty { padding: 0.6rem 0.4rem; font-style: italic; font-size: 0.84rem; }
-.deck-detail-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
 .deck-card-lines { list-style: none; margin: 1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 
-/* Passe mobile portée de design/styles/pages/decks.css — voir le relevé du 3 septembre 2026. */
-@media (max-width: 1100px) {
-}
-@media (max-width: 900px) {
-}
+
 @media (max-width: 850px) {
   /*
    * Quatre colonnes sur 390px donnent 60px chacune : elles s'empilent en deux rangées,
@@ -871,10 +961,8 @@
   .banlist-code { grid-column: 2; }
   .banlist-max { grid-column: 1 / -1; }
 }
-@media (max-width: 850px) {
-  .drive-main { grid-template-columns: 1.75rem minmax(0, 1fr); row-gap: 0.1rem; }
-  .drive-meta { grid-column: 2; }
-}
+
+
 
 /* ══ Règles portées de la maquette — 3 septembre 2026 ══════════════════════
  *
@@ -888,26 +976,26 @@
   color: var(--caution);
 }
 
+
+
 .deck-detail-gallery {
   margin-top: 1rem;
   max-height: none;
 }
 
-.deck-edit-coll-list {
-  margin: 0.6rem 0 0;
-  padding: 0;
-  list-style: none;
-}
+
 
 .folder-gal-card[data-drop-folder]:hover {
   outline: 1px dashed color-mix(in srgb, var(--gold) 45%, transparent);
   outline-offset: 3px;
 }
 
-.zone-edit-main:hover strong {
-  color: var(--accent);
-}
 
-.zone-edit-row:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
+/* Gallery 6 columns + overlay on art */
+.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(6,minmax(0,1fr));gap:.55rem}
+
+
+@media(max-width:1100px){.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+
+@media(max-width:700px){.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(3,minmax(0,1fr))}}

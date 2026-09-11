@@ -12,6 +12,7 @@
 
 @import "./pages/auth.css";
 @import "./pages/scanlist.css";
+@import "./pages/decks.css";
 @import "./collection.css";
 @import "./components/scanner.css";
 @import "./navigation.css";

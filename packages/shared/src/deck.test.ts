@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  banlistMaxCopies, checkDeckAdd, isExtraDeckCard, missingCopies, parseBanlistStatus,
+  banlistMaxCopies, checkDeckAdd, deckIsPlayable, isExtraDeckCard, missingCopies,
+  parseBanlistStatus,
 } from "./deck.js";
 
 /**
@@ -131,4 +132,18 @@ test("demander plus que le reste dit quelle borne a parlé", () => {
   assert.equal(checkDeckAdd({ owned: 5, inDeck: 0, wanted: 4 }).blockedBy, "max_copies");
   // Et ce qui passe ne dit rien.
   assert.equal(checkDeckAdd({ owned: 5, inDeck: 0, wanted: 3 }).blockedBy, null);
+});
+
+test("un deck n'est jouable que complet et sans manque", () => {
+  const plein = { main: 40, extra: 0, side: 0 };
+  assert.equal(deckIsPlayable(plein, 0), true);
+  // Une carte manquante suffit.
+  assert.equal(deckIsPlayable(plein, 1), false);
+  // Trop peu au Main.
+  assert.equal(deckIsPlayable({ main: 39, extra: 0, side: 0 }, 0), false);
+  // Trop au Main.
+  assert.equal(deckIsPlayable({ main: 61, extra: 0, side: 0 }, 0), false);
+  // L'Extra et le Side ont le droit d'être vides.
+  assert.equal(deckIsPlayable({ main: 60, extra: 15, side: 15 }, 0), true);
+  assert.equal(deckIsPlayable({ main: 40, extra: 16, side: 0 }, 0), false);
 });

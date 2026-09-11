@@ -310,3 +310,46 @@ test("un identifiant de deck mal formé est refusé, pas planté", async () => {
     await assert.rejects(() => renameDeck(db, user.id, bancal, { name: "x" }), /Identifiant invalide/);
   }
 });
+
+test("une zone pleine refuse la carte de trop", async () => {
+  /**
+   * Le maximum se refuse, le minimum se signale : une seizième carte à l'Extra
+   * n'est légale dans aucune situation, alors qu'un deck à douze cartes est un
+   * deck en cours de construction.
+   */
+  const user = await newUser();
+  const deck = await createDeck(db, user.id, "Extra plein");
+
+  // Quinze cartes d'Extra différentes, une de chaque.
+  for (let i = 0; i < 15; i += 1) {
+    const passcode = 72000100 + i;
+    await seed(passcode, `DKEX-FR${String(100 + i)}`, { owner: user.id, copies: 1, extra: true });
+    await setDeckCard(db, user.id, deck.id, { passcode, zone: "extra", quantity: 1 });
+  }
+  assert.equal((await getDeck(db, user.id, deck.id)).counts.extra, 15);
+
+  await seed(72000200, "DKEX-FR200", { owner: user.id, copies: 1, extra: true });
+  await assert.rejects(
+    () => setDeckCard(db, user.id, deck.id, { passcode: 72000200, zone: "extra", quantity: 1 }),
+    /Extra Deck est plein/,
+  );
+});
+
+test("remplacer une quantité dans une zone pleine reste possible", async () => {
+  // Le total se calcule **hors de la ligne qu'on réécrit** : passer de 3 à 2
+  // dans une zone au maximum ne doit pas être refusé comme un ajout.
+  const user = await newUser();
+  const deck = await createDeck(db, user.id, "Side au max");
+  for (let i = 0; i < 5; i += 1) {
+    const passcode = 72000300 + i;
+    await seed(passcode, `DKSD-FR${String(300 + i)}`, { owner: user.id, copies: 3 });
+    await setDeckCard(db, user.id, deck.id, { passcode, zone: "side", quantity: 3 });
+  }
+  assert.equal((await getDeck(db, user.id, deck.id)).counts.side, 15);
+
+  // La zone est pleine, mais on réduit : c'est permis.
+  const réduit = await setDeckCard(db, user.id, deck.id, {
+    passcode: 72000300, zone: "side", quantity: 1,
+  });
+  assert.equal(réduit.counts.side, 13);
+});

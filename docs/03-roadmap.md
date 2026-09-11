@@ -238,19 +238,22 @@ chose, dont l'une n'apportait rien.
 
 **Terminé quand.** Un deck se construit depuis sa collection et signale ce qui manque.
 
-### État au 2026-09-12 — le serveur seulement
+### État au 2026-09-12 — démontrable
 
-**Rien n'est livrable à l'utilisateur : il n'y a pas d'écran.** Le module API
-existe, il est éprouvé, et les routes attendent leur consommateur.
+Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 
 | Ligne | |
 |---|---|
-| Arborescence de dossiers (P1) | non — sortie de la tranche |
-| Liste des decks, recherche, vue liste / galerie (P1) | l'API la rend ; pas d'écran |
-| Atelier collection / deck (P1) | non |
-| « Possédé / manquant » | calculé, jamais affiché |
+| Arborescence de dossiers (P1) | **non** — sortie de la tranche, à faire ensuite |
+| Liste des decks, état prêt / incomplet | **oui** |
+| Recherche par nom, vue liste / galerie (P1) | recherche **oui**, galerie **non** |
+| Atelier collection / deck (P1) | **oui** — deux panneaux, qui se relaient sur téléphone |
+| « Possédé / manquant » | **oui**, et seulement quand il y a un manque |
 | Limite de 3 exemplaires | **oui**, garantie par une contrainte de base |
-| Tailles de zone : 40–60 Main, 15 Extra, 15 Side | non |
+| Tailles de zone : 40–60 Main, 15 Extra, 15 Side | **oui** — le maximum refuse, le minimum signale |
+
+**Reste pour clore M2** : les dossiers, et la vue galerie de l'atelier. Ni l'un
+ni l'autre n'empêche de construire un deck.
 
 **Deux règles tranchées par Ange**, qui referment deux lacunes du triage :
 

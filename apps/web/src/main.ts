@@ -10,6 +10,7 @@ import { knownUser, loadUser, setUser } from "./platform/session.js";
 import { el, toast } from "./platform/ui.js";
 import { authScreen } from "./screens/auth/screen.js";
 import { collectionScreen } from "./screens/collection/screen.js";
+import { deckScreen } from "./screens/deck/screen.js";
 import { scanlistScreen } from "./screens/scanlist/screen.js";
 
 register("/connexion", authScreen("login"));
@@ -34,6 +35,10 @@ register("/collection", collectionScreen, {
  * ATEM-old, et elle porte cette lecture.
  */
 register("/scanlistes", scanlistScreen, { requiresSession: true });
+register("/decks", deckScreen, {
+  requiresSession: true,
+  nav: { label: "Decks", icon: "🃏", group: "main" },
+});
 
 registerFallback((root) => {
   root.append(
