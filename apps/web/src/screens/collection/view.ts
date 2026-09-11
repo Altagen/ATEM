@@ -10,31 +10,13 @@
  * (l'écran n'existe pas encore), et les notes de carte (pas d'endpoint). Poser
  * un contrôle qui ne fait rien est pire que de ne pas le poser.
  */
+import { t } from "../../platform/i18n/index.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import {
-  translateAttribute, translateLinkMarker, translateRace, translateType,
+  translateAttribute, translateFrameType, translateLinkMarker, translateRace, translateType,
 } from "../../platform/ygo-labels.js";
 import type { CollectionItem, Facets, ViewState } from "./state.js";
 
-/** Les valeurs de `frameType` telles que l'API les écrit, en français. */
-const FRAME_LABELS: Record<string, string> = {
-  normal: "Normal",
-  effect: "À effet",
-  ritual: "Rituel",
-  fusion: "Fusion",
-  synchro: "Synchro",
-  xyz: "Xyz",
-  link: "Lien",
-  spell: "Magie",
-  trap: "Piège",
-  token: "Jeton",
-  normal_pendulum: "Pendule Normal",
-  effect_pendulum: "Pendule à effet",
-  fusion_pendulum: "Pendule Fusion",
-  synchro_pendulum: "Pendule Synchro",
-  xyz_pendulum: "Pendule Xyz",
-  skill: "Compétence",
-};
 
 /** La nature d'une carte, telle que l'écran la regroupe et la filtre. */
 export function kindOf(item: CollectionItem): "monster" | "spell" | "trap" | "unresolved" {
@@ -47,9 +29,9 @@ export function kindOf(item: CollectionItem): "monster" | "spell" | "trap" | "un
 
 function groupTitle(item: CollectionItem): string {
   const kind = kindOf(item);
-  if (kind === "spell") return "Magie";
-  if (kind === "trap") return "Piège";
-  if (kind === "unresolved") return "À identifier";
+  if (kind === "spell") return t("Magie");
+  if (kind === "trap") return t("Piège");
+  if (kind === "unresolved") return t("À identifier");
   return translateRace(item.card?.race, item.card?.type) || "Type inconnu";
 }
 
@@ -99,11 +81,11 @@ const metaBits = (item: CollectionItem): SafeHtml => {
     );
   }
   if (card.linkValue !== null) {
-    bits.push(html`<span class="meta-bit">Lien ${card.linkValue}</span>`);
+    bits.push(html`<span class="meta-bit">${t("Lien {n}", { n: card.linkValue })}</span>`);
   } else if (card.level !== null) {
     const isXyz = (card.type ?? "").includes("XYZ");
     bits.push(
-      html`<span class="meta-bit">${levelBadge(isXyz ? "rank" : "level")}${isXyz ? "Rang" : "Niv."} ${card.level}</span>`,
+      html`<span class="meta-bit">${levelBadge(isXyz ? "rank" : "level")}${isXyz ? t("Rang {n}", { n: card.level }) : t("Niv. {n}", { n: card.level })}</span>`,
     );
   }
   if (card.atk !== null || card.def !== null) {
@@ -129,14 +111,14 @@ function listItem(item: CollectionItem): SafeHtml {
           ? html`<img class="thumb" src="${art}" alt="" loading="lazy" decoding="async" />`
           : raw(`<div class="thumb-empty">?</div>`)}
         <div class="item-text">
-          <strong>${item.card?.name ?? "Carte non identifiée"}</strong>
+          <strong>${item.card?.name ?? t("Carte non identifiée")}</strong>
           <code>${item.setCode}</code>
           <div class="item-meta">
             <span>×${item.quantity}</span>
             ${when(item.print.rarity, html`<span>${item.print.rarity}</span>`)}
             ${when(
               item.print.resolveStatus !== "resolved",
-              raw(`<span class="warn">en attente</span>`),
+              raw(`<span class="warn">${t("en attente")}</span>`),
             )}
             ${when(item.isFavorite, raw(`<span class="ok-tag fav-tag">★</span>`))}
           </div>
@@ -145,12 +127,12 @@ function listItem(item: CollectionItem): SafeHtml {
       </button>
       <div class="item-actions">
         <button type="button" class="btn-qty js-fav${item.isFavorite ? " is-fav" : ""}"
-                data-id="${item.id}" title="Favori"
-                aria-label="Mettre en favori" aria-pressed="${String(item.isFavorite)}">★</button>
+                data-id="${item.id}" title="${t("Favori")}"
+                aria-label="${t("Mettre en favori")}" aria-pressed="${String(item.isFavorite)}">★</button>
         <button type="button" class="btn-qty js-delta" data-id="${item.id}" data-d="1"
-                aria-label="Ajouter un exemplaire">+</button>
+                aria-label="${t("Ajouter un exemplaire")}">+</button>
         <button type="button" class="btn-qty btn-qty-danger js-delta" data-id="${item.id}" data-d="-1"
-                aria-label="Retirer un exemplaire">−</button>
+                aria-label="${t("Retirer un exemplaire")}">−</button>
       </div>
     </div>
   </li>`;
@@ -166,26 +148,26 @@ function tile(item: CollectionItem): SafeHtml {
         ? html`<img src="${art}" alt="" loading="lazy" decoding="async" />`
         : raw(`<div class="tile-art-empty">?</div>`)}
       <span class="tile-qty">×${item.quantity}</span>
-      ${when(item.isFavorite, raw(`<span class="tile-star" title="Favori">★</span>`))}
+      ${when(item.isFavorite, raw(`<span class="tile-star" title="${t("Favori")}">★</span>`))}
     </div>
     <div class="tile-body">
-      <strong class="tile-name">${item.card?.name ?? "Carte non identifiée"}</strong>
+      <strong class="tile-name">${item.card?.name ?? t("Carte non identifiée")}</strong>
       <code>${item.setCode}</code>
     </div>
   </button>`;
 }
 
 export function contentHtml(state: ViewState): SafeHtml {
-  if (state.loading) return raw(`<p class="web-loading muted">Chargement…</p>`);
+  if (state.loading) return raw(`<p class="web-loading muted">${t("Chargement…")}</p>`);
 
   if (state.items.length === 0) {
     const filtered = state.total === 0 && hasActiveFilters(state);
     return html`<div class="empty-state">
-      <p class="empty-title">${filtered ? "Aucun résultat" : "Aucune carte"}</p>
+      <p class="empty-title">${filtered ? t("Aucun résultat") : t("Aucune carte")}</p>
       <p class="muted">
         ${filtered
           ? "Modifiez les filtres."
-          : "Saisissez le code en bas de la carte, puis appuyez sur +."}
+          : t("Saisissez le code en bas de la carte, puis appuyez sur +.")}
       </p>
     </div>`;
   }
@@ -280,33 +262,33 @@ const chip = (
 
 export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
   const kinds: [string, string][] = [
-    ["", "Toutes"],
-    ["monster", "Monstre"],
-    ["spell", "Magie"],
-    ["trap", "Piège"],
-    ["unresolved", "À identifier"],
+    ["", t("Toutes")],
+    ["monster", t("Monstre")],
+    ["spell", t("Magie")],
+    ["trap", t("Piège")],
+    ["unresolved", t("À identifier")],
   ];
 
   return html`<div class="filter-backdrop" id="filter-backdrop" hidden></div>
   <div class="filter-panel" id="filter-panel" role="dialog" aria-modal="true"
-       aria-label="Trier et filtrer" hidden>
+       aria-label="${t("Trier et filtrer")}" hidden>
     <div class="filter-panel-head">
       <h2>Trier &amp; filtrer</h2>
-      <button type="button" class="icon-btn" id="filter-panel-close" aria-label="Fermer">✕</button>
+      <button type="button" class="icon-btn" id="filter-panel-close" aria-label="${t("Fermer")}">✕</button>
     </div>
 
     <div class="filter-panel-body">
       <section class="filter-block">
-        <h3 class="filter-block-title">Trier</h3>
+        <h3 class="filter-block-title">${t("Trier")}</h3>
         <div class="filter-row">
           <label class="menu-field grow">
-            <span>Ordre</span>
+            <span>${t("Ordre")}</span>
             <select id="sort">
               ${[
-                ["recent", "Ajout récent"],
-                ["name", "Nom"],
-                ["quantity", "Quantité"],
-                ["setCode", "Set code"],
+                ["recent", t("Ajout récent")],
+                ["name", t("Nom")],
+                ["quantity", t("Quantité")],
+                ["setCode", t("Set code")],
               ].map(
                 ([value, label]) =>
                   html`<option value="${value}"${state.sort === value ? raw(" selected") : raw("")}>${label}</option>`,
@@ -314,9 +296,9 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
             </select>
           </label>
           <label class="menu-field">
-            <span>Sens</span>
+            <span>${t("Sens")}</span>
             <select id="sort-dir">
-              ${[["desc", "Décroissant"], ["asc", "Croissant"]].map(
+              ${[["desc", t("Décroissant")], ["asc", t("Croissant")]].map(
                 ([value, label]) =>
                   html`<option value="${value}"${state.sortDir === value ? raw(" selected") : raw("")}>${label}</option>`,
               )}
@@ -325,7 +307,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
         </div>
         <div class="filter-row">
           <label class="menu-field">
-            <span>Colonnes</span>
+            <span>${t("Colonnes")}</span>
             <select id="cols">
               ${["auto", "2", "3", "4", "5", "6"].map(
                 (value) =>
@@ -334,9 +316,9 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
             </select>
           </label>
           <label class="menu-field">
-            <span>Densité</span>
+            <span>${t("Densité")}</span>
             <select id="density">
-              ${[["comfort", "Confortable"], ["compact", "Compacte"]].map(
+              ${[["comfort", t("Confort")], ["compact", t("Compact")]].map(
                 ([value, label]) =>
                   html`<option value="${value}"${state.density === value ? raw(" selected") : raw("")}>${label}</option>`,
               )}
@@ -345,12 +327,12 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
         </div>
         <label class="menu-check">
           <input type="checkbox" id="group-monster"${state.groupByMonster ? raw(" checked") : raw("")} />
-          Regrouper les monstres par type
+          ${t("Regrouper les monstres par type")}
         </label>
       </section>
 
       <section class="filter-block">
-        <h3 class="filter-block-title">Catégorie</h3>
+        <h3 class="filter-block-title">${t("Catégorie")}</h3>
         <div class="chip-row">
           ${kinds.map(([value, label]) =>
             chip(state.kind === value, "data-filter-kind", value, label),
@@ -361,7 +343,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       ${when(
         facets.attributes.length > 0,
         html`<section class="filter-block">
-          <h3 class="filter-block-title">Attribut</h3>
+          <h3 class="filter-block-title">${t("Attribut")}</h3>
           <div class="chip-row">
             ${facets.attributes.map((value) =>
               chip(
@@ -378,13 +360,13 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       ${when(
         facets.frameTypes.length > 0,
         html`<section class="filter-block">
-          <h3 class="filter-block-title">Type d'invocation</h3>
+          <h3 class="filter-block-title">${t("Type d'invocation")}</h3>
           <div class="chip-row">
             ${facets.frameTypes.map((value) =>
               chip(
                 state.frameTypes.includes(value),
                 "data-filter-frame", value,
-                FRAME_LABELS[value] ?? value,
+                translateFrameType(value),
               ),
             )}
           </div>
@@ -395,11 +377,11 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
         facets.properties.length > 0,
         html`<section class="filter-block">
           <div class="filter-block-head">
-            <h3 class="filter-block-title">Propriété magie / piège</h3>
+            <h3 class="filter-block-title"/h3>
             <button type="button" class="help-q" id="btn-help-st"
                     aria-expanded="false" aria-controls="help-st-hint">
               <span class="help-q-mark" aria-hidden="true">?</span>
-              <span class="help-q-text">Aide</span>
+              <span class="help-q-text">${t("Aide")}</span>
             </button>
           </div>
           <div class="chip-row">
@@ -413,9 +395,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
             )}
           </div>
           <p class="filter-hint muted" id="help-st-hint" hidden>
-            L'API range le type d'un monstre et la propriété d'une Magie ou d'un
-            Piège dans le même champ. Un Piège « Normale » n'est donc pas un
-            monstre Normal : ces deux listes sont séparées pour cette raison.
+            ${t("L'API range le type d'un monstre et la propriété d'une Magie ou d'un Piège dans le même champ. Un Piège « Normale » n'est donc pas un monstre Normal : ces deux listes sont séparées pour cette raison.")}
           </p>
         </section>`,
       )}
@@ -423,7 +403,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       ${when(
         facets.races.length > 0,
         html`<section class="filter-block">
-          <h3 class="filter-block-title">Type de monstre</h3>
+          <h3 class="filter-block-title">${t("Type de monstre")}</h3>
           <div class="chip-row chip-row-races">
             ${facets.races.map((value) =>
               chip(
@@ -438,7 +418,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       )}
 
       <section class="filter-block">
-        <h3 class="filter-block-title">Niveau</h3>
+        <h3 class="filter-block-title">${t("Niveau")}</h3>
         <div class="chip-row">
           ${Array.from({ length: 12 }, (_, i) => String(i + 1)).map((level) =>
             chip(
@@ -452,7 +432,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       </section>
 
       <section class="filter-block">
-        <h3 class="filter-block-title">Rang Xyz</h3>
+        <h3 class="filter-block-title">${t("Rang Xyz")}</h3>
         <div class="chip-row">
           ${Array.from({ length: 12 }, (_, i) => String(i + 1)).map((rank) =>
             chip(
@@ -467,7 +447,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       </section>
 
       <section class="filter-block">
-        <h3 class="filter-block-title">Valeur de Lien</h3>
+        <h3 class="filter-block-title">${t("Valeur de Lien")}</h3>
         <div class="chip-row">
           ${Array.from({ length: 6 }, (_, i) => String(i + 1)).map((value) =>
             chip(state.links.includes(value), "data-filter-link", value, `Lien ${value}`),
@@ -478,7 +458,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       ${when(
         facets.rarities.length > 0,
         html`<section class="filter-block">
-          <h3 class="filter-block-title">Rareté</h3>
+          <h3 class="filter-block-title"/h3>
           <div class="chip-row">
             ${facets.rarities.map((value) =>
               chip(state.rarity === value, "data-filter-rarity", value, value),
@@ -490,7 +470,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       ${when(
         facets.languages.length > 1,
         html`<section class="filter-block">
-          <h3 class="filter-block-title">Langue de l'exemplaire</h3>
+          <h3 class="filter-block-title">${t("Langue de l'exemplaire")}</h3>
           <div class="chip-row">
             ${facets.languages.map((value) =>
               chip(state.language === value, "data-filter-lang", value, value.toUpperCase()),
@@ -508,9 +488,9 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
     </div>
 
     <div class="filter-panel-foot">
-      <button type="button" class="btn" id="btn-clear-filters">Réinitialiser</button>
+      <button type="button" class="btn" id="btn-clear-filters">${t("Réinitialiser")}</button>
       <div class="filter-foot-actions">
-        <button type="button" class="btn btn-primary" id="filter-panel-done">OK</button>
+        <button type="button" class="btn btn-primary" id="filter-panel-done">${t("OK")}</button>
       </div>
     </div>
   </div>`;
@@ -529,7 +509,7 @@ function linkCompassHtml(markers: string[] | null, linkValue: number | null): Sa
     "Bottom-Left": "↙", Bottom: "↓", "Bottom-Right": "↘",
   };
   return html`<div class="link-compass-block">
-    <h3>Marqueurs de Lien</h3>
+    <h3>${t("Marqueurs de Lien")}</h3>
     <div class="link-compass" role="img"
          aria-label="${markers.map(translateLinkMarker).join(", ")}">
       ${cells.map((cell) =>
@@ -549,29 +529,29 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
 
   const rows: [string, string][] = card
     ? [
-        ["Type", translateType(card.type)],
-        [isSpellTrap ? "Propriété" : "Type monstre", translateRace(card.race, card.type) || "—"],
-        ["Attribut", translateAttribute(card.attribute) || "—"],
+        [t("Type"), translateType(card.type)],
+        [isSpellTrap ? t("Propriété") : t("Type monstre"), translateRace(card.race, card.type) || "—"],
+        [t("Attribut"), translateAttribute(card.attribute) || "—"],
         card.linkValue !== null
-          ? ["Lien", String(card.linkValue)]
-          : ["Niveau", card.level === null ? "—" : String(card.level)],
+          ? [t("Lien"), String(card.linkValue)]
+          : [t("Niveau"), card.level === null ? "—" : String(card.level)],
         [
-          card.linkValue !== null ? "ATK" : "ATK / DEF",
+          card.linkValue !== null ? t("ATK") : t("ATK / DEF"),
           card.linkValue !== null
             ? String(card.atk ?? "—")
             : `${card.atk ?? "—"} / ${card.def ?? "—"}`,
         ],
-        ["Archétype", card.archetype ?? "—"],
-        ["Passcode", `#${card.passcode}`],
+        [t("Archétype"), card.archetype ?? "—"],
+        [t("Passcode"), `#${card.passcode}`],
       ]
     : [];
 
   const owned: [string, string][] = [
-    ["Set code", item.setCode],
-    ["Édition", item.print.setName ?? "—"],
-    ["Rareté", item.print.rarity || "—"],
-    ["Langue", item.print.language.toUpperCase()],
-    ["Exemplaires", String(item.quantity)],
+    [t("Set code"), item.setCode],
+    [t("Édition"), item.print.setName ?? "—"],
+    [t("Rareté"), item.print.rarity || "—"],
+    [t("Langue"), item.print.language.toUpperCase()],
+    [t("Exemplaires"), String(item.quantity)],
   ];
 
   const grid = (entries: [string, string][]): SafeHtml =>
@@ -581,7 +561,7 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
 
   return html`<div class="inspect-backdrop" id="inspect-backdrop"></div>
   <div class="inspect-panel" id="inspect-panel" role="dialog" aria-modal="true">
-    <button type="button" class="inspect-close icon-btn" id="inspect-close" aria-label="Fermer">✕</button>
+    <button type="button" class="inspect-close icon-btn" id="inspect-close" aria-label="${t("Fermer")}">✕</button>
     <div class="inspect-layout">
       <div class="inspect-art-col">
         ${art
@@ -616,26 +596,24 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
              * les anciennes sont traduites à 100 %, les récentes à 0-60 %.
              */
             item.print.language === "fr" && card?.frenchPending,
-            raw(
-              // « Pas encore » porte tout le sens : la carte a un nom français,
-              // c'est le catalogue qui ne l'a pas. Le reste tenait de
-              // l'explication de texte.
-              `<p class="muted field-note">Traduction pas encore disponible — nom et texte en anglais.</p>`,
-            ),
+            // « Pas encore » porte tout le sens : la carte a un nom français,
+            // c'est le catalogue qui ne l'a pas. Le reste tenait de
+            // l'explication de texte.
+            html`<p class="muted field-note">${t("Traduction pas encore disponible — nom et texte en anglais.")}</p>`,
           )}
           ${when(
             Boolean(card?.desc),
-            html`<div class="effect"><h3>Effet</h3><p>${card?.desc}</p></div>`,
+            html`<div class="effect"><h3>${t("Effet")}</h3><p>${card?.desc}</p></div>`,
           )}
           ${linkCompassHtml(card?.linkMarkers ?? null, card?.linkValue ?? null)}
-          <h3>Votre exemplaire</h3>
+          <h3>${t("Votre exemplaire")}</h3>
           ${grid(owned)}
           <div class="inspect-notes">
-            <label for="notes-input" class="muted">Note</label>
+            <label for="notes-input" class="muted">${t("Note")}</label>
             <input type="text" id="notes-input" value="${item.notes ?? ""}"
-                   maxlength="2000" placeholder="État, provenance, prix payé…" />
+                   maxlength="2000" placeholder="${t("État, provenance, prix payé…")}" />
             <button type="button" class="btn btn-primary btn-sm" id="btn-save-notes">
-              Enregistrer
+              ${t("Enregistrer")}
             </button>
           </div>
         </div>
@@ -646,27 +624,27 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
 
 export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
   return html`<main class="collection-page">
-    <h1 class="page-heading">Ma collection</h1>
+    <h1 class="page-heading">${t("Ma collection")}</h1>
     <div class="pin-rail" id="pin-rail" data-pinned="${String(state.pinned)}">
       <div class="tools-bar">
         <label class="search">
           <span class="search-icon" aria-hidden="true">⌕</span>
-          <input type="search" id="filter" placeholder="Rechercher une carte…"
-                 aria-label="Rechercher dans la collection" value="${state.query}" />
+          <input type="search" id="filter" placeholder="${t("Rechercher une carte…")}"
+                 aria-label="${t("Rechercher dans la collection")}" value="${state.query}" />
         </label>
-        <div class="view-toggle" role="group" aria-label="Mode d'affichage">
+        <div class="view-toggle" role="group" aria-label="${t("Mode d'affichage")}">
           <button type="button" class="icon-btn${state.view === "list" ? " is-active" : ""}"
-                  data-view="list" title="Liste" aria-label="Vue liste"
+                  data-view="list" title="${t("Liste")}" aria-label="${t("Vue liste")}"
                   aria-pressed="${String(state.view === "list")}"><span class="i-list" aria-hidden="true"></span></button>
           <button type="button" class="icon-btn${state.view === "gallery" ? " is-active" : ""}"
-                  data-view="gallery" title="Galerie" aria-label="Vue galerie"
+                  data-view="gallery" title="${t("Galerie")}" aria-label="${t("Vue galerie")}"
                   aria-pressed="${String(state.view === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
         </div>
         <button type="button" class="icon-btn${state.pinned ? " is-active" : ""}" id="btn-pin"
-                data-pin title="Épingler la barre" aria-label="Épingler la barre"
+                data-pin title="${t("Épingler la barre")}" aria-label="${t("Épingler la barre")}"
                 aria-pressed="${String(state.pinned)}"><span class="i-pin" aria-hidden="true"></span></button>
-        <button type="button" class="icon-btn" id="btn-more" title="Trier et filtrer"
-                aria-label="Trier et filtrer" aria-haspopup="dialog"><span class="i-more" aria-hidden="true"></span></button>
+        <button type="button" class="icon-btn" id="btn-more" title="${t("Trier et filtrer")}"
+                aria-label="${t("Trier et filtrer")}" aria-haspopup="dialog"><span class="i-more" aria-hidden="true"></span></button>
         <!--
           Les scanlistes se rejoignent d'ici, et non par un onglet de la barre
           du bas — c'est la place qu'elles avaient dans ATEM-old, et elle dit
@@ -675,9 +653,9 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
           à deux inventaires côte à côte.
         -->
         <a class="btn scanlist-link" href="/scanlistes"
-           title="Répertorier un lot sans l'ajouter à la collection">
+           title="${t("Répertorier un lot sans l'ajouter à la collection")}">
           <span aria-hidden="true">🗂️</span>
-          <span class="scanlist-link-label">Scanlistes</span>
+          <span class="scanlist-link-label">${t("Scanlistes")}</span>
         </a>
       </div>
 
@@ -685,38 +663,38 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
         <div class="add-field">
           <input type="text" id="set-code" class="add-input" autocomplete="off"
                  autocapitalize="characters" spellcheck="false"
-                 aria-label="Ajouter par set code"
-                 placeholder="Code carte (ex. LTGY-FR008)" />
+                 aria-label="${t("Ajouter par set code")}"
+                 placeholder="${t("Code carte (ex. LTGY-FR008)")}" />
           <button type="button" class="add-chevron" id="btn-chevron" aria-expanded="false"
-                  aria-label="Options (langue, rareté)" title="Options (langue, rareté…)">
+                  aria-label="${t("Options (langue, rareté…)")}" title="${t("Options (langue, rareté…)")}">
             <span class="chevron" aria-hidden="true"></span>
           </button>
         </div>
-        <button type="button" class="btn-add" id="btn-plus" title="Ajouter"
-                aria-label="Ajouter la carte"><span aria-hidden="true">+</span></button>
-        <button type="button" class="btn-scan" id="btn-scan" title="Scanner le set code"
-                aria-label="Scanner"><span class="i-scan" aria-hidden="true"></span></button>
+        <button type="button" class="btn-add" id="btn-plus" title="${t("Ajouter")}"
+                aria-label="${t("Ajouter la carte")}"><span aria-hidden="true">+</span></button>
+        <button type="button" class="btn-scan" id="btn-scan" title="${t("Scanner le set code")}"
+                aria-label="${t("Scanner")}"><span class="i-scan" aria-hidden="true"></span></button>
       </div>
 
       <div id="advanced-fields" class="add-advanced" hidden>
         <label class="add-select-wrap">
-          <span class="add-select-label">Langue</span>
+          <span class="add-select-label">${t("Langue")}</span>
           <select id="opt-lang">
-            <option value="">auto</option>
-            <option value="fr">FR</option>
-            <option value="en">EN</option>
+            <option value="">${t("auto")}</option>
+            <option value="fr">${t("FR")}</option>
+            <option value="en">${t("EN")}</option>
           </select>
         </label>
         <label class="add-select-wrap add-select-passcode">
-          <span class="add-select-label">Passcode</span>
+          <span class="add-select-label">${t("Passcode")}</span>
           <input type="text" id="opt-passcode" inputmode="numeric" autocomplete="off"
-                 placeholder="optionnel" aria-label="Passcode de la carte" />
+                 placeholder="${t("optionnel")}" aria-label="${t("Passcode de la carte")}" />
         </label>
       </div>
 
       <p class="meta-line">
-        <span>${state.items.length}/${state.total} édition(s) · ${state.totalCopies} ex.</span>
-<span class="warn">${state.pending > 0 ? `${state.pending} en attente d'identification` : ""}</span>
+        <span>${t("{montrées}/{total} édition(s) · {ex} ex.", { montrées: state.items.length, total: state.total, ex: state.totalCopies })}</span>
+<span class="warn">${state.pending > 0 ? t("{n} en attente d'identification", { n: state.pending }) : ""}</span>
       </p>
     </div>
 
@@ -748,9 +726,7 @@ export function editionsHtml(prints: PrintRow[], ownedSetCodes: Set<string>): Sa
   const possedees = prints.filter((print) => ownedSetCodes.has(print.setCode)).length;
 
   return html`<div class="editions">
-    <h3>
-      Autres éditions
-      <span class="muted">${prints.length}${possedees > 0 ? ` · ${possedees} possédée${possedees > 1 ? "s" : ""}` : ""}</span>
+    <h3span class="muted">${prints.length}${possedees > 0 ? ` · ${possedees} possédée${possedees > 1 ? "s" : ""}` : ""}</span>
     </h3>
     <ul class="editions-list">
       ${prints.map((print) => {
@@ -761,8 +737,8 @@ export function editionsHtml(prints: PrintRow[], ownedSetCodes: Set<string>): Sa
           <span class="edition-rarity muted">${print.rarity || "—"}</span>
           <span class="edition-lang muted">${print.language.toUpperCase()}</span>
           ${owned
-            ? raw(`<span class="edition-owned" title="Vous possédez cette édition">✓</span>`)
-            : raw(`<span class="edition-missing muted" title="Pas dans votre collection">—</span>`)}
+            ? raw(`<span class="edition-owned" title="${t("Vous possédez cette édition")}">✓</span>`)
+            : raw(`<span class="edition-missing muted" title="${t("Pas dans votre collection")}">—</span>`)}
         </li>`;
       })}
     </ul>

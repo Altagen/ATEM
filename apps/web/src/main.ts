@@ -1,5 +1,6 @@
 import "./design/index.css";
 
+import { t } from "./platform/i18n/index.js";
 import { closeAccountSheet, refreshServiceState, renderNavigation } from "./platform/navigation.js";
 import { releaseScroll } from "./platform/scroll-lock.js";
 import {
@@ -53,7 +54,7 @@ async function start(): Promise<void> {
   try {
     setUser(await loadUser());
   } catch {
-    toast("Le serveur est injoignable.", "error");
+    toast(t("Le serveur est injoignable."), "error");
   }
 
   // La racine mène là où l'on peut aller, selon qu'il y a une session ou non.

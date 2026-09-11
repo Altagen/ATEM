@@ -664,7 +664,9 @@ test("le bloc de compte ne se chevauche pas", async ({ page }, testInfo) => {
   await signUp(page);
 
   const pseudo = (await page.locator(".app-bar-right .muted").boundingBox())!;
-  const bouton = (await page.locator(".app-bar-right button").boundingBox())!;
+  // La barre porte désormais aussi le sélecteur de langue : on vise le bouton
+  // de déconnexion, qui est celui qui borde le pseudo.
+  const bouton = (await page.locator(".app-bar-right .btn").boundingBox())!;
   expect(pseudo.x + pseudo.width).toBeLessThanOrEqual(bouton.x);
 });
 

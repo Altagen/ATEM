@@ -43,8 +43,9 @@ export async function registerUser(
   const strength = checkPasswordStrength(input.password);
   if (!strength.isValid) {
     throw invalidInput(
-      "Le mot de passe doit faire au moins 16 caractères et contenir une " +
-        "majuscule, une minuscule, un chiffre et un caractère spécial.",
+      // Une seule chaîne, et non deux concaténées : c'est elle que le front
+      // cherche au dictionnaire pour la rendre en anglais.
+      "Le mot de passe doit faire au moins 16 caractères et contenir une majuscule, une minuscule, un chiffre et un caractère spécial.",
       {
         hasMinLength: strength.hasMinLength,
         hasUpper: strength.hasUpper,
@@ -124,6 +125,31 @@ export async function revokeSessions(db: Database, userId: string): Promise<void
     .update(users)
     .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
     .where(eq(users.id, userId));
+}
+
+/**
+ * Change la langue de l'interface.
+ *
+ * Elle vit sur le compte et non dans le navigateur : c'est un réglage qu'on
+ * choisit une fois et qu'on retrouve sur son téléphone comme sur son
+ * ordinateur. La contrainte `users_locale_vocab` refuse déjà toute autre
+ * valeur en base ; on la vérifie ici pour rendre un message plutôt qu'une
+ * erreur de contrainte.
+ */
+export async function setLocale(
+  db: Database,
+  userId: string,
+  locale: string,
+): Promise<PublicUser> {
+  if (locale !== "fr" && locale !== "en") throw invalidInput("Langue inconnue.");
+
+  const [row] = await db
+    .update(users)
+    .set({ locale })
+    .where(eq(users.id, userId))
+    .returning();
+  if (!row) throw notFound("Utilisateur introuvable.");
+  return toPublic(row);
 }
 
 export async function getPublicUser(db: Database, userId: string): Promise<PublicUser> {

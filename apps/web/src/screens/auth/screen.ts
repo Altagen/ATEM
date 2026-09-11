@@ -10,6 +10,7 @@
  * Non repris : le bloc de comptes de démonstration. Il préremplit des
  * identifiants qui n'existent pas ici — c'est de la donnée fabriquée.
  */
+import { t } from "../../platform/i18n/index.js";
 import { api, ApiError, type PublicUser } from "../../platform/api.js";
 import { navigate } from "../../platform/router.js";
 import { setUser } from "../../platform/session.js";
@@ -71,17 +72,17 @@ export function authScreen(mode: Mode) {
     const password = el("input", {
       type: "password",
       autocomplete: isRegister ? "new-password" : "current-password",
-      placeholder: isRegister ? "Min. 16 caractères…" : "••••••••",
+      placeholder: isRegister ? t("Min. 16 caractères…") : "••••••••",
     });
     const confirm = el("input", {
       type: "password",
       autocomplete: "new-password",
-      placeholder: "Retapez le mot de passe",
+      placeholder: t("Retapez le mot de passe"),
     });
     const displayName = el("input", {
       type: "text",
       autocomplete: "nickname",
-      placeholder: "Votre pseudo de duelliste",
+      placeholder: t("Votre pseudo de duelliste"),
     });
 
     /**
@@ -96,30 +97,30 @@ export function authScreen(mode: Mode) {
     });
 
     const submit = el("button", { type: "submit", class: "auth-submit-btn" }, [
-      isRegister ? "Créer mon compte" : "Se connecter",
+      isRegister ? t("Créer mon compte") : t("Se connecter"),
     ]);
 
     const form = el("form", { class: "auth-form", novalidate: "" });
 
     const passwordGroup = fieldGroup(
       isRegister ? "reg-password" : "login-password",
-      "Mot de passe",
+      t("Mot de passe"),
       password,
-      isRegister ? "16 caractères au minimum" : undefined,
+      isRegister ? t("16 caractères au minimum") : undefined,
     );
 
     if (isRegister) {
       form.append(
-        fieldGroup("reg-name", "Pseudo", displayName),
-        fieldGroup("reg-email", "Adresse e-mail", email),
+        fieldGroup("reg-name", t("Pseudo"), displayName),
+        fieldGroup("reg-email", t("Adresse e-mail"), email),
         passwordGroup,
-        fieldGroup("reg-confirm", "Confirmation du mot de passe", confirm),
+        fieldGroup("reg-confirm", t("Confirmation du mot de passe"), confirm),
         submit,
       );
       mountPasswordMeter(passwordGroup, password);
     } else {
       form.append(
-        fieldGroup("login-email", "Adresse e-mail", email),
+        fieldGroup("login-email", t("Adresse e-mail"), email),
         passwordGroup,
         submit,
       );
@@ -127,19 +128,19 @@ export function authScreen(mode: Mode) {
 
     const card = el("section", { class: isRegister ? "auth-card is-wide" : "auth-card" }, [
       el("h1", { class: "auth-card-title" }, [
-        isRegister ? "Créer un compte" : "Se connecter",
+        isRegister ? t("Créer un compte") : t("Se connecter"),
       ]),
       el("p", { class: "auth-subtitle muted" }, [
         isRegister
-          ? "Création de compte duelliste"
+          ? t("Création de compte duelliste")
           : "Advanced Tactical Engine for MatchMaking",
       ]),
       errorBanner,
       form,
       el("p", { class: "auth-toggle muted" }, [
-        isRegister ? "Déjà un compte ? " : "Nouveau sur ATEM ? ",
+        isRegister ? `${t("Déjà un compte ?")} ` : `${t("Nouveau sur ATEM ?")} `,
         el("a", { class: "auth-link-btn", href: isRegister ? "/connexion" : "/inscription" }, [
-          isRegister ? "Se connecter" : "Créer un compte",
+          isRegister ? t("Se connecter") : t("Créer un compte"),
         ]),
       ]),
     ]);
@@ -163,8 +164,8 @@ export function authScreen(mode: Mode) {
       submit.textContent = busy
         ? "Un instant…"
         : isRegister
-          ? "Créer mon compte"
-          : "Se connecter";
+          ? t("Créer mon compte")
+          : t("Se connecter");
     }
 
     form.addEventListener("submit", async (event) => {
@@ -172,7 +173,7 @@ export function authScreen(mode: Mode) {
       errorBanner.textContent = "";
 
       if (isRegister && password.value !== confirm.value) {
-        errorBanner.textContent = "Les deux mots de passe ne correspondent pas.";
+        errorBanner.textContent = t("Les deux mots de passe ne correspondent pas.");
         confirm.focus();
         return;
       }
@@ -194,7 +195,7 @@ export function authScreen(mode: Mode) {
         navigate(next, { replace: true });
       } catch (err) {
         errorBanner.textContent =
-          err instanceof ApiError ? err.message : "Le serveur est injoignable.";
+          err instanceof ApiError ? err.message : t("Le serveur est injoignable.");
         setBusy(false);
       }
     });

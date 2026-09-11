@@ -8,6 +8,7 @@
  * filtre, et rattacher un écouteur par bouton fuirait à chaque rendu. Un seul
  * écouteur sur le conteneur suit ce qui apparaît et disparaît.
  */
+import { t } from "../../platform/i18n/index.js";
 import { api, ApiError } from "../../platform/api.js";
 import { lockScroll, unlockScroll } from "../../platform/scroll-lock.js";
 import { toast } from "../../platform/ui.js";
@@ -75,7 +76,13 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
     watchSentinel();
     const meta = root.querySelector(".meta-line span");
     if (meta) {
-      meta.textContent = `${state.items.length}/${state.total} édition(s) · ${state.totalCopies} ex.`;
+      // La même phrase que dans `view.ts`, et la même clé : deux écritures
+      // divergentes se traduiraient l'une sans l'autre.
+      meta.textContent = t("{montrées}/{total} édition(s) · {ex} ex.", {
+        montrées: state.items.length,
+        total: state.total,
+        ex: state.totalCopies,
+      });
     }
   }
 
@@ -105,7 +112,7 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
       state.totalCopies = state.items.reduce((sum, item) => sum + item.quantity, 0);
       offset += page.items.length;
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "Serveur injoignable.", "error");
+      toast(err instanceof ApiError ? err.message : t("Serveur injoignable."), "error");
     } finally {
       state.loading = false;
       repaintContent();
@@ -146,7 +153,7 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
       });
       return item;
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "L'ajustement a échoué.", "error");
+      toast(err instanceof ApiError ? err.message : t("L'ajustement a échoué."), "error");
       return null;
     }
   }
@@ -207,9 +214,9 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
       await api(`/collection/${id}/notes`, { method: "PATCH", body: { notes } });
       const item = state.items.find((candidate) => candidate.id === id);
       if (item) item.notes = notes;
-      toast("Note enregistrée.", "success");
+      toast(t("Note enregistrée."), "success");
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "La note n'a pas pu être enregistrée.", "error");
+      toast(err instanceof ApiError ? err.message : t("La note n'a pas pu être enregistrée."), "error");
     } finally {
       button.disabled = false;
     }
@@ -312,8 +319,8 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
         });
         toast(
           item.card
-            ? `${item.card.name} — ${item.quantity} ex.`
-            : `${item.setCode} ajouté, identification en cours.`,
+            ? t("{nom} — {n} ex.", { nom: item.card.name, n: item.quantity })
+            : t("{code} ajouté, identification en cours.", { code: item.setCode }),
           "success",
         );
         if (addInput) {
@@ -322,7 +329,7 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
         }
         await Promise.all([load(true), refreshPending(), loadFacets()]);
       } catch (err) {
-        toast(err instanceof ApiError ? err.message : "L'ajout a échoué.", "error");
+        toast(err instanceof ApiError ? err.message : t("L'ajout a échoué."), "error");
       }
     }
 
@@ -342,7 +349,7 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
         tallyLabel: "en collection",
         onConfirm: async (setCode, delta) => {
           const item = await adjust(setCode, delta);
-          if (!item) throw new Error("L'enregistrement a échoué.");
+          if (!item) throw new Error(t("L'enregistrement a échoué."));
           return {
             setCode: item.setCode,
             quantity: item.quantity,
@@ -436,7 +443,7 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
     } catch {
       item.isFavorite = !next;
       repaintContent();
-      toast("Le favori n'a pas pu être enregistré.", "error");
+      toast(t("Le favori n'a pas pu être enregistré."), "error");
     }
   }
 

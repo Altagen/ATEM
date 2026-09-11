@@ -16,16 +16,23 @@
  * écran déclare sa route et sa place dans la navigation d'un seul geste, et une
  * entrée qui mène nulle part devient impossible à écrire.
  */
-import { api } from "./api.js";
-import { destinations, navigate } from "./router.js";
+import { api, ApiError, type PublicUser } from "./api.js";
+import { t } from "./i18n/index.js";
+import { destinations, navigate, render } from "./router.js";
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
 import { knownUser, setUser } from "./session.js";
-import { el } from "./ui.js";
+import { el, toast } from "./ui.js";
 
 type ServiceState = "ok" | "unreachable" | "unknown";
 
 let serviceState: ServiceState = "unknown";
 
+/**
+ * L'état du service — traduit à l'affichage, pas à la déclaration.
+ *
+ * Cette table est évaluée à l'import, avant que la langue du compte soit
+ * connue : y appeler `t()` figerait le français pour toute la session.
+ */
 const SERVICE_LABELS: Record<ServiceState, { text: string; className: string }> = {
   ok: { text: "En ligne", className: "api-ok" },
   unreachable: { text: "Injoignable", className: "api-err" },
@@ -49,6 +56,50 @@ export async function refreshServiceState(): Promise<void> {
   renderNavigation();
 }
 
+/**
+ * Le choix de langue.
+ *
+ * Il vit ici, dans la barre du haut et dans la feuille de compte, parce que
+ * c'est le seul réglage de compte que l'application porte aujourd'hui — l'écran
+ * de réglages viendra en M3. Deux boutons plutôt qu'un menu : il n'y a que deux
+ * langues, et un menu déroulant demanderait deux gestes pour la même chose.
+ */
+function languageSwitch(): HTMLElement {
+  const user = knownUser()!;
+  const group = el("div", { class: "lang-switch", role: "group", "aria-label": t("Langue") });
+
+  for (const code of ["fr", "en"] as const) {
+    const button = el("button", {
+      type: "button",
+      class: `lang-switch-item${user.locale === code ? " is-active" : ""}`,
+      "aria-pressed": String(user.locale === code),
+    }, [t(code === "fr" ? "FR" : "EN")]);
+
+    button.addEventListener("click", () => {
+      if (user.locale === code) return;
+      void switchLanguage(code);
+    });
+    group.append(button);
+  }
+  return group;
+}
+
+async function switchLanguage(locale: "fr" | "en"): Promise<void> {
+  try {
+    const { user } = await api<{ user: PublicUser }>("/auth/me/langue", {
+      method: "PATCH",
+      body: { locale },
+    });
+    // `setUser` applique la langue, puis on repeint tout : la barre, et l'écran
+    // courant, qui a été rendu dans l'autre langue.
+    setUser(user);
+    renderNavigation();
+    void render();
+  } catch (err) {
+    toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+  }
+}
+
 function link(path: string, label: string, className: string, icon?: string): HTMLElement {
   const isActive = window.location.pathname === path;
   const node = el("a", { class: className, href: path }, []);
@@ -69,7 +120,7 @@ function appBar(): HTMLElement {
   }
 
   const service = SERVICE_LABELS[serviceState];
-  const signOut = el("button", { type: "button", class: "btn" }, ["Déconnexion"]);
+  const signOut = el("button", { type: "button", class: "btn" }, [t("Déconnexion")]);
   signOut.addEventListener("click", () => void signOutNow());
 
   return el("header", { class: "app-bar" }, [
@@ -78,7 +129,8 @@ function appBar(): HTMLElement {
       nav,
     ]),
     el("div", { class: "app-bar-right" }, [
-      el("span", { class: `api-pill ${service.className}` }, [service.text]),
+      languageSwitch(),
+      el("span", { class: `api-pill ${service.className}` }, [t(service.text)]),
       el("span", { class: "muted" }, [`${user.displayName} #${user.tag}`]),
       signOut,
     ]),
@@ -86,7 +138,7 @@ function appBar(): HTMLElement {
 }
 
 function bottomNav(): HTMLElement {
-  const nav = el("nav", { class: "global-mobile-bottom-nav", "aria-label": "Navigation" });
+  const nav = el("nav", { class: "global-mobile-bottom-nav", "aria-label": t("Navigation") });
   for (const { path, nav: destination } of destinations("main")) {
     nav.append(link(path, destination.label, "global-mobile-nav-item", destination.icon));
   }
@@ -94,11 +146,11 @@ function bottomNav(): HTMLElement {
   const account = el("button", {
     type: "button",
     class: "global-mobile-nav-item",
-    "aria-label": "Mon compte",
+    "aria-label": t("Mon compte"),
     "aria-haspopup": "dialog",
   }, [
     el("span", { "aria-hidden": "true" }, ["👤"]),
-    el("span", {}, ["Compte"]),
+    el("span", {}, [t("Compte")]),
   ]);
   account.addEventListener("click", () => openAccountSheet());
   nav.append(account);
@@ -116,7 +168,7 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
   const user = knownUser()!;
   const service = SERVICE_LABELS[serviceState];
 
-  const close = el("button", { type: "button", class: "icon-btn", "aria-label": "Fermer" }, ["✕"]);
+  const close = el("button", { type: "button", class: "icon-btn", "aria-label": t("Fermer") }, ["✕"]);
   close.addEventListener("click", closeAccountSheet);
 
   const list = el("nav", { class: "account-sheet-list" });
@@ -134,7 +186,7 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
   if (list.childElementCount === 0) list.remove();
 
   const signOut = el("button", { type: "button", class: "account-sheet-logout" }, [
-    "Se déconnecter",
+    t("Se déconnecter"),
   ]);
   signOut.addEventListener("click", () => void signOutNow());
 
@@ -143,7 +195,7 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
     id: "account-sheet",
     role: "dialog",
     "aria-modal": "true",
-    "aria-label": "Mon compte",
+    "aria-label": t("Mon compte"),
     hidden: "",
   }, [
     el("span", { class: "account-sheet-grip", "aria-hidden": "true" }),
@@ -151,12 +203,12 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
       el("span", { class: "account-sheet-brand" }, ["ATEM"]),
       el("span", { class: "account-sheet-identity" }, [
         el("strong", {}, [`${user.displayName} #${user.tag}`]),
-        el("span", { class: `api-pill ${service.className}` }, [service.text]),
+        el("span", { class: `api-pill ${service.className}` }, [t(service.text)]),
       ]),
       close,
     ]),
     ...(list.isConnected || list.childElementCount > 0 ? [list] : []),
-    el("footer", { class: "account-sheet-foot" }, [signOut]),
+    el("footer", { class: "account-sheet-foot" }, [languageSwitch(), signOut]),
   ]);
 
   const backdrop = el("div", { class: "account-backdrop", id: "account-backdrop", hidden: "" });

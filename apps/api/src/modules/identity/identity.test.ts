@@ -2,8 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createTestApp, freshEmail, jsonPost } from "../../test-support.js";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
+import { getPublicUser, registerUser, setLocale } from "./service.js";
 
-const { app } = createTestApp();
+const { app, db } = createTestApp();
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
   jsonPost(app, path, body, headers);
 
@@ -141,4 +142,31 @@ test("une origine d'un autre hôte reste refusée", async () => {
     { Origin: "https://malveillant.example", Host: "atem.exemple.fr" },
   );
   assert.equal(response.status, 403);
+});
+
+test("la langue du compte se change, et se relit", async () => {
+  const { user } = await registerUser(db, {
+    email: freshEmail("langue"),
+    password: "Un-Mot-De-Passe-1!",
+    displayName: "Bilingue",
+  });
+  assert.equal(user.locale, "fr", "le français est la valeur par défaut");
+
+  const changé = await setLocale(db, user.id, "en");
+  assert.equal(changé.locale, "en");
+  assert.equal((await getPublicUser(db, user.id)).locale, "en");
+});
+
+test("une langue inconnue est refusée avant la base", async () => {
+  /**
+   * La contrainte `users_locale_vocab` la refuserait de toute façon, mais avec
+   * une erreur de contrainte que personne ne sait lire. On rend un message.
+   */
+  const { user } = await registerUser(db, {
+    email: freshEmail("langue"),
+    password: "Un-Mot-De-Passe-1!",
+    displayName: "Bilingue",
+  });
+  await assert.rejects(() => setLocale(db, user.id, "kr"), /Langue inconnue/);
+  assert.equal((await getPublicUser(db, user.id)).locale, "fr", "rien n'a bougé");
 });

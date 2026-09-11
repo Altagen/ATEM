@@ -5,6 +5,7 @@
  * qui s'affichent ensemble demandent trois fois le même profil au démarrage.
  */
 import { api, ApiError, type PublicUser } from "./api.js";
+import { setLocale } from "./i18n/index.js";
 
 let current: PublicUser | null = null;
 let inFlight: Promise<PublicUser | null> | null = null;
@@ -16,6 +17,14 @@ export function knownUser(): PublicUser | null {
 export function setUser(user: PublicUser | null): void {
   current = user;
   inFlight = null;
+  /**
+   * La langue suit le compte, pas le navigateur.
+   *
+   * C'est un réglage qu'on choisit une fois et qu'on retrouve sur son
+   * téléphone comme sur son ordinateur. Sans compte, on repart du français —
+   * les écrans de connexion n'ont pas encore de qui les lire.
+   */
+  setLocale(user?.locale ?? "fr");
 }
 
 export async function loadUser(): Promise<PublicUser | null> {
@@ -23,6 +32,7 @@ export async function loadUser(): Promise<PublicUser | null> {
   inFlight ??= api<{ user: PublicUser }>("/auth/me")
     .then(({ user }) => {
       current = user;
+      setLocale(user.locale);
       return user;
     })
     .catch((err) => {

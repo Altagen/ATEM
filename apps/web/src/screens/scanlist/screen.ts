@@ -7,6 +7,7 @@
  * qui rend le « −1 » de cet écran structurellement incapable de toucher la
  * collection. Il n'existe pas de chemin, pas même par erreur.
  */
+import { t } from "../../platform/i18n/index.js";
 import { api, ApiError, type CardDetail } from "../../platform/api.js";
 import { toast } from "../../platform/ui.js";
 import type { ScanlistDetail, ScanlistSummary } from "@atem/shared";
@@ -68,7 +69,7 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
       const { items } = await api<{ items: ScanlistSummary[] }>("/scanlistes");
       state.items = items;
     } catch (err) {
-      state.error = err instanceof ApiError ? err.message : "Serveur injoignable.";
+      state.error = err instanceof ApiError ? err.message : t("Serveur injoignable.");
     } finally {
       state.loading = false;
       paint();
@@ -79,7 +80,7 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
     try {
       state.opened = await api<ScanlistDetail>(`/scanlistes/${encodeURIComponent(id)}`);
     } catch (err) {
-      state.error = err instanceof ApiError ? err.message : "Lot introuvable.";
+      state.error = err instanceof ApiError ? err.message : t("Lot introuvable.");
     } finally {
       state.loading = false;
       paint();
@@ -109,7 +110,7 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
 
   function addToDraft(rawCode: string, delta: number): { setCode: string; quantity: number; label: string | null } {
     const setCode = rawCode.trim().toUpperCase();
-    if (!setCode) throw new Error("Aucun set code à enregistrer.");
+    if (!setCode) throw new Error(t("Aucun set code à enregistrer."));
 
     const connuAvant = state.draft?.lines.some((line) => line.setCode === setCode) ?? false;
     const line = applyToDraft(setCode, delta);
@@ -124,13 +125,13 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
 
     const nom = draft.name.trim();
     if (!nom) {
-      state.error = "Donnez un nom au lot.";
+      state.error = t("Donnez un nom au lot.");
       paint();
       return;
     }
     const lines = keptForSaving(draft.lines);
     if (lines.length === 0) {
-      state.error = "Aucune carte à enregistrer — toutes les lignes sont à zéro.";
+      state.error = t("Aucune carte à enregistrer — toutes les lignes sont à zéro.");
       paint();
       return;
     }
@@ -139,10 +140,10 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
       const lot = await api<ScanlistDetail>("/scanlistes", { method: "POST", body: { name: nom, lines } });
       discardDraft();
       state.error = "";
-      toast(`« ${lot.name} » enregistré — ${lot.copyCount} ex.`, "success");
+      toast(t("« {nom} » enregistré — {ex} ex.", { nom: lot.name, ex: lot.copyCount }), "success");
       await loadList();
     } catch (err) {
-      state.error = err instanceof ApiError ? err.message : "L'enregistrement a échoué.";
+      state.error = err instanceof ApiError ? err.message : t("L'enregistrement a échoué.");
       paint();
     }
   }
@@ -195,13 +196,13 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
       // Un versement à moitié réussi se lit comme tel, pas comme un succès.
       toast(
         bilan.failed > 0
-          ? `${bilan.poured} ex. versés · ${bilan.failed} ligne(s) en échec`
-          : `${bilan.poured} ex. versés dans votre collection.`,
+          ? t("{ex} ex. versés · {n} ligne(s) en échec", { ex: bilan.poured, n: bilan.failed })
+          : t("{ex} ex. versés dans votre collection.", { ex: bilan.poured }),
         bilan.failed > 0 ? "error" : "success",
       );
       await loadOne(lot.id);
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "Le versement a échoué.", "error");
+      toast(err instanceof ApiError ? err.message : t("Le versement a échoué."), "error");
       if (bouton) bouton.disabled = false;
     }
   }
@@ -213,12 +214,12 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
 
     try {
       await api(`/scanlistes/${encodeURIComponent(lot.id)}`, { method: "DELETE" });
-      toast(`« ${lot.name} » jeté.`, "success");
+      toast(t("« {nom} » jeté.", { nom: lot.name }), "success");
       window.history.pushState({}, "", "/scanlistes");
       state.opened = null;
       await loadList();
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "La suppression a échoué.", "error");
+      toast(err instanceof ApiError ? err.message : t("La suppression a échoué."), "error");
     }
   }
 
@@ -255,7 +256,7 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
         // pas le doigt sur l'écran, et le champ suivant est celui-ci.
         root.querySelector<HTMLInputElement>("#draft-code")?.focus();
       } catch (err) {
-        state.error = err instanceof Error ? err.message : "Ajout impossible.";
+        state.error = err instanceof Error ? err.message : t("Ajout impossible.");
         paint();
       }
     };
@@ -274,7 +275,7 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
       // mégaoctets, et la plupart des visites n'ouvrent jamais la caméra.
       const { openScanner } = await import("../collection/scanner.js");
       await openScanner({
-        tallyLabel: "dans le lot",
+        tallyLabel: t("dans le lot"),
         onConfirm: async (setCode, delta) => addToDraft(setCode, delta),
         onClose: () => paint(),
       });

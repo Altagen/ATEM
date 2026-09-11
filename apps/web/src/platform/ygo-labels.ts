@@ -10,9 +10,17 @@
  * comparé ; le français n'est qu'un affichage. Un filtre posé en français reste
  * donc valide quand l'interface passe à l'anglais.
  *
+ * Et c'est ce qui rend la bascule de langue triviale ici : en anglais, il n'y a
+ * rien à traduire — la valeur brute de l'API **est** l'anglais. Ces tables ne
+ * s'appliquent qu'en français. Ce vocabulaire n'a donc rien à faire dans le
+ * dictionnaire général : « Poisson » n'est pas une phrase d'interface, c'est le
+ * nom français d'une valeur du catalogue.
+ *
  * Table reprise d'ATEM-old, où elle avait été établie à partir des noms usuels
  * du TCG français.
  */
+
+import { locale } from "./i18n/index.js";
 
 type Labels = Record<string, string>;
 
@@ -106,8 +114,12 @@ const CARD_TYPES: Labels = {
  * type non répertorié serait pire que son nom anglais — l'utilisateur, lui,
  * saurait le lire.
  */
-const label = (table: Labels, value: string | null | undefined): string =>
-  value ? (table[value] ?? value) : "";
+const label = (table: Labels, value: string | null | undefined): string => {
+  if (!value) return "";
+  // En anglais, la valeur de l'API est déjà celle qu'on affiche.
+  if (locale() === "en") return value;
+  return table[value] ?? value;
+};
 
 export const translateAttribute = (value: string | null | undefined): string =>
   label(ATTRIBUTES, value);
@@ -143,3 +155,55 @@ const LINK_MARKERS: Labels = {
 };
 
 export const translateLinkMarker = (value: string): string => label(LINK_MARKERS, value);
+
+/**
+ * Le cadre d'une carte — `frameType` de l'API, en minuscules et sans espaces.
+ *
+ * Il vivait dans la vue de la collection, où il faisait tache : c'est le même
+ * vocabulaire que le reste de ce fichier, et il se traduit par la même règle —
+ * en anglais, la valeur de l'API suffit, à ceci près qu'elle n'est pas écrite
+ * pour être lue (`normal_pendulum`). Elle est donc reformatée.
+ */
+const FRAME_TYPES: Labels = {
+  normal: "Normal",
+  effect: "À effet",
+  ritual: "Rituel",
+  fusion: "Fusion",
+  synchro: "Synchro",
+  xyz: "Xyz",
+  link: "Lien",
+  spell: "Magie",
+  trap: "Piège",
+  token: "Jeton",
+  normal_pendulum: "Pendule Normal",
+  effect_pendulum: "Pendule à effet",
+  fusion_pendulum: "Pendule Fusion",
+  synchro_pendulum: "Pendule Synchro",
+  xyz_pendulum: "Pendule Xyz",
+  skill: "Compétence",
+};
+
+const FRAME_TYPES_EN: Labels = {
+  normal: "Normal",
+  effect: "Effect",
+  ritual: "Ritual",
+  fusion: "Fusion",
+  synchro: "Synchro",
+  xyz: "Xyz",
+  link: "Link",
+  spell: "Spell",
+  trap: "Trap",
+  token: "Token",
+  normal_pendulum: "Normal Pendulum",
+  effect_pendulum: "Effect Pendulum",
+  fusion_pendulum: "Fusion Pendulum",
+  synchro_pendulum: "Synchro Pendulum",
+  xyz_pendulum: "Xyz Pendulum",
+  skill: "Skill",
+};
+
+export function translateFrameType(value: string | null | undefined): string {
+  if (!value) return "";
+  const table = locale() === "en" ? FRAME_TYPES_EN : FRAME_TYPES;
+  return table[value] ?? value;
+}

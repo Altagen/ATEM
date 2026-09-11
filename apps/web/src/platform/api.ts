@@ -4,6 +4,8 @@
  * Une seule fonction sait parler au serveur : le jour où l'authentification, la
  * gestion d'erreur ou le préfixe changent, ils changent ici.
  */
+import { t, tServer } from "./i18n/index.js";
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -39,10 +41,21 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
 
   if (!response.ok) {
     const body = (payload ?? {}) as { error?: string; message?: string };
+    /**
+     * Le message du serveur passe par le dictionnaire.
+     *
+     * L'API répond en français. Plutôt que d'inventer un code d'erreur distinct
+     * pour chacune de ses trente phrases, le front cherche la phrase elle-même
+     * — c'est la même clé que partout ailleurs. Une phrase inconnue ressort
+     * telle quelle : un message qu'on n'a pas su traduire vaut mieux qu'un
+     * message générique qui n'apprend rien.
+     */
     throw new ApiError(
       response.status,
       body.error ?? "unknown",
-      body.message ?? `Le serveur a répondu ${response.status}.`,
+      body.message
+        ? tServer(body.message)
+        : t("Le serveur a répondu {statut}.", { statut: response.status }),
     );
   }
   return payload as T;

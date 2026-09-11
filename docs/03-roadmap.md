@@ -172,28 +172,41 @@ d'une ligne portait le style du compteur de page, marge basse comprise.
 
 **Reste à faire** — rien pour M1.
 
-### Limite connue — l'interface n'est pas traduisible en l'état
+### Les traductions — livrées le 2026-09-11
 
-Mesuré le 2026-09-11, avant qu'on la croie prête pour l'anglais.
+**Le français est la clé.** `t("Ma collection")` rend la phrase telle quelle en
+français, sa traduction en anglais. Les gabarits restent lisibles : on y lit la
+phrase, pas un identifiant à résoudre ailleurs. L'objection habituelle — changer
+le français orpheline silencieusement l'anglais — ne tient pas :
+`scripts/check-translations.mjs` refuse toute chaîne sans traduction **et** toute
+traduction que plus rien n'emploie.
 
-| | |
-|---|---|
-| Chaînes visibles en dur, côté front | **86** |
-| Messages français renvoyés par l'API et affichés tels quels | **33** |
+**Le dictionnaire couvre aussi le serveur.** L'API répond en français ; le front
+cherche la phrase avant de l'afficher. Cela évite d'inventer un code d'erreur
+distinct pour chacune de ses trente phrases — et referme le vrai piège : un
+écran anglais dont les erreurs parlent français.
 
-Il n'existe **aucune couche de traduction** — pas de `t()`, rien. Le champ
-`locale` existe pourtant de bout en bout (colonne contrainte à `fr`/`en`, porté
-par le `viewer`, exposé dans `PublicUser`), mais il ne pilote qu'une seule
-chose : la langue du nom et du texte d'une carte dans sa fiche.
+**Le vocabulaire Yu-Gi-Oh! n'y est pas.** `Fish`, `WATER`, `Effect Monster` : en
+anglais, la valeur brute de l'API **est** l'anglais. `ygo-labels.ts` ne
+s'applique donc qu'en français. « Poisson » n'est pas une phrase d'interface.
 
-**Traduire le front ne suffira pas.** `err.message` de l'API est affiché
-verbatim : « Ce lot a déjà été versé », « Scanliste introuvable », la règle du
-mot de passe. Il faudra que l'API renvoie un **code** que le front traduit
-plutôt qu'une phrase — la réponse d'erreur porte déjà un champ `error` à côté
-du `message`, la structure est là et n'est pas exploitée.
+**La langue vit sur le compte** (`PATCH /auth/me/langue`), pas dans le
+navigateur : on la choisit une fois, on la retrouve d'un appareil à l'autre.
 
-C'est un chantier à part entière, pas un réglage. Noté ici pour qu'on ne le
-découvre pas au moment de basculer un compte en anglais.
+**Pas de moteur de pluriel.** Le français s'en passe ici — « ex. » ne s'accorde
+pas — et l'anglais est écrit pour se lire juste à n'importe quel nombre : « ×1 »
+plutôt que « 1 copies ». Le jour où une phrase ne s'y prêtera pas, il faudra
+autre chose.
+
+La barrière a été durcie quatre fois, chaque fois après avoir **vu** du français
+sur une capture anglaise : chaînes courtes sans accent (« Scanner »,
+« Compact »), gabarits à interpolation (`textContent = \`${n}/${total}
+édition(s)\``), tableaux `[string, string][]` (« Attribut », « Niveau »,
+« Langue »), tables `_LABELS` (« En ligne », les étapes du scan). Elle rapportait
+aussi des numéros de ligne faux — elle blanchissait les commentaires en une
+espace, ce qui collapsait les retours à la ligne.
+
+209 chaînes, toutes traduites.
 
 > Le prétraitement de l'image avant OCR est le vrai point dur de ce jalon, pas
 > `tesseract.js` lui-même. Ce que fait ATEM-old ici est probablement l'actif le plus

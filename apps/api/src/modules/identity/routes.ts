@@ -7,7 +7,7 @@ import { requireViewer } from "./middleware.js";
 import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js";
 import { LIMITS } from "@atem/shared";
 import {
-  authenticate, getPublicUser, registerUser, revokeSessions,
+  authenticate, getPublicUser, registerUser, revokeSessions, setLocale,
 } from "./service.js";
 import { issueToken } from "./token.js";
 
@@ -77,6 +77,23 @@ export function identityRoutes(db: Database) {
     const viewer = c.get("viewer");
     if (!viewer) throw invalidInput("Session absente.");
     return c.json({ user: await getPublicUser(db, viewer.id) });
+  });
+
+  /** La langue de l'interface, portée par le compte. */
+  app.patch("/me/langue", requireViewer, async (c) => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("Session absente.");
+
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      throw invalidInput("Corps de requête illisible.");
+    }
+    const parsed = z.object({ locale: z.enum(["fr", "en"]) }).safeParse(raw);
+    if (!parsed.success) throw invalidInput("Langue inconnue.");
+
+    return c.json({ user: await setLocale(db, viewer.id, parsed.data.locale) });
   });
 
   return app;

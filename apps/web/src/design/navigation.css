@@ -227,3 +227,52 @@
     border-radius: 0 0 4px 4px;
   }
 }
+
+/* ── Le choix de langue ───────────────────────────────────────────────────
+ *
+ * Deux boutons collés, façon segment : il n'y a que deux langues, et la
+ * courante se lit d'un coup d'œil. Un menu déroulant demanderait deux gestes
+ * pour la même chose, et cacherait l'état courant derrière le premier.
+ */
+
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.lang-switch-item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  min-height: 30px;
+}
+
+.lang-switch-item.is-active {
+  background: var(--accent);
+  color: #061018;
+}
+
+.lang-switch-item:not(.is-active):hover {
+  color: var(--fg);
+}
+
+/* Dans la feuille de compte, la cible est au doigt et le bloc prend sa place. */
+.account-sheet-foot .lang-switch {
+  align-self: center;
+}
+
+.account-sheet-foot .lang-switch-item {
+  min-height: 44px;
+  min-width: 56px;
+  font-size: 0.85rem;
+}
