@@ -26,7 +26,7 @@ const envInt = (name: string, fallback: number): number => {
   return Number.isFinite(raw) && raw > 0 ? raw : fallback;
 };
 
-export const AUTH_LIMITS: Record<string, LimitRule> = {
+const AUTH_LIMITS: Record<string, LimitRule> = {
   login: { max: envInt("ATEM_LOGIN_ATTEMPTS_MAX", 10), windowMs: 15 * 60 * 1000 },
   register: { max: envInt("ATEM_REGISTER_ATTEMPTS_MAX", 5), windowMs: 60 * 60 * 1000 },
 };

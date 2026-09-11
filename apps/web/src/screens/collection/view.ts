@@ -19,7 +19,7 @@ import type { CollectionItem, Facets, ViewState } from "./state.js";
 
 
 /** La nature d'une carte, telle que l'écran la regroupe et la filtre. */
-export function kindOf(item: CollectionItem): "monster" | "spell" | "trap" | "unresolved" {
+function kindOf(item: CollectionItem): "monster" | "spell" | "trap" | "unresolved" {
   const type = item.card?.type ?? "";
   if (!item.card) return "unresolved";
   if (type.includes("Spell")) return "spell";
@@ -197,7 +197,7 @@ export function contentHtml(state: ViewState): SafeHtml {
   </ul>`;
 }
 
-export function hasActiveFilters(state: ViewState): boolean {
+function hasActiveFilters(state: ViewState): boolean {
   return Boolean(
     state.query ||
       state.kind ||

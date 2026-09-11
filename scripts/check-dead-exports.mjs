@@ -12,6 +12,14 @@
  *   fichier. Ce n'est pas mort ; c'est une frontière percée pour rien, et ça
  *   invite le prochain module à s'en servir. Le mot-clé `export` part.
  *
+ * — **Vivant seulement par son test** : aucune ligne de production ne l'appelle,
+ *   mais une épreuve le fait — ce qui suffisait à le tenir hors des deux listes
+ *   précédentes. C'est du code que seul son propre contrôle justifie, et la
+ *   distinction compte : un crochet de test (`resetResolveQueue`) est
+ *   légitime, une fonction de production que rien n'appelle ne l'est pas.
+ *   Signalé sans bloquer, parce que la réponse dépend de laquelle des deux
+ *   c'est.
+ *
  * Ce que le contrôle **ne** signale pas : le code qui prépare la fonctionnalité
  * suivante et qui vit dans `design/staged/` ou derrière un module réservé. On
  * cherche ce qui n'a plus de rapport avec rien, pas ce qui n'a pas encore servi.
@@ -92,6 +100,7 @@ const EXPORT_RE =
 
 const dead = [];
 const overExposed = [];
+const testOnly = [];
 
 for (const file of sources) {
   const isTest = file.endsWith(".test.ts");
@@ -118,17 +127,41 @@ for (const file of sources) {
 
     if (outside > 0) continue;
 
+    /**
+     * Un type qui nomme le contrat d'une fonction exportée n'est pas
+     * sur-exposé.
+     *
+     * `export type DeckDetail` sert à lire `getDeck(): Promise<DeckDetail>` :
+     * l'appelant ne le nomme jamais — il reçoit l'objet — mais le retirer
+     * rendrait la signature muette. Le signaler poussait à abîmer ce qui se lit
+     * bien pour satisfaire un compteur.
+     */
+    const estType = /^export\s+(?:type|interface)\s/.test(line.trim());
+    if (estType) {
+      /**
+       * La signature court sur plusieurs lignes, et c'est la règle ici.
+       *
+       * Ne lire que la première ratait tout ce qui s'écrit en colonne —
+       * `export async function getDeck(\n  db: Database,\n  …\n): Promise<DeckDetail>`.
+       * On prend donc du mot-clé jusqu'à l'accolade ouvrante.
+       */
+      const signatures =
+        own.match(/^export\s+(?:async\s+)?(?:function|const)[\s\S]*?(?:\{|=>|;)/gm) ?? [];
+      if (signatures.some((sig) => new RegExp(`\\b${symbol}\\b`).test(sig))) continue;
+    }
+
     const inside = countIn(own, symbol, line.trim());
     const relative = path.relative(ROOT, file);
 
     if (inside === 0 && inTests === 0) dead.push({ file: relative, symbol });
     else if (inTests === 0) overExposed.push({ file: relative, symbol });
+    else if (inside === 0) testOnly.push({ file: relative, symbol });
   }
 }
 
 const listOnly = process.argv.includes("--list");
 
-if (dead.length === 0 && overExposed.length === 0) {
+if (dead.length === 0 && overExposed.length === 0 && testOnly.length === 0) {
   console.log("✓ aucun export mort ni exposé sans raison");
   process.exit(0);
 }
@@ -149,6 +182,18 @@ if (overExposed.length > 0) {
   }
 }
 
-// Les exports morts font échouer ; l'exposition inutile est signalée sans
-// bloquer — c'est un défaut de frontière, pas du code qui ne sert à rien.
+if (testOnly.length > 0) {
+  console.log(
+    `\n${testOnly.length} exports que seul leur test emploie — aucune ligne de production :\n`,
+  );
+  for (const entry of testOnly) console.log(`    ${entry.file}  ${entry.symbol}`);
+  console.log(
+    "\n    Un crochet de test est légitime ; une fonction de production que rien" +
+      "\n    n'appelle ne l'est pas. La réponse dépend de laquelle c'est.",
+  );
+}
+
+// Les exports morts font échouer ; l'exposition inutile et le vivant-par-test
+// sont signalés sans bloquer — ce sont des défauts de frontière ou de jugement,
+// pas du code qui ne sert à rien.
 process.exit(dead.length > 0 ? 1 : 0);

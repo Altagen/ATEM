@@ -444,6 +444,49 @@ export async function resolveStatus(
 }
 
 /**
+ * Combien d'exemplaires d'une carte, **toutes impressions confondues**.
+ *
+ * C'est la règle qu'Ange a posée pour les decks : on compte par carte, pas par
+ * code d'extension. Trois Dragons Blancs en `LOB-FR001`, `MAGO-FR001` et
+ * `SDBE-FR001` font trois Dragons Blancs — c'est ce que la règle des trois
+ * exemplaires regarde, et c'est ce qui borne un deck.
+ *
+ * Exposé pour le module `deck`, qui ne touche pas aux tables de la collection.
+ * Rendre une table plutôt qu'un compte à la fois : un deck de quarante cartes
+ * poserait sinon quarante questions.
+ */
+export async function ownedByPasscode(
+  db: Database,
+  ownerId: string,
+  passcodes: number[],
+): Promise<Map<number, number>> {
+  if (passcodes.length === 0) return new Map();
+
+  const idx = printIndex(db);
+  const rows = await db
+    .select({
+      passcode: idx.passcode,
+      owned: sql<number>`sum(${ownedCards.quantity})::int`,
+    })
+    .from(ownedCards)
+    .innerJoin(idx, eq(ownedCards.printId, idx.printId))
+    .where(
+      and(
+        eq(ownedCards.userId, ownerId),
+        gt(ownedCards.quantity, 0),
+        inArray(idx.passcode, passcodes),
+      ),
+    )
+    .groupBy(idx.passcode);
+
+  const total = new Map<number, number>();
+  for (const row of rows) {
+    if (row.passcode !== null) total.set(row.passcode, row.owned);
+  }
+  return total;
+}
+
+/**
  * Remet en file tout ce qui attendait encore, au démarrage.
  *
  * Une ligne entre en collection immédiatement, en `pending`, et la file

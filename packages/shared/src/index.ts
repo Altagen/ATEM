@@ -7,6 +7,19 @@ export {
 } from "./set-code.js";
 export { LIMITS } from "./limits.js";
 export {
+  banlistMaxCopies,
+  checkDeckAdd,
+  DECK_MAX_COPIES,
+  DECK_ZONES,
+  isExtraDeckCard,
+  missingCopies,
+  parseBanlistStatus,
+  type BanlistStatus,
+  type DeckAddCheck,
+  type DeckBlockReason,
+  type DeckZone,
+} from "./deck.js";
+export {
   keptForSaving,
   SCANLIST_EXPORT_VERSION,
   type PourResult,

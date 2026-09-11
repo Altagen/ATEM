@@ -42,7 +42,7 @@ const CardImageSchema = z.object({
   image_url_small: z.string().nullish(),
 });
 
-export const YgoCardSchema = z.object({
+const YgoCardSchema = z.object({
   id: z.number(),
   name: z.string(),
   type: z.string().nullish(),

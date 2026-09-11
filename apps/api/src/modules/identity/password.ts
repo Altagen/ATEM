@@ -26,7 +26,7 @@ const scryptAsync = promisify(scrypt) as (
   options: { N: number; r: number; p: number; maxmem: number },
 ) => Promise<Buffer>;
 
-export const CURRENT_PARAMS = { N: 65536, r: 8, p: 1 } as const;
+const CURRENT_PARAMS = { N: 65536, r: 8, p: 1 } as const;
 
 const KEY_LENGTH = 64;
 

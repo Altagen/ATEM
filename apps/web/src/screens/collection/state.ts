@@ -103,7 +103,7 @@ const DEFAULT_PREFS: Prefs = {
  * préférence d'affichage ne vaut pas de faire tomber l'écran. On retombe
  * silencieusement sur les valeurs par défaut.
  */
-export function readPrefs(): Prefs {
+function readPrefs(): Prefs {
   try {
     const raw = window.localStorage.getItem(PREFS_KEY);
     if (!raw) return { ...DEFAULT_PREFS };

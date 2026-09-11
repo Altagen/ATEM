@@ -238,6 +238,39 @@ chose, dont l'une n'apportait rien.
 
 **Terminé quand.** Un deck se construit depuis sa collection et signale ce qui manque.
 
+### État au 2026-09-12 — le serveur seulement
+
+**Rien n'est livrable à l'utilisateur : il n'y a pas d'écran.** Le module API
+existe, il est éprouvé, et les routes attendent leur consommateur.
+
+| Ligne | |
+|---|---|
+| Arborescence de dossiers (P1) | non — sortie de la tranche |
+| Liste des decks, recherche, vue liste / galerie (P1) | l'API la rend ; pas d'écran |
+| Atelier collection / deck (P1) | non |
+| « Possédé / manquant » | calculé, jamais affiché |
+| Limite de 3 exemplaires | **oui**, garantie par une contrainte de base |
+| Tailles de zone : 40–60 Main, 15 Extra, 15 Side | non |
+
+**Deux règles tranchées par Ange**, qui referment deux lacunes du triage :
+
+- **Un deck compte des cartes, pas des impressions.** Trois Dragons Blancs en
+  trois codes d'extension restent trois Dragons Blancs. C'est ce qui rend le
+  plafond exprimable en base — `deck_cards` porte une ligne par carte, et
+  `check (main + extra + side between 0 and 3)` refuse le quatrième exemplaire.
+  ATEM-old identifiait ses lignes par `(deck, zone, passcode, set_code)` : la
+  même carte vivait sur plusieurs lignes et totalisait six exemplaires. **Lacune
+  n°1 refermée par le schéma**, pas par de la vigilance.
+- **Un deck est borné par la collection.** On n'y met pas une carte qu'on n'a
+  pas, donc il est jouable par construction. **La lacune n°2 — « possédé /
+  manquant » — disparaît par décision** plutôt que par implémentation. Reste le
+  seul cas qui dérive : vendre une carte engagée. Le manque se calcule alors à
+  la lecture, carte par carte, et **ne se signale que s'il y en a un** — quatre
+  possédées, trois au deck, une vendue : il ne se passe rien.
+
+`decks.category` n'est pas reconduite : la colonne `@deprecated` qu'ATEM-old
+recalculait à chaque écriture.
+
 ---
 
 ## M3 — Paramètres & souveraineté des données

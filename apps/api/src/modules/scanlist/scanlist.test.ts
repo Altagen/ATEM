@@ -215,3 +215,24 @@ test("une ligne que le catalogue ne place pas est comptée, sans bloquer les aut
   assert.equal(bilan.failed, 0);
   resetResolveQueue();
 });
+
+test("un identifiant qui n'est pas un UUID est refusé, pas planté", async () => {
+  /**
+   * La colonne est un `uuid` : PostgreSQL refuse la comparaison avec une chaîne
+   * quelconque, et sans garde ce refus remontait en **erreur interne** — un 500
+   * pour une adresse mal tapée.
+   *
+   * La première version de cette épreuve cherchait « invalid input syntax »
+   * dans le message et passait : Drizzle y met la requête échouée, pas la
+   * plainte de PostgreSQL, qui vit dans la cause. Elle vérifie donc maintenant
+   * que c'est bien **notre** refus qu'on reçoit.
+   */
+  const user = await newUser();
+  for (const bancal of ["pas-un-uuid", "", "12345", "00000000-0000-0000-0000-00000000000"]) {
+    await assert.rejects(
+      () => getScanlist(db, user.id, bancal),
+      /Identifiant invalide/,
+      `« ${bancal} »`,
+    );
+  }
+});

@@ -6,7 +6,7 @@
  * implémentations concurrentes de « carte pas encore résolue ». Les autres
  * modules passent désormais par les fonctions exportées ici.
  */
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   canonicalSetCode, languageFromSetCode, normalizeSetCode, toEnglishLookupSetCode,
 } from "@atem/shared";
@@ -403,6 +403,26 @@ export async function resolvePrintBySetCode(
   }
 
   return print;
+}
+
+/**
+ * Les fiches d'un lot de cartes, par passcode.
+ *
+ * Exposé pour `deck`, qui compose des cartes et non des impressions : il a
+ * besoin du nom, du cadre et du statut de banlist pour quarante cartes à la
+ * fois. Les demander une par une ferait quarante requêtes là où une suffit.
+ *
+ * Rendre les lignes telles quelles plutôt qu'un `CardDetail` : la langue
+ * d'affichage d'un deck suit la carte, pas l'interface, et c'est l'appelant qui
+ * sait ce qu'il montre.
+ */
+export async function cardsByPasscode(
+  db: Database,
+  passcodes: number[],
+): Promise<Map<number, CardRow>> {
+  if (passcodes.length === 0) return new Map();
+  const rows = await db.select().from(cards).where(inArray(cards.passcode, passcodes));
+  return new Map(rows.map((row) => [row.passcode, row]));
 }
 
 export async function getCard(

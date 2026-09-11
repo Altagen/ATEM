@@ -16,6 +16,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { LIMITS, normalizeSetCode, type PourResult, type ScanlistDetail, type ScanlistLine, type ScanlistSummary } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { conflict, invalidInput, notFound } from "../../platform/errors.js";
+import { requireUuid } from "../../platform/identifiers.js";
 import { adjustQuantity } from "../collection/index.js";
 import { scanlistLines, scanlists, type ScanlistRow } from "./schema.js";
 
@@ -65,6 +66,7 @@ export async function getScanlist(
   viewerId: string,
   id: string,
 ): Promise<ScanlistDetail> {
+  requireUuid(id);
   const [row] = await db
     .select()
     .from(scanlists)
@@ -188,6 +190,7 @@ export async function pourScanlist(
   viewerId: string,
   id: string,
 ): Promise<PourResult> {
+  requireUuid(id);
   const [reserved] = await db
     .update(scanlists)
     .set({ pouredAt: new Date() })
@@ -243,6 +246,7 @@ export async function pourScanlist(
 
 /** Jeter un lot. Ranger et détruire ne sont pas le même geste. */
 export async function deleteScanlist(db: Database, viewerId: string, id: string): Promise<void> {
+  requireUuid(id);
   const deleted = await db
     .delete(scanlists)
     .where(and(eq(scanlists.id, id), eq(scanlists.userId, viewerId)))

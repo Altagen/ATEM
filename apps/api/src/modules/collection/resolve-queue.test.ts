@@ -163,17 +163,17 @@ test("une tâche qui lève ne condamne pas les suivantes", async () => {
   const traités: string[] = [];
   configureResolveQueue({
     attempt: async (_userId, setCode) => {
-      if (setCode === "AAAA-FR001") throw new Error("réseau injoignable");
+      if (setCode === "RQRQ-FR001") throw new Error("réseau injoignable");
       traités.push(setCode);
       return true;
     },
     abandon: async () => {},
   });
 
-  enqueueResolve("utilisateur-a", "AAAA-FR001");
-  enqueueResolve("utilisateur-a", "BBBB-FR001");
+  enqueueResolve("utilisateur-a", "RQRQ-FR001");
+  enqueueResolve("utilisateur-a", "RQRQ-FR002");
   await drainNow();
 
-  assert.deepEqual(traités, ["BBBB-FR001"]);
+  assert.deepEqual(traités, ["RQRQ-FR002"]);
   resetResolveQueue();
 });
