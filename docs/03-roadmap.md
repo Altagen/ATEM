@@ -293,3 +293,34 @@ leurs collections en respectant leurs réglages de visibilité.
 | Framework front / serveur / ORM / base (par défaut : ceux d'ATEM-old) | M0 |
 | Favori au niveau de la carte ou de l'impression ? | M1 |
 | Mode d'usage de l'assistant de duel | Après M4 |
+
+---
+
+## Socle avant M2 — posé le 2026-09-11
+
+Décomposition demandée par Ange : « quels besoins sont au-dessus des autres ? »
+
+**Le socle qui manquait n'était pas le compte, c'était la distinction entre
+*possesseur* et *regardeur*.** Voir ADR-009. C'est le seul point dont le coût
+augmente avec chaque fonctionnalité écrite avant lui : écrire M2 avec la
+confusion aurait donné deux modules à reprendre au lieu d'un.
+
+Fait :
+
+- `ownerId` / `viewerId` séparés dans toutes les signatures de `collection` ;
+  `scanlist` ne connaît que `viewerId` — un lot non tranché est privé par nature ;
+- la règle d'accès de cette itération, décidée par Ange : pas de RBAC, toute
+  session **lit** n'importe quel inventaire, seul le propriétaire **écrit** ;
+- suppression de compte, avec l'inventaire de ce qui part — dont
+  `auth_attempts`, qui ne cascade pas mais dont la clé porte l'adresse.
+
+**Écarté du socle, et pourquoi.** L'avatar et son menu sont le contenant des
+réglages, pas une fondation. L'import/export CSV est parallèle. L'écran de
+profil est un *consommateur* du modèle de visibilité, pas son prérequis. Le
+changement de mot de passe et de pseudo sont des manques réels mais ne bloquent
+rien — sauf le pseudo, qui doit précéder l'annuaire des duellistes, pas les decks.
+
+**Reste ouvert** : le bouton de suppression de compte (l'API est là, l'écran de
+réglages viendra en M3), et la barrière qui rendra les lectures d'autrui
+structurellement inécrivables — elle naîtra avec sa première route plutôt que
+d'être posée à vide.

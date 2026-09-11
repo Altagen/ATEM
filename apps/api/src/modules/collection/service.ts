@@ -1,6 +1,20 @@
 /**
  * Le module collection — ce que le joueur possède.
  *
+ * **Deux identités, et elles ne se confondent pas.**
+ *
+ * — `ownerId` : à qui appartiennent les cartes. Une lecture le prend, et
+ *   n'importe quelle session peut lire n'importe quel inventaire — c'est ce qui
+ *   permettra à un duelliste de regarder la collection d'un autre.
+ * — `viewerId` : qui demande, tel que la session l'établit. **Toute écriture le
+ *   prend, et lui seul.** Jamais une identité venue du chemin de la requête.
+ *
+ * Les deux étaient la même variable, ce qui rendait le code sûr *par accident*
+ * : il tenait parce qu'on ne pouvait pas être quelqu'un d'autre. Les nommer
+ * séparément fait dire à chaque signature de quoi elle parle, et rend visible
+ * la faute qui consisterait à passer un propriétaire là où un viewer est
+ * attendu — voir ADR-009.
+ *
  * Il n'écrit jamais dans `cards` ni dans `card_prints` : il appelle le module
  * `referential`. C'est la correction du défaut le plus profond d'ATEM-old, où
  * `collection` et `decks` créaient chacun leurs propres lignes de catalogue,
@@ -129,11 +143,11 @@ function toItem(row: IndexRow): CollectionItem {
 }
 
 function buildFilters(
-  userId: string,
+  ownerId: string,
   filters: CollectionFilters,
   idx: PrintIndex,
 ): SQL[] {
-  const clauses: SQL[] = [eq(ownedCards.userId, userId), gt(ownedCards.quantity, 0)];
+  const clauses: SQL[] = [eq(ownedCards.userId, ownerId), gt(ownedCards.quantity, 0)];
 
   if (filters.query?.trim()) {
     const term = `%${filters.query.trim()}%`;
@@ -271,11 +285,11 @@ function rowsQuery(db: Database, idx: PrintIndex) {
 
 export async function listCollection(
   db: Database,
-  userId: string,
+  ownerId: string,
   filters: CollectionFilters = {},
 ): Promise<{ items: CollectionItem[]; total: number }> {
   const idx = printIndex(db);
-  const clauses = buildFilters(userId, filters, idx);
+  const clauses = buildFilters(ownerId, filters, idx);
   const limit = Math.min(Math.max(filters.limit ?? 60, 1), 200);
   const offset = Math.max(filters.offset ?? 0, 0);
 
@@ -305,7 +319,7 @@ export async function listCollection(
  */
 export async function adjustQuantity(
   db: Database,
-  userId: string,
+  viewerId: string,
   input: {
     setCode: string;
     delta: number;
@@ -343,7 +357,7 @@ export async function adjustQuantity(
   const item = await db.transaction(async (tx) => {
     const [written] = await tx
       .insert(ownedCards)
-      .values({ userId, printId: print.id, setCode, quantity: input.delta })
+      .values({ userId: viewerId, printId: print.id, setCode, quantity: input.delta })
       .onConflictDoUpdate({
         target: [ownedCards.userId, ownedCards.printId],
         set: {
@@ -363,7 +377,7 @@ export async function adjustQuantity(
     return written;
   });
 
-  if (needsResolution) enqueueResolve(userId, setCode);
+  if (needsResolution) enqueueResolve(viewerId, setCode);
 
   const idx = printIndex(db);
   const [row] = await rowsQuery(db, idx).where(eq(ownedCards.id, item.id)).limit(1);
@@ -380,14 +394,14 @@ export async function adjustQuantity(
  */
 export async function setNotes(
   db: Database,
-  userId: string,
+  viewerId: string,
   ownedId: number,
   notes: string | null,
 ): Promise<void> {
   const result = await db
     .update(ownedCards)
     .set({ notes: notes?.trim() || null, updatedAt: new Date() })
-    .where(and(eq(ownedCards.id, ownedId), eq(ownedCards.userId, userId)))
+    .where(and(eq(ownedCards.id, ownedId), eq(ownedCards.userId, viewerId)))
     .returning({ id: ownedCards.id });
 
   if (result.length === 0) throw notFound("Ligne de collection introuvable.");
@@ -395,17 +409,17 @@ export async function setNotes(
 
 export async function setFavorite(
   db: Database,
-  userId: string,
+  viewerId: string,
   ownedId: number,
   isFavorite: boolean,
 ): Promise<void> {
   const result = await db
     .update(ownedCards)
     .set({ isFavorite, updatedAt: new Date() })
-    .where(and(eq(ownedCards.id, ownedId), eq(ownedCards.userId, userId)))
+    .where(and(eq(ownedCards.id, ownedId), eq(ownedCards.userId, viewerId)))
     .returning({ id: ownedCards.id });
 
-  // Le filtre sur `userId` est **dans** la requête, pas après : une ligne qui
+  // Le filtre sur `viewerId` est **dans** la requête, pas après : une ligne qui
   // n'appartient pas à l'appelant est introuvable, et non interdite. Un 403
   // révélerait qu'elle existe.
   if (result.length === 0) throw notFound("Ligne de collection introuvable.");
@@ -414,7 +428,7 @@ export async function setFavorite(
 /** Combien de lignes attendent encore d'être identifiées. */
 export async function resolveStatus(
   db: Database,
-  userId: string,
+  ownerId: string,
 ): Promise<{ pending: number; unidentified: number }> {
   const idx = printIndex(db);
   const [row] = await db
@@ -424,7 +438,7 @@ export async function resolveStatus(
     })
     .from(ownedCards)
     .innerJoin(idx, eq(ownedCards.printId, idx.printId))
-    .where(and(eq(ownedCards.userId, userId), gt(ownedCards.quantity, 0)));
+    .where(and(eq(ownedCards.userId, ownerId), gt(ownedCards.quantity, 0)));
 
   return { pending: row?.pending ?? 0, unidentified: row?.unidentified ?? 0 };
 }
@@ -473,7 +487,7 @@ export async function requeuePendingResolves(db: Database): Promise<number> {
  */
 export async function reresolve(
   db: Database,
-  userId: string,
+  viewerId: string,
   rawSetCode: string,
 ): Promise<boolean> {
   const setCode = normalizeSetCode(rawSetCode);
@@ -506,7 +520,7 @@ export async function reresolve(
       .from(ownedCards)
       .where(
         and(
-          eq(ownedCards.userId, userId),
+          eq(ownedCards.userId, viewerId),
           eq(ownedCards.setCode, setCode),
           sql`${ownedCards.printId} <> ${resolved.id}`,
           inArray(ownedCards.printId, pendingPrints),
@@ -522,7 +536,7 @@ export async function reresolve(
     const [existing] = await tx
       .select()
       .from(ownedCards)
-      .where(and(eq(ownedCards.userId, userId), eq(ownedCards.printId, resolved.id)))
+      .where(and(eq(ownedCards.userId, viewerId), eq(ownedCards.printId, resolved.id)))
       .limit(1);
 
     if (existing) {
@@ -536,7 +550,7 @@ export async function reresolve(
         .where(eq(ownedCards.id, existing.id));
     } else {
       await tx.insert(ownedCards).values({
-        userId,
+        userId: viewerId,
         printId: resolved.id,
         setCode,
         quantity: Math.min(total, LIMITS.quantity.max),
@@ -559,7 +573,7 @@ export async function reresolve(
  * Magie ou d'un Piège (Continue, Équipement). Un Piège « Normal » n'est pas un
  * monstre Normal — les mélanger produirait un filtre qui ne veut rien dire.
  */
-export async function collectionFacets(db: Database, userId: string) {
+export async function collectionFacets(db: Database, ownerId: string) {
   const idx = printIndex(db);
   const rows = await db
     .selectDistinct({
@@ -572,7 +586,7 @@ export async function collectionFacets(db: Database, userId: string) {
     })
     .from(ownedCards)
     .innerJoin(idx, eq(ownedCards.printId, idx.printId))
-    .where(and(eq(ownedCards.userId, userId), gt(ownedCards.quantity, 0)));
+    .where(and(eq(ownedCards.userId, ownerId), gt(ownedCards.quantity, 0)));
 
   const collect = (pick: (row: (typeof rows)[number]) => string | null) =>
     [...new Set(rows.map(pick).filter((value): value is string => Boolean(value)))].sort();

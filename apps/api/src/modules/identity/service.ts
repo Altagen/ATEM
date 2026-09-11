@@ -8,7 +8,7 @@ import type { Database } from "../../db/client.js";
 import { conflict, invalidInput, notFound, unauthorized } from "../../platform/errors.js";
 import { checkPasswordStrength } from "@atem/shared";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
-import { users, type UserRow } from "./schema.js";
+import { authAttempts, users, type UserRow } from "./schema.js";
 
 export type PublicUser = {
   id: string;
@@ -150,6 +150,42 @@ export async function setLocale(
     .returning();
   if (!row) throw notFound("Utilisateur introuvable.");
   return toPublic(row);
+}
+
+/**
+ * Efface un compte, et tout ce qui s'y rattache.
+ *
+ * **Le mot de passe est redemandé.** Une session suffit pour tout le reste ;
+ * pas pour un geste irréversible. Un téléphone déverrouillé laissé sur une
+ * table ne doit pas suffire à effacer huit cents cartes.
+ *
+ * Ce qui part, et pourquoi c'est énuméré ici plutôt que laissé aux cascades :
+ *
+ * — la **collection** et les **scanlistes**, par `on delete cascade` ;
+ * — les **tentatives d'authentification**, qui ne cascadent pas : elles n'ont
+ *   pas de `user_id`, mais leur clé porte l'adresse — `email:ange@exemple.fr`.
+ *   C'est de la donnée personnelle, et l'oublier ferait mentir « tout a été
+ *   effacé ». Trouvé en listant les clés étrangères vers `users`, qui n'en
+ *   montrait que deux.
+ *
+ * Les impressions du catalogue restent : elles n'appartiennent à personne, et
+ * `card_prints.card_passcode` est en `set null` pour cette raison.
+ */
+export async function deleteAccount(
+  db: Database,
+  viewerId: string,
+  password: string,
+): Promise<void> {
+  const [row] = await db.select().from(users).where(eq(users.id, viewerId)).limit(1);
+  if (!row) throw notFound("Utilisateur introuvable.");
+  if (!(await verifyPassword(password, row.passwordHash))) {
+    throw unauthorized("Mot de passe incorrect.");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(authAttempts).where(eq(authAttempts.bucket, `email:${row.email.toLowerCase()}`));
+    await tx.delete(users).where(eq(users.id, viewerId));
+  });
 }
 
 export async function getPublicUser(db: Database, userId: string): Promise<PublicUser> {

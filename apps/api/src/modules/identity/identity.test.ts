@@ -2,7 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createTestApp, freshEmail, jsonPost } from "../../test-support.js";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
-import { getPublicUser, registerUser, setLocale } from "./service.js";
+import { deleteAccount, getPublicUser, registerUser, setLocale } from "./service.js";
+import { authAttempts } from "./schema.js";
+import { adjustQuantity, listCollection } from "../collection/service.js";
+import { createScanlist, listScanlists } from "../scanlist/service.js";
+import { resetResolveQueue } from "../collection/resolve-queue.js";
+import { eq } from "drizzle-orm";
 
 const { app, db } = createTestApp();
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
@@ -169,4 +174,84 @@ test("une langue inconnue est refusée avant la base", async () => {
   });
   await assert.rejects(() => setLocale(db, user.id, "kr"), /Langue inconnue/);
   assert.equal((await getPublicUser(db, user.id)).locale, "fr", "rien n'a bougé");
+});
+
+/**
+ * Effacer un compte.
+ *
+ * « Tout a été effacé » doit être vrai, pas approximativement vrai.
+ */
+async function compteGarni() {
+  const email = freshEmail("efface");
+  const { user } = await registerUser(db, {
+    email, password: "Un-Mot-De-Passe-1!", displayName: "Partant",
+  });
+  await adjustQuantity(db, user.id, { setCode: "DELX-FR001", delta: 2 });
+  await createScanlist(db, user.id, {
+    name: "Un lot",
+    lines: [{ setCode: "DELX-FR002", name: null, passcode: null, quantity: 1 }],
+  });
+  resetResolveQueue();
+  return { user, email };
+}
+
+test("effacer son compte emporte la collection et les lots", async () => {
+  const { user } = await compteGarni();
+  assert.equal((await listCollection(db, user.id, {})).total, 1);
+  assert.equal((await listScanlists(db, user.id)).length, 1);
+
+  await deleteAccount(db, user.id, "Un-Mot-De-Passe-1!");
+
+  await assert.rejects(() => getPublicUser(db, user.id), /introuvable/);
+  assert.equal((await listCollection(db, user.id, {})).total, 0);
+  assert.equal((await listScanlists(db, user.id)).length, 0);
+});
+
+test("effacer son compte emporte aussi les tentatives portant son adresse", async () => {
+  /**
+   * `auth_attempts` n'a pas de `user_id` : aucune cascade ne l'atteint. Mais sa
+   * clé porte l'adresse — `email:ange@exemple.fr` — et c'est de la donnée
+   * personnelle. L'oublier ferait mentir « tout a été effacé ».
+   */
+  const { user, email } = await compteGarni();
+  await db.insert(authAttempts).values({ bucket: `email:${email.toLowerCase()}`, action: "login" });
+
+  const avant = await db
+    .select()
+    .from(authAttempts)
+    .where(eq(authAttempts.bucket, `email:${email.toLowerCase()}`));
+  assert.ok(avant.length > 0, "la trace existe bien avant");
+
+  await deleteAccount(db, user.id, "Un-Mot-De-Passe-1!");
+
+  const après = await db
+    .select()
+    .from(authAttempts)
+    .where(eq(authAttempts.bucket, `email:${email.toLowerCase()}`));
+  assert.equal(après.length, 0);
+});
+
+test("un mot de passe faux n'efface rien", async () => {
+  // Une session suffit pour tout le reste ; pas pour un geste irréversible.
+  const { user } = await compteGarni();
+
+  await assert.rejects(() => deleteAccount(db, user.id, "Pas-Le-Bon-Mot-1!"), /incorrect/);
+
+  assert.ok(await getPublicUser(db, user.id), "le compte est toujours là");
+  assert.equal((await listCollection(db, user.id, {})).total, 1, "la collection aussi");
+});
+
+test("le catalogue survit à la suppression d'un compte", async () => {
+  /**
+   * Les impressions n'appartiennent à personne : `card_prints.card_passcode`
+   * est en `set null`, et une édition inscrite par quelqu'un qui s'en va
+   * profite encore à tous les autres.
+   */
+  const { user } = await compteGarni();
+  await deleteAccount(db, user.id, "Un-Mot-De-Passe-1!");
+
+  const { prints } = await import("../referential/schema.js").then(async (m) => ({
+    prints: await db.select().from(m.cardPrints).where(eq(m.cardPrints.setCode, "DELX-FR001")),
+  }));
+  assert.equal(prints.length, 1, "l'impression reste au catalogue");
 });

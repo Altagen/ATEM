@@ -7,7 +7,7 @@ import { requireViewer } from "./middleware.js";
 import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js";
 import { LIMITS } from "@atem/shared";
 import {
-  authenticate, getPublicUser, registerUser, revokeSessions, setLocale,
+  authenticate, deleteAccount, getPublicUser, registerUser, revokeSessions, setLocale,
 } from "./service.js";
 import { issueToken } from "./token.js";
 
@@ -77,6 +77,31 @@ export function identityRoutes(db: Database) {
     const viewer = c.get("viewer");
     if (!viewer) throw invalidInput("Session absente.");
     return c.json({ user: await getPublicUser(db, viewer.id) });
+  });
+
+  /**
+   * Effacer son compte.
+   *
+   * `DELETE` et non `POST` : le verbe dit ce qui se passe. Le mot de passe est
+   * dans le corps parce qu'il est redemandé — une session suffit pour tout le
+   * reste, pas pour un geste irréversible.
+   */
+  app.delete("/me", requireViewer, async (c) => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("Session absente.");
+
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      throw invalidInput("Corps de requête illisible.");
+    }
+    const parsed = z.object({ password: z.string().min(1).max(LIMITS.password.max) }).safeParse(raw);
+    if (!parsed.success) throw invalidInput("Mot de passe requis.");
+
+    await deleteAccount(db, viewer.id, parsed.data.password);
+    clearSessionCookie(c);
+    return c.json({ ok: true });
   });
 
   /** La langue de l'interface, portée par le compte. */

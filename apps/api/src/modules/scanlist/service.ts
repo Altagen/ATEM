@@ -1,6 +1,12 @@
 /**
  * Le module scanlist — inventorier sans verser à la collection.
  *
+ * **Une scanliste ne se partage pas.** Un lot qu'on n'a pas encore tranché est
+ * privé par nature : c'est un brouillon de décision, pas un inventaire. Tous
+ * ses services prennent donc `viewerId` — celui que la session établit — et
+ * aucun ne prend de propriétaire. La collection et les decks, eux, distinguent
+ * les deux parce qu'on les regardera les uns chez les autres (ADR-009).
+ *
  * Il n'écrit ni dans `cards`, ni dans `card_prints`, ni dans `owned_cards` :
  * verser passe par `collection`, qui passe lui-même par `referential`. C'est la
  * même règle que partout ici, et elle vaut surtout au versement — l'endroit
@@ -32,7 +38,7 @@ const toSummary = (
  * la liste des lots n'a pas à charger deux mille lignes pour afficher « 47
  * références · 63 ex. ».
  */
-export async function listScanlists(db: Database, userId: string): Promise<ScanlistSummary[]> {
+export async function listScanlists(db: Database, viewerId: string): Promise<ScanlistSummary[]> {
   const rows = await db
     .select({
       scanlist: scanlists,
@@ -41,7 +47,7 @@ export async function listScanlists(db: Database, userId: string): Promise<Scanl
     })
     .from(scanlists)
     .leftJoin(scanlistLines, eq(scanlistLines.scanlistId, scanlists.id))
-    .where(eq(scanlists.userId, userId))
+    .where(eq(scanlists.userId, viewerId))
     .groupBy(scanlists.id)
     .orderBy(desc(scanlists.createdAt));
 
@@ -51,18 +57,18 @@ export async function listScanlists(db: Database, userId: string): Promise<Scanl
 /**
  * Un lot et ses lignes.
  *
- * Le filtre sur `userId` est **dans** la requête : le lot de quelqu'un d'autre
+ * Le filtre sur `viewerId` est **dans** la requête : le lot de quelqu'un d'autre
  * est introuvable, et non interdit. Un 403 dirait qu'il existe.
  */
 export async function getScanlist(
   db: Database,
-  userId: string,
+  viewerId: string,
   id: string,
 ): Promise<ScanlistDetail> {
   const [row] = await db
     .select()
     .from(scanlists)
-    .where(and(eq(scanlists.id, id), eq(scanlists.userId, userId)))
+    .where(and(eq(scanlists.id, id), eq(scanlists.userId, viewerId)))
     .limit(1);
   if (!row) throw notFound("Scanliste introuvable.");
 
@@ -98,7 +104,7 @@ export async function getScanlist(
  */
 export async function createScanlist(
   db: Database,
-  userId: string,
+  viewerId: string,
   input: { name: string; lines: ScanlistLine[] },
 ): Promise<ScanlistDetail> {
   const name = input.name.trim();
@@ -140,7 +146,7 @@ export async function createScanlist(
   }
 
   return db.transaction(async (tx) => {
-    const [row] = await tx.insert(scanlists).values({ userId, name }).returning();
+    const [row] = await tx.insert(scanlists).values({ userId: viewerId, name }).returning();
     if (!row) throw new Error("insertion sans résultat");
 
     await tx.insert(scanlistLines).values(
@@ -179,13 +185,13 @@ export async function createScanlist(
  */
 export async function pourScanlist(
   db: Database,
-  userId: string,
+  viewerId: string,
   id: string,
 ): Promise<PourResult> {
   const [reserved] = await db
     .update(scanlists)
     .set({ pouredAt: new Date() })
-    .where(and(eq(scanlists.id, id), eq(scanlists.userId, userId), sql`${scanlists.pouredAt} is null`))
+    .where(and(eq(scanlists.id, id), eq(scanlists.userId, viewerId), sql`${scanlists.pouredAt} is null`))
     .returning();
 
   if (!reserved) {
@@ -194,7 +200,7 @@ export async function pourScanlist(
     const [exists] = await db
       .select({ pouredAt: scanlists.pouredAt })
       .from(scanlists)
-      .where(and(eq(scanlists.id, id), eq(scanlists.userId, userId)))
+      .where(and(eq(scanlists.id, id), eq(scanlists.userId, viewerId)))
       .limit(1);
     if (!exists) throw notFound("Scanliste introuvable.");
     throw conflict("Ce lot a déjà été versé.");
@@ -212,7 +218,7 @@ export async function pourScanlist(
 
   for (const line of lines) {
     try {
-      await adjustQuantity(db, userId, {
+      await adjustQuantity(db, viewerId, {
         setCode: line.setCode,
         delta: line.quantity,
         passcode: line.passcode,
@@ -236,10 +242,10 @@ export async function pourScanlist(
 }
 
 /** Jeter un lot. Ranger et détruire ne sont pas le même geste. */
-export async function deleteScanlist(db: Database, userId: string, id: string): Promise<void> {
+export async function deleteScanlist(db: Database, viewerId: string, id: string): Promise<void> {
   const deleted = await db
     .delete(scanlists)
-    .where(and(eq(scanlists.id, id), eq(scanlists.userId, userId)))
+    .where(and(eq(scanlists.id, id), eq(scanlists.userId, viewerId)))
     .returning({ id: scanlists.id });
   if (deleted.length === 0) throw notFound("Scanliste introuvable.");
 }

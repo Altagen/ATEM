@@ -207,3 +207,48 @@ resolve_status in ('resolved', 'pending', 'unidentified')
 Aucune ligne fabriquée, aucun nombre dont le signe porte un sens, aucune
 collision possible. Une seule fonction — `ensurePlaceholderPrint`, exposée par
 `referential` — crée une ligne provisoire.
+
+---
+
+## ADR-009 — Le propriétaire et le regardeur ne sont pas la même personne
+
+*Décidé le 2026-09-11, avant M2.*
+
+**Contexte.** Tous les services s'écrivaient `(db, userId, …)`, et ce `userId`
+voulait dire deux choses à la fois : *à qui appartient cette donnée* et *qui la
+demande*. Le code était sûr — mais **sûr par accident** : il tenait parce qu'on
+ne pouvait pas être quelqu'un d'autre. Douze requêtes filtraient là-dessus.
+
+Or les priorités d'Ange comportent, juste après les decks, « regarder le profil,
+les decks et la collection des autres joueurs ». Le jour où une route de lecture
+porte l'identité d'un autre joueur dans son chemin, chaque requête qui aura
+oublié de distinguer les deux devient une fuite — et un `POST` qui recopierait
+ce motif laisserait n'importe qui écrire chez n'importe qui.
+
+Écrire M2 avec la confusion, c'est se donner deux modules à reprendre au lieu
+d'un. Reprendre un filtre de sécurité après coup, sur du code qui marche, est le
+chemin exact qui a rendu ATEM-old intenable.
+
+**Choix.** Deux noms, et ils ne se confondent plus :
+
+| | |
+|---|---|
+| `ownerId` | à qui appartient la donnée. Une **lecture** le prend. |
+| `viewerId` | qui demande, tel que la session l'établit. Une **écriture** le prend, et lui seul. |
+
+**La règle d'accès, pour cette itération** (décidée par Ange) : pas de RBAC.
+Toute session peut **lire** la collection et les decks de n'importe qui. Seul le
+propriétaire **écrit**. Un réglage de visibilité viendra plus tard ; il se posera
+sur le chemin de lecture, qui est déjà le seul endroit où le filtrer.
+
+**Ce qui reste privé.** Une scanliste ne se partage pas : un lot qu'on n'a pas
+encore tranché est un brouillon de décision, pas un inventaire. Ce module ne
+connaît donc que `viewerId`, et n'a pas de notion de propriétaire.
+
+**Ce que la règle interdit, et qu'il faudra rendre impossible.** Une écriture ne
+doit **jamais** recevoir une identité venue du chemin de la requête. Aujourd'hui
+aucune route ne porte l'identité d'autrui, donc rien à garder ; quand les
+Duellistes arriveront, ces lectures seront montées sur un sous-ensemble qui
+refuse structurellement tout ce qui n'est pas `GET`, plutôt que sur une
+vigilance de relecture. La barrière naîtra avec son premier consommateur —
+poser dès maintenant un garde qui ne garde rien serait du code mort.

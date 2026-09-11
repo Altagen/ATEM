@@ -11,10 +11,13 @@ cd "$(dirname "$0")/.."
 fail=0
 failed_steps=()
 
-# Une étape muette qui tombe ne disait rien de ce qui l'avait fait tomber :
-# `pnpm -s` n'écrit pas, et la barrière annonçait « au moins une barrière a
-# cédé » sans dire laquelle. On garde donc la sortie de côté, on ne la montre
-# que si l'étape échoue, et on rappelle les noms à la fin.
+# La sortie est gardée de côté et montrée seulement si l'étape échoue, avec les
+# noms rappelés à la fin.
+#
+# Les étapes ne passent **plus** par `pnpm -s` : `--silent` supprime aussi la
+# sortie des commandes filles, y compris quand elles échouent. La barrière
+# annonçait alors « tombée » en n'ayant rien à montrer — trois fois de suite,
+# sur un échec intermittent qu'on n'a donc pas pu lire.
 step() {
   printf "\n\033[1m── %s\033[0m\n" "$1"
   local name="$1"
@@ -45,8 +48,8 @@ step "Traductions" node scripts/check-translations.mjs
 step "CSS mort" node scripts/check-dead-css.mjs
 step "Classes sans style" node scripts/check-unstyled-classes.mjs
 step "Exports morts" node scripts/check-dead-exports.mjs
-step "Types" pnpm -s typecheck
-step "Tests unitaires et d'intégration" pnpm -s test
+step "Types" pnpm typecheck
+step "Tests unitaires et d'intégration" pnpm test
 
 if [ "$fail" -ne 0 ]; then
   printf "\n\033[31m✗ barrière(s) tombée(s) :\033[0m\n"
