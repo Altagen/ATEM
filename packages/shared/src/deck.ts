@@ -31,20 +31,6 @@ export type DeckZone = (typeof DECK_ZONES)[number];
 export const DECK_MAX_COPIES = 3;
 
 /**
- * Jusqu'où les dossiers de decks s'emboîtent.
- *
- * Trois étages, comme dans ATEM-old. Ce n'est pas une limite technique : c'est
- * qu'au-delà on ne retrouve plus rien sans se souvenir de son propre
- * classement, et qu'un explorateur qui descend indéfiniment demande un fil
- * d'Ariane qui ne tient plus sur un téléphone.
- *
- * Un dossier à la racine est au niveau 1. Le serveur la fait respecter à la
- * création **et** au déplacement, sous-arbre compris ; l'écran s'en sert pour
- * ne pas proposer ce qui sera refusé.
- */
-export const DECK_FOLDER_MAX_DEPTH = 3;
-
-/**
  * Les tailles de zone, telles que les règles du jeu les fixent.
  *
  * **Le maximum se refuse, le minimum se signale.** Une soixante-et-unième carte

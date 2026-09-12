@@ -20,11 +20,25 @@ async function garnir(page: import("@playwright/test").Page, codes: string[]) {
 
 async function nouveauDeck(page: import("@playwright/test").Page, nom: string) {
   await page.goto("/decks");
-  page.once("dialog", (d) => d.accept(nom));
-  await page.getByRole("button", { name: "Construire un deck" }).click();
+  await creerDeckIci(page, nom);
   // Le nom vit dans un champ, pas dans un titre : c'est l'atelier d'ATEM-old,
   // où l'on renomme sans changer d'écran.
   await expect(page.locator("#edit-name")).toHaveValue(nom);
+}
+
+/** La fenêtre de création, là où l'on se trouve. */
+async function creerDeckIci(page: import("@playwright/test").Page, nom: string) {
+  await page.getByRole("button", { name: "Construire un deck" }).click();
+  await page.locator("#modal-name").fill(nom);
+  await page.getByRole("button", { name: "Créer" }).click();
+}
+
+/** La fenêtre de création de dossier, à l'étage courant. */
+async function creerDossier(page: import("@playwright/test").Page, nom: string) {
+  await page.getByRole("button", { name: "Nouveau dossier" }).click();
+  await page.locator("#modal-name").fill(nom);
+  await page.getByRole("button", { name: "Créer" }).click();
+  await expect(page.locator(".folder-name", { hasText: nom })).toBeVisible();
 }
 
 /** Sur téléphone, les deux panneaux se relaient : on choisit lequel on regarde. */
@@ -549,4 +563,168 @@ test("la fiche de l'atelier fige la page derrière elle", async ({ page }) => {
 
   await page.locator("#inspect-close").click();
   expect(await page.evaluate(() => document.body.style.position)).toBe("");
+});
+
+/* ── Les dossiers ─────────────────────────────────────────────────────────
+ * Repris d'ATEM-old : on navigue un étage à la fois, les dossiers d'abord, les
+ * decks ensuite. Ce qui change, c'est le rangement au menu plutôt qu'au
+ * glisser-déposer — viser une cible en maintenant le doigt ne se fait pas.
+ */
+
+test("on crée un dossier, on y descend, et l'on en remonte", async ({ page }) => {
+  await signUp(page);
+  await page.goto("/decks");
+  await creerDossier(page, "Meta");
+
+  await page.locator(".folder-open", { hasText: "Meta" }).click();
+  await expect(page.locator(".folder-path-step[aria-current='page']")).toHaveText("Meta");
+  await expect(page.locator(".empty-title")).toHaveText("Dossier vide");
+
+  // La case « .. » porte le nom de là où elle mène, pas seulement deux points.
+  await page.locator(".folder-tile-parent .folder-open").click();
+  await expect(page.locator(".folder-path-step[aria-current='page']")).toHaveText("Racine");
+});
+
+test("un deck naît dans le dossier où l'on se trouve", async ({ page }) => {
+  // Créer puis déplacer ferait deux écritures et un clignotement.
+  await signUp(page);
+  await page.goto("/decks");
+  await creerDossier(page, "Rangement");
+  await page.locator(".folder-open", { hasText: "Rangement" }).click();
+
+  await creerDeckIci(page, "Né dedans");
+  await expect(page.locator("#edit-name")).toHaveValue("Né dedans");
+
+  await page.locator(".deck-edit-actions a").click();
+  // La racine ne montre que le dossier ; le deck est à l'intérieur.
+  await expect(page.locator(".deck-tile-name")).toHaveCount(0);
+  await page.locator(".folder-open", { hasText: "Rangement" }).click();
+  await expect(page.locator(".deck-tile-name")).toHaveText("Né dedans");
+});
+
+test("on range un deck dans un dossier depuis son menu", async ({ page }) => {
+  await signUp(page);
+  await nouveauDeck(page, "À ranger");
+  await page.locator(".deck-edit-actions a").click();
+  await creerDossier(page, "Boîte");
+
+  await page.locator(".deck-tile-wrap .folder-menu-btn").click();
+  await page.getByRole("menuitem", { name: "Déplacer…" }).click();
+  await page.locator("#modal-target").selectOption({ label: "Boîte" });
+  await page.getByRole("button", { name: "Déplacer" }).click();
+
+  // Il a quitté la racine, et se retrouve dans le dossier.
+  await expect(page.locator(".deck-tile-name")).toHaveCount(0);
+  await expect(page.locator(".folder-meta")).toHaveText("1 deck");
+  await page.locator(".folder-open", { hasText: "Boîte" }).click();
+  await expect(page.locator(".deck-tile-name")).toHaveText("À ranger");
+});
+
+test("jeter un dossier fait remonter son contenu, sans rien perdre", async ({ page }) => {
+  /**
+   * La règle d'ATEM-old, et la bonne : un dossier est un rangement, pas un
+   * propriétaire. Sa base disait pourtant l'inverse.
+   */
+  await signUp(page);
+  await nouveauDeck(page, "Survivant");
+  await page.locator(".deck-edit-actions a").click();
+  await creerDossier(page, "Éphémère");
+
+  await page.locator(".deck-tile-wrap .folder-menu-btn").click();
+  await page.getByRole("menuitem", { name: "Déplacer…" }).click();
+  await page.locator("#modal-target").selectOption({ label: "Éphémère" });
+  await page.getByRole("button", { name: "Déplacer" }).click();
+  await expect(page.locator(".folder-meta")).toHaveText("1 deck");
+
+  page.once("dialog", (d) => d.accept());
+  await page.locator(".folder-tile .folder-menu-btn").click();
+  await page.getByRole("menuitem", { name: "Supprimer" }).click();
+
+  await expect(page.locator(".folder-tile")).toHaveCount(0);
+  await expect(page.locator(".deck-tile-name")).toHaveText("Survivant");
+});
+
+test("un dossier se renomme depuis son menu", async ({ page }) => {
+  await signUp(page);
+  await page.goto("/decks");
+  await creerDossier(page, "Avant");
+
+  await page.locator(".folder-tile .folder-menu-btn").click();
+  await page.getByRole("menuitem", { name: "Renommer" }).click();
+  await page.locator("#modal-name").fill("Après");
+  await page.getByRole("button", { name: "Renommer" }).click();
+
+  await expect(page.locator(".folder-name")).toHaveText("Après");
+});
+
+test("un dossier ne se propose pas comme sa propre destination", async ({ page }) => {
+  /**
+   * L'écran grise ce que le serveur refuserait — même fonction, `folderCanHost`.
+   * Désactivé et non caché : une destination qui disparaît ressemble à une
+   * destination perdue.
+   */
+  await signUp(page);
+  await page.goto("/decks");
+  await creerDossier(page, "Seul");
+
+  await page.locator(".folder-tile .folder-menu-btn").click();
+  await page.getByRole("menuitem", { name: "Déplacer…" }).click();
+
+  // On lit l'attribut : Playwright ne tient pas une `option` désactivée pour
+  // un élément désactivé.
+  const option = page.locator("#modal-target option", { hasText: "Seul" });
+  await expect(option).toHaveAttribute("disabled", "");
+  await expect(page.locator("#modal-target option", { hasText: "Racine" }))
+    .not.toHaveAttribute("disabled", "");
+});
+
+test("la recherche traverse les dossiers, et dit d'où sort ce qu'elle trouve", async ({ page }) => {
+  /**
+   * ATEM-old ne filtrait que l'étage courant : chercher « dragon » et ne rien
+   * trouver parce qu'on est dans le mauvais dossier est une réponse fausse à
+   * une question simple.
+   */
+  await signUp(page);
+  await page.goto("/decks");
+  await creerDossier(page, "Caché");
+  await page.locator(".folder-open", { hasText: "Caché" }).click();
+  await creerDeckIci(page, "Dragons blancs");
+  await page.locator(".deck-edit-actions a").click();
+
+  // On est revenu à la racine, où le deck n'est pas.
+  await expect(page.locator(".deck-tile-name")).toHaveCount(0);
+  await page.getByLabel("Rechercher un deck").fill("dragons");
+  await expect(page.locator(".deck-tile-name")).toHaveText("Dragons blancs");
+  await expect(page.locator(".deck-tile-meta").first()).toContainText("Caché");
+});
+
+test("la fenêtre de création tient dans l'écran", async ({ page }) => {
+  await signUp(page);
+  await page.goto("/decks");
+  await page.getByRole("button", { name: "Construire un deck" }).click();
+
+  await expect(page.locator(".deck-modal")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  // Échap referme, comme la fiche.
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".deck-modal")).toHaveCount(0);
+});
+
+test("un nom de dossier ne s'exécute pas, il s'affiche", async ({ page }) => {
+  /**
+   * Le nom d'un dossier est écrit par l'utilisateur et ressort à cinq endroits :
+   * la tuile, le fil d'Ariane, la rangée, la liste des destinations et la
+   * confirmation de suppression. Le gabarit échappe par défaut — cette épreuve
+   * est là pour que ça reste vrai le jour où quelqu'un ajoutera un `raw()`.
+   */
+  await signUp(page);
+  await page.goto("/decks");
+  await creerDossier(page, "<img src=x onerror=alert(1)>Piégé");
+
+  await expect(page.locator(".folder-name")).toHaveText("<img src=x onerror=alert(1)>Piégé");
+  await expect(page.locator(".folder-tile img")).toHaveCount(0);
+
+  await page.locator(".folder-open").click();
+  await expect(page.locator(".folder-path-step[aria-current='page']"))
+    .toHaveText("<img src=x onerror=alert(1)>Piégé");
 });

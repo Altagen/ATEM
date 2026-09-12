@@ -9,7 +9,6 @@ export { LIMITS } from "./limits.js";
 export {
   banlistMaxCopies,
   checkDeckAdd,
-  DECK_FOLDER_MAX_DEPTH,
   DECK_MAX_COPIES,
   DECK_ZONE_LIMITS,
   DECK_ZONES,
@@ -23,6 +22,14 @@ export {
   type DeckStatus,
   type DeckZone,
 } from "./deck.js";
+export {
+  DECK_FOLDER_MAX_DEPTH,
+  folderCanHost,
+  folderDepth,
+  folderIsInside,
+  folderSubtreeHeight,
+  type FolderNode,
+} from "./deck-folders.js";
 export {
   keptForSaving,
   SCANLIST_EXPORT_VERSION,

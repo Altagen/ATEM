@@ -263,12 +263,19 @@ export async function createDeck(
   db: Database,
   viewerId: string,
   name: string,
+  folderId: string | null = null,
 ): Promise<DeckSummary> {
   const propre = name.trim();
   if (!propre) throw invalidInput("Donnez un nom au deck.");
+  // Créer puis déplacer ferait deux écritures et un clignotement : on naît là
+  // où l'on regarde.
+  await assertFolderOwned(db, viewerId, folderId);
 
   try {
-    const [row] = await db.insert(decks).values({ userId: viewerId, name: propre }).returning();
+    const [row] = await db
+      .insert(decks)
+      .values({ userId: viewerId, name: propre, folderId })
+      .returning();
     if (!row) throw new Error("insertion sans résultat");
     return toSummary(row, { main: 0, extra: 0, side: 0 }, 0);
   } catch (err) {

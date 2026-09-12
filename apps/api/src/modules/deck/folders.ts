@@ -12,7 +12,10 @@
  * **Les lectures prennent un propriétaire, les écritures un viewer** (ADR-009).
  */
 import { and, eq } from "drizzle-orm";
-import { DECK_FOLDER_MAX_DEPTH } from "@atem/shared";
+import {
+  DECK_FOLDER_MAX_DEPTH, folderDepth, folderIsInside, folderSubtreeHeight,
+  type FolderNode,
+} from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { conflict, invalidInput, notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
@@ -76,24 +79,15 @@ const toFolder = (row: DeckFolderRow, byId: Map<string, DeckFolderRow>): DeckFol
   };
 };
 
-/** Combien d'étages ce dossier porte-t-il, lui compris ? */
-function hauteurDuSousArbre(racineId: string, byId: Map<string, DeckFolderRow>): number {
-  const enfants = [...byId.values()].filter((row) => row.parentId === racineId);
-  if (enfants.length === 0) return 1;
-  return 1 + Math.max(...enfants.map((enfant) => hauteurDuSousArbre(enfant.id, byId)));
-}
-
-/** `ancetre` est-il au-dessus de `noeud`, ou le même ? */
-function estAuDessus(byId: Map<string, DeckFolderRow>, noeud: string, ancetre: string): boolean {
-  const vus = new Set<string>();
-  let courant: DeckFolderRow | undefined = byId.get(noeud);
-  while (courant && !vus.has(courant.id)) {
-    if (courant.id === ancetre) return true;
-    vus.add(courant.id);
-    courant = courant.parentId ? byId.get(courant.parentId) : undefined;
-  }
-  return false;
-}
+/**
+ * L'arbre réduit à sa topologie, pour les fonctions partagées.
+ *
+ * Elles servent aussi à l'écran, qui grise ce que le serveur refuserait : une
+ * seule implémentation, deux appelants. C'est la leçon de `checkDeckAdd`, qui
+ * dans ATEM-old grisait un bouton pendant que le serveur laissait passer.
+ */
+const topologie = (byId: Map<string, DeckFolderRow>): FolderNode[] =>
+  [...byId.values()].map((row) => ({ id: row.id, parentId: row.parentId }));
 
 const nomPropre = (brut: string): string => {
   const propre = brut.trim();
@@ -157,7 +151,7 @@ export async function createFolder(
     const byId = await charger(db, viewerId);
     const parent = byId.get(parentId);
     if (!parent) throw notFound("Dossier introuvable.");
-    if (cheminDe(parent, byId).length >= DECK_FOLDER_MAX_DEPTH) {
+    if (folderDepth(topologie(byId), parent.id) >= DECK_FOLDER_MAX_DEPTH) {
       throw invalidInput("Ce dossier est déjà au dernier étage.");
     }
   }
@@ -208,12 +202,20 @@ export async function updateFolder(
 
     if (parentId !== null) {
       requireUuid(parentId);
-      const parent = byId.get(parentId);
-      if (!parent) throw notFound("Dossier introuvable.");
-      if (estAuDessus(byId, parentId, folderId)) {
+      if (!byId.has(parentId)) throw notFound("Dossier introuvable.");
+
+      /**
+       * Les trois refus sont séparés parce que chacun a sa phrase. La question
+       * « est-ce que ça tient ? » a une réponse d'un seul tenant côté écran
+       * (`folderCanHost`) ; ici il faut dire **pourquoi** non.
+       */
+      const arbre = topologie(byId);
+      if (folderIsInside(arbre, parentId, folderId)) {
         throw invalidInput("Un dossier ne se range pas dans l'un des siens.");
       }
-      if (cheminDe(parent, byId).length + hauteurDuSousArbre(folderId, byId) > DECK_FOLDER_MAX_DEPTH) {
+      if (
+        folderDepth(arbre, parentId) + folderSubtreeHeight(arbre, folderId) > DECK_FOLDER_MAX_DEPTH
+      ) {
         throw invalidInput("Ce dossier et ce qu'il contient dépasseraient le dernier étage.");
       }
     }

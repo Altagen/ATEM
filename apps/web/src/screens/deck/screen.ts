@@ -14,7 +14,7 @@ import { toast } from "../../platform/ui.js";
 import { deckHtml, zoneFor } from "./view.js";
 import {
   countByCard, deckState, resetView,
-  type CollectionRow, type DeckDetail, type DeckState, type DeckSummary,
+  type CollectionRow, type DeckDetail, type DeckFolder, type DeckState, type DeckSummary,
 } from "./state.js";
 
 export async function deckScreen(root: HTMLElement, params: URLSearchParams): Promise<void> {
@@ -30,14 +30,14 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
      * tape reconstruit le champ et emporte la frappe. Ici la recherche est
      * différée, donc la fenêtre est courte — mais elle existe.
      */
-    const champ = root.querySelector<HTMLInputElement>("#coll-search, #deck-search, #edit-name");
+    const champ = root.querySelector<HTMLInputElement>("#coll-search, #deck-search, #edit-name, #modal-name");
     const saisie = champ ? { value: champ.value, focus: document.activeElement === champ } : null;
 
     root.innerHTML = deckHtml(state).toString();
     bind();
 
     if (!saisie?.focus) return;
-    const frais = root.querySelector<HTMLInputElement>("#coll-search, #deck-search, #edit-name");
+    const frais = root.querySelector<HTMLInputElement>("#coll-search, #deck-search, #edit-name, #modal-name");
     if (!frais) return;
     frais.value = saisie.value;
     frais.focus();
@@ -49,16 +49,52 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     paint();
   };
 
+  /**
+   * Les decks et leur rangement, en parallèle.
+   *
+   * L'un sans l'autre donnerait un écran à moitié faux : des decks sans
+   * dossier, ou des dossiers sans contenu, le temps d'un aller-retour.
+   */
+  async function chargerRangement(): Promise<void> {
+    const [decks, dossiers] = await Promise.all([
+      api<{ items: DeckSummary[] }>("/decks"),
+      api<{ items: DeckFolder[] }>("/decks/dossiers"),
+    ]);
+    state.decks = decks.items;
+    state.folders = dossiers.items;
+
+    /**
+     * L'étage où l'on se trouvait a pu disparaître — on vient de l'effacer, ou
+     * de le déplacer ailleurs. On l'oublie **ici**, là où la liste change, et
+     * non au moment de dessiner : un rendu qui répare son propre état ne
+     * s'éprouve pas, et la réparation finit par exister en deux exemplaires.
+     */
+    if (state.folderId !== null && !state.folders.some((f) => f.id === state.folderId)) {
+      state.folderId = null;
+    }
+  }
+
   async function loadList(): Promise<void> {
     try {
-      const { items } = await api<{ items: DeckSummary[] }>("/decks");
-      state.decks = items;
+      await chargerRangement();
       state.error = "";
     } catch (err) {
       dire(err, "Serveur injoignable.");
       return;
     } finally {
       state.loading = false;
+    }
+    paint();
+  }
+
+  /** Après une écriture de rangement : on relit, et on redessine. */
+  async function relireRangement(): Promise<void> {
+    try {
+      await chargerRangement();
+      state.error = "";
+    } catch (err) {
+      dire(err, "Serveur injoignable.");
+      return;
     }
     paint();
   }
@@ -140,18 +176,115 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     }
   }
 
-  async function createDeck(): Promise<void> {
-    const nom = window.prompt(t("Nom du deck"))?.trim();
-    if (!nom) return;
-    try {
-      const deck = await api<DeckSummary>("/decks", { method: "POST", body: { name: nom } });
-      toast(t("« {nom} » créé.", { nom: deck.name }), "success");
-      window.history.pushState({}, "", `/decks?deck=${deck.id}`);
-      state.loading = true;
-      await loadDeck(deck.id);
-    } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+  /**
+   * Ouvre une fenêtre, et met la main sur le champ.
+   *
+   * Le `window.prompt` d'avant n'avait ni le style de l'application, ni la
+   * place d'un second champ — et sur un téléphone il s'ouvre en haut de
+   * l'écran, loin du pouce. Demandé par Ange avec les dossiers.
+   */
+  function ouvrirFenetre(modal: NonNullable<DeckState["modal"]>): void {
+    state.modal = modal;
+    state.menu = null;
+    paint();
+    const champ = root.querySelector<HTMLInputElement>("#modal-name");
+    champ?.focus();
+    champ?.select();
+  }
+
+  function fermerFenetre(): void {
+    if (state.modal === null) return;
+    state.modal = null;
+    paint();
+  }
+
+  /**
+   * Ce que la fenêtre écrit, selon ce qu'elle demandait.
+   *
+   * Le nom vide est refusé ici : le serveur le refuse aussi, mais un
+   * aller-retour pour un champ qu'on voit vide est une réponse lente à une
+   * question évidente.
+   */
+  async function validerFenetre(): Promise<void> {
+    const modal = state.modal;
+    if (!modal) return;
+
+    const nom = root.querySelector<HTMLInputElement>("#modal-name")?.value.trim() ?? "";
+    const cible = root.querySelector<HTMLSelectElement>("#modal-target")?.value ?? "";
+    const destination = cible === "" ? null : cible;
+
+    if ((modal.kind === "new-deck" || modal.kind === "new-folder" || modal.kind === "rename-folder")
+        && nom === "") {
+      toast(modal.kind === "new-deck" ? t("Donnez un nom au deck.") : t("Donnez un nom au dossier."), "error");
+      root.querySelector<HTMLInputElement>("#modal-name")?.focus();
+      return;
     }
+
+    try {
+      switch (modal.kind) {
+        case "new-deck": {
+          const deck = await api<DeckSummary>("/decks", {
+            method: "POST",
+            body: { name: nom, folderId: destination },
+          });
+          state.modal = null;
+          toast(t("« {nom} » créé.", { nom: deck.name }), "success");
+          window.history.pushState({}, "", `/decks?deck=${deck.id}`);
+          state.loading = true;
+          await loadDeck(deck.id);
+          return;
+        }
+        case "new-folder":
+          await api("/decks/dossiers", {
+            method: "POST",
+            body: { name: nom, parentId: state.folderId },
+          });
+          break;
+        case "rename-folder":
+          await api(`/decks/dossiers/${encodeURIComponent(modal.id)}`, {
+            method: "PATCH",
+            body: { name: nom },
+          });
+          break;
+        case "move-folder":
+          await api(`/decks/dossiers/${encodeURIComponent(modal.id)}`, {
+            method: "PATCH",
+            body: { parentId: destination },
+          });
+          break;
+        case "move-deck":
+          await api(`/decks/${encodeURIComponent(modal.id)}`, {
+            method: "PATCH",
+            body: { folderId: destination },
+          });
+          break;
+      }
+    } catch (err) {
+      // Le refus du serveur porte sa raison — la profondeur, le cycle, le nom
+      // déjà pris : on la montre telle quelle plutôt que d'en inventer une.
+      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+      return;
+    }
+
+    state.modal = null;
+    await relireRangement();
+  }
+
+  async function jeterDossier(id: string): Promise<void> {
+    const dossier = state.folders.find((f) => f.id === id);
+    if (!dossier) return;
+    state.menu = null;
+    if (!window.confirm(t("Jeter « {nom} » ? Son contenu remonte d'un étage.", { nom: dossier.name }))) {
+      paint();
+      return;
+    }
+    try {
+      await api(`/decks/dossiers/${encodeURIComponent(id)}`, { method: "DELETE" });
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : t("La suppression a échoué."), "error");
+      return;
+    }
+    await relireRangement();
   }
 
   async function deleteDeck(): Promise<void> {
@@ -174,7 +307,20 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
   let nomApres: number | undefined;
 
   function bind(): void {
-    root.querySelector("#btn-build")?.addEventListener("click", () => void createDeck());
+    root.querySelector("#btn-build")
+      ?.addEventListener("click", () => ouvrirFenetre({ kind: "new-deck" }));
+    root.querySelector("#btn-new-folder")
+      ?.addEventListener("click", () => ouvrirFenetre({ kind: "new-folder" }));
+    root.querySelector("#modal-ok")?.addEventListener("click", () => void validerFenetre());
+    root.querySelector("#modal-cancel")?.addEventListener("click", fermerFenetre);
+    root.querySelector("#modal-close")?.addEventListener("click", fermerFenetre);
+    root.querySelector("#modal-backdrop")?.addEventListener("click", fermerFenetre);
+    // L'Entrée dans le champ vaut le bouton, comme partout ailleurs.
+    root.querySelector("#modal-name")?.addEventListener("keydown", (event) => {
+      if ((event as KeyboardEvent).key !== "Enter") return;
+      event.preventDefault();
+      void validerFenetre();
+    });
     root.querySelector("#btn-delete")?.addEventListener("click", () => void deleteDeck());
 
     /**
@@ -281,6 +427,64 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
   root.addEventListener("click", (event) => {
     const cible = event.target as HTMLElement | null;
 
+    /**
+     * Un clic à côté referme le menu « ⋯ », et ne fait que ça.
+     *
+     * C'est le geste attendu de tout menu contextuel : on ne veut pas qu'un
+     * clic destiné à le fermer déclenche en plus ce qui se trouvait dessous.
+     */
+    if (state.menu !== null && !cible?.closest(".folder-menu-anchor")) {
+      state.menu = null;
+      paint();
+      return;
+    }
+
+    const menu = cible?.closest<HTMLElement>("[data-menu]");
+    if (menu?.dataset.menu) {
+      state.menu = state.menu === menu.dataset.menu ? null : menu.dataset.menu;
+      paint();
+      return;
+    }
+
+    /**
+     * On descend et l'on remonte d'un étage.
+     *
+     * L'attribut vide vaut la racine — d'où le contrôle sur `undefined` et non
+     * sur la chaîne : `data-goto-folder=""` est un attribut présent, et il veut
+     * dire quelque chose.
+     */
+    const étage = cible?.closest<HTMLElement>("[data-goto-folder]");
+    if (étage?.dataset.gotoFolder !== undefined) {
+      state.folderId = étage.dataset.gotoFolder || null;
+      state.menu = null;
+      paint();
+      return;
+    }
+
+    const renommer = cible?.closest<HTMLElement>("[data-folder-rename]");
+    if (renommer?.dataset.folderRename) {
+      ouvrirFenetre({ kind: "rename-folder", id: renommer.dataset.folderRename });
+      return;
+    }
+
+    const déplacer = cible?.closest<HTMLElement>("[data-folder-move]");
+    if (déplacer?.dataset.folderMove) {
+      ouvrirFenetre({ kind: "move-folder", id: déplacer.dataset.folderMove });
+      return;
+    }
+
+    const jeter = cible?.closest<HTMLElement>("[data-folder-delete]");
+    if (jeter?.dataset.folderDelete) {
+      void jeterDossier(jeter.dataset.folderDelete);
+      return;
+    }
+
+    const ranger = cible?.closest<HTMLElement>("[data-deck-move]");
+    if (ranger?.dataset.deckMove) {
+      ouvrirFenetre({ kind: "move-deck", id: ranger.dataset.deckMove });
+      return;
+    }
+
     const panneau = cible?.closest<HTMLElement>("[data-panel]");
     if (panneau?.dataset.panel) {
       state.panel = panneau.dataset.panel === "zones" ? "zones" : "collection";
@@ -385,7 +589,19 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
    * clic oblige à viser, et on a les mains sur le clavier quand on construit.
    */
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || state.openedCard === null) return;
+    if (event.key !== "Escape") return;
+    // Du plus récent au plus ancien : la fenêtre couvre le menu, qui couvre la
+    // fiche. Échap referme ce qu'on voit, pas ce qu'on a oublié.
+    if (state.modal !== null) {
+      fermerFenetre();
+      return;
+    }
+    if (state.menu !== null) {
+      state.menu = null;
+      paint();
+      return;
+    }
+    if (state.openedCard === null) return;
     state.openedCard = null;
     unlockScroll();
     paint();

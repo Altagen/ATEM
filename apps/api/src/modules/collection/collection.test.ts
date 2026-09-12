@@ -663,6 +663,16 @@ test("un passcode identifie une impression qui attendait encore", async () => {
   // encore été résolu. Il ne doit simplement plus créer de ligne à côté.
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "PCPC-FR003", delta: 1 });
+  /**
+   * On fige la file : c'est **l'attente** qu'on éprouve ici.
+   *
+   * Sans ça, la résolution de fond a le temps de passer entre les deux ajouts
+   * et d'inscrire le code comme absent ; l'impression n'attend alors plus rien,
+   * et l'épreuve échoue une fois sur quelques dizaines. Vu deux fois le
+   * 2026-09-12, jamais reproduit à la demande — c'est bien la marque d'une
+   * course, pas d'un défaut du service.
+   */
+  resetResolveQueue();
   const avant = await listCollection(db, user.id, {});
   assert.equal(avant.items[0]?.card, null, "elle attend son identification");
 

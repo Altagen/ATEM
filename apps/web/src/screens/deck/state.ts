@@ -57,7 +57,38 @@ export type DeckSummary = {
   missing: number;
   /** La carte qui illustre le deck — la plus jouée, choisie par le serveur. */
   cover: { passcode: number; name: string; image: string | null } | null;
+  /** Le dossier qui le range, ou `null` à la racine. */
+  folderId: string | null;
 };
+
+/**
+ * Un dossier, tel que l'API le rend.
+ *
+ * `path` et `depth` viennent du serveur : les recalculer ici serait une seconde
+ * réponse à la même question. Ses horodatages ne sont pas déclarés — l'écran ne
+ * les montre nulle part, et déclarer ce qu'on n'affiche pas invite à l'afficher.
+ */
+export type DeckFolder = {
+  id: string;
+  parentId: string | null;
+  name: string;
+  path: string[];
+  depth: number;
+};
+
+/**
+ * La fenêtre ouverte par-dessus l'écran, s'il y en a une.
+ *
+ * Une seule à la fois, et son genre dit ce qu'elle demande. Le nom saisi n'est
+ * pas ici : il vit dans le champ, comme partout ailleurs dans l'application, et
+ * la repeinture le préserve.
+ */
+export type DeckModal =
+  | { kind: "new-deck" }
+  | { kind: "new-folder" }
+  | { kind: "rename-folder"; id: string }
+  | { kind: "move-folder"; id: string }
+  | { kind: "move-deck"; id: string };
 
 export type DeckDetail = DeckSummary & { cards: DeckCardEntry[] };
 
@@ -92,6 +123,21 @@ export type DeckState = {
   attributes: string[];
   /** Liste ou galerie, pour le panneau de collection. */
   collView: "list" | "gallery";
+  /** Les dossiers de la personne, à plat — l'arbre se lit dans `parentId`. */
+  folders: DeckFolder[];
+  /**
+   * Le dossier que l'on regarde, ou la racine.
+   *
+   * Un seul étage à la fois, comme un explorateur de fichiers. ATEM-old avait
+   * commencé par déplier tout l'arbre d'un coup : à trois niveaux, on lisait
+   * une carte de métro pour trouver un deck. Il a fini par revenir à l'étage
+   * courant, et c'est de là qu'on part.
+   */
+  folderId: string | null;
+  /** Le menu « ⋯ » ouvert : l'identifiant d'un deck ou d'un dossier. */
+  menu: string | null;
+  /** La fenêtre par-dessus l'écran, s'il y en a une. */
+  modal: DeckModal | null;
   /**
    * Liste ou galerie, pour la page des decks.
    *
@@ -134,6 +180,10 @@ const state: DeckState = {
   kind: "",
   attributes: [],
   collView: "list",
+  folders: [],
+  folderId: null,
+  menu: null,
+  modal: null,
   listView: "gallery",
   savedAt: null,
   panel: "collection",
@@ -149,6 +199,10 @@ export function resetView(): void {
   state.collection = [];
   state.owned = new Map();
   state.openedCard = null;
+  state.folders = [];
+  state.folderId = null;
+  state.menu = null;
+  state.modal = null;
   state.savedAt = null;
   state.error = "";
 }

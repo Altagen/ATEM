@@ -255,6 +255,28 @@ Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 **Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
 cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
 
+### L'explorateur de dossiers — 2026-09-13 *(étape 3 sur 3)*
+
+Un étage à la fois, fil d'Ariane, dossiers d'abord et decks ensuite — la forme
+d'ATEM-old, à laquelle il avait lui-même fini par revenir après avoir déplié
+tout l'arbre d'un coup. Trois divergences, chacune pour une raison :
+
+1. **Le rangement passe par un menu « ⋯ », pas par le glisser-déposer.** Viser
+   une cible en maintenant le doigt ne se fait pas sur un téléphone, et c'était
+   le seul moyen de déplacer un deck dans ATEM-old.
+2. **La recherche traverse les dossiers.** Chercher « dragon » et ne rien
+   trouver parce qu'on est dans le mauvais dossier est une réponse fausse à une
+   question simple. Chaque résultat dit alors d'où il sort.
+3. **Une fenêtre remplace `window.prompt`** pour créer un deck — demandé par
+   Ange. Elle porte le nom **et** la destination, ce qu'une invite native ne
+   sait pas faire, et le deck naît là où l'on regarde plutôt que d'être créé
+   puis déplacé.
+
+**Ce que l'écran grise, le serveur le refuse** : les destinations impossibles
+viennent de `folderCanHost`, dans `@atem/shared`, que le service appelle aussi.
+C'est la leçon de `checkDeckAdd` dans ATEM-old — la même règle écrite deux fois
+finit par diverger, et c'est toujours l'écran qui a raison trop tôt.
+
 ### Les dossiers, socle serveur — 2026-09-12 *(étape 2 sur 3)*
 
 `deck_folders` : `id`, `user_id`, `parent_id`, `name`, horodatages. **Pas de

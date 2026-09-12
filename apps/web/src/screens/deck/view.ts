@@ -21,6 +21,10 @@ import { cardSheetHtml } from "../shared/card-sheet.js";
 import { translateAttribute } from "../../platform/ygo-labels.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import {
+  breadcrumbHtml, childFolders, deckFolderPath, deckMenu, decksIn, folderRow,
+  folderTile, modalHtml, parentRow, parentTile, searchDecks,
+} from "./folders.js";
+import {
   inDeck, type CollectionRow, type DeckDetail, type DeckState, type DeckSummary,
 } from "./state.js";
 
@@ -385,7 +389,7 @@ function deckCover(deck: DeckSummary, classe: string): SafeHtml {
     : html`<span class="${classe} deck-cover-default"><span class="deck-cover-ygo">遊戯王</span></span>`;
 }
 
-function deckDriveRow(deck: DeckSummary): SafeHtml {
+function deckDriveRow(state: DeckState, deck: DeckSummary): SafeHtml {
   return html`<li class="drive-row">
     <a class="drive-main" href="/decks?deck=${deck.id}">
       <span class="drive-ico drive-ico-cover" aria-hidden="true">
@@ -397,6 +401,7 @@ function deckDriveRow(deck: DeckSummary): SafeHtml {
       >
       ${deckPill(deck)}
     </a>
+    ${deckMenu(state, deck.id)}
   </li>`;
 }
 
@@ -407,26 +412,93 @@ function deckDriveRow(deck: DeckSummary): SafeHtml {
  * noms ne se reconnaît qu'en lisant, une planche d'illustrations se reconnaît
  * d'un coup d'œil. Le format 59 / 86 est celui d'une carte.
  */
-function deckTile(deck: DeckSummary): SafeHtml {
+function deckTile(state: DeckState, deck: DeckSummary, chemin = ""): SafeHtml {
   return html`<li class="deck-tile-li">
-    <a class="deck-tile" href="/decks?deck=${deck.id}" title="${deck.name}">
-      ${deckCover(deck, "deck-tile-cover")}
-      <span class="deck-tile-label">
-        <strong class="deck-tile-name">${deck.name}</strong>
-        <span class="muted deck-tile-meta"
-          >M${deck.counts.main} · E${deck.counts.extra} · S${deck.counts.side}</span
-        >
-        ${deckPill(deck)}
-      </span>
-    </a>
+    <div class="deck-tile-wrap">
+      <a class="deck-tile" href="/decks?deck=${deck.id}" title="${deck.name}">
+        ${deckCover(deck, "deck-tile-cover")}
+        <span class="deck-tile-label">
+          <strong class="deck-tile-name">${deck.name}</strong>
+          ${when(chemin !== "", html`<span class="muted deck-tile-meta">📁 ${chemin}</span>`)}
+          <span class="muted deck-tile-meta"
+            >M${deck.counts.main} · E${deck.counts.extra} · S${deck.counts.side}</span
+          >
+          ${deckPill(deck)}
+        </span>
+      </a>
+      ${deckMenu(state, deck.id)}
+    </div>
   </li>`;
 }
 
-function listHtml(state: DeckState): SafeHtml {
-  const visibles = state.decks.filter((deck) =>
-    deck.name.toLowerCase().includes(state.query.trim().toLowerCase()),
-  );
+/**
+ * Ce que l'étage courant contient — ou ce que la recherche a trouvé.
+ *
+ * Les dossiers d'abord, les decks ensuite : c'est l'ordre de tous les
+ * explorateurs, et il évite de chercher un dossier au milieu des fichiers.
+ *
+ * Pendant une recherche, plus de dossiers du tout : on cherche un deck, pas un
+ * rangement, et la réponse traverse les étages. Chaque résultat dit alors d'où
+ * il sort.
+ */
+function contenuHtml(state: DeckState): SafeHtml {
+  const query = state.query.trim();
+  const galerie = state.listView === "gallery";
 
+  if (query !== "") {
+    const trouvés = searchDecks(state, query);
+    if (trouvés.length === 0) {
+      return html`<div class="empty-state">
+        <p class="empty-title">${t("Rien ici")}</p>
+        <p class="muted">${t("Aucun deck ne porte ce nom.")}</p>
+      </div>`;
+    }
+    return galerie
+      ? html`<ul class="deck-tiles">
+          ${trouvés.map((deck) => deckTile(state, deck, deckFolderPath(state, deck)))}
+        </ul>`
+      : html`<ul class="drive-list">${trouvés.map((deck) => deckDriveRow(state, deck))}</ul>`;
+  }
+
+  const dossiers = childFolders(state, state.folderId);
+  const decks = decksIn(state, state.folderId);
+
+  if (dossiers.length === 0 && decks.length === 0) {
+    /**
+     * Un dossier vide garde sa sortie.
+     *
+     * Sans elle, le seul chemin pour remonter serait le fil d'Ariane — et
+     * l'écran qui n'a rien à montrer serait aussi celui qui donne le moins de
+     * prise.
+     */
+    return html`${when(
+      state.folderId !== null,
+      galerie
+        ? html`<ul class="deck-tiles">${parentTile(state)}</ul>`
+        : html`<ul class="drive-list">${parentRow(state)}</ul>`,
+    )}
+    <div class="empty-state">
+      <p class="empty-title">${state.folderId === null ? t("Rien ici") : t("Dossier vide")}</p>
+      <p class="muted">
+        ${state.folderId === null
+          ? t("Construisez un deck pour commencer.")
+          : t("Déplacez un deck ici, ou remontez d'un étage.")}
+      </p>
+    </div>`;
+  }
+
+  return galerie
+    ? html`<ul class="deck-tiles">
+        ${parentTile(state)} ${dossiers.map((folder) => folderTile(state, folder))}
+        ${decks.map((deck) => deckTile(state, deck))}
+      </ul>`
+    : html`<ul class="drive-list">
+        ${parentRow(state)} ${dossiers.map((folder) => folderRow(state, folder))}
+        ${decks.map((deck) => deckDriveRow(state, deck))}
+      </ul>`;
+}
+
+function listHtml(state: DeckState): SafeHtml {
   return html`<main class="decks-page">
     <div class="decks-manage-head">
       <h1>${t("Mes decks")}</h1>
@@ -434,6 +506,8 @@ function listHtml(state: DeckState): SafeHtml {
         ${t("Un deck se construit depuis votre collection : on n'y met que ce qu'on possède.")}
       </p>
     </div>
+
+    ${breadcrumbHtml(state)}
 
     <div class="decks-toolbar">
       <label class="search">
@@ -450,22 +524,15 @@ function listHtml(state: DeckState): SafeHtml {
                 data-list-view="gallery" title="${t("Galerie")}" aria-label="${t("Vue galerie")}"
                 aria-pressed="${String(state.listView === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
       </div>
+      <button type="button" class="btn" id="btn-new-folder">${t("Nouveau dossier")}</button>
       <button type="button" class="btn btn-primary decks-toolbar-build" id="btn-build">
         ${t("Construire un deck")}
       </button>
     </div>
 
     ${when(state.error, html`<p class="banner banner-err">${state.error}</p>`)}
-    ${state.loading
-      ? html`<p class="muted">${t("Chargement…")}</p>`
-      : visibles.length === 0
-        ? html`<div class="empty-state">
-            <p class="empty-title">${t("Rien ici")}</p>
-            <p class="muted">${t("Construisez un deck pour commencer.")}</p>
-          </div>`
-        : state.listView === "gallery"
-          ? html`<ul class="deck-tiles">${visibles.map(deckTile)}</ul>`
-          : html`<ul class="drive-list">${visibles.map(deckDriveRow)}</ul>`}
+    ${state.loading ? html`<p class="muted">${t("Chargement…")}</p>` : contenuHtml(state)}
+    ${modalHtml(state)}
   </main>`;
 }
 

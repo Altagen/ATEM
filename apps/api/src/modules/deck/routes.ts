@@ -19,6 +19,7 @@ import { createFolder, deleteFolder, listFolders, updateFolder } from "./folders
 
 const CreateBody = z.object({
   name: z.string().trim().min(1).max(LIMITS.deckName.max),
+  folderId: z.string().uuid().nullable().optional(),
 });
 
 const PatchBody = z.object({
@@ -67,7 +68,10 @@ export function deckRoutes(db: Database) {
   app.post("/", async (c) => {
     const parsed = CreateBody.safeParse(await jsonBody(c));
     if (!parsed.success) throw invalidInput("Nom de deck invalide.");
-    return c.json(await createDeck(db, viewerId(c), parsed.data.name), 201);
+    return c.json(
+      await createDeck(db, viewerId(c), parsed.data.name, parsed.data.folderId ?? null),
+      201,
+    );
   });
 
   /**

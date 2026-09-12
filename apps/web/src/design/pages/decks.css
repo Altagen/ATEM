@@ -183,6 +183,189 @@
    de carte, les deux doivent remplir la vignette. */
 .drive-cover, .drive-cover img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 3px; }
 
+/* ── Les dossiers ──────────────────────────────────────────────────────────
+ * On navigue un étage à la fois. Le fil d'Ariane dit où l'on est et ramène
+ * d'un clic à n'importe quel étage traversé — sans lui, remonter de deux
+ * dossiers demanderait deux allers-retours par la case « .. ».
+ */
+.folder-path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+.folder-path-step {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+.folder-path-step:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+/* L'étage courant ne se clique pas pour rien : il se distingue. */
+.folder-path-step[aria-current="page"] { color: var(--fg); font-weight: 600; cursor: default; }
+.folder-path-sep { color: var(--muted); }
+
+/* Un dossier prend la place d'une tuile de deck, au même format de carte : la
+   grille reste régulière quoi qu'elle contienne. */
+.folder-tile-li { list-style: none; }
+.folder-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0.5rem;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.folder-tile:hover { border-color: var(--accent); transform: translateY(-2px); }
+/* La case qui remonte : en pointillés, pour ne pas se confondre avec un vrai
+   dossier au premier coup d'œil. */
+.folder-tile-parent { border-style: dashed; }
+.folder-open {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.2rem;
+}
+.folder-ico { font-size: 1.9rem; line-height: 1.1; }
+.folder-name {
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-meta { font-size: 0.75rem; }
+.drive-folder {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* ── Le menu « ⋯ » ─────────────────────────────────────────────────────────
+ * Il remplace le glisser-déposer d'ATEM-old, qui demandait de viser une cible
+ * en maintenant le doigt — praticable à la souris, pas au pouce.
+ */
+.folder-menu-anchor { position: relative; }
+/* Dans une tuile, le menu se pose en haut à droite ; dans une rangée, il suit
+   le flux, à la fin de la ligne. */
+.deck-tile-wrap { position: relative; height: 100%; }
+.deck-tile-wrap > .folder-menu-anchor,
+.folder-tile > .folder-menu-anchor {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+}
+/**
+ * Le « ⋯ » d'une tuile se pose sur l'illustration.
+ *
+ * Un bouton nu y devient invisible — c'était le cas au premier rendu. ATEM-old
+ * le faisait apparaître au survol : un téléphone ne survole rien, alors il
+ * reste là, sur une pastille sombre qui le détache de n'importe quelle carte.
+ */
+.deck-tile-wrap .folder-menu-btn,
+.folder-tile .folder-menu-btn {
+  background: rgba(8, 10, 16, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--fg);
+}
+.folder-ctx-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: var(--z-modal-panel);
+  min-width: 10rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.menu-item {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  /* 44px de haut : cet écran se manipule au pouce comme le reste. */
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+}
+.menu-item:hover { background: rgba(255, 255, 255, 0.06); }
+.menu-item-danger { color: var(--err); }
+
+/* ── La fenêtre de création et de rangement ────────────────────────────────
+ * Elle remplace `window.prompt`, qui n'avait ni l'habillage de l'application
+ * ni la place d'un second champ, et qui s'ouvre en haut de l'écran sur un
+ * téléphone — loin du pouce.
+ */
+.deck-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: var(--z-modal);
+}
+.deck-modal {
+  position: fixed;
+  z-index: var(--z-modal-panel);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(26rem, calc(100vw - 1.5rem));
+  max-height: min(88vh, 640px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.deck-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.deck-modal-head h2 { margin: 0; font-size: 1.05rem; }
+.deck-modal-body {
+  overflow: auto;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.deck-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--border);
+}
+
 /* ── La planche de decks ───────────────────────────────────────────────────
  * Une liste de noms se lit ; une planche d'illustrations se reconnaît. C'est la
  * vue par défaut de la page des decks, et la raison d'être de la couverture.
