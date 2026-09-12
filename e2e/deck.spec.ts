@@ -213,33 +213,35 @@ test("le compteur de zones porte les limites", async ({ page }) => {
   await expect(compteur).toContainText("/15");
 });
 
-test("le nom se renomme sans changer d'écran", async ({ page }) => {
+test("le nom s'écrit tout seul, sans bouton", async ({ page }) => {
+  /**
+   * Ange : « c'est bizarre comme UX de valider automatiquement les cartes mais
+   * pas le nom… soit tu mets tout à jour soit tu mets rien à jour mais pas
+   * juste la moitié ». On tape, on ne touche à rien, et c'est écrit.
+   */
   await signUp(page);
   await nouveauDeck(page, "Avant");
 
   await page.locator("#edit-name").fill("Après");
-  await page.getByRole("button", { name: "Renommer" }).click();
-  await expect(page.locator(".toast")).toContainText("Après");
-  await expect(page.locator("#edit-name")).toHaveValue("Après");
+  await expect(page.locator(".deck-saved")).toContainText("Enregistré");
 
-  await page.goto("/decks");
+  await page.locator(".deck-edit-actions a").click();
   await expect(page.locator(".drive-name")).toHaveText("Après");
 });
 
-test("le bouton ne promet que ce qu'il fait", async ({ page }) => {
+test("l'atelier n'a aucun bouton d'enregistrement", async ({ page }) => {
   /**
-   * Signalé deux fois par Ange. D'abord : le bouton ne répondait rien quand le
-   * nom n'avait pas changé. Puis, plus grave : appelé « Enregistrer » à côté
-   * d'un deck dont les cartes s'écrivent à chaque « ± », il faisait croire
-   * qu'elles attendaient — et répondait « rien à enregistrer » juste après
-   * qu'on en avait retiré une. Il ne touche que le nom, il le dit maintenant.
+   * Signalé trois fois par Ange, de trois façons. Le bouton ne répondait rien
+   * quand le nom n'avait pas changé ; appelé « Enregistrer » à côté de cartes
+   * qui s'écrivent au « ± », il faisait croire qu'elles attendaient ; et
+   * renommé « Renommer », il laissait une moitié de l'écran à valider à la
+   * main quand l'autre partait seule. Il n'y en a plus.
    */
   await signUp(page);
-  await nouveauDeck(page, "Inchangé");
+  await nouveauDeck(page, "Sans bouton");
 
   await expect(page.getByRole("button", { name: "Enregistrer" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Renommer" }).click();
-  await expect(page.locator(".toast")).toContainText("déjà le sien");
+  await expect(page.getByRole("button", { name: "Renommer" })).toHaveCount(0);
 });
 
 test("l'écran dit que les cartes sont enregistrées", async ({ page }) => {
@@ -281,24 +283,43 @@ test("les cartes posées survivent à un rechargement", async ({ page }) => {
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
 });
 
-test("l'Entrée dans le champ de nom vaut le bouton", async ({ page }) => {
+test("l'Entrée dans le champ de nom écrit sans attendre", async ({ page }) => {
   await signUp(page);
   await nouveauDeck(page, "Clavier");
 
   await page.locator("#edit-name").fill("Au clavier");
   await page.locator("#edit-name").press("Enter");
-  await expect(page.locator(".toast")).toContainText("Au clavier");
+  await expect(page.locator(".deck-saved")).toContainText("Enregistré");
+
+  await page.reload();
   await expect(page.locator("#edit-name")).toHaveValue("Au clavier");
 });
 
-test("un nom vide est refusé, et le champ reprend la main", async ({ page }) => {
+test("quitter le champ écrit, sans attendre le délai de frappe", async ({ page }) => {
+  await signUp(page);
+  await nouveauDeck(page, "Au clic");
+
+  await page.locator("#edit-name").fill("Ailleurs");
+  await page.locator("#edit-name").blur();
+  await expect(page.locator(".deck-saved")).toContainText("Enregistré");
+
+  await page.reload();
+  await expect(page.locator("#edit-name")).toHaveValue("Ailleurs");
+});
+
+test("un nom vidé n'écrase rien : le champ reprend celui du deck", async ({ page }) => {
+  // Un deck a toujours un nom. Plutôt que d'envoyer une chaîne vide que le
+  // serveur refuserait, le champ revient sur ses pas.
   await signUp(page);
   await nouveauDeck(page, "À vider");
 
   await page.locator("#edit-name").fill("   ");
-  await page.getByRole("button", { name: "Renommer" }).click();
+  await page.locator("#edit-name").blur();
   await expect(page.locator(".toast")).toContainText("Donnez un nom");
-  await expect(page.locator("#edit-name")).toBeFocused();
+  await expect(page.locator("#edit-name")).toHaveValue("À vider");
+
+  await page.reload();
+  await expect(page.locator("#edit-name")).toHaveValue("À vider");
 });
 
 test("le champ de nom porte l'habillage de l'application", async ({ page }) => {

@@ -91,12 +91,13 @@ export type DeckState = {
   /** Liste ou galerie, pour le panneau de collection. */
   collView: "list" | "gallery";
   /**
-   * L'instant du dernier enregistrement de carte, ou `null`.
+   * L'instant de la dernière écriture, ou `null`.
    *
-   * Les cartes s'écrivent à chaque « ± », sans bouton — mais rien ne le disait,
-   * et un bouton « Enregistrer » juste à côté laissait croire le contraire.
-   * ATEM-old affichait « non enregistré » parce qu'il travaillait sur un
-   * brouillon ; nous affichons l'inverse, brièvement, parce qu'il n'y en a pas.
+   * L'atelier n'a aucun bouton d'enregistrement : les cartes partent à chaque
+   * « ± », le nom quand la frappe se calme. Rien ne le disait, et un bouton
+   * « Enregistrer » juste à côté laissait croire le contraire. ATEM-old
+   * affichait « non enregistré » parce qu'il travaillait sur un brouillon ;
+   * nous affichons l'inverse, brièvement, parce qu'il n'y en a pas.
    */
   savedAt: number | null;
   /**
@@ -137,6 +138,7 @@ export function resetView(): void {
   state.collection = [];
   state.owned = new Map();
   state.openedCard = null;
+  state.savedAt = null;
   state.error = "";
 }
 

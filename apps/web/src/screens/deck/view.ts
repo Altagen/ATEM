@@ -377,15 +377,14 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
         </label>
       </div>
       <div class="deck-edit-actions">
-        <a class="btn" href="/decks">${t("Tous les decks")}</a>
         <!--
-          « Renommer », et non « Enregistrer ».
-          Les cartes s'écrivent à chaque « ± » : un bouton qui promettait
-          d'enregistrer le deck laissait croire qu'elles attendaient, et
-          répondait « rien à enregistrer » juste après qu'on en avait retiré
-          une. Il ne touche que le nom, il le dit.
+          Aucun bouton d'enregistrement, et c'est voulu.
+          Ange : « soit tu mets tout à jour soit tu mets rien à jour mais pas
+          juste la moitié ». Les cartes partent à chaque « ± » ; le nom part
+          quand la frappe se calme et quand le champ rend la main. La barre de
+          comptes dit « Enregistré » dans les deux cas.
         -->
-        <button type="button" class="btn btn-primary" id="btn-save">${t("Renommer")}</button>
+        <a class="btn" href="/decks">${t("Tous les decks")}</a>
         <button type="button" class="icon-btn btn-icon-danger" id="btn-delete"
                 title="${t("Jeter ce deck")}" aria-label="${t("Jeter ce deck")}">🗑</button>
       </div>

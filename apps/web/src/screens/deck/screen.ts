@@ -109,9 +109,13 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
    * l'était pas, mais l'écran ne le disait pas non plus.
    */
   function marquerEnregistre(): void {
-    state.savedAt = Date.now();
+    const marque = Date.now();
+    state.savedAt = marque;
     window.clearTimeout(effaceMarque);
     effaceMarque = window.setTimeout(() => {
+      // Une écriture plus récente, ou un autre écran : la marque n'est plus la
+      // nôtre, et l'effacer repeindrait ce qui ne nous appartient pas.
+      if (state.savedAt !== marque) return;
       state.savedAt = null;
       paint();
     }, 2_000);
@@ -167,11 +171,11 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
   }
 
   let chercheApres: number | undefined;
+  let nomApres: number | undefined;
 
   function bind(): void {
     root.querySelector("#btn-build")?.addEventListener("click", () => void createDeck());
     root.querySelector("#btn-delete")?.addEventListener("click", () => void deleteDeck());
-    root.querySelector("#btn-save")?.addEventListener("click", () => void saveName());
 
     /**
      * La recherche de la liste ne touche pas au réseau.
@@ -185,13 +189,34 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       paint();
     });
 
+    /**
+     * Le nom s'écrit comme les cartes : **sans bouton**.
+     *
+     * Ange : « soit tu mets tout à jour soit tu mets rien à jour mais pas
+     * juste la moitié ». Un atelier où les cartes partent au « ± » et où le
+     * nom attendait un bouton obligeait à deviner laquelle des deux moitiés
+     * était en sûreté — et c'est exactement le doute qui l'avait fait écrire.
+     *
+     * Une frappe n'est pas un geste discret comme un « ± » : on attend qu'elle
+     * se calme, sinon « Dragon » s'écrirait six fois. Et on écrit aussi quand
+     * le champ rend la main, pour que cliquer ailleurs ne laisse rien en
+     * suspens.
+     */
     const nom = root.querySelector<HTMLInputElement>("#edit-name");
+    nom?.addEventListener("input", () => {
+      window.clearTimeout(nomApres);
+      nomApres = window.setTimeout(() => void enregistrerNom(nom.value), 700);
+    });
+    nom?.addEventListener("blur", () => {
+      window.clearTimeout(nomApres);
+      void enregistrerNom(nom.value);
+    });
     nom?.addEventListener("keydown", (event) => {
-      // L'Entrée dans un champ de nom veut dire « valide » : demander en plus
-      // d'aller chercher le bouton est une main de trop.
+      // L'Entrée veut dire « j'ai fini » : rendre la main écrit, sans attendre
+      // le délai de la frappe.
       if (event.key === "Enter") {
         event.preventDefault();
-        void saveName();
+        nom.blur();
       }
     });
 
@@ -208,37 +233,41 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
   }
 
   /**
-   * Le nom se pose avec « Enregistrer » ; les cartes, elles, s'écrivent tout de
-   * suite.
+   * Écrit le nom du deck.
    *
-   * **Le bouton répond toujours.** Il ne faisait rien, sans un mot, quand le
-   * nom n'avait pas changé — on appuyait, rien ne bougeait, et on ne savait pas
-   * si l'enregistrement avait eu lieu ou échoué. Un bouton qui promet quelque
-   * chose doit dire ce qu'il a fait, y compris qu'il n'avait rien à faire.
+   * **Un deck a toujours un nom** : vidé, le champ reprend celui du deck plutôt
+   * que d'écrire une chaîne vide que le serveur refuserait de toute façon.
+   *
+   * On ne recharge pas le deck pour autant. C'est un mot qui a changé, pas les
+   * cartes, et l'aller-retour complet emporterait la collection avec lui — à
+   * chaque pause de frappe.
    */
-  async function saveName(): Promise<void> {
+  async function enregistrerNom(brut: string): Promise<void> {
     const deck = state.opened;
-    const champ = root.querySelector<HTMLInputElement>("#edit-name");
-    if (!deck || !champ) return;
+    if (!deck) return;
 
-    const nom = champ.value.trim();
+    const nom = brut.trim();
     if (!nom) {
+      const champ = root.querySelector<HTMLInputElement>("#edit-name");
+      if (champ) champ.value = deck.name;
       toast(t("Donnez un nom au deck."), "error");
-      champ.focus();
       return;
     }
-    if (nom === deck.name) {
-      toast(t("Ce nom est déjà le sien."));
-      return;
-    }
+    if (nom === deck.name) return;
 
     try {
       await api(`/decks/${encodeURIComponent(deck.id)}`, { method: "PATCH", body: { name: nom } });
-      toast(t("Renommé en « {nom} ».", { nom }), "success");
-      await loadDeck(deck.id);
     } catch (err) {
       toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+      return;
     }
+
+    // On a pu quitter l'atelier pendant l'écriture : le rendu appartient alors
+    // à l'écran suivant, et repeindre par-dessus le ferait clignoter.
+    if (state.opened?.id !== deck.id) return;
+    deck.name = nom;
+    marquerEnregistre();
+    paint();
   }
 
   /**

@@ -266,9 +266,19 @@ rapporté le bouton sans le brouillon — d'où un « Enregistrer » qui ne touc
 que le nom, et un « Rien à enregistrer » juste après qu'Ange avait retiré des
 cartes. De quoi croire son retrait jeté ; il ne l'était pas.
 
-Le bouton s'appelle donc « Renommer », et la barre de comptes dit brièvement
-« Enregistré » après chaque écriture — l'inverse de la marque d'ATEM-old, parce
-que l'invariant est inverse.
+Renommer le bouton en « Renommer » n'a pas suffi, et Ange a mis le doigt sur ce
+qui restait : « c'est bizarre comme UX de valider automatiquement les cartes
+mais pas le nom… soit tu mets tout à jour soit tu mets rien à jour mais pas
+juste la moitié ». **L'atelier n'a donc plus aucun bouton d'enregistrement** :
+les cartes partent au « ± », le nom part quand la frappe se calme (700 ms) et
+quand le champ rend la main. La barre de comptes dit brièvement « Enregistré »
+après chaque écriture — l'inverse de la marque d'ATEM-old, parce que l'invariant
+est inverse.
+
+Écrire le nom **ne recharge pas le deck** : c'est un mot qui a changé, pas les
+cartes, et l'aller-retour complet emporterait la collection avec lui à chaque
+pause de frappe. Vidé, le champ reprend le nom du deck plutôt que d'envoyer une
+chaîne vide que le serveur refuserait : un deck a toujours un nom.
 
 **La notion de brouillon reste souhaitée** (« il faudrait la notion de
 *brouillon* pour expliquer qu'un deck n'est pas terminé », Ange) mais elle
