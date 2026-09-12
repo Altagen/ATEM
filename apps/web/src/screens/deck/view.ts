@@ -350,26 +350,74 @@ function zonesPanel(state: DeckState, deck: DeckDetail): SafeHtml {
 
 /* ── Les deux écrans ───────────────────────────────────────────────────── */
 
-function deckDriveRow(deck: DeckSummary): SafeHtml {
+/**
+ * La pastille d'un deck : prêt, incomplet, ou ce qui cloche.
+ *
+ * Le même verdict que la phrase de l'atelier, en un mot — c'est `deckStatus`
+ * qui décide, dans les deux cas.
+ */
+function deckPill(deck: DeckSummary): SafeHtml {
   const statut = deckStatus(deck.counts, deck.missing);
+  return html`<span class="zone-pill ${statut.kind === "ready" ? "deck-ready" : "deck-unready"}"
+    >${statut.kind === "ready"
+      ? t("Prêt")
+      : statut.kind === "over"
+        ? t("Trop de cartes")
+        : statut.kind === "missing"
+          ? t("{n} à retrouver", { n: statut.missing })
+          : t("Incomplet")}</span
+  >`;
+}
+
+/**
+ * L'illustration d'un deck.
+ *
+ * Le serveur choisit la carte — celle qu'on joue le plus — et l'écran n'a qu'à
+ * la poser. Un deck vide garde le dos de carte : c'est le seul cas où il n'y a
+ * rien à montrer.
+ *
+ * `alt` est vide, et le `title` du lien porte déjà le nom du deck : l'annoncer
+ * deux fois à un lecteur d'écran ferait du bruit, pas de l'information.
+ */
+function deckCover(deck: DeckSummary, classe: string): SafeHtml {
+  return deck.cover?.image
+    ? html`<img class="${classe}" src="${deck.cover.image}" alt="" loading="lazy" decoding="async" />`
+    : html`<span class="${classe} deck-cover-default"><span class="deck-cover-ygo">遊戯王</span></span>`;
+}
+
+function deckDriveRow(deck: DeckSummary): SafeHtml {
   return html`<li class="drive-row">
     <a class="drive-main" href="/decks?deck=${deck.id}">
       <span class="drive-ico drive-ico-cover" aria-hidden="true">
-        <span class="drive-cover deck-cover-default"><span class="deck-cover-ygo">遊戯王</span></span>
+        ${deckCover(deck, "drive-cover")}
       </span>
       <span class="drive-text"><strong class="drive-name">${deck.name}</strong></span>
       <span class="muted drive-meta"
         >M${deck.counts.main} · E${deck.counts.extra} · S${deck.counts.side}</span
       >
-      <span class="zone-pill ${statut.kind === "ready" ? "deck-ready" : "deck-unready"}"
-        >${statut.kind === "ready"
-          ? t("Prêt")
-          : statut.kind === "over"
-            ? t("Trop de cartes")
-            : statut.kind === "missing"
-              ? t("{n} à retrouver", { n: statut.missing })
-              : t("Incomplet")}</span
-      >
+      ${deckPill(deck)}
+    </a>
+  </li>`;
+}
+
+/**
+ * Le deck en portrait, illustration en grand.
+ *
+ * C'est la vue d'ATEM-old, et la raison d'être de la couverture : une liste de
+ * noms ne se reconnaît qu'en lisant, une planche d'illustrations se reconnaît
+ * d'un coup d'œil. Le format 59 / 86 est celui d'une carte.
+ */
+function deckTile(deck: DeckSummary): SafeHtml {
+  return html`<li class="deck-tile-li">
+    <a class="deck-tile" href="/decks?deck=${deck.id}" title="${deck.name}">
+      ${deckCover(deck, "deck-tile-cover")}
+      <span class="deck-tile-label">
+        <strong class="deck-tile-name">${deck.name}</strong>
+        <span class="muted deck-tile-meta"
+          >M${deck.counts.main} · E${deck.counts.extra} · S${deck.counts.side}</span
+        >
+        ${deckPill(deck)}
+      </span>
     </a>
   </li>`;
 }
@@ -394,6 +442,14 @@ function listHtml(state: DeckState): SafeHtml {
                placeholder="${t("Rechercher un deck…")}"
                aria-label="${t("Rechercher un deck")}" />
       </label>
+      <div class="view-toggle" role="group" aria-label="${t("Affichage")}">
+        <button type="button" class="icon-btn${state.listView === "list" ? " is-active" : ""}"
+                data-list-view="list" title="${t("Liste")}" aria-label="${t("Vue liste")}"
+                aria-pressed="${String(state.listView === "list")}"><span class="i-list" aria-hidden="true"></span></button>
+        <button type="button" class="icon-btn${state.listView === "gallery" ? " is-active" : ""}"
+                data-list-view="gallery" title="${t("Galerie")}" aria-label="${t("Vue galerie")}"
+                aria-pressed="${String(state.listView === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
+      </div>
       <button type="button" class="btn btn-primary decks-toolbar-build" id="btn-build">
         ${t("Construire un deck")}
       </button>
@@ -407,7 +463,9 @@ function listHtml(state: DeckState): SafeHtml {
             <p class="empty-title">${t("Rien ici")}</p>
             <p class="muted">${t("Construisez un deck pour commencer.")}</p>
           </div>`
-        : html`<ul class="drive-list">${visibles.map(deckDriveRow)}</ul>`}
+        : state.listView === "gallery"
+          ? html`<ul class="deck-tiles">${visibles.map(deckTile)}</ul>`
+          : html`<ul class="drive-list">${visibles.map(deckDriveRow)}</ul>`}
   </main>`;
 }
 

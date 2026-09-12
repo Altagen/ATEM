@@ -226,7 +226,7 @@ test("le nom s'écrit tout seul, sans bouton", async ({ page }) => {
   await expect(page.locator(".deck-saved")).toContainText("Enregistré");
 
   await page.locator(".deck-edit-actions a").click();
-  await expect(page.locator(".drive-name")).toHaveText("Après");
+  await expect(page.locator(".deck-tile-name")).toHaveText("Après");
 });
 
 test("l'atelier n'a aucun bouton d'enregistrement", async ({ page }) => {
@@ -290,7 +290,7 @@ test("le deck signale ce qu'il ne peut plus aligner", async ({ page }) => {
   await expect(page.locator(".item")).toHaveCount(0);
 
   await page.goto("/decks");
-  await page.locator(".drive-main").click();
+  await page.locator(".deck-tile").click();
   const état = page.locator(".deck-status");
   await expect(état).toContainText("à retrouver");
   await expect(état).toHaveClass(/deck-status-over/);
@@ -395,6 +395,52 @@ test("le champ de nom porte l'habillage de l'application", async ({ page }) => {
   expect(bordure).not.toBe("0px");
 });
 
+test("un deck porte l'illustration de la carte qu'il joue le plus", async ({ page }) => {
+  /**
+   * Demandé par Ange avec les dossiers. Le serveur choisit la carte — la plus
+   * jouée, son identité — et l'écran la pose. Ce qui compte ici : l'image
+   * arrive vraiment, et ce n'est plus le dos de carte.
+   */
+  await signUp(page);
+  await garnir(page, ["SDCR-FR016"]);
+  await nouveauDeck(page, "Illustré");
+  await panneau(page, "Ma collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+
+  await page.locator(".deck-edit-actions a").click();
+  const jaquette = page.locator(".deck-tile-cover");
+  await expect(jaquette).toHaveJSProperty("tagName", "IMG");
+  // Chargée, et non simplement demandée : une URL cassée passerait autrement.
+  await expect(jaquette).toHaveJSProperty("complete", true);
+  await expect(page.locator(".deck-cover-default")).toHaveCount(0);
+});
+
+test("un deck vide garde le dos de carte", async ({ page }) => {
+  // Le seul cas où il n'y a rien à montrer.
+  await signUp(page);
+  await nouveauDeck(page, "Sans visage");
+  await page.locator(".deck-edit-actions a").click();
+
+  await expect(page.locator(".deck-cover-default")).toBeVisible();
+  await expect(page.locator("img.deck-tile-cover")).toHaveCount(0);
+});
+
+test("la bascule rend les rangées, et la planche revient", async ({ page }) => {
+  // La galerie par défaut ; la liste dès qu'on en a beaucoup.
+  await signUp(page);
+  await nouveauDeck(page, "Bascule");
+  await page.locator(".deck-edit-actions a").click();
+
+  await expect(page.locator(".deck-tiles")).toBeVisible();
+  await page.locator('[data-list-view="list"]').click();
+  await expect(page.locator(".drive-row")).toHaveCount(1);
+  await expect(page.locator(".deck-tiles")).toHaveCount(0);
+
+  await page.locator('[data-list-view="gallery"]').click();
+  await expect(page.locator(".deck-tile")).toHaveCount(1);
+});
+
 test("la recherche de la liste filtre sans toucher au réseau", async ({ page }) => {
   /**
    * On revient à la liste par son lien, pas par un rechargement.
@@ -409,10 +455,10 @@ test("la recherche de la liste filtre sans toucher au réseau", async ({ page })
   await nouveauDeck(page, "Sorciers");
   await page.getByRole("link", { name: "Tous les decks" }).click();
 
-  await expect(page.locator(".drive-row")).toHaveCount(2);
+  await expect(page.locator(".deck-tile")).toHaveCount(2);
   await page.getByLabel("Rechercher un deck").fill("drag");
-  await expect(page.locator(".drive-row")).toHaveCount(1);
-  await expect(page.locator(".drive-name")).toHaveText("Dragons");
+  await expect(page.locator(".deck-tile")).toHaveCount(1);
+  await expect(page.locator(".deck-tile-name")).toHaveText("Dragons");
 });
 
 test("cliquer une carte de l'atelier l'ouvre en grand", async ({ page }) => {

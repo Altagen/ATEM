@@ -255,6 +255,24 @@ Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 **Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
 cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
 
+### Les aperçus de decks — 2026-09-12 *(étape 1 sur 3 de la page des decks)*
+
+Ange : « on peut s'attaquer à la page de deck avec les dossiers et les preview
+de cartes ? ». Découpé en trois : les aperçus, puis le socle des dossiers, puis
+l'explorateur.
+
+**La couverture se déduit, elle ne se choisit pas.** ATEM-old avait une colonne
+`cover_url` — donc un sélecteur à écrire, et une reprise à faire quand la carte
+quitte le deck. La nôtre est la carte dont le deck a **le plus d'exemplaires au
+Main**, son identité en pratique, départagée par le passcode pour que
+l'illustration ne change pas d'un rafraîchissement à l'autre. Zéro colonne, zéro
+écran de réglage. Le jour où choisir sa jaquette devient un besoin, la colonne
+s'ajoute et cette règle devient le repli.
+
+Les couvertures partent en **une** requête pour toute la liste, pas une par
+deck. La page des decks s'ouvre sur la planche d'illustrations ; la liste en
+rangées reste à un clic, et garde sa vignette.
+
 ### La phrase d'état de l'atelier — 2026-09-12
 
 Ange : « on est à 4/60, on peut mettre "Deck incomplet" ou ce genre de choses ?

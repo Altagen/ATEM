@@ -55,6 +55,8 @@ export type DeckSummary = {
   updatedAt: string;
   counts: Record<DeckZone, number>;
   missing: number;
+  /** La carte qui illustre le deck — la plus jouée, choisie par le serveur. */
+  cover: { passcode: number; name: string; image: string | null } | null;
 };
 
 export type DeckDetail = DeckSummary & { cards: DeckCardEntry[] };
@@ -91,6 +93,14 @@ export type DeckState = {
   /** Liste ou galerie, pour le panneau de collection. */
   collView: "list" | "gallery";
   /**
+   * Liste ou galerie, pour la page des decks.
+   *
+   * La galerie par défaut : une planche d'illustrations se reconnaît d'un coup
+   * d'œil là où une liste de noms se lit. La liste reste à un clic, et sert dès
+   * qu'on en a beaucoup.
+   */
+  listView: "list" | "gallery";
+  /**
    * L'instant de la dernière écriture, ou `null`.
    *
    * L'atelier n'a aucun bouton d'enregistrement : les cartes partent à chaque
@@ -124,6 +134,7 @@ const state: DeckState = {
   kind: "",
   attributes: [],
   collView: "list",
+  listView: "gallery",
   savedAt: null,
   panel: "collection",
   error: "",

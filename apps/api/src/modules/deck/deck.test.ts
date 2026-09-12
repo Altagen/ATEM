@@ -27,7 +27,10 @@ async function newUser() {
 async function seed(
   passcode: number,
   setCode: string,
-  options: { copies?: number; owner?: string; banlist?: string | null; extra?: boolean } = {},
+  options: {
+    copies?: number; owner?: string; banlist?: string | null; extra?: boolean;
+    image?: string;
+  } = {},
 ) {
   await upsertCard(db, {
     passcode,
@@ -39,7 +42,7 @@ async function seed(
     race: "Dragon", attribute: "LIGHT", atk: 1000, def: 1000, level: 4, scale: null,
     linkValue: null, linkMarkers: null, archetype: null,
     banlistTcg: options.banlist ?? null,
-    imageUrl: null, imageUrlSmall: null,
+    imageUrl: null, imageUrlSmall: options.image ?? null,
   });
   await upsertPrint(db, { setCode, cardPasscode: passcode, rarity: "Rare" });
 
@@ -352,4 +355,59 @@ test("remplacer une quantité dans une zone pleine reste possible", async () => 
     passcode: 72000300, zone: "side", quantity: 1,
   });
   assert.equal(réduit.counts.side, 13);
+});
+
+test("la couverture d'un deck est la carte qu'il joue le plus", async () => {
+  /**
+   * Une couverture choisie à la main demanderait une colonne, un sélecteur, et
+   * de la reprendre quand la carte quitte le deck. Celle-ci se déduit : la
+   * carte la plus jouée **est** l'identité du deck.
+   */
+  const user = await newUser();
+  await seed(72000400, "DKCV-FR400", { owner: user.id, copies: 3, image: "/i/400.jpg" });
+  await seed(72000401, "DKCV-FR401", { owner: user.id, copies: 3, image: "/i/401.jpg" });
+
+  const deck = await createDeck(db, user.id, "Couverture");
+  assert.equal(deck.cover, null, "un deck neuf n'a pas de visage");
+
+  await setDeckCard(db, user.id, deck.id, { passcode: 72000400, zone: "main", quantity: 1 });
+  await setDeckCard(db, user.id, deck.id, { passcode: 72000401, zone: "main", quantity: 3 });
+
+  // Le nombre d'exemplaires l'emporte, et non l'ordre des lignes ni le passcode
+  // — c'est ici le plus grand des deux qui gagne.
+  const [sommaire] = await listDecks(db, user.id);
+  assert.equal(sommaire?.cover?.passcode, 72000401);
+  assert.equal(sommaire?.cover?.image, "/i/401.jpg");
+  assert.equal(sommaire?.cover?.name, "Carte 72000401");
+
+  // La fiche complète répond la même chose : une seule règle, deux écrans.
+  assert.equal((await getDeck(db, user.id, deck.id)).cover?.passcode, 72000401);
+});
+
+test("à égalité d'exemplaires, la couverture ne change pas d'une requête à l'autre", async () => {
+  // Sans départage, l'ordre des lignes rendues par la base ferait varier
+  // l'illustration à chaque rafraîchissement.
+  const user = await newUser();
+  await seed(72000410, "DKCV-FR410", { owner: user.id, copies: 2, image: "/i/410.jpg" });
+  await seed(72000411, "DKCV-FR411", { owner: user.id, copies: 2, image: "/i/411.jpg" });
+
+  const deck = await createDeck(db, user.id, "Égalité");
+  await setDeckCard(db, user.id, deck.id, { passcode: 72000411, zone: "main", quantity: 2 });
+  await setDeckCard(db, user.id, deck.id, { passcode: 72000410, zone: "main", quantity: 2 });
+
+  const [sommaire] = await listDecks(db, user.id);
+  assert.equal(sommaire?.cover?.passcode, 72000410, "le plus petit passcode tranche");
+});
+
+test("un deck qui n'a que de l'Extra a quand même un visage", async () => {
+  // Le Main d'abord, parce que c'est ce qu'on joue ; mais un deck en cours de
+  // construction ne doit pas rester sans illustration.
+  const user = await newUser();
+  await seed(72000420, "DKCV-FR420", { owner: user.id, copies: 1, extra: true, image: "/i/420.jpg" });
+
+  const deck = await createDeck(db, user.id, "Extra seul");
+  await setDeckCard(db, user.id, deck.id, { passcode: 72000420, zone: "extra", quantity: 1 });
+
+  const [sommaire] = await listDecks(db, user.id);
+  assert.equal(sommaire?.cover?.passcode, 72000420);
 });

@@ -37,6 +37,16 @@ export type DeckSummary = {
    * le construit. Il ne dérive que si l'on vend une carte ensuite.
    */
   missing: number;
+  /**
+   * La carte qui représente le deck dans une liste, ou rien s'il est vide.
+   *
+   * Une couverture choisie à la main demanderait une colonne, un sélecteur et
+   * une reprise quand la carte quitte le deck. Celle-ci se déduit : c'est la
+   * carte dont le deck a **le plus d'exemplaires au Main** — son identité, en
+   * pratique — départagée par le passcode pour que l'illustration ne change pas
+   * d'un rafraîchissement à l'autre.
+   */
+  cover: { passcode: number; name: string; image: string | null } | null;
 };
 
 export type DeckCardEntry = {
@@ -56,7 +66,12 @@ export type DeckCardEntry = {
 
 export type DeckDetail = DeckSummary & { cards: DeckCardEntry[] };
 
-const toSummary = (row: DeckRow, counts: DeckSummary["counts"], missing: number): DeckSummary => ({
+const toSummary = (
+  row: DeckRow,
+  counts: DeckSummary["counts"],
+  missing: number,
+  cover: DeckSummary["cover"] = null,
+): DeckSummary => ({
   id: row.id,
   name: row.name,
   notes: row.notes,
@@ -64,7 +79,37 @@ const toSummary = (row: DeckRow, counts: DeckSummary["counts"], missing: number)
   updatedAt: row.updatedAt.toISOString(),
   counts,
   missing,
+  cover,
 });
+
+/**
+ * La carte qui représente un deck.
+ *
+ * Le Main d'abord, parce que c'est ce qu'on joue ; l'Extra et le Side ensuite,
+ * pour qu'un deck en cours de construction ne reste pas sans visage. Le
+ * passcode départage : sans lui, deux cartes à trois exemplaires donneraient
+ * une couverture différente à chaque requête, l'ordre des lignes n'étant pas
+ * garanti.
+ */
+function coverPasscode(lignes: { passcode: number; mainQty: number; extraQty: number; sideQty: number }[]): number | null {
+  let meilleure: { passcode: number; main: number; total: number } | null = null;
+  for (const ligne of lignes) {
+    const total = ligne.mainQty + ligne.extraQty + ligne.sideQty;
+    if (total === 0) continue;
+    const candidate = { passcode: ligne.passcode, main: ligne.mainQty, total };
+    if (
+      meilleure === null ||
+      candidate.main > meilleure.main ||
+      (candidate.main === meilleure.main && candidate.total > meilleure.total) ||
+      (candidate.main === meilleure.main &&
+        candidate.total === meilleure.total &&
+        candidate.passcode < meilleure.passcode)
+    ) {
+      meilleure = candidate;
+    }
+  }
+  return meilleure?.passcode ?? null;
+}
 
 /** Le deck et ses lignes, sans rien du catalogue ni de la collection. */
 async function loadDeck(db: Database, ownerId: string, deckId: string) {
@@ -105,6 +150,19 @@ export async function listDecks(db: Database, ownerId: string): Promise<DeckSumm
     ...new Set(lignes.map((ligne) => ligne.passcode)),
   ]);
 
+  /**
+   * Les couvertures en **une** requête.
+   *
+   * Une par deck serait vingt requêtes pour vingt decks : c'est le défaut que
+   * la liste de collection avait eu, et qu'on ne refait pas.
+   */
+  const couvertures = new Map<string, number | null>(
+    rows.map((row) => [row.id, coverPasscode(lignes.filter((l) => l.deckId === row.id))]),
+  );
+  const fiches = await cardsByPasscode(db, [
+    ...new Set([...couvertures.values()].filter((pc): pc is number => pc !== null)),
+  ]);
+
   return rows.map((row) => {
     const siennes = lignes.filter((ligne) => ligne.deckId === row.id);
     const counts = { main: 0, extra: 0, side: 0 };
@@ -118,7 +176,20 @@ export async function listDecks(db: Database, ownerId: string): Promise<DeckSumm
         possédés.get(ligne.passcode) ?? 0,
       );
     }
-    return toSummary(row, counts, missing);
+    const pc = couvertures.get(row.id) ?? null;
+    const fiche = pc === null ? undefined : fiches.get(pc);
+    return toSummary(
+      row,
+      counts,
+      missing,
+      pc === null
+        ? null
+        : {
+            passcode: pc,
+            name: fiche?.nameFr ?? fiche?.nameEn ?? String(pc),
+            image: fiche?.imageUrlSmall ?? null,
+          },
+    );
   });
 }
 
@@ -169,7 +240,19 @@ export async function getDeck(
   }
 
   entries.sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  return { ...toSummary(row, counts, missing), cards: entries };
+
+  const pc = coverPasscode(lignes);
+  const ficheCouverture = pc === null ? undefined : parPasscode.get(pc);
+  const cover =
+    pc === null
+      ? null
+      : {
+          passcode: pc,
+          name: ficheCouverture?.nameFr ?? ficheCouverture?.nameEn ?? String(pc),
+          image: ficheCouverture?.imageUrlSmall ?? null,
+        };
+
+  return { ...toSummary(row, counts, missing, cover), cards: entries };
 }
 
 export async function createDeck(

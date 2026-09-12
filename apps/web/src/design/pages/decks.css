@@ -179,9 +179,62 @@
 }
 .drive-main:hover .drive-name { color: var(--accent); }
 .drive-meta { font-size: 0.75rem; white-space: nowrap; }
-/* La jaquette d'un deck dans une rangée : `deckCoverHtml` rend une image ou le
-   dos de carte, les deux doivent remplir la vignette. */
+/* La jaquette d'un deck dans une rangée : `deckCover` rend une image ou le dos
+   de carte, les deux doivent remplir la vignette. */
 .drive-cover, .drive-cover img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 3px; }
+
+/* ── La planche de decks ───────────────────────────────────────────────────
+ * Une liste de noms se lit ; une planche d'illustrations se reconnaît. C'est la
+ * vue par défaut de la page des decks, et la raison d'être de la couverture.
+ *
+ * `auto-fill` plutôt qu'un nombre de colonnes : la même règle donne six
+ * portraits sur un écran large et deux sur un téléphone, sans point de rupture
+ * à maintenir.
+ */
+.deck-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.deck-tile-li { list-style: none; }
+.deck-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0.5rem;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.deck-tile:hover, .deck-tile:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+/* Le format d'une carte, pour que l'illustration ne soit ni rognée ni étirée. */
+.deck-tile-cover {
+  width: 100%;
+  aspect-ratio: 59 / 86;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px;
+}
+.deck-tile-label { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.deck-tile-name {
+  font-size: 0.92rem;
+  line-height: 1.25;
+  /* Un nom long ne doit pas allonger une tuile plus que ses voisines. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-tile-meta { font-size: 0.75rem; }
+.deck-tile .zone-pill { align-self: flex-start; }
 
 /* ── Bascule des panneaux de l'atelier, sur téléphone ──────────────────────
  * Empilés, la collection et le deck obligent à faire défiler toute la première

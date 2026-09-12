@@ -309,6 +309,13 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       return;
     }
 
+    const vueListe = cible?.closest<HTMLElement>("[data-list-view]");
+    if (vueListe?.dataset.listView) {
+      state.listView = vueListe.dataset.listView === "gallery" ? "gallery" : "list";
+      paint();
+      return;
+    }
+
     const vue = cible?.closest<HTMLElement>("[data-coll-view]");
     if (vue?.dataset.collView) {
       state.collView = vue.dataset.collView === "gallery" ? "gallery" : "list";
