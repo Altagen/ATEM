@@ -13,7 +13,7 @@
  * dans la même chose, elle doit se lire pareil.
  */
 import {
-  DECK_ZONE_LIMITS, DECK_ZONES, checkDeckAdd, deckIsPlayable, isExtraDeckCard,
+  DECK_ZONE_LIMITS, DECK_ZONES, checkDeckAdd, deckStatus, isExtraDeckCard,
   parseBanlistStatus, type BanlistStatus, type DeckZone,
 } from "@atem/shared";
 import { t } from "../../platform/i18n/index.js";
@@ -106,10 +106,6 @@ function countsBar(deck: DeckDetail, state: DeckState): SafeHtml {
       >`;
     })}
     ${when(
-      deck.missing > 0,
-      html`<span class="warn">${t("{n} à retrouver", { n: deck.missing })}</span>`,
-    )}
-    ${when(
       state.savedAt !== null,
       html`<span class="deck-saved">${t("Enregistré")}</span>`,
     )}
@@ -117,6 +113,53 @@ function countsBar(deck: DeckDetail, state: DeckState): SafeHtml {
 }
 
 const ZONE_LABELS: Record<DeckZone, string> = { main: "Main", extra: "Extra", side: "Side" };
+
+/**
+ * Où en est le deck, en une phrase.
+ *
+ * Ange : « on est à 4/60, on peut mettre "Deck incomplet" ou ce genre de
+ * choses ? ». `Main 4/60` est un chiffre : il faut connaître la règle des
+ * quarante cartes pour savoir s'il est bon. La phrase dit le reste à faire, en
+ * nombre de cartes, pour qu'on n'ait pas à soustraire de tête.
+ *
+ * **Une seule phrase à la fois** — le verdict vient de `deckStatus`, dans
+ * `@atem/shared`, qui range les états par gravité. La même fonction habille la
+ * pastille de la liste : deux écrans, un seul jugement.
+ */
+function deckStatusHtml(deck: DeckDetail): SafeHtml {
+  const statut = deckStatus(deck.counts, deck.missing);
+  switch (statut.kind) {
+    case "over":
+      return html`<p class="deck-status deck-status-over">
+        ⚠
+        ${t("Trop de cartes : {n} à retirer du {zone}.", {
+          n: statut.excess,
+          zone: ZONE_LABELS[statut.zone],
+        })}
+      </p>`;
+    case "missing":
+      // Ça n'arrive pas en construisant — le « + » s'y refuse — mais ça arrive
+      // quand on retire ensuite une carte de sa collection.
+      return html`<p class="deck-status deck-status-over">
+        ⚠ ${t("{n} à retrouver : le deck en compte plus que votre collection.", {
+          n: statut.missing,
+        })}
+      </p>`;
+    case "empty":
+      return html`<p class="deck-status deck-status-short">
+        ${t("Deck vide — posez vos premières cartes depuis la collection.")}
+      </p>`;
+    case "short":
+      return html`<p class="deck-status deck-status-short">
+        ${t("Deck incomplet : encore {n} au Main (minimum {min}).", {
+          n: statut.missing,
+          min: statut.min,
+        })}
+      </p>`;
+    case "ready":
+      return html`<p class="deck-status deck-status-ready">✓ ${t("Deck jouable.")}</p>`;
+  }
+}
 
 /**
  * Le pas d'une carte : « −1 ×n +1 ».
@@ -308,7 +351,7 @@ function zonesPanel(state: DeckState, deck: DeckDetail): SafeHtml {
 /* ── Les deux écrans ───────────────────────────────────────────────────── */
 
 function deckDriveRow(deck: DeckSummary): SafeHtml {
-  const jouable = deckIsPlayable(deck.counts, deck.missing);
+  const statut = deckStatus(deck.counts, deck.missing);
   return html`<li class="drive-row">
     <a class="drive-main" href="/decks?deck=${deck.id}">
       <span class="drive-ico drive-ico-cover" aria-hidden="true">
@@ -318,12 +361,14 @@ function deckDriveRow(deck: DeckSummary): SafeHtml {
       <span class="muted drive-meta"
         >M${deck.counts.main} · E${deck.counts.extra} · S${deck.counts.side}</span
       >
-      <span class="zone-pill ${jouable ? "deck-ready" : "deck-unready"}"
-        >${jouable
+      <span class="zone-pill ${statut.kind === "ready" ? "deck-ready" : "deck-unready"}"
+        >${statut.kind === "ready"
           ? t("Prêt")
-          : deck.missing > 0
-            ? t("{n} à retrouver", { n: deck.missing })
-            : t("Incomplet")}</span
+          : statut.kind === "over"
+            ? t("Trop de cartes")
+            : statut.kind === "missing"
+              ? t("{n} à retrouver", { n: statut.missing })
+              : t("Incomplet")}</span
       >
     </a>
   </li>`;
@@ -390,7 +435,7 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
       </div>
     </div>
 
-    ${countsBar(deck, state)}
+    ${countsBar(deck, state)} ${deckStatusHtml(deck)}
     ${when(state.error, html`<p class="banner banner-err">${state.error}</p>`)}
 
     <!--

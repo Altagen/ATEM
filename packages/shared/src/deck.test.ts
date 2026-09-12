@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  banlistMaxCopies, checkDeckAdd, deckIsPlayable, isExtraDeckCard, missingCopies,
+  banlistMaxCopies, checkDeckAdd, deckStatus, isExtraDeckCard, missingCopies,
   parseBanlistStatus,
 } from "./deck.js";
 
@@ -134,16 +134,36 @@ test("demander plus que le reste dit quelle borne a parlé", () => {
   assert.equal(checkDeckAdd({ owned: 5, inDeck: 0, wanted: 3 }).blockedBy, null);
 });
 
-test("un deck n'est jouable que complet et sans manque", () => {
+test("le verdict d'un deck nomme une seule chose à la fois", () => {
   const plein = { main: 40, extra: 0, side: 0 };
-  assert.equal(deckIsPlayable(plein, 0), true);
-  // Une carte manquante suffit.
-  assert.equal(deckIsPlayable(plein, 1), false);
-  // Trop peu au Main.
-  assert.equal(deckIsPlayable({ main: 39, extra: 0, side: 0 }, 0), false);
-  // Trop au Main.
-  assert.equal(deckIsPlayable({ main: 61, extra: 0, side: 0 }, 0), false);
-  // L'Extra et le Side ont le droit d'être vides.
-  assert.equal(deckIsPlayable({ main: 60, extra: 15, side: 15 }, 0), true);
-  assert.equal(deckIsPlayable({ main: 40, extra: 16, side: 0 }, 0), false);
+  assert.equal(deckStatus(plein, 0).kind, "ready");
+  assert.equal(deckStatus({ main: 60, extra: 15, side: 15 }, 0).kind, "ready", "aux limites");
+  assert.equal(deckStatus({ main: 0, extra: 0, side: 0 }, 0).kind, "empty");
+
+  // En construction : de quoi écrire « encore 28 au Main ».
+  assert.deepEqual(deckStatus({ main: 12, extra: 0, side: 0 }, 0), {
+    kind: "short", missing: 28, min: 40,
+  });
+
+  // Au-dessus d'une limite : la zone fautive et le nombre à retirer.
+  assert.deepEqual(deckStatus({ main: 61, extra: 0, side: 0 }, 0), {
+    kind: "over", zone: "main", excess: 1,
+  });
+  assert.deepEqual(deckStatus({ main: 40, extra: 16, side: 0 }, 0), {
+    kind: "over", zone: "extra", excess: 1,
+  });
+
+  // Le manque compte même sur un deck de taille légale.
+  assert.deepEqual(deckStatus(plein, 2), { kind: "missing", missing: 2 });
+});
+
+test("le verdict annonce d'abord ce qui empêche de jouer", () => {
+  /**
+   * Trois avertissements simultanés ne se lisent pas. Un deck à 61 cartes dont
+   * une manque à la collection est d'abord **trop gros** : c'est ce qu'on
+   * corrige en premier, et c'est vrai quoi qu'on possède.
+   */
+  assert.equal(deckStatus({ main: 61, extra: 0, side: 0 }, 3).kind, "over");
+  // Et un manque passe avant l'inachèvement, qui n'est pas un défaut.
+  assert.equal(deckStatus({ main: 12, extra: 0, side: 0 }, 1).kind, "missing");
 });

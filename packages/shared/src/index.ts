@@ -12,13 +12,14 @@ export {
   DECK_MAX_COPIES,
   DECK_ZONE_LIMITS,
   DECK_ZONES,
-  deckIsPlayable,
+  deckStatus,
   isExtraDeckCard,
   missingCopies,
   parseBanlistStatus,
   type BanlistStatus,
   type DeckAddCheck,
   type DeckBlockReason,
+  type DeckStatus,
   type DeckZone,
 } from "./deck.js";
 export {

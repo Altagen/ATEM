@@ -255,6 +255,25 @@ Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 **Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
 cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
 
+### La phrase d'état de l'atelier — 2026-09-12
+
+Ange : « on est à 4/60, on peut mettre "Deck incomplet" ou ce genre de choses ?
+on avait quelques trucs comme ça dans ATEM-old ». ATEM-old en avait deux (« non
+enregistré », « limite dépassée ») ; la liste de nos decks portait déjà une
+pastille « Prêt / Incomplet », mais l'atelier ne disait rien.
+
+`deckStatus(counts, missing)`, dans `@atem/shared`, rend **un seul** verdict,
+rangé par gravité : `over` (au-dessus d'une limite) → `missing` (le deck compte
+plus d'exemplaires que la collection) → `empty` → `short` (sous le minimum du
+Main) → `ready`. Trois avertissements simultanés ne se lisent pas ; on nomme ce
+qui empêche de jouer d'abord, ce qui reste à faire ensuite.
+
+Il rend aussi **de quoi écrire la phrase** — le nombre à retirer, ou à ajouter —
+pour qu'on n'ait pas à soustraire de tête : « Deck incomplet : encore 39 au Main
+(minimum 40). » Et il remplace `deckIsPlayable`, qui répondait par oui ou non à
+la même question : la pastille de la liste et la phrase de l'atelier sortent
+maintenant du même jugement, deux écrans ne pouvant plus se contredire.
+
 ### Pas de brouillon — décision du 2026-09-12
 
 Les cartes s'écrivent **à chaque « ± »**, tout de suite. Il n'y a pas d'état

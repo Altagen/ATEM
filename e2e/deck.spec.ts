@@ -244,6 +244,58 @@ test("l'atelier n'a aucun bouton d'enregistrement", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Renommer" })).toHaveCount(0);
 });
 
+test("l'atelier dit où en est le deck, pas seulement combien", async ({ page }) => {
+  /**
+   * Ange : « on est à 4/60, on peut mettre "Deck incomplet" ou ce genre de
+   * choses ? ». Le compteur est un chiffre : il faut connaître la règle des
+   * quarante cartes pour le lire. La phrase la porte, et dit le reste à faire.
+   */
+  await signUp(page);
+  await garnir(page, ["SDCR-FR012"]);
+  await nouveauDeck(page, "Verdict");
+
+  // Un deck neuf : « encore 40 au Main » serait exact et inutile.
+  await expect(page.locator(".deck-status")).toContainText("Deck vide");
+
+  await panneau(page, "Ma collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+
+  const état = page.locator(".deck-status");
+  await expect(état).toContainText("Deck incomplet");
+  // Le reste à faire, en cartes, pour qu'on n'ait pas à soustraire de tête.
+  await expect(état).toContainText("encore 39");
+  await expect(état).toHaveClass(/deck-status-short/);
+});
+
+test("le deck signale ce qu'il ne peut plus aligner", async ({ page }) => {
+  /**
+   * Le « + » refuse une carte qu'on ne possède pas, donc un deck est jouable
+   * par construction — jusqu'à ce qu'on retire la carte de sa **collection**
+   * après l'avoir posée. C'est le seul chemin vers un manque, et il ne doit pas
+   * être silencieux.
+   */
+  await signUp(page);
+  await garnir(page, ["SDCR-FR013"]);
+  await nouveauDeck(page, "Manque");
+  await panneau(page, "Ma collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+
+  await page.goto("/collection");
+  await page
+    .locator(".item")
+    .first()
+    .getByRole("button", { name: "Retirer un exemplaire" })
+    .click();
+  await expect(page.locator(".item")).toHaveCount(0);
+
+  await page.goto("/decks");
+  await page.locator(".drive-main").click();
+  const état = page.locator(".deck-status");
+  await expect(état).toContainText("à retrouver");
+  await expect(état).toHaveClass(/deck-status-over/);
+});
+
 test("l'écran dit que les cartes sont enregistrées", async ({ page }) => {
   /**
    * C'est ce qui manquait : les cartes s'écrivent à chaque « ± », et rien ne le

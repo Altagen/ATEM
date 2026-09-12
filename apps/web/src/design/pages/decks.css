@@ -23,7 +23,25 @@
   gap: 0.25rem;
 }
 @media (max-width: 900px) {
-  .deck-edit-layout {
+  /**
+ * La phrase qui dit où en est le deck.
+ *
+ * Les compteurs donnent des chiffres ; celle-ci donne le verdict, et le reste à
+ * faire. Elle ne crie pas : c'est une ligne de texte, pas une bannière, parce
+ * qu'un deck en construction est l'état **normal** de l'écran — une alerte
+ * permanente cesserait d'être lue.
+ */
+.deck-status {
+  /* Collée aux compteurs qu'elle explique, et plus discrète qu'eux : c'est une
+     légende, pas un titre. */
+  margin: 0 0 .85rem;
+  font-size: .85rem;
+}
+.deck-status-short { color: var(--muted); }
+.deck-status-ready { color: var(--success); font-weight: 600; }
+.deck-status-over { color: var(--err); font-weight: 600; }
+
+.deck-edit-layout {
     grid-template-columns: 1fr;
   }
 }
@@ -370,7 +388,7 @@
   flex-wrap:wrap;
   flex-shrink: 0;
 }
-.deck-counts{margin:.25rem 0 1rem;display:flex;flex-wrap:wrap;gap:.65rem 1rem;align-items:center}
+.deck-counts{margin:.25rem 0 .35rem;display:flex;flex-wrap:wrap;gap:.65rem 1rem;align-items:center}
 .deck-counts .count-full{color:var(--accent,#5b8def)}
 .deck-counts .count-over{color:var(--err,#f08080);font-weight:600}
 

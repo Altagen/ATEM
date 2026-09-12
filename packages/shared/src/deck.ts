@@ -46,13 +46,45 @@ export const DECK_ZONE_LIMITS = {
   side: { min: 0, max: 15 },
 } as const satisfies Record<DeckZone, { min: number; max: number }>;
 
-/** Un deck est-il jouable en l'état ? Tailles tenues, et rien qui manque. */
-export function deckIsPlayable(counts: Record<DeckZone, number>, missing: number): boolean {
-  if (missing > 0) return false;
-  return DECK_ZONES.every((zone) => {
-    const { min, max } = DECK_ZONE_LIMITS[zone];
-    return counts[zone] >= min && counts[zone] <= max;
-  });
+/**
+ * Où en est un deck, en un seul verdict.
+ *
+ * `Main 4/60` est un chiffre, pas une réponse : il ne dit ni si le deck est
+ * jouable, ni ce qu'il faudrait faire. On rend donc **l'état**, avec de quoi
+ * écrire la phrase — le nombre de cartes à retirer, ou à ajouter — et l'écran
+ * se charge des mots.
+ *
+ * **Un seul état à la fois, par ordre de gravité.** Trois avertissements
+ * simultanés ne se lisent pas : on nomme ce qui empêche de jouer d'abord, ce
+ * qui reste à faire ensuite.
+ *
+ * - `over` : au-dessus d'une limite — le deck est refusé en tournoi.
+ * - `missing` : il contient plus d'exemplaires que la collection n'en a. Ça
+ *   n'arrive pas en construisant (le « + » s'y refuse), mais ça arrive quand on
+ *   retire ensuite une carte de sa collection.
+ * - `empty` : rien encore. « Encore 40 au Main » sur un deck neuf serait exact
+ *   et inutile.
+ * - `short` : en construction, sous le minimum du Main.
+ * - `ready` : jouable.
+ */
+export type DeckStatus =
+  | { kind: "over"; zone: DeckZone; excess: number }
+  | { kind: "missing"; missing: number }
+  | { kind: "empty" }
+  | { kind: "short"; missing: number; min: number }
+  | { kind: "ready" };
+
+export function deckStatus(counts: Record<DeckZone, number>, missing: number): DeckStatus {
+  for (const zone of DECK_ZONES) {
+    const excess = counts[zone] - DECK_ZONE_LIMITS[zone].max;
+    if (excess > 0) return { kind: "over", zone, excess };
+  }
+  if (missing > 0) return { kind: "missing", missing };
+  if (DECK_ZONES.every((zone) => counts[zone] === 0)) return { kind: "empty" };
+
+  const { min } = DECK_ZONE_LIMITS.main;
+  if (counts.main < min) return { kind: "short", missing: min - counts.main, min };
+  return { kind: "ready" };
 }
 
 export type BanlistStatus = "unlimited" | "semi_limited" | "limited" | "forbidden";
