@@ -237,3 +237,93 @@ test("la recherche de la liste filtre sans toucher au réseau", async ({ page })
   await expect(page.locator(".drive-row")).toHaveCount(1);
   await expect(page.locator(".drive-name")).toHaveText("Dragons");
 });
+
+test("cliquer une carte de l'atelier l'ouvre en grand", async ({ page }) => {
+  /**
+   * Demandé par Ange : « quand je clique sur une carte depuis l'atelier, il
+   * faudrait que ça zoome comme dans la collection ». C'est la même fiche —
+   * même composant, mêmes classes. Ce qui change, c'est ce qu'on peut faire
+   * depuis là : poser un exemplaire dans la zone active.
+   */
+  await signUp(page);
+  await garnir(page, ["LOB-FR001"]);
+  await nouveauDeck(page, "Fiche");
+  await panneau(page, "Ma collection");
+
+  await page.locator(".js-open-card").first().click();
+  const fiche = page.locator("#inspect-panel");
+  await expect(fiche).toBeVisible();
+  await expect(fiche.locator(".inspect-art")).toBeVisible();
+  await expect(fiche).toContainText("Dragon Blanc aux Yeux Bleus");
+  // Les caractéristiques, comme dans la collection.
+  await expect(fiche).toContainText("ATK / DEF");
+  await expect(fiche).toContainText("Effet");
+  // Et ce que la collection n'a pas : où en est la carte dans ce deck.
+  await expect(fiche).toContainText("Zone active");
+});
+
+test("on pose une carte depuis sa fiche, sans la refermer", async ({ page }) => {
+  await signUp(page);
+  await garnir(page, ["LOB-FR001"]);
+  await nouveauDeck(page, "Depuis la fiche");
+  await panneau(page, "Ma collection");
+  await page.locator(".js-open-card").first().click();
+
+  const fiche = page.locator("#inspect-panel");
+  await expect(fiche.locator(".in-deck-qty-label")).toHaveText("×0");
+  await fiche.locator(".deck-open-btns .btn-primary").click();
+
+  // La fiche reste ouverte et se met à jour : on enchaîne sans rouvrir.
+  await expect(fiche).toBeVisible();
+  await expect(fiche.locator(".in-deck-qty-label")).toHaveText("×1");
+});
+
+test("la fiche se referme au fond, à la croix et à Échap", async ({ page }) => {
+  await signUp(page);
+  await garnir(page, ["LOB-FR001"]);
+  await nouveauDeck(page, "Fermeture");
+  await panneau(page, "Ma collection");
+
+  const ouvrir = async () => {
+    await page.locator(".js-open-card").first().click();
+    await expect(page.locator("#inspect-panel")).toBeVisible();
+  };
+
+  await ouvrir();
+  await page.locator("#inspect-close").click();
+  await expect(page.locator("#inspect-panel")).toHaveCount(0);
+
+  await ouvrir();
+  /**
+   * `dispatchEvent` et non `click` : le panneau couvre le centre du fond, et
+   * Playwright viserait donc le panneau. Ce qu'on éprouve ici c'est le
+   * gestionnaire, pas la géométrie — la zone cliquable du fond est ce qui
+   * dépasse autour, et elle se voit à l'œil.
+   */
+  await page.locator("#inspect-backdrop").dispatchEvent("click");
+  await expect(page.locator("#inspect-panel")).toHaveCount(0);
+
+  await ouvrir();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#inspect-panel")).toHaveCount(0);
+});
+
+test("la fiche de l'atelier fige la page derrière elle", async ({ page }) => {
+  /**
+   * Même exigence que dans la collection : deux barres de défilement sur la
+   * même page font croire qu'on descend dans la fiche alors que c'est l'atelier
+   * qui bouge — et en refermant, on ne se retrouve plus où l'on était.
+   */
+  await signUp(page);
+  await garnir(page, ["LOB-FR001", "LTGY-FR008", "RA03-FR004"]);
+  await nouveauDeck(page, "Verrou");
+  await panneau(page, "Ma collection");
+
+  await page.locator(".js-open-card").first().click();
+  await expect(page.locator("#inspect-panel")).toBeVisible();
+  // Le corps est fixé : c'est la technique qui tient aussi sur iOS Safari.
+  expect(await page.evaluate(() => document.body.style.position)).toBe("fixed");
+
+  await page.locator("#inspect-close").click();
+  expect(await page.evaluate(() => document.body.style.position)).toBe("");
+});

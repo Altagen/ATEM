@@ -9,6 +9,7 @@
 import { DECK_ZONES, type DeckZone } from "@atem/shared";
 import { api, ApiError } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
+import { lockScroll, unlockScroll } from "../../platform/scroll-lock.js";
 import { toast } from "../../platform/ui.js";
 import { deckHtml, zoneFor } from "./view.js";
 import {
@@ -210,6 +211,27 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       return;
     }
 
+    /**
+     * La fiche se referme avant tout le reste.
+     *
+     * Son fond couvre l'écran : un clic dessus ne doit pas traverser jusqu'à un
+     * bouton en dessous.
+     */
+    if (cible?.closest("#inspect-close, #inspect-backdrop")) {
+      state.openedCard = null;
+      unlockScroll();
+      paint();
+      return;
+    }
+
+    const carte = cible?.closest<HTMLElement>(".js-open-card");
+    if (carte?.dataset.pc) {
+      state.openedCard = Number(carte.dataset.pc);
+      lockScroll();
+      paint();
+      return;
+    }
+
     const vue = cible?.closest<HTMLElement>("[data-coll-view]");
     if (vue?.dataset.collView) {
       state.collView = vue.dataset.collView === "gallery" ? "gallery" : "list";
@@ -270,6 +292,19 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       const suivante = Math.max(0, entrée[state.zone] + Number(pas.dataset.d ?? "1"));
       void setCard(passcode, state.zone, suivante);
     }
+  });
+
+  /**
+   * Échap referme la fiche.
+   *
+   * Le même geste que dans la collection : une modale qui ne se ferme qu'au
+   * clic oblige à viser, et on a les mains sur le clavier quand on construit.
+   */
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || state.openedCard === null) return;
+    state.openedCard = null;
+    unlockScroll();
+    paint();
   });
 
   paint();

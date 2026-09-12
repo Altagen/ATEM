@@ -17,6 +17,7 @@ import {
   parseBanlistStatus, type BanlistStatus, type DeckZone,
 } from "@atem/shared";
 import { t } from "../../platform/i18n/index.js";
+import { cardSheetHtml } from "../shared/card-sheet.js";
 import { translateAttribute } from "../../platform/ygo-labels.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import {
@@ -152,7 +153,7 @@ function collRow(row: CollectionRow, state: DeckState): SafeHtml {
 
   return html`<li class="item${interdite ? " card-ban-forbidden" : ""}${déjà > 0 ? " in-deck-selected" : ""}">
     <div class="item-row">
-      <span class="item-main">
+      <button type="button" class="item-main js-open-card" data-pc="${String(passcode)}">
         ${vignette(carte?.imageUrlSmall ?? carte?.imageUrl)}
         <div class="item-text">
           <strong>${carte?.name ?? t("Carte non identifiée")}</strong>
@@ -164,7 +165,7 @@ function collRow(row: CollectionRow, state: DeckState): SafeHtml {
           </div>
         </div>
         ${when(déjà > 0, html`<span class="in-deck-qty" aria-label="${t("Dans le deck")}">×${déjà}</span>`)}
-      </span>
+      </button>
       ${stepper(row, state)}
     </div>
   </li>`;
@@ -177,6 +178,7 @@ function collTile(row: CollectionRow, state: DeckState): SafeHtml {
 
   return html`<div class="tile deck-coll-tile${déjà > 0 ? " in-deck-selected" : ""}">
     <div class="tile-art-wrap">
+      <button type="button" class="tile-open js-open-card" data-pc="${String(passcode)}">
       <div class="tile-art">
         ${carte?.imageUrlSmall || carte?.imageUrl
           ? html`<img loading="lazy" decoding="async" src="${carte.imageUrlSmall ?? carte.imageUrl!}" alt="" />`
@@ -185,12 +187,13 @@ function collTile(row: CollectionRow, state: DeckState): SafeHtml {
           ? html`<span class="in-deck-qty">×${déjà}</span>`
           : html`<span class="tile-qty muted-own">×${state.owned.get(passcode) ?? 0}</span>`}
       </div>
+      </button>
       ${stepper(row, state, true)}
     </div>
-    <div class="tile-body">
+    <button type="button" class="tile-body tile-open js-open-card" data-pc="${String(passcode)}">
       <strong class="tile-name">${carte?.name ?? t("Carte non identifiée")}</strong>
       <code>${row.setCode}</code>${banBadge(carte?.banlistTcg)}
-    </div>
+    </button>
   </div>`;
 }
 
@@ -446,8 +449,50 @@ export function visibleCollection(state: DeckState): CollectionRow[] {
   });
 }
 
+/**
+ * La fiche de carte, vue depuis l'atelier.
+ *
+ * La même que dans la collection — c'est la même carte, elle doit se lire
+ * pareil. Ce qui change, c'est ce qu'on peut faire depuis là : poser un
+ * exemplaire dans la zone active, ou en retirer un.
+ */
+function cardSheet(state: DeckState): SafeHtml {
+  const row = state.collection.find((ligne) => ligne.card?.passcode === state.openedCard);
+  const carte = row?.card;
+  if (!row || !carte) return raw("");
+
+  const déjà = inDeck(carte.passcode);
+  const issue = checkDeckAdd({
+    banlistTcg: carte.banlistTcg,
+    owned: state.owned.get(carte.passcode) ?? 0,
+    inDeck: déjà,
+  });
+  const refus = issue.blockedBy ? REFUS_LABELS[issue.blockedBy] : null;
+
+  return cardSheetHtml({
+    art: carte.imageUrl ?? carte.imageUrlSmall,
+    title: carte.name,
+    subtitle: `${row.setCode} · #${carte.passcode}`,
+    card: carte,
+    extra: html`<div class="deck-open-actions">
+      <p class="muted">
+        ${t("Dans le deck")} : <strong class="in-deck-qty-label">×${déjà}</strong> ·
+        ${t("Zone active")} : ${ZONE_LABELS[state.zone]}
+      </p>
+      <div class="deck-open-btns">
+        <button type="button" class="btn btn-primary js-coll" data-pc="${String(carte.passcode)}"
+                data-d="1" title="${refus ? t(refus) : t("Ajouter au deck")}"
+                ${issue.canAdd ? raw("") : raw("disabled")}>+1</button>
+        <button type="button" class="btn js-coll" data-pc="${String(carte.passcode)}" data-d="-1"
+                ${déjà > 0 ? raw("") : raw("disabled")}>−1</button>
+      </div>
+    </div>`,
+  });
+}
+
 export function deckHtml(state: DeckState): SafeHtml {
-  return state.opened ? editHtml(state, state.opened) : listHtml(state);
+  if (!state.opened) return listHtml(state);
+  return html`${editHtml(state, state.opened)}${when(state.openedCard !== null, cardSheet(state))}`;
 }
 
 /** La zone où une carte doit aller, quelle que soit celle qu'on regarde. */

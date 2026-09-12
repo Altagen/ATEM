@@ -7,6 +7,7 @@
  * a coûté une heure sur l'écran précédent.
  */
 import type { DeckZone } from "@atem/shared";
+import type { CardDetail } from "../../platform/api.js";
 
 /**
  * Une ligne de la collection, telle que l'API la rend — **par impression**.
@@ -21,16 +22,15 @@ export type CollectionRow = {
   setCode: string;
   quantity: number;
   isFavorite: boolean;
-  card: {
-    passcode: number;
-    name: string;
-    type: string | null;
-    frameType: string | null;
-    attribute: string | null;
-    banlistTcg: string | null;
-    imageUrl: string | null;
-    imageUrlSmall: string | null;
-  } | null;
+  /**
+   * La fiche complète, telle que l'API la rend.
+   *
+   * Un sous-ensemble taillé sur les besoins de l'atelier a d'abord vécu ici —
+   * et il a fallu l'élargir dès que la fiche en grand est arrivée. `CardDetail`
+   * est le contrat du serveur ; le redéclarer en plus petit ne fait qu'ajouter
+   * un endroit où il peut mentir.
+   */
+  card: CardDetail | null;
 };
 
 export type DeckCardEntry = {
@@ -77,6 +77,13 @@ export type DeckState = {
   /** Combien d'exemplaires par **carte**, toutes impressions confondues. */
   owned: Map<number, number>;
   query: string;
+  /**
+   * La carte ouverte en grand, par son passcode.
+   *
+   * On la garde par identité plutôt que par valeur : la fiche se redessine
+   * après chaque « +1 », et une copie figée afficherait un compte périmé.
+   */
+  openedCard: number | null;
   /** La nature filtrée : tout, monstre, magie, piège, extra, favoris. */
   kind: "" | "monster" | "spell" | "trap" | "extra" | "fav";
   /** Les attributs retenus. Vide = tous. */
@@ -103,6 +110,7 @@ const state: DeckState = {
   collection: [],
   owned: new Map(),
   query: "",
+  openedCard: null,
   kind: "",
   attributes: [],
   collView: "list",
@@ -118,6 +126,7 @@ export function resetView(): void {
   state.opened = null;
   state.collection = [];
   state.owned = new Map();
+  state.openedCard = null;
   state.error = "";
 }
 

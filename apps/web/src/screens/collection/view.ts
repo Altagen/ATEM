@@ -11,9 +11,10 @@
  * un contrôle qui ne fait rien est pire que de ne pas le poser.
  */
 import { t } from "../../platform/i18n/index.js";
+import { cardSheetHtml, detailGrid } from "../shared/card-sheet.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import {
-  translateAttribute, translateFrameType, translateLinkMarker, translateRace, translateType,
+  translateAttribute, translateFrameType, translateRace, translateType,
 } from "../../platform/ygo-labels.js";
 import type { CollectionItem, Facets, ViewState } from "./state.js";
 
@@ -496,55 +497,10 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
   </div>`;
 }
 
-function linkCompassHtml(markers: string[] | null, linkValue: number | null): SafeHtml {
-  if (!markers?.length) return raw("");
-  const cells = [
-    "Top-Left", "Top", "Top-Right",
-    "Left", null, "Right",
-    "Bottom-Left", "Bottom", "Bottom-Right",
-  ];
-  const arrows: Record<string, string> = {
-    "Top-Left": "↖", Top: "↑", "Top-Right": "↗",
-    Left: "←", Right: "→",
-    "Bottom-Left": "↙", Bottom: "↓", "Bottom-Right": "↘",
-  };
-  return html`<div class="link-compass-block">
-    <h3>${t("Marqueurs de Lien")}</h3>
-    <div class="link-compass" role="img"
-         aria-label="${markers.map(translateLinkMarker).join(", ")}">
-      ${cells.map((cell) =>
-        cell === null
-          ? html`<span class="link-center">${linkValue ?? "—"}</span>`
-          : html`<span class="link-arrow${markers.includes(cell) ? " is-on" : ""}" aria-hidden="true">${arrows[cell]}</span>`,
-      )}
-    </div>
-  </div>`;
-}
 
 /** La fiche plein écran d'une carte ouverte. */
 export function inspectHtml(item: CollectionItem): SafeHtml {
   const card = item.card;
-  const art = card?.imageUrl ?? card?.imageUrlSmall;
-  const isSpellTrap = card?.type === "Spell Card" || card?.type === "Trap Card";
-
-  const rows: [string, string][] = card
-    ? [
-        [t("Type"), translateType(card.type)],
-        [isSpellTrap ? t("Propriété") : t("Type monstre"), translateRace(card.race, card.type) || "—"],
-        [t("Attribut"), translateAttribute(card.attribute) || "—"],
-        card.linkValue !== null
-          ? [t("Lien"), String(card.linkValue)]
-          : [t("Niveau"), card.level === null ? "—" : String(card.level)],
-        [
-          card.linkValue !== null ? t("ATK") : t("ATK / DEF"),
-          card.linkValue !== null
-            ? String(card.atk ?? "—")
-            : `${card.atk ?? "—"} / ${card.def ?? "—"}`,
-        ],
-        [t("Archétype"), card.archetype ?? "—"],
-        [t("Passcode"), `#${card.passcode}`],
-      ]
-    : [];
 
   const owned: [string, string][] = [
     [t("Set code"), item.setCode],
@@ -554,72 +510,47 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
     [t("Exemplaires"), String(item.quantity)],
   ];
 
-  const grid = (entries: [string, string][]): SafeHtml =>
-    html`<dl class="detail-grid">
-      ${entries.map(([term, value]) => html`<div><dt>${term}</dt><dd>${value}</dd></div>`)}
-    </dl>`;
-
-  return html`<div class="inspect-backdrop" id="inspect-backdrop"></div>
-  <div class="inspect-panel" id="inspect-panel" role="dialog" aria-modal="true">
-    <button type="button" class="inspect-close icon-btn" id="inspect-close" aria-label="${t("Fermer")}">✕</button>
-    <div class="inspect-layout">
-      <div class="inspect-art-col">
-        ${art
-          ? html`<img class="inspect-art" src="${art}" alt="" />`
-          : raw(`<div class="inspect-art inspect-art-empty">?</div>`)}
-      </div>
-      <div class="inspect-info-col">
-        <header class="inspect-info-head">
-          <h2>${card?.name ?? "Carte non identifiée"}</h2>
-          <p class="inspect-sub muted">${item.setCode} · ×${item.quantity}</p>
-          <div class="inspect-actions">
-            <button type="button" class="btn btn-danger btn-sm js-delta"
-                    data-id="${item.id}" data-d="-1">−1</button>
-          </div>
-        </header>
-        <div class="inspect-info-body">
-          ${when(
-            !card,
-            raw(
-              `<p class="muted">Cette édition n'a pas encore été identifiée. Elle est comptée dans votre collection ; l'identification se fera automatiquement.</p>`,
-            ),
-          )}
-          ${when(Boolean(card), grid(rows))}
-          ${when(
-            /**
-             * Le retard de traduction se dit, et il se dit une fois — près du
-             * nom, qui est ce qu'on lit en premier.
-             *
-             * Le message ne peut pas être « cette carte n'a pas de nom
-             * français » : c'est faux, « Aspischool » s'appelle « Banc d'aspis ».
-             * C'est le catalogue qui ne l'a pas encore. Mesuré par extension :
-             * les anciennes sont traduites à 100 %, les récentes à 0-60 %.
-             */
-            item.print.language === "fr" && card?.frenchPending,
-            // « Pas encore » porte tout le sens : la carte a un nom français,
-            // c'est le catalogue qui ne l'a pas. Le reste tenait de
-            // l'explication de texte.
-            html`<p class="muted field-note">${t("Traduction pas encore disponible — nom et texte en anglais.")}</p>`,
-          )}
-          ${when(
-            Boolean(card?.desc),
-            html`<div class="effect"><h3>${t("Effet")}</h3><p>${card?.desc}</p></div>`,
-          )}
-          ${linkCompassHtml(card?.linkMarkers ?? null, card?.linkValue ?? null)}
-          <h3>${t("Votre exemplaire")}</h3>
-          ${grid(owned)}
-          <div class="inspect-notes">
-            <label for="notes-input" class="muted">${t("Note")}</label>
-            <input type="text" id="notes-input" value="${item.notes ?? ""}"
-                   maxlength="2000" placeholder="${t("État, provenance, prix payé…")}" />
-            <button type="button" class="btn btn-primary btn-sm" id="btn-save-notes">
-              ${t("Enregistrer")}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>`;
+  return cardSheetHtml({
+    art: card?.imageUrl ?? card?.imageUrlSmall,
+    title: card?.name ?? t("Carte non identifiée"),
+    subtitle: `${item.setCode} · ×${item.quantity}`,
+    card,
+    headActions: html`<div class="inspect-actions">
+      <button type="button" class="btn btn-danger btn-sm js-delta"
+              data-id="${String(item.id)}" data-d="-1">−1</button>
+    </div>`,
+    notice: html`${when(
+      !card,
+      html`<p class="muted">
+        ${t("Cette édition n'a pas encore été identifiée. Elle est comptée dans votre collection ; l'identification se fera automatiquement.")}
+      </p>`,
+    )}${when(
+      /**
+       * Le retard de traduction se dit, et il se dit une fois — près du nom,
+       * qui est ce qu'on lit en premier.
+       *
+       * Le message ne peut pas être « cette carte n'a pas de nom français » :
+       * c'est faux, « Aspischool » s'appelle « Banc d'aspis ». C'est le
+       * catalogue qui ne l'a pas encore. Mesuré par extension : les anciennes
+       * sont traduites à 100 %, les récentes à 0-60 %.
+       */
+      item.print.language === "fr" && card?.frenchPending,
+      html`<p class="muted field-note">
+        ${t("Traduction pas encore disponible — nom et texte en anglais.")}
+      </p>`,
+    )}`,
+    extra: html`
+      <h3>${t("Votre exemplaire")}</h3>
+      ${detailGrid(owned)}
+      <div class="inspect-notes">
+        <label for="notes-input" class="muted">${t("Note")}</label>
+        <input type="text" id="notes-input" value="${item.notes ?? ""}"
+               maxlength="2000" placeholder="${t("État, provenance, prix payé…")}" />
+        <button type="button" class="btn btn-primary btn-sm" id="btn-save-notes">
+          ${t("Enregistrer")}
+        </button>
+      </div>`,
+  });
 }
 
 export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
