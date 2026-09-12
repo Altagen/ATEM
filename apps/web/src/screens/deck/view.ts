@@ -1,20 +1,30 @@
 /**
- * Le balisage de l'atelier de decks.
+ * Le balisage des decks — la liste et l'atelier.
  *
- * Classes reprises de la maquette d'ATEM-old (`design/styles/pages/decks.css`),
- * dont la feuille attendait dans `design/staged/decks.css` depuis M0.
+ * **Transcrit d'ATEM-old**, dont l'interface avait été validée : `decks/vue.ts`,
+ * `vue-atelier.ts` et `vue-pieces.ts`, avec les classes de
+ * `styles/pages/decks.css`. Ce qui n'est pas repris ne l'est pas par oubli mais
+ * faute de quoi le brancher — les dossiers, la modale d'options de deck et le
+ * tableau de banlist n'ont pas d'appui côté serveur chez nous, et un contrôle
+ * qui ne fait rien est pire que pas de contrôle.
  *
- * **Deux panneaux** : la collection à gauche, où l'on puise ; les zones à
- * droite, où l'on pose. L'onglet de zone dit où vont les « +1 » — sauf pour un
- * monstre d'Extra Deck, qui y va toujours.
+ * La panneau de collection emploie les **mêmes classes que l'écran Collection**
+ * — `.item`, `.item-row`, `.item-main`, `.thumb` — et c'est voulu : on y pioche
+ * dans la même chose, elle doit se lire pareil.
  */
 import {
   DECK_ZONE_LIMITS, DECK_ZONES, checkDeckAdd, deckIsPlayable, isExtraDeckCard,
   parseBanlistStatus, type BanlistStatus, type DeckZone,
 } from "@atem/shared";
 import { t } from "../../platform/i18n/index.js";
+import { translateAttribute } from "../../platform/ygo-labels.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
-import { inDeck, type DeckDetail, type DeckState, type DeckSummary, type OwnedCard } from "./state.js";
+import {
+  inDeck, type CollectionRow, type DeckDetail, type DeckState, type DeckSummary,
+} from "./state.js";
+
+/** Les attributs, dans l'ordre où la maquette les range. */
+const ATTRS = ["DARK", "LIGHT", "EARTH", "WATER", "FIRE", "WIND", "DIVINE"];
 
 /**
  * Les libellés de banlist — traduits à l'affichage, pas à la déclaration.
@@ -28,116 +38,229 @@ const BAN_LABELS: Record<BanlistStatus, string> = {
   unlimited: "",
 };
 
-const ZONE_LABELS: Record<DeckZone, string> = {
-  main: "Main",
+const KIND_LABELS: Record<string, string> = {
+  "": "Tout",
+  monster: "Monstre",
+  spell: "Magie",
+  trap: "Piège",
   extra: "Extra",
-  side: "Side",
+  fav: "★",
 };
 
+/* ── Les pièces ────────────────────────────────────────────────────────── */
+
+/**
+ * Les icônes de zone, reprises telles quelles.
+ *
+ * Main : une pile. Extra : une étoile. Side : des couches. Elles distinguent
+ * les trois onglets sans les lire, ce qui compte quand on y revient cent fois.
+ */
+function zoneIcon(zone: DeckZone): SafeHtml {
+  const chemins: Record<DeckZone, string> = {
+    main: `<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/>`,
+    extra: `<path d="M12 2l4 8 8 1-6 5 2 8-8-4-8 4 2-8-6-5 8-1z"/>`,
+    side: `<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 12l10 5 10-5"/><path d="M2 17l10 5 10-5"/>`,
+  };
+  return raw(
+    `<svg class="zone-ico zone-ico-${zone}" viewBox="0 0 24 24" width="14" height="14" ` +
+      `aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">${chemins[zone]}</svg>`,
+  );
+}
+
 /** La pastille de banlist — rien du tout quand la carte est illimitée. */
-function banBadge(banlistTcg: string | null): SafeHtml {
+function banBadge(banlistTcg: string | null | undefined): SafeHtml {
   const statut = parseBanlistStatus(banlistTcg);
   if (statut === "unlimited") return raw("");
-  return html`<span class="ban-badge ban-badge-${statut === "semi_limited" ? "semi" : statut}"
-    >${t(BAN_LABELS[statut])}</span
+  const classe =
+    statut === "forbidden" ? "ban-badge-forbidden"
+    : statut === "limited" ? "ban-badge-limited"
+    : "ban-badge-semi";
+  return html`<span class="ban-badge ${classe}"
+    >${when(statut === "forbidden", raw(`<span class="ban-slash"></span>`))}${t(
+      BAN_LABELS[statut],
+    )}</span
   >`;
 }
 
-const vignette = (url: string | null, nom: string): SafeHtml =>
+const vignette = (url: string | null | undefined, classe = "thumb"): SafeHtml =>
   url
-    ? html`<img class="thumb thumb-sm" src="${url}" alt="${nom}" loading="lazy" decoding="async" />`
-    : raw(`<div class="thumb-empty thumb-sm">?</div>`);
+    ? html`<img loading="lazy" decoding="async" class="${classe}" src="${url}" alt="" />`
+    : raw(`<div class="thumb-empty ${classe === "thumb" ? "" : classe}">?</div>`);
 
-/* ── La liste des decks ────────────────────────────────────────────────── */
+/**
+ * Le compteur de zones, avec ses limites.
+ *
+ * C'est la seule chose qu'on regarde en construisant : combien il en manque, et
+ * si l'on a dépassé. `count-full` dit « c'est plein » sans crier ; `count-over`
+ * crie, parce qu'un deck au-dessus de la limite est injouable.
+ */
+function countsBar(deck: DeckDetail): SafeHtml {
+  return html`<p class="meta-line deck-counts">
+    ${DECK_ZONES.map((zone) => {
+      const { min, max } = DECK_ZONE_LIMITS[zone];
+      const n = deck.counts[zone];
+      const classe = n > max ? "count-over" : n >= max ? "count-full" : n < min ? "count-short" : "";
+      return html`<span class="${classe}"
+        >${zoneIcon(zone)} ${ZONE_LABELS[zone]} <strong>${n}</strong>/${max}</span
+      >`;
+    })}
+    ${when(
+      deck.missing > 0,
+      html`<span class="warn">${t("{n} à retrouver", { n: deck.missing })}</span>`,
+    )}
+  </p>`;
+}
 
-function deckRow(deck: DeckSummary): SafeHtml {
-  const jouable = deckIsPlayable(deck.counts, deck.missing);
-  return html`<li class="drive-row">
-    <a class="drive-main" href="/decks?deck=${deck.id}">
-      <span class="drive-ico" aria-hidden="true">🃏</span>
-      <span class="drive-text">
-        <strong class="drive-name">${deck.name}</strong>
-        <span class="drive-meta muted">
-          ${t("Main {main} · Extra {extra} · Side {side}", {
-            main: deck.counts.main, extra: deck.counts.extra, side: deck.counts.side,
-          })}
-        </span>
+const ZONE_LABELS: Record<DeckZone, string> = { main: "Main", extra: "Extra", side: "Side" };
+
+/**
+ * Le pas d'une carte : « −1 ×n +1 ».
+ *
+ * Le même objet dans la liste et dans la galerie, où il se pose par-dessus
+ * l'illustration plutôt que sous la vignette — la grille reste alignée.
+ */
+function stepper(row: CollectionRow, state: DeckState, compact = false): SafeHtml {
+  const passcode = row.card?.passcode ?? 0;
+  const déjà = inDeck(passcode);
+  const issue = checkDeckAdd({
+    banlistTcg: row.card?.banlistTcg,
+    owned: state.owned.get(passcode) ?? 0,
+    inDeck: déjà,
+  });
+  const refus = issue.blockedBy ? REFUS_LABELS[issue.blockedBy] : null;
+
+  return html`<div class="${compact ? "deck-stepper deck-stepper-overlay" : "deck-stepper item-actions"}"
+    role="group" aria-label="${t("Quantité dans le deck")}">
+    <button type="button" class="btn-qty js-coll" data-pc="${String(passcode)}" data-d="-1"
+            aria-label="${t("Retirer un exemplaire")}"
+            ${déjà > 0 ? raw("") : raw("disabled")}>${compact ? "−" : "−1"}</button>
+    <span class="deck-stepper-qty${déjà > 0 ? " is-in-deck" : ""}">×${déjà}</span>
+    <button type="button" class="btn-qty js-coll" data-pc="${String(passcode)}" data-d="1"
+            aria-label="${t("Ajouter un exemplaire")}"
+            title="${refus ? t(refus) : t("Ajouter au deck")}"
+            ${issue.canAdd ? raw("") : raw("disabled")}>${compact ? "+" : "+1"}</button>
+  </div>`;
+}
+
+/* ── Le panneau de collection ──────────────────────────────────────────── */
+
+function collRow(row: CollectionRow, state: DeckState): SafeHtml {
+  const carte = row.card;
+  const passcode = carte?.passcode ?? 0;
+  const déjà = inDeck(passcode);
+  const interdite = parseBanlistStatus(carte?.banlistTcg) === "forbidden";
+
+  return html`<li class="item${interdite ? " card-ban-forbidden" : ""}${déjà > 0 ? " in-deck-selected" : ""}">
+    <div class="item-row">
+      <span class="item-main">
+        ${vignette(carte?.imageUrlSmall ?? carte?.imageUrl)}
+        <div class="item-text">
+          <strong>${carte?.name ?? t("Carte non identifiée")}</strong>
+          <code>${row.setCode}</code>
+          <div class="item-meta">
+            <span>${t("×{n} poss.", { n: state.owned.get(passcode) ?? 0 })}</span>
+            ${when(row.isFavorite, raw(`<span class="ok-tag fav-tag">★</span>`))}
+            ${banBadge(carte?.banlistTcg)}
+          </div>
+        </div>
+        ${when(déjà > 0, html`<span class="in-deck-qty" aria-label="${t("Dans le deck")}">×${déjà}</span>`)}
       </span>
-      ${jouable
-        ? html`<span class="zone-pill deck-ready">${t("Prêt")}</span>`
-        : html`<span class="zone-pill deck-unready"
-            >${deck.missing > 0
-              ? t("{n} à retrouver", { n: deck.missing })
-              : t("Incomplet")}</span
-          >`}
-    </a>
+      ${stepper(row, state)}
+    </div>
   </li>`;
 }
 
-function listHtml(state: DeckState): SafeHtml {
-  return html`
-    <div class="scan-head">
-      <div>
-        <h1 class="page-title">${t("Mes decks")}</h1>
-        <p class="muted">
-          ${t("Un deck se construit depuis votre collection : on n'y met que ce qu'on possède.")}
-        </p>
+function collTile(row: CollectionRow, state: DeckState): SafeHtml {
+  const carte = row.card;
+  const passcode = carte?.passcode ?? 0;
+  const déjà = inDeck(passcode);
+
+  return html`<div class="tile deck-coll-tile${déjà > 0 ? " in-deck-selected" : ""}">
+    <div class="tile-art-wrap">
+      <div class="tile-art">
+        ${carte?.imageUrlSmall || carte?.imageUrl
+          ? html`<img loading="lazy" decoding="async" src="${carte.imageUrlSmall ?? carte.imageUrl!}" alt="" />`
+          : raw(`<div class="tile-art-empty">?</div>`)}
+        ${déjà > 0
+          ? html`<span class="in-deck-qty">×${déjà}</span>`
+          : html`<span class="tile-qty muted-own">×${state.owned.get(passcode) ?? 0}</span>`}
       </div>
-      <button type="button" class="btn btn-hero scan-new" id="deck-new">${t("Nouveau deck")}</button>
+      ${stepper(row, state, true)}
+    </div>
+    <div class="tile-body">
+      <strong class="tile-name">${carte?.name ?? t("Carte non identifiée")}</strong>
+      <code>${row.setCode}</code>${banBadge(carte?.banlistTcg)}
+    </div>
+  </div>`;
+}
+
+function collectionPanel(state: DeckState): SafeHtml {
+  const lignes = visibleCollection(state);
+
+  return html`<section class="deck-edit-collection">
+    <div class="decks-toolbar">
+      <label class="search">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input type="search" id="coll-search" value="${state.query}"
+               placeholder="${t("Nom, set code ou #passcode…")}"
+               aria-label="${t("Rechercher dans la collection")}" />
+      </label>
+      <div class="view-toggle" role="group" aria-label="${t("Affichage")}">
+        <button type="button" class="icon-btn${state.collView === "list" ? " is-active" : ""}"
+                data-coll-view="list" title="${t("Liste")}" aria-label="${t("Vue liste")}"
+                aria-pressed="${String(state.collView === "list")}"><span class="i-list" aria-hidden="true"></span></button>
+        <button type="button" class="icon-btn${state.collView === "gallery" ? " is-active" : ""}"
+                data-coll-view="gallery" title="${t("Galerie")}" aria-label="${t("Vue galerie")}"
+                aria-pressed="${String(state.collView === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
+      </div>
     </div>
 
-    ${when(state.error, html`<p class="scan-note warn">${state.error}</p>`)}
+    <div class="chip-row">
+      ${Object.keys(KIND_LABELS).map(
+        (kind) => html`<button type="button"
+          class="chip${state.kind === kind ? " is-active" : ""}" data-filter-kind="${kind}"
+          >${t(KIND_LABELS[kind] ?? kind)}</button
+        >`,
+      )}
+    </div>
 
-    <p class="scan-count muted">${t("{n} deck(s)", { n: state.decks.length })}</p>
-    ${state.loading
-      ? raw(`<p class="web-loading muted">${t("Chargement…")}</p>`)
-      : state.decks.length === 0
-        ? html`<p class="scan-draft-empty muted">
-            ${t("Aucun deck pour l'instant. Créez-en un, puis piochez dans votre collection.")}
-          </p>`
-        : html`<ul class="drive-list">${state.decks.map(deckRow)}</ul>`}
-  `;
+    <div class="chip-row">
+      ${ATTRS.map(
+        (attr) => html`<button type="button"
+          class="chip chip-attr${state.attributes.includes(attr) ? " is-active" : ""}"
+          data-filter-attr="${attr}"
+          ><img loading="lazy" decoding="async" src="/assets/icons/attr/${attr}.png"
+                width="16" height="16" alt="" />${translateAttribute(attr)}</button
+        >`,
+      )}
+    </div>
+
+    ${lignes.length === 0
+      ? html`<p class="muted">${t("Aucune carte (collection ou filtres).")}</p>`
+      : state.collView === "gallery"
+        ? html`<div class="gallery deck-edit-gallery" data-cols="6">
+            ${lignes.map((row) => collTile(row, state))}
+          </div>`
+        : html`<ul class="item-list deck-edit-coll-list">
+            ${lignes.map((row) => collRow(row, state))}
+          </ul>`}
+  </section>`;
 }
 
-/* ── L'atelier ─────────────────────────────────────────────────────────── */
+/* ── Le panneau des zones ──────────────────────────────────────────────── */
 
-/** Une carte de la collection, avec ce qu'elle pèse déjà dans le deck. */
-function collectionRow(card: OwnedCard): SafeHtml {
-  const déjà = inDeck(card.passcode);
-  const issue = checkDeckAdd({ banlistTcg: card.banlistTcg, owned: card.owned, inDeck: déjà });
-
-  return html`<li class="deck-coll-tile">
-    <button type="button" class="zone-edit-main js-add" data-pc="${String(card.passcode)}"
-            ${issue.canAdd ? raw("") : raw("disabled")}
-            title="${issue.canAdd ? t("Ajouter au deck") : t(REFUS_LABELS[issue.blockedBy ?? "max_copies"] ?? "Ajout impossible.")}">
-      ${vignette(card.imageUrlSmall, card.name)}
-      <span class="zone-edit-text">
-        <strong>${card.name}</strong>
-        <span class="muted in-deck-qty-label">
-          ${t("{owned} en collection", { owned: card.owned })}${déjà > 0
-            ? t(" · {n} au deck", { n: déjà })
-            : ""}
-        </span>
-        ${banBadge(card.banlistTcg)}
-      </span>
-    </button>
-  </li>`;
-}
-
-/** Une ligne du deck, dans la zone affichée. */
 function zoneRow(entry: DeckDetail["cards"][number], zone: DeckZone): SafeHtml {
-  const quantité = entry[zone];
   return html`<li class="zone-edit-row${entry.missing > 0 ? " deck-line-forced" : ""}">
     <span class="zone-edit-main">
-      ${vignette(entry.imageUrlSmall, entry.name)}
+      ${vignette(entry.imageUrlSmall, "thumb thumb-sm")}
       <span class="zone-edit-text">
         <strong>${entry.name}</strong>
         ${when(
           entry.missing > 0,
-          html`<span class="muted"
+          html`<code class="muted"
             >${t("{n} à retrouver — {owned} en collection", {
               n: entry.missing, owned: entry.owned,
-            })}</span
+            })}</code
           >`,
         )}
         ${banBadge(entry.banlistTcg)}
@@ -146,90 +269,139 @@ function zoneRow(entry: DeckDetail["cards"][number], zone: DeckZone): SafeHtml {
     <div class="deck-stepper zone-qty" role="group" aria-label="${entry.name}">
       <button type="button" class="btn-qty js-zone" data-pc="${String(entry.passcode)}" data-d="-1"
               aria-label="${t("Retirer un exemplaire")}">−</button>
-      <span class="deck-stepper-qty is-in-deck">×${quantité}</span>
+      <span class="deck-stepper-qty is-in-deck">×${entry[zone]}</span>
       <button type="button" class="btn-qty js-zone" data-pc="${String(entry.passcode)}" data-d="1"
               aria-label="${t("Ajouter un exemplaire")}">+</button>
     </div>
   </li>`;
 }
 
-function workshopHtml(state: DeckState, deck: DeckDetail): SafeHtml {
-  const zone = state.zone;
-  const dansLaZone = deck.cards.filter((entry) => entry[zone] > 0);
-  const { min, max } = DECK_ZONE_LIMITS[zone];
-  const jouable = deckIsPlayable(deck.counts, deck.missing);
-
-  return html`
-    <div class="scan-head">
-      <div>
-        <h1 class="page-title">${deck.name}</h1>
-        <p class="muted">
-          ${jouable
-            ? t("Prêt à jouer.")
-            : deck.missing > 0
-              ? t("{n} carte(s) à retrouver avant de pouvoir le jouer.", { n: deck.missing })
-              : t("Main {main}/{min} — complétez-le pour pouvoir le jouer.", {
-                  main: deck.counts.main, min: DECK_ZONE_LIMITS.main.min,
-                })}
-        </p>
-      </div>
-      <a class="btn scan-new" href="/decks">${t("Tous les decks")}</a>
-    </div>
-
-    ${when(state.error, html`<p class="scan-note warn">${state.error}</p>`)}
-
-    <div class="scan-actions">
-      <button type="button" class="btn" id="deck-rename">${t("Renommer")}</button>
-      <button type="button" class="btn scan-trash" id="deck-delete">${t("Jeter ce deck")}</button>
-    </div>
-
-    <div class="deck-panel-switch" role="group" aria-label="${t("Panneau")}">
-      ${(["collection", "zones"] as const).map(
-        (panneau) => html`<button type="button"
-          class="chip${state.panel === panneau ? " is-active" : ""}"
-          data-panel="${panneau}" aria-pressed="${String(state.panel === panneau)}"
-          >${panneau === "collection" ? t("Votre collection") : t("Le deck")}</button
+function zonesPanel(state: DeckState, deck: DeckDetail): SafeHtml {
+  const dansLaZone = deck.cards.filter((entry) => entry[state.zone] > 0);
+  return html`<section class="deck-edit-zones">
+    <div class="zone-tabs" role="tablist">
+      ${DECK_ZONES.map(
+        (zone) => html`<button type="button"
+          class="chip chip-zone${state.zone === zone ? " is-active" : ""}"
+          data-zone="${zone}" role="tab" aria-selected="${String(state.zone === zone)}"
+          >${zoneIcon(zone)} ${ZONE_LABELS[zone]}
+          <span class="muted">${deck.counts[zone]}</span></button
         >`,
       )}
     </div>
+    <p class="muted zone-hint">
+      ${t("L'onglet dit où vont les « + ». Les monstres d'Extra Deck y vont toujours.")}
+    </p>
+    ${dansLaZone.length === 0
+      ? html`<p class="muted zone-edit-empty">${t("Zone vide")}</p>`
+      : html`<ul class="zone-edit-list">${dansLaZone.map((entry) => zoneRow(entry, state.zone))}</ul>`}
+  </section>`;
+}
+
+/* ── Les deux écrans ───────────────────────────────────────────────────── */
+
+function deckDriveRow(deck: DeckSummary): SafeHtml {
+  const jouable = deckIsPlayable(deck.counts, deck.missing);
+  return html`<li class="drive-row">
+    <a class="drive-main" href="/decks?deck=${deck.id}">
+      <span class="drive-ico drive-ico-cover" aria-hidden="true">
+        <span class="drive-cover deck-cover-default"><span class="deck-cover-ygo">遊戯王</span></span>
+      </span>
+      <span class="drive-text"><strong class="drive-name">${deck.name}</strong></span>
+      <span class="muted drive-meta"
+        >M${deck.counts.main} · E${deck.counts.extra} · S${deck.counts.side}</span
+      >
+      <span class="zone-pill ${jouable ? "deck-ready" : "deck-unready"}"
+        >${jouable
+          ? t("Prêt")
+          : deck.missing > 0
+            ? t("{n} à retrouver", { n: deck.missing })
+            : t("Incomplet")}</span
+      >
+    </a>
+  </li>`;
+}
+
+function listHtml(state: DeckState): SafeHtml {
+  const visibles = state.decks.filter((deck) =>
+    deck.name.toLowerCase().includes(state.query.trim().toLowerCase()),
+  );
+
+  return html`<main class="decks-page">
+    <div class="decks-manage-head">
+      <h1>${t("Mes decks")}</h1>
+      <p class="muted">
+        ${t("Un deck se construit depuis votre collection : on n'y met que ce qu'on possède.")}
+      </p>
+    </div>
+
+    <div class="decks-toolbar">
+      <label class="search">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input type="search" id="deck-search" value="${state.query}"
+               placeholder="${t("Rechercher un deck…")}"
+               aria-label="${t("Rechercher un deck")}" />
+      </label>
+      <button type="button" class="btn btn-primary decks-toolbar-build" id="btn-build">
+        ${t("Construire un deck")}
+      </button>
+    </div>
+
+    ${when(state.error, html`<p class="banner banner-err">${state.error}</p>`)}
+    ${state.loading
+      ? html`<p class="muted">${t("Chargement…")}</p>`
+      : visibles.length === 0
+        ? html`<div class="empty-state">
+            <p class="empty-title">${t("Rien ici")}</p>
+            <p class="muted">${t("Construisez un deck pour commencer.")}</p>
+          </div>`
+        : html`<ul class="drive-list">${visibles.map(deckDriveRow)}</ul>`}
+  </main>`;
+}
+
+function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
+  return html`<main class="decks-page">
+    <div class="deck-edit-head">
+      <div class="deck-edit-fields">
+        <label class="menu-field grow">
+          ${t("Nom du deck")}
+          <input type="text" id="edit-name" maxlength="60" value="${deck.name}"
+                 placeholder="${t("Nom unique…")}" />
+        </label>
+      </div>
+      <div class="deck-edit-actions">
+        <a class="btn" href="/decks">${t("Tous les decks")}</a>
+        <button type="button" class="btn btn-primary" id="btn-save">${t("Enregistrer")}</button>
+        <button type="button" class="icon-btn btn-icon-danger" id="btn-delete"
+                title="${t("Jeter ce deck")}" aria-label="${t("Jeter ce deck")}">🗑</button>
+      </div>
+    </div>
+
+    ${countsBar(deck)}
+    ${when(state.error, html`<p class="banner banner-err">${state.error}</p>`)}
+
+    <!--
+      Bascule entre les deux panneaux, sous 900px seulement.
+
+      Empilés, ils obligent à faire défiler la collection entière pour passer à
+      son deck — c'est-à-dire à chaque carte ajoutée. La bascule n'existe pas
+      sur grand écran, où les deux tiennent côte à côte.
+    -->
+    <div class="deck-panel-switch" role="tablist" aria-label="${t("Panneau affiché")}">
+      <button type="button" class="chip${state.panel === "collection" ? " is-active" : ""}"
+              role="tab" aria-selected="${String(state.panel === "collection")}"
+              data-panel="collection">📚 ${t("Ma collection")}</button>
+      <button type="button" class="chip${state.panel === "zones" ? " is-active" : ""}"
+              role="tab" aria-selected="${String(state.panel === "zones")}"
+              data-panel="zones">🃏 ${t("Mon deck")}
+        <span class="muted">${deck.counts[state.zone]}</span></button>
+    </div>
 
     <div class="deck-edit-layout is-panneau-${state.panel === "collection" ? "coll" : "zone"}">
-      <section class="deck-edit-collection">
-        <h2 class="titre-section">${t("Votre collection")}</h2>
-        <div class="add-field">
-          <input type="search" id="deck-search" class="add-input"
-                 placeholder="${t("Rechercher une carte…")}"
-                 aria-label="${t("Rechercher dans la collection")}" value="${state.query}" />
-        </div>
-        ${state.collection.length === 0
-          ? html`<p class="zone-edit-empty muted">${t("Rien à piocher ici.")}</p>`
-          : html`<ul class="deck-edit-coll-list">
-              ${state.collection.map(collectionRow)}
-            </ul>`}
-      </section>
-
-      <section class="deck-edit-zones">
-        <div class="zone-tabs" role="tablist">
-          ${DECK_ZONES.map(
-            (z) => html`<button type="button"
-              class="chip chip-zone${state.zone === z ? " is-active" : ""}"
-              data-zone="${z}" role="tab" aria-selected="${String(state.zone === z)}"
-              >${ZONE_LABELS[z]} <span class="muted">${deck.counts[z]}</span></button
-            >`,
-          )}
-        </div>
-        <p class="muted zone-hint">
-          ${t("L'onglet dit où vont les « + ». Les monstres d'Extra Deck y vont toujours.")}
-        </p>
-        <p class="muted deck-zone-summary">
-          ${t("{n} carte(s) · {min} à {max}", { n: deck.counts[zone], min, max })}
-        </p>
-        ${dansLaZone.length === 0
-          ? html`<p class="zone-edit-empty muted">${t("Zone vide")}</p>`
-          : html`<ul class="zone-edit-list">${dansLaZone.map((entry) => zoneRow(entry, zone))}</ul>`}
-      </section>
+      ${collectionPanel(state)}
+      ${zonesPanel(state, deck)}
     </div>
-  `;
+  </main>`;
 }
 
 /** Les raisons de refus, dans les mots de l'écran. Mêmes clés que le serveur. */
@@ -240,14 +412,49 @@ const REFUS_LABELS: Record<string, string> = {
   max_copies: "Un deck ne porte pas plus de 3 exemplaires d'une carte.",
 };
 
+/**
+ * Ce que les filtres laissent passer.
+ *
+ * Les mêmes catégories que l'écran Collection, plus « Extra » — qui n'y a pas
+ * de sens et qui en a un ici : c'est la seule pile qu'on remplit à part.
+ */
+export function visibleCollection(state: DeckState): CollectionRow[] {
+  const q = state.query.trim().toLowerCase();
+  return state.collection.filter((row) => {
+    const carte = row.card;
+    if (q) {
+      const cible = `${carte?.name ?? ""} ${row.setCode} ${carte?.passcode ?? ""}`.toLowerCase();
+      if (!cible.includes(q.replace(/^#/, ""))) return false;
+    }
+    if (state.attributes.length > 0 && !state.attributes.includes(carte?.attribute ?? "")) {
+      return false;
+    }
+    switch (state.kind) {
+      case "monster":
+        return Boolean(carte) && !/Spell|Trap/.test(carte!.type ?? "");
+      case "spell":
+        return (carte?.type ?? "").includes("Spell");
+      case "trap":
+        return (carte?.type ?? "").includes("Trap");
+      case "extra":
+        return isExtraDeckCard({ type: carte?.type ?? null, frameType: carte?.frameType ?? null });
+      case "fav":
+        return row.isFavorite;
+      default:
+        return true;
+    }
+  });
+}
+
 export function deckHtml(state: DeckState): SafeHtml {
-  return html`<div class="scan-page deck-detail-page">
-    ${state.opened ? workshopHtml(state, state.opened) : listHtml(state)}
-  </div>`;
+  return state.opened ? editHtml(state, state.opened) : listHtml(state);
 }
 
 /** La zone où une carte doit aller, quelle que soit celle qu'on regarde. */
-export function zoneFor(card: { type: string | null; frameType: string | null }, courante: DeckZone): DeckZone {
+export function zoneFor(
+  card: { type: string | null; frameType: string | null },
+  courante: DeckZone,
+): DeckZone {
   if (courante === "side") return "side";
   return isExtraDeckCard(card) ? "extra" : "main";
 }

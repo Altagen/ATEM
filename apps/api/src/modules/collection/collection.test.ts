@@ -602,3 +602,75 @@ test("un filtre de niveau illisible ne fait pas tomber la requête", async () =>
   const mixte = await listCollection(db, user.id, { levels: ["abc", "9"] });
   assert.equal(mixte.total, 1);
 });
+
+test("un passcode fourni ne fabrique pas une seconde impression du même code", async () => {
+  /**
+   * Signalé par Ange depuis l'atelier : deux lignes pour la même carte, le même
+   * code affiché deux fois, et « 2 poss. » sur chacune.
+   *
+   * Le chemin du passcode rendait directement une impression neuve — sans
+   * rareté, et **sans consulter l'index local**. Ajouter un code déjà résolu en
+   * « Common » avec son passcode fabriquait donc une seconde impression du même
+   * code et de la même langue, à rareté vide. La collection portait alors des
+   * lignes sur les deux.
+   */
+  const user = await newUser();
+  await seedCard(88000001, "PCPC-FR001", { en: "Deux fois", fr: "Deux fois" });
+
+  // La première fois sans passcode : la résolution établit l'impression.
+  await adjustQuantity(db, user.id, { setCode: "PCPC-FR001", delta: 1 });
+  // La seconde avec : c'est le chemin qui fabriquait le doublon.
+  await adjustQuantity(db, user.id, { setCode: "PCPC-FR001", delta: 1, passcode: 88000001 });
+
+  const prints = await db
+    .select()
+    .from(cardPrints)
+    .where(eq(cardPrints.setCode, "PCPC-FR001"));
+  assert.equal(prints.length, 1, "une seule impression pour un code et une langue");
+
+  const collection = await listCollection(db, user.id, {});
+  assert.equal(collection.total, 1, "une seule ligne de collection");
+  assert.equal(collection.items[0]?.quantity, 2);
+});
+
+test("une rareté connue l'emporte sur une rareté vide", async () => {
+  /**
+   * Une rareté vide veut dire « on ne sait pas encore », pas « cette impression
+   * n'en a pas ». Interrogée sans préférence, la recherche locale trouvait
+   * « exactement » la ligne vide et la préférait à celle que la résolution
+   * avait établie — un doublon né ailleurs devenait la réponse canonique.
+   */
+  // La carte est posée sous un autre code : `seedCard` crée sa propre
+  // impression, et on veut exactement deux impressions sur celui qu'on teste.
+  await seedCard(88000002, "PCPC-FR800", { en: "Rareté", fr: "Rareté" });
+  // Deux impressions du même code : l'une sait, l'autre pas.
+  await upsertPrint(db, {
+    setCode: "PCPC-FR002", cardPasscode: 88000002, rarity: "Ultra Rare", language: "fr",
+  });
+  await upsertPrint(db, {
+    setCode: "PCPC-FR002", cardPasscode: 88000002, rarity: "", language: "fr",
+  });
+
+  const user = await newUser();
+  await adjustQuantity(db, user.id, { setCode: "PCPC-FR002", delta: 1 });
+
+  const collection = await listCollection(db, user.id, {});
+  assert.equal(collection.items[0]?.print.rarity, "Ultra Rare", "la rareté connue gagne");
+});
+
+test("un passcode identifie une impression qui attendait encore", async () => {
+  // Le passcode garde sa raison d'être : nommer la carte quand le code n'a pas
+  // encore été résolu. Il ne doit simplement plus créer de ligne à côté.
+  const user = await newUser();
+  await adjustQuantity(db, user.id, { setCode: "PCPC-FR003", delta: 1 });
+  const avant = await listCollection(db, user.id, {});
+  assert.equal(avant.items[0]?.card, null, "elle attend son identification");
+
+  await seedCard(88000003, "PCPC-FR900", { en: "Nommée", fr: "Nommée" });
+  await adjustQuantity(db, user.id, { setCode: "PCPC-FR003", delta: 1, passcode: 88000003 });
+
+  const après = await listCollection(db, user.id, {});
+  assert.equal(après.total, 1, "toujours une seule ligne");
+  assert.equal(après.items[0]?.card?.name, "Nommée");
+  assert.equal(après.items[0]?.quantity, 2);
+});

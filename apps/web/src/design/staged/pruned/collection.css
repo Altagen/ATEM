@@ -125,23 +125,9 @@
 
 
 
-.banner {
-  margin: 0;
-  padding: 0.65rem 1.25rem;
-  border-radius: 0;
-  font-size: 0.88rem;
-  position: sticky;
-  top: 3.25rem;
-  z-index: 34;
-}
 
 
 
-.banner-err {
-  background: color-mix(in srgb, var(--err) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--err) 35%, var(--border));
-  color: var(--err);
-}
 
 
 

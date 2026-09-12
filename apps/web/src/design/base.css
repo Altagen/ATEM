@@ -324,3 +324,26 @@ h2 {
   font-weight: 900;
   color: var(--fg-fort);
 }
+
+/**
+ * Le bandeau d'erreur d'un écran.
+ *
+ * Remonté de `staged/pruned/` avec l'atelier de decks : la purge l'avait écarté
+ * quand plus aucun écran ne le posait. C'est le mouvement prévu — une règle
+ * descend quand son balisage disparaît, elle remonte quand il revient.
+ *
+ * Collant sous la barre du haut : une erreur qu'on fait défiler hors de l'écran
+ * est une erreur qu'on croit réglée.
+ */
+.banner {
+  margin: 0 0 1rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+}
+
+.banner-err {
+  background: color-mix(in srgb, var(--err) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--err) 35%, var(--border));
+  color: var(--err);
+}

@@ -8,15 +8,29 @@
  */
 import type { DeckZone } from "@atem/shared";
 
-/** Une carte de la collection, **agrégée par carte** et non par impression. */
-export type OwnedCard = {
-  passcode: number;
-  name: string;
-  imageUrlSmall: string | null;
-  type: string | null;
-  frameType: string | null;
-  banlistTcg: string | null;
-  owned: number;
+/**
+ * Une ligne de la collection, telle que l'API la rend — **par impression**.
+ *
+ * C'est ce qu'ATEM-old affichait aussi : on voit le code d'extension qu'on
+ * possède. Le **compte**, lui, est par carte — trois Dragons Blancs en trois
+ * codes font trois Dragons Blancs. Les deux cohabitent sans se contredire :
+ * la ligne montre une impression, le plafond regarde la carte.
+ */
+export type CollectionRow = {
+  id: number;
+  setCode: string;
+  quantity: number;
+  isFavorite: boolean;
+  card: {
+    passcode: number;
+    name: string;
+    type: string | null;
+    frameType: string | null;
+    attribute: string | null;
+    banlistTcg: string | null;
+    imageUrl: string | null;
+    imageUrlSmall: string | null;
+  } | null;
 };
 
 export type DeckCardEntry = {
@@ -58,9 +72,17 @@ export type DeckState = {
    * autres.
    */
   zone: DeckZone;
-  /** La collection, pour y puiser. */
-  collection: OwnedCard[];
+  /** La collection, pour y puiser — une ligne par impression. */
+  collection: CollectionRow[];
+  /** Combien d'exemplaires par **carte**, toutes impressions confondues. */
+  owned: Map<number, number>;
   query: string;
+  /** La nature filtrée : tout, monstre, magie, piège, extra, favoris. */
+  kind: "" | "monster" | "spell" | "trap" | "extra" | "fav";
+  /** Les attributs retenus. Vide = tous. */
+  attributes: string[];
+  /** Liste ou galerie, pour le panneau de collection. */
+  collView: "list" | "gallery";
   /**
    * Le panneau visible, sur écran étroit.
    *
@@ -79,7 +101,11 @@ const state: DeckState = {
   opened: null,
   zone: "main",
   collection: [],
+  owned: new Map(),
   query: "",
+  kind: "",
+  attributes: [],
+  collView: "list",
   panel: "collection",
   error: "",
 };
@@ -91,6 +117,7 @@ export function resetView(): void {
   state.decks = [];
   state.opened = null;
   state.collection = [];
+  state.owned = new Map();
   state.error = "";
 }
 
@@ -101,35 +128,18 @@ export function inDeck(passcode: number): number {
 }
 
 /**
- * Agrège la collection **par carte**.
+ * Compte les exemplaires **par carte**, toutes impressions confondues.
  *
  * L'API rend des impressions : trois Dragons Blancs en trois codes d'extension
  * font trois lignes. Un deck compte des cartes — c'est la règle posée par Ange,
  * et celle qui gouverne le plafond des trois exemplaires. On additionne donc
- * avant d'afficher.
+ * sans perdre les lignes, qui gardent le code qu'on possède.
  */
-export function aggregateByCard(
-  items: { card: { passcode: number; name: string; imageUrlSmall: string | null;
-    type: string | null; frameType: string | null } | null; quantity: number }[],
-  banlistOf: (passcode: number) => string | null,
-): OwnedCard[] {
-  const parCarte = new Map<number, OwnedCard>();
-  for (const item of items) {
-    if (!item.card) continue;
-    const existante = parCarte.get(item.card.passcode);
-    if (existante) {
-      existante.owned += item.quantity;
-      continue;
-    }
-    parCarte.set(item.card.passcode, {
-      passcode: item.card.passcode,
-      name: item.card.name,
-      imageUrlSmall: item.card.imageUrlSmall,
-      type: item.card.type,
-      frameType: item.card.frameType,
-      banlistTcg: banlistOf(item.card.passcode),
-      owned: item.quantity,
-    });
+export function countByCard(rows: CollectionRow[]): Map<number, number> {
+  const total = new Map<number, number>();
+  for (const row of rows) {
+    if (!row.card) continue;
+    total.set(row.card.passcode, (total.get(row.card.passcode) ?? 0) + row.quantity);
   }
-  return [...parCarte.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  return total;
 }

@@ -13,6 +13,13 @@
  * Un écran sans style ne lève aucune erreur : il s'affiche, simplement laid.
  * C'est exactement le genre de défaut qui passe une revue et se découvre en
  * production.
+ *
+ * **Ce qu'il ne peut pas voir.** Une classe choisie par une variable —
+ * `const classe = trop ? "count-over" : "count-short"` puis `class="${classe}"`
+ * — est indiscernable de n'importe quelle autre chaîne. `count-short` est
+ * passée ainsi, sans règle, et le compteur de zones s'est affiché sans sa
+ * couleur. Le contrôle inverse, `check-dead-css.mjs`, attrape ce cas par
+ * l'autre bout : la règle qui n'est posée nulle part y ressort morte.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -32,7 +39,7 @@ const SANS_HABILLAGE = new Set([
   "js-fav",
   "js-delta",
   "js-draft",
-  "js-add",
+  "js-coll",
   "js-zone",
 ]);
 

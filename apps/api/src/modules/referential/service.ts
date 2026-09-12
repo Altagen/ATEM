@@ -204,33 +204,55 @@ export async function ensurePlaceholderPrint(
   const language = (options.language ?? languageFromSetCode(setCode)).toLowerCase();
 
   /**
-   * Un passcode fourni tranche tout de suite, sans attendre l'identification.
+   * Un passcode fourni tranche l'identité sans attendre le réseau.
    *
    * C'est le recours quand le set code est illisible — carte abîmée, pochette,
    * mauvaise lumière : les huit chiffres, eux, restent lisibles. On ne s'en sert
    * que si la carte est **déjà** au catalogue : aller la chercher demanderait un
    * appel réseau, et rien ne sort sur le chemin d'une requête.
+   *
+   * **Il ne dispense pas de regarder ce qu'on sait déjà.** Ce chemin rendait
+   * directement une impression neuve, sans rareté et sans consulter l'index
+   * local : ajouter `ALIN-FR084` avec son passcode fabriquait donc une seconde
+   * impression du même code et de la même langue, à rareté vide, à côté de
+   * celle que la résolution avait déjà établie en « Common ». Deux lignes pour
+   * la même carte dans la collection, et le même code affiché deux fois.
+   *
+   * Le passcode ne sert plus qu'à **nommer la carte** ; le reste passe par le
+   * chemin commun.
    */
-  if (options.passcode) {
-    const [card] = await db
-      .select({ passcode: cards.passcode })
-      .from(cards)
-      .where(eq(cards.passcode, options.passcode))
-      .limit(1);
-    if (card) {
-      return upsertPrint(db, { setCode, cardPasscode: card.passcode, language });
-    }
-  }
+  const knownCard = options.passcode
+    ? ((
+        await db
+          .select({ passcode: cards.passcode })
+          .from(cards)
+          .where(eq(cards.passcode, options.passcode))
+          .limit(1)
+      )[0]?.passcode ?? null)
+    : null;
 
   const existing = await findLocalPrint(db, setCode, { language });
 
-  // Rien de connu : une ligne provisoire, que la file de résolution reprendra.
+  // Rien de connu : une ligne provisoire, que la file de résolution reprendra —
+  // ou déjà identifiée, si le passcode nous l'a dite.
   if (!existing) {
-    return upsertPrint(db, { setCode, cardPasscode: null, language });
+    return upsertPrint(db, { setCode, cardPasscode: knownCard, language });
   }
 
-  // Trouvée sous le code exact du joueur : rien à faire.
-  if (existing.setCode === setCode) return existing;
+  // Trouvée sous le code exact du joueur : rien à faire — sauf si elle
+  // attendait encore et que le passcode vient de la nommer.
+  if (existing.setCode === setCode) {
+    if (knownCard !== null && existing.cardPasscode === null) {
+      return upsertPrint(db, {
+        setCode,
+        cardPasscode: knownCard,
+        setName: existing.setName,
+        rarity: existing.rarity,
+        language,
+      });
+    }
+    return existing;
+  }
 
   /**
    * Trouvée sous une **autre notation** du même code — le cas normal après un
@@ -245,7 +267,7 @@ export async function ensurePlaceholderPrint(
    */
   return upsertPrint(db, {
     setCode,
-    cardPasscode: existing.cardPasscode,
+    cardPasscode: existing.cardPasscode ?? knownCard,
     setName: existing.setName,
     rarity: existing.rarity,
     language,
@@ -318,20 +340,40 @@ async function findLocalPrint(
    * consolidation ne se déclenchait jamais. Trouvé en écrivant le test de
    * consolidation, pas en relisant le code.
    */
+  const wanted = hints.rarity?.trim() ?? "";
+
   const preference = (candidates: CardPrintRow[]): CardPrintRow | null => {
-    const exact = candidates.find(
-      (r) =>
-        r.setCode === setCode &&
-        r.rarity === (hints.rarity ?? "") &&
-        r.language === hints.language,
+    // Une rareté demandée l'emporte, quand elle existe.
+    if (wanted) {
+      const exact = candidates.find(
+        (r) => r.setCode === setCode && r.rarity === wanted && r.language === hints.language,
+      );
+      if (exact) return exact;
+    }
+
+    /**
+     * Sans rareté demandée, une rareté **connue** vaut mieux qu'une vide.
+     *
+     * Une rareté vide veut dire « on ne sait pas encore », pas « cette
+     * impression n'en a pas ». La version précédente traitait le vide comme une
+     * valeur : interrogée sans préférence, elle trouvait « exactement » la
+     * ligne à rareté vide et la préférait à celle que la résolution avait
+     * établie. Un doublon né ailleurs devenait ainsi la réponse canonique, et
+     * les ajouts suivants s'empilaient dessus pendant que les anciens restaient
+     * sur l'autre.
+     */
+    const sameCodeKnown = candidates.find(
+      (r) => r.setCode === setCode && r.language === hints.language && r.rarity !== "",
     );
-    if (exact) return exact;
+    if (sameCodeKnown) return sameCodeKnown;
 
     const sameCode = candidates.find((r) => r.setCode === setCode && r.language === hints.language);
     if (sameCode) return sameCode;
 
-    const byRarity = candidates.find((r) => r.rarity === (hints.rarity ?? ""));
-    if (byRarity) return byRarity;
+    if (wanted) {
+      const byRarity = candidates.find((r) => r.rarity === wanted);
+      if (byRarity) return byRarity;
+    }
 
     return candidates[0] ?? null;
   };

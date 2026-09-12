@@ -111,8 +111,31 @@ const CODE = /[;`"=]|\$\{/;
  * un deux-points n'apparaissent pas dans du texte affiché.
  */
 const ANNOTATION = /[\w)\]]\s*:\s*\w/;
+
+/**
+ * Une liste de classes n'est pas une phrase.
+ *
+ * `"deck-stepper item-actions"` choisi par un ternaire à l'intérieur d'un
+ * attribut `class` : que des minuscules et des tirets, jamais de majuscule ni
+ * de ponctuation. Aucun texte affiché ne ressemble à ça.
+ */
+const CLASSES = /^[a-z0-9 -]+$/;
+
+/**
+ * Un glyphe décoratif non latin n'est pas à traduire.
+ *
+ * La vignette par défaut d'un deck porte « 遊戯王 » — le nom du jeu en japonais,
+ * qui reste le même dans toutes les langues. Réclamer sa traduction serait
+ * demander de traduire un logo.
+ */
+const LATIN = /\p{Script=Latin}/u;
+
 const estBalisage = (texte) =>
-  !CODE.test(texte) && !ANNOTATION.test(texte) && LETTRE.test(texte.trim());
+  !CODE.test(texte) &&
+  !ANNOTATION.test(texte) &&
+  !(CLASSES.test(texte.trim()) && texte.includes("-")) &&
+  LATIN.test(texte) &&
+  LETTRE.test(texte.trim());
 
 /** Le code ordinaire : on ne réclame que ce qui ressemble à une phrase. */
 const estVisible = (texte) =>

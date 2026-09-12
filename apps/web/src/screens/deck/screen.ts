@@ -7,16 +7,14 @@
  * ne s'en servait que pour l'affichage, si bien qu'une requête forgée passait.
  */
 import { DECK_ZONES, type DeckZone } from "@atem/shared";
-import { api, ApiError, type CardDetail } from "../../platform/api.js";
+import { api, ApiError } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { toast } from "../../platform/ui.js";
 import { deckHtml, zoneFor } from "./view.js";
 import {
-  aggregateByCard, deckState, resetView, type DeckDetail, type DeckSummary,
+  countByCard, deckState, resetView,
+  type CollectionRow, type DeckDetail, type DeckState, type DeckSummary,
 } from "./state.js";
-
-/** Ce que la collection rend, tel que l'atelier en a besoin. */
-type CollectionItem = { card: CardDetail | null; quantity: number };
 
 export async function deckScreen(root: HTMLElement, params: URLSearchParams): Promise<void> {
   const state = deckState();
@@ -31,14 +29,14 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
      * tape reconstruit le champ et emporte la frappe. Ici la recherche est
      * différée, donc la fenêtre est courte — mais elle existe.
      */
-    const champ = root.querySelector<HTMLInputElement>("#deck-search");
+    const champ = root.querySelector<HTMLInputElement>("#coll-search, #deck-search, #edit-name");
     const saisie = champ ? { value: champ.value, focus: document.activeElement === champ } : null;
 
     root.innerHTML = deckHtml(state).toString();
     bind();
 
     if (!saisie?.focus) return;
-    const frais = root.querySelector<HTMLInputElement>("#deck-search");
+    const frais = root.querySelector<HTMLInputElement>("#coll-search, #deck-search, #edit-name");
     if (!frais) return;
     frais.value = saisie.value;
     frais.focus();
@@ -77,11 +75,9 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     if (state.query.trim()) params.set("q", state.query.trim());
 
     try {
-      const { items } = await api<{ items: CollectionItem[] }>(`/collection?${params}`);
-      const banlist = new Map(
-        items.filter((item) => item.card).map((item) => [item.card!.passcode, item.card!.banlistTcg]),
-      );
-      state.collection = aggregateByCard(items, (passcode) => banlist.get(passcode) ?? null);
+      const { items } = await api<{ items: CollectionRow[] }>(`/collection?${params}`);
+      state.collection = items;
+      state.owned = countByCard(items);
     } catch (err) {
       dire(err, "Serveur injoignable.");
     }
@@ -133,19 +129,6 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     }
   }
 
-  async function renameDeck(): Promise<void> {
-    const deck = state.opened;
-    if (!deck) return;
-    const nom = window.prompt(t("Nom du deck"), deck.name)?.trim();
-    if (!nom || nom === deck.name) return;
-    try {
-      await api(`/decks/${encodeURIComponent(deck.id)}`, { method: "PATCH", body: { name: nom } });
-      await loadDeck(deck.id);
-    } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
-    }
-  }
-
   async function deleteDeck(): Promise<void> {
     const deck = state.opened;
     if (!deck) return;
@@ -165,20 +148,48 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
   let chercheApres: number | undefined;
 
   function bind(): void {
-    root.querySelector("#deck-new")?.addEventListener("click", () => void createDeck());
-    root.querySelector("#deck-rename")?.addEventListener("click", () => void renameDeck());
-    root.querySelector("#deck-delete")?.addEventListener("click", () => void deleteDeck());
+    root.querySelector("#btn-build")?.addEventListener("click", () => void createDeck());
+    root.querySelector("#btn-delete")?.addEventListener("click", () => void deleteDeck());
+    root.querySelector("#btn-save")?.addEventListener("click", () => void saveName());
 
-    const recherche = root.querySelector<HTMLInputElement>("#deck-search");
-    recherche?.addEventListener("input", () => {
+    /**
+     * La recherche de la liste ne touche pas au réseau.
+     *
+     * On a déjà tous les decks : filtrer sur place répond à la frappe, là où un
+     * aller-retour donnerait un écran qui trébuche.
+     */
+    const decks = root.querySelector<HTMLInputElement>("#deck-search");
+    decks?.addEventListener("input", () => {
+      state.query = decks.value;
+      paint();
+    });
+
+    const coll = root.querySelector<HTMLInputElement>("#coll-search");
+    coll?.addEventListener("input", () => {
       window.clearTimeout(chercheApres);
       // On attend que la frappe se calme : sans ça, « Magicien Sombre » lance
       // quinze requêtes dont quatorze sont jetées.
       chercheApres = window.setTimeout(() => {
-        state.query = recherche.value;
+        state.query = coll.value;
         void loadCollection().then(paint);
       }, 250);
     });
+  }
+
+  /** Le nom se pose avec « Enregistrer » ; les cartes, elles, s'écrivent tout de suite. */
+  async function saveName(): Promise<void> {
+    const deck = state.opened;
+    const champ = root.querySelector<HTMLInputElement>("#edit-name");
+    if (!deck || !champ) return;
+    const nom = champ.value.trim();
+    if (!nom || nom === deck.name) return;
+    try {
+      await api(`/decks/${encodeURIComponent(deck.id)}`, { method: "PATCH", body: { name: nom } });
+      toast(t("Deck enregistré."), "success");
+      await loadDeck(deck.id);
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+    }
   }
 
   /**
@@ -199,6 +210,30 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       return;
     }
 
+    const vue = cible?.closest<HTMLElement>("[data-coll-view]");
+    if (vue?.dataset.collView) {
+      state.collView = vue.dataset.collView === "gallery" ? "gallery" : "list";
+      paint();
+      return;
+    }
+
+    const nature = cible?.closest<HTMLElement>("[data-filter-kind]");
+    if (nature?.dataset.filterKind !== undefined) {
+      state.kind = nature.dataset.filterKind as DeckState["kind"];
+      paint();
+      return;
+    }
+
+    const attribut = cible?.closest<HTMLElement>("[data-filter-attr]");
+    if (attribut?.dataset.filterAttr) {
+      const valeur = attribut.dataset.filterAttr;
+      state.attributes = state.attributes.includes(valeur)
+        ? state.attributes.filter((a) => a !== valeur)
+        : [...state.attributes, valeur];
+      paint();
+      return;
+    }
+
     const onglet = cible?.closest<HTMLElement>("[data-zone]");
     if (onglet?.dataset.zone && DECK_ZONES.includes(onglet.dataset.zone as DeckZone)) {
       state.zone = onglet.dataset.zone as DeckZone;
@@ -206,10 +241,10 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       return;
     }
 
-    const ajout = cible?.closest<HTMLElement>(".js-add");
-    if (ajout?.dataset.pc) {
-      const passcode = Number(ajout.dataset.pc);
-      const carte = state.collection.find((c) => c.passcode === passcode);
+    const geste = cible?.closest<HTMLElement>(".js-coll");
+    if (geste?.dataset.pc) {
+      const passcode = Number(geste.dataset.pc);
+      const carte = state.collection.find((row) => row.card?.passcode === passcode)?.card;
       const entrée = state.opened?.cards.find((c) => c.passcode === passcode);
       if (!carte) return;
       /**
@@ -221,7 +256,9 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
        * pour rien.
        */
       const zone = zoneFor(carte, state.zone);
-      void setCard(passcode, zone, (entrée?.[zone] ?? 0) + 1);
+      const delta = Number(geste.dataset.d ?? "1");
+      const suivante = Math.max(0, (entrée?.[zone] ?? 0) + delta);
+      void setCard(passcode, zone, suivante);
       return;
     }
 
