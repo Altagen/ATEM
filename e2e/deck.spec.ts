@@ -219,18 +219,70 @@ test("le nom se renomme sans changer d'écran", async ({ page }) => {
 
   await page.locator("#edit-name").fill("Après");
   await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator(".toast")).toContainText("Après");
   await expect(page.locator("#edit-name")).toHaveValue("Après");
 
   await page.goto("/decks");
   await expect(page.locator(".drive-name")).toHaveText("Après");
 });
 
+test("« Enregistrer » répond même quand il n'a rien à faire", async ({ page }) => {
+  /**
+   * Signalé par Ange : le bouton ne faisait rien, sans un mot, quand le nom
+   * n'avait pas changé. On appuyait, rien ne bougeait, et on ne savait pas si
+   * l'enregistrement avait eu lieu ou échoué.
+   */
+  await signUp(page);
+  await nouveauDeck(page, "Inchangé");
+
+  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator(".toast")).toContainText("Rien à enregistrer");
+});
+
+test("un nom vide est refusé, et le champ reprend la main", async ({ page }) => {
+  await signUp(page);
+  await nouveauDeck(page, "À vider");
+
+  await page.locator("#edit-name").fill("   ");
+  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.locator(".toast")).toContainText("Donnez un nom");
+  await expect(page.locator("#edit-name")).toBeFocused();
+});
+
+test("le champ de nom porte l'habillage de l'application", async ({ page }) => {
+  /**
+   * Signalé par Ange : « un fond gris qui dénote de l'UI ». La règle de
+   * `.menu-field` ne visait que `select` ; un `input` dans le même bloc tombait
+   * sur le gris par défaut du navigateur. ATEM-old avait le même travers, et le
+   * transcrire fidèlement l'a rapporté avec.
+   */
+  await signUp(page);
+  await nouveauDeck(page, "Habillage");
+
+  const champ = page.locator("#edit-name");
+  const fond = await champ.evaluate((n) => getComputedStyle(n).backgroundColor);
+  // Le gris par défaut des navigateurs est clair ; le nôtre est sombre.
+  const [r, g, b] = fond.match(/\d+/g)!.map(Number) as [number, number, number];
+  expect(r + g + b, `fond du champ : ${fond}`).toBeLessThan(120);
+
+  // Et il est encadré comme les autres champs, pas nu.
+  const bordure = await champ.evaluate((n) => getComputedStyle(n).borderTopWidth);
+  expect(bordure).not.toBe("0px");
+});
+
 test("la recherche de la liste filtre sans toucher au réseau", async ({ page }) => {
+  /**
+   * On revient à la liste par son lien, pas par un rechargement.
+   *
+   * Deux `goto` de plus par épreuve suffisaient à faire trébucher le serveur de
+   * développement — `ERR_TOO_MANY_RETRIES`, par intermittence. Et c'est de
+   * toute façon le geste réel : « Tous les decks » est là pour ça.
+   */
   await signUp(page);
   await nouveauDeck(page, "Dragons");
-  await page.goto("/decks");
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   await nouveauDeck(page, "Sorciers");
-  await page.goto("/decks");
+  await page.getByRole("link", { name: "Tous les decks" }).click();
 
   await expect(page.locator(".drive-row")).toHaveCount(2);
   await page.getByLabel("Rechercher un deck").fill("drag");

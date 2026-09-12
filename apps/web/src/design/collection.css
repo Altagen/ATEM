@@ -167,7 +167,16 @@
   padding: 0.35rem 0.5rem;
 }
 
-.menu-field select {
+/**
+ * Les champs d'un `.menu-field`, quel que soit leur type.
+ *
+ * La règle ne visait que `select`. Un `input` dans le même bloc tombait donc
+ * sur le gris par défaut du navigateur, qui dénote de toute l'interface —
+ * ATEM-old avait le même travers, et son champ « Nom du deck » était gris lui
+ * aussi. Transcrire fidèlement l'a rapporté avec.
+ */
+.menu-field select,
+.menu-field input {
   background: var(--input);
   border: 1px solid var(--border);
   border-radius: 0.35rem;
@@ -175,6 +184,11 @@
   padding: 0.35rem;
   font: inherit;
   font-size: 0.85rem;
+}
+
+.menu-field input:focus {
+  outline: none;
+  border-color: var(--gold);
 }
 
 /* —— Page —— */

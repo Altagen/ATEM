@@ -177,16 +177,34 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     });
   }
 
-  /** Le nom se pose avec « Enregistrer » ; les cartes, elles, s'écrivent tout de suite. */
+  /**
+   * Le nom se pose avec « Enregistrer » ; les cartes, elles, s'écrivent tout de
+   * suite.
+   *
+   * **Le bouton répond toujours.** Il ne faisait rien, sans un mot, quand le
+   * nom n'avait pas changé — on appuyait, rien ne bougeait, et on ne savait pas
+   * si l'enregistrement avait eu lieu ou échoué. Un bouton qui promet quelque
+   * chose doit dire ce qu'il a fait, y compris qu'il n'avait rien à faire.
+   */
   async function saveName(): Promise<void> {
     const deck = state.opened;
     const champ = root.querySelector<HTMLInputElement>("#edit-name");
     if (!deck || !champ) return;
+
     const nom = champ.value.trim();
-    if (!nom || nom === deck.name) return;
+    if (!nom) {
+      toast(t("Donnez un nom au deck."), "error");
+      champ.focus();
+      return;
+    }
+    if (nom === deck.name) {
+      toast(t("Rien à enregistrer."));
+      return;
+    }
+
     try {
       await api(`/decks/${encodeURIComponent(deck.id)}`, { method: "PATCH", body: { name: nom } });
-      toast(t("Deck enregistré."), "success");
+      toast(t("« {nom} » enregistré.", { nom }), "success");
       await loadDeck(deck.id);
     } catch (err) {
       toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
