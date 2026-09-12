@@ -9,6 +9,7 @@ export { LIMITS } from "./limits.js";
 export {
   banlistMaxCopies,
   checkDeckAdd,
+  DECK_FOLDER_MAX_DEPTH,
   DECK_MAX_COPIES,
   DECK_ZONE_LIMITS,
   DECK_ZONES,

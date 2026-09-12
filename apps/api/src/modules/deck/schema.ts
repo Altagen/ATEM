@@ -1,10 +1,56 @@
 import { sql } from "drizzle-orm";
 import {
-  bigint, check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid,
+  bigint, check, index, integer, pgTable, text, timestamp, unique, uniqueIndex, uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { DECK_MAX_COPIES } from "@atem/shared";
 import { users } from "../identity/schema.js";
 import { cards } from "../referential/schema.js";
+
+/**
+ * Un dossier de decks.
+ *
+ * Repris d'ATEM-old, **sans sa colonne `sort_order`** : elle était écrite à
+ * chaque création et l'écran triait par nom de toute façon. Une colonne que
+ * personne ne lit est une colonne qui ment.
+ *
+ * La profondeur maximale n'est pas ici : une règle qui parle du chemin complet
+ * d'une ligne ne s'exprime pas dans une contrainte de colonne. Elle vit dans le
+ * service, avec la détection de cycle, et ses épreuves.
+ */
+export const deckFolders = pgTable(
+  "deck_folders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    /**
+     * Le dossier parent, ou `null` à la racine.
+     *
+     * **Pas de `cascade`, contrairement à ATEM-old.** Son schéma cascadait
+     * pendant que son service réattachait les enfants au grand-parent : deux
+     * réponses contradictoires à la même question, et c'est la base qui gagne
+     * dès qu'une suppression passe ailleurs que par le service. Ici la base ne
+     * répond rien — c'est la transaction du service qui réattache, et elle est
+     * la seule à le faire.
+     */
+    parentId: uuid("parent_id").references((): AnyPgColumn => deckFolders.id),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("deck_folders_user_idx").on(t.userId, t.parentId),
+    /**
+     * Deux dossiers frères du même nom sont indiscernables dans un explorateur.
+     *
+     * `nulls not distinct` parce que la racine est un `parent_id` nul : sans
+     * lui, Postgres considère deux nuls comme différents et la règle ne
+     * s'appliquerait **qu'aux sous-dossiers** — c'est-à-dire pas là où l'on
+     * crée le plus.
+     */
+    unique("deck_folders_sibling_name_uidx").on(t.userId, t.parentId, t.name).nullsNotDistinct(),
+  ],
+);
 
 /**
  * Un deck.
@@ -20,11 +66,20 @@ export const decks = pgTable(
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     notes: text("notes"),
+    /**
+     * Le dossier qui le range, ou `null` à la racine.
+     *
+     * `set null` : un dossier effacé par un chemin qui ne passerait pas par le
+     * service laisse ses decks à la racine. Perdre le rangement est réparable,
+     * perdre les decks ne l'est pas.
+     */
+    folderId: uuid("folder_id").references(() => deckFolders.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     index("decks_user_idx").on(t.userId, t.updatedAt),
+    index("decks_user_folder_idx").on(t.userId, t.folderId),
     // Deux decks du même nom chez la même personne sont impossibles à
     // distinguer dans une liste — et la confirmation de suppression se tape au
     // nom.
@@ -89,3 +144,4 @@ export const deckCards = pgTable(
 );
 
 export type DeckRow = typeof decks.$inferSelect;
+export type DeckFolderRow = typeof deckFolders.$inferSelect;

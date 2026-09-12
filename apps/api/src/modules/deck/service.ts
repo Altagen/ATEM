@@ -20,6 +20,7 @@ import { conflict, invalidInput, notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { ownedByPasscode } from "../collection/index.js";
 import { cardsByPasscode } from "../referential/index.js";
+import { assertFolderOwned } from "./folders.js";
 import { deckCards, decks, type DeckRow } from "./schema.js";
 
 export type DeckSummary = {
@@ -47,6 +48,8 @@ export type DeckSummary = {
    * d'un rafraîchissement à l'autre.
    */
   cover: { passcode: number; name: string; image: string | null } | null;
+  /** Le dossier qui le range, ou `null` à la racine. */
+  folderId: string | null;
 };
 
 export type DeckCardEntry = {
@@ -80,6 +83,7 @@ const toSummary = (
   counts,
   missing,
   cover,
+  folderId: row.folderId,
 });
 
 /**
@@ -286,19 +290,38 @@ export async function createDeck(
   }
 }
 
-export async function renameDeck(
+/**
+ * Renommer un deck, le commenter, ou le ranger ailleurs.
+ *
+ * Les trois dans le même geste parce que la base les écrit dans la même ligne.
+ * Il s'appelait `renameDeck` tant qu'il ne touchait qu'au nom ; le dossier l'a
+ * rendu menteur.
+ */
+export async function updateDeck(
   db: Database,
   viewerId: string,
   deckId: string,
-  input: { name?: string; notes?: string | null },
+  input: { name?: string; notes?: string | null; folderId?: string | null },
 ): Promise<void> {
-  const valeurs: { name?: string; notes?: string | null; updatedAt: Date } = { updatedAt: new Date() };
+  const valeurs: {
+    name?: string;
+    notes?: string | null;
+    folderId?: string | null;
+    updatedAt: Date;
+  } = { updatedAt: new Date() };
+
   if (input.name !== undefined) {
     const propre = input.name.trim();
     if (!propre) throw invalidInput("Donnez un nom au deck.");
     valeurs.name = propre;
   }
   if (input.notes !== undefined) valeurs.notes = input.notes?.trim() || null;
+  if (input.folderId !== undefined) {
+    // Sans ce contrôle, on rangerait son deck dans le dossier d'un inconnu en
+    // devinant un UUID — et il apparaîtrait dans l'explorateur de l'autre.
+    await assertFolderOwned(db, viewerId, input.folderId);
+    valeurs.folderId = input.folderId;
+  }
 
   requireUuid(deckId);
   const touchés = await db

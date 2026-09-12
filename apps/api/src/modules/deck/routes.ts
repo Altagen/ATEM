@@ -13,8 +13,9 @@ import type { Database } from "../../db/client.js";
 import { invalidInput } from "../../platform/errors.js";
 import { requireViewer } from "../identity/index.js";
 import {
-  createDeck, deleteDeck, getDeck, listDecks, renameDeck, setDeckCard,
+  createDeck, deleteDeck, getDeck, listDecks, setDeckCard, updateDeck,
 } from "./service.js";
+import { createFolder, deleteFolder, listFolders, updateFolder } from "./folders.js";
 
 const CreateBody = z.object({
   name: z.string().trim().min(1).max(LIMITS.deckName.max),
@@ -23,6 +24,18 @@ const CreateBody = z.object({
 const PatchBody = z.object({
   name: z.string().trim().min(1).max(LIMITS.deckName.max).optional(),
   notes: z.string().max(LIMITS.deckNotes.max).nullable().optional(),
+  /** `null` remet le deck à la racine ; absent ne touche pas au rangement. */
+  folderId: z.string().uuid().nullable().optional(),
+});
+
+const FolderBody = z.object({
+  name: z.string().trim().min(1).max(LIMITS.deckName.max),
+  parentId: z.string().uuid().nullable().optional(),
+});
+
+const FolderPatchBody = z.object({
+  name: z.string().trim().min(1).max(LIMITS.deckName.max).optional(),
+  parentId: z.string().uuid().nullable().optional(),
 });
 
 const CardBody = z.object({
@@ -57,12 +70,39 @@ export function deckRoutes(db: Database) {
     return c.json(await createDeck(db, viewerId(c), parsed.data.name), 201);
   });
 
+  /**
+   * Les dossiers, **avant** `/:id`.
+   *
+   * Hono essaie les routes dans l'ordre où on les déclare : plus bas,
+   * `/dossiers` serait avalé par `/:id`, qui répondrait « identifiant
+   * invalide » pour une liste de dossiers. Une épreuve tient cet ordre, parce
+   * qu'un déplacement de quelques lignes suffirait à le défaire sans bruit.
+   */
+  app.get("/dossiers", async (c) => c.json({ items: await listFolders(db, viewerId(c)) }));
+
+  app.post("/dossiers", async (c) => {
+    const parsed = FolderBody.safeParse(await jsonBody(c));
+    if (!parsed.success) throw invalidInput("Nom de dossier invalide.");
+    return c.json(await createFolder(db, viewerId(c), parsed.data), 201);
+  });
+
+  app.patch("/dossiers/:id", async (c) => {
+    const parsed = FolderPatchBody.safeParse(await jsonBody(c));
+    if (!parsed.success) throw invalidInput("Données invalides.");
+    return c.json(await updateFolder(db, viewerId(c), c.req.param("id"), parsed.data));
+  });
+
+  app.delete("/dossiers/:id", async (c) => {
+    await deleteFolder(db, viewerId(c), c.req.param("id"));
+    return c.json({ ok: true });
+  });
+
   app.get("/:id", async (c) => c.json(await getDeck(db, viewerId(c), c.req.param("id"))));
 
   app.patch("/:id", async (c) => {
     const parsed = PatchBody.safeParse(await jsonBody(c));
     if (!parsed.success) throw invalidInput("Données invalides.");
-    await renameDeck(db, viewerId(c), c.req.param("id"), parsed.data);
+    await updateDeck(db, viewerId(c), c.req.param("id"), parsed.data);
     return c.json({ ok: true });
   });
 

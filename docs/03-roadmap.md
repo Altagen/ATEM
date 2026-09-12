@@ -255,6 +255,34 @@ Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 **Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
 cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
 
+### Les dossiers, socle serveur — 2026-09-12 *(étape 2 sur 3)*
+
+`deck_folders` : `id`, `user_id`, `parent_id`, `name`, horodatages. **Pas de
+`sort_order`** — ATEM-old l'écrivait à chaque création et son écran triait par
+nom de toute façon.
+
+Trois choses qu'ATEM-old faisait bien et qu'on garde : profondeur maximale de
+trois étages, détection de cycle au déplacement (sous-arbre compris), et une
+suppression qui **réattache** au parent au lieu de cascader. Trois qu'on change :
+
+1. **La cascade en base part.** Son schéma déclarait `on delete cascade` sur
+   `parent_id` pendant que son service réattachait : deux réponses
+   contradictoires, et c'est la base qui gagne dès qu'une suppression passe
+   ailleurs. Ici la base ne répond rien, et la transaction du service est seule
+   à réattacher. `decks.folder_id` reste en `set null` — perdre le rangement est
+   réparable, perdre les decks ne l'est pas.
+2. **Une lecture au lieu de vingt.** `depthOf` relisait toute la table à chaque
+   contrôle, trois fois de suite pour une création.
+3. **Deux dossiers frères ne portent plus le même nom** — contrainte
+   `nulls not distinct`, sans laquelle la règle ne vaudrait pas à la racine,
+   c'est-à-dire pas là où l'on crée le plus.
+
+`category`, le `@deprecated` d'ATEM-old, ne revient pas.
+
+Douze épreuves, dont celle qui tient l'ordre des routes (`/decks/dossiers`
+déclarée après `/decks/:id` serait avalée) et celle qui vérifie qu'effacer son
+compte emporte bien l'arbre malgré le `parent_id` sans cascade.
+
 ### Les aperçus de decks — 2026-09-12 *(étape 1 sur 3 de la page des decks)*
 
 Ange : « on peut s'attaquer à la page de deck avec les dossiers et les preview

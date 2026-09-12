@@ -5,7 +5,7 @@ import { registerUser } from "../identity/service.js";
 import { upsertCard, upsertPrint } from "../referential/index.js";
 import { adjustQuantity } from "../collection/service.js";
 import { resetResolveQueue } from "../collection/resolve-queue.js";
-import { createDeck, deleteDeck, getDeck, listDecks, renameDeck, setDeckCard } from "./service.js";
+import { createDeck, deleteDeck, getDeck, listDecks, updateDeck, setDeckCard } from "./service.js";
 
 const { db } = createTestApp();
 
@@ -276,7 +276,7 @@ test("le deck d'autrui est introuvable, pas interdit", async () => {
   const deck = await createDeck(db, propriétaire.id, "Privé");
 
   await assert.rejects(() => getDeck(db, autre.id, deck.id), /introuvable/);
-  await assert.rejects(() => renameDeck(db, autre.id, deck.id, { name: "Volé" }), /introuvable/);
+  await assert.rejects(() => updateDeck(db, autre.id, deck.id, { name: "Volé" }), /introuvable/);
   await assert.rejects(() => deleteDeck(db, autre.id, deck.id), /introuvable/);
 });
 
@@ -310,7 +310,7 @@ test("un identifiant de deck mal formé est refusé, pas planté", async () => {
   for (const bancal of ["pas-un-uuid", "", "12345"]) {
     await assert.rejects(() => getDeck(db, user.id, bancal), /Identifiant invalide/, `« ${bancal} »`);
     await assert.rejects(() => deleteDeck(db, user.id, bancal), /Identifiant invalide/);
-    await assert.rejects(() => renameDeck(db, user.id, bancal, { name: "x" }), /Identifiant invalide/);
+    await assert.rejects(() => updateDeck(db, user.id, bancal, { name: "x" }), /Identifiant invalide/);
   }
 });
 
