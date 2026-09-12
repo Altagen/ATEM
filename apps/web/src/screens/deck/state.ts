@@ -91,6 +91,15 @@ export type DeckState = {
   /** Liste ou galerie, pour le panneau de collection. */
   collView: "list" | "gallery";
   /**
+   * L'instant du dernier enregistrement de carte, ou `null`.
+   *
+   * Les cartes s'écrivent à chaque « ± », sans bouton — mais rien ne le disait,
+   * et un bouton « Enregistrer » juste à côté laissait croire le contraire.
+   * ATEM-old affichait « non enregistré » parce qu'il travaillait sur un
+   * brouillon ; nous affichons l'inverse, brièvement, parce qu'il n'y en a pas.
+   */
+  savedAt: number | null;
+  /**
    * Le panneau visible, sur écran étroit.
    *
    * Sur un téléphone, empiler la collection et les zones oblige à traverser
@@ -114,6 +123,7 @@ const state: DeckState = {
   kind: "",
   attributes: [],
   collView: "list",
+  savedAt: null,
   panel: "collection",
   error: "",
 };

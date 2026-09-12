@@ -218,7 +218,7 @@ test("le nom se renomme sans changer d'écran", async ({ page }) => {
   await nouveauDeck(page, "Avant");
 
   await page.locator("#edit-name").fill("Après");
-  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await page.getByRole("button", { name: "Renommer" }).click();
   await expect(page.locator(".toast")).toContainText("Après");
   await expect(page.locator("#edit-name")).toHaveValue("Après");
 
@@ -226,17 +226,69 @@ test("le nom se renomme sans changer d'écran", async ({ page }) => {
   await expect(page.locator(".drive-name")).toHaveText("Après");
 });
 
-test("« Enregistrer » répond même quand il n'a rien à faire", async ({ page }) => {
+test("le bouton ne promet que ce qu'il fait", async ({ page }) => {
   /**
-   * Signalé par Ange : le bouton ne faisait rien, sans un mot, quand le nom
-   * n'avait pas changé. On appuyait, rien ne bougeait, et on ne savait pas si
-   * l'enregistrement avait eu lieu ou échoué.
+   * Signalé deux fois par Ange. D'abord : le bouton ne répondait rien quand le
+   * nom n'avait pas changé. Puis, plus grave : appelé « Enregistrer » à côté
+   * d'un deck dont les cartes s'écrivent à chaque « ± », il faisait croire
+   * qu'elles attendaient — et répondait « rien à enregistrer » juste après
+   * qu'on en avait retiré une. Il ne touche que le nom, il le dit maintenant.
    */
   await signUp(page);
   await nouveauDeck(page, "Inchangé");
 
-  await page.getByRole("button", { name: "Enregistrer" }).click();
-  await expect(page.locator(".toast")).toContainText("Rien à enregistrer");
+  await expect(page.getByRole("button", { name: "Enregistrer" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Renommer" }).click();
+  await expect(page.locator(".toast")).toContainText("déjà le sien");
+});
+
+test("l'écran dit que les cartes sont enregistrées", async ({ page }) => {
+  /**
+   * C'est ce qui manquait : les cartes s'écrivent à chaque « ± », et rien ne le
+   * disait. ATEM-old affichait « non enregistré » parce qu'il travaillait sur
+   * un brouillon ; nous disons l'inverse, et brièvement.
+   */
+  await signUp(page);
+  await garnir(page, ["LTGY-FR008"]);
+  await nouveauDeck(page, "Marque");
+  await panneau(page, "Ma collection");
+
+  await expect(page.locator(".deck-saved")).toHaveCount(0);
+  await page.locator(".js-coll[data-d='1']").first().click();
+  await expect(page.locator(".deck-saved")).toContainText("Enregistré");
+  // Puis la marque s'efface : permanente, elle deviendrait du décor.
+  await expect(page.locator(".deck-saved")).toHaveCount(0, { timeout: 4000 });
+});
+
+test("les cartes posées survivent à un rechargement", async ({ page }) => {
+  // La question qu'Ange se posait, et à laquelle l'écran ne répondait pas.
+  await signUp(page);
+  await garnir(page, ["LTGY-FR008", "LTGY-FR008"]);
+  await nouveauDeck(page, "Persistance");
+  await panneau(page, "Ma collection");
+
+  const plus = page.locator(".js-coll[data-d='1']").first();
+  await plus.click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+  await plus.click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 2");
+
+  await panneau(page, "Mon deck");
+  await page.locator(".js-zone[data-d='-1']").first().click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+
+  await page.reload();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+});
+
+test("l'Entrée dans le champ de nom vaut le bouton", async ({ page }) => {
+  await signUp(page);
+  await nouveauDeck(page, "Clavier");
+
+  await page.locator("#edit-name").fill("Au clavier");
+  await page.locator("#edit-name").press("Enter");
+  await expect(page.locator(".toast")).toContainText("Au clavier");
+  await expect(page.locator("#edit-name")).toHaveValue("Au clavier");
 });
 
 test("un nom vide est refusé, et le champ reprend la main", async ({ page }) => {
@@ -244,7 +296,7 @@ test("un nom vide est refusé, et le champ reprend la main", async ({ page }) =>
   await nouveauDeck(page, "À vider");
 
   await page.locator("#edit-name").fill("   ");
-  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await page.getByRole("button", { name: "Renommer" }).click();
   await expect(page.locator(".toast")).toContainText("Donnez un nom");
   await expect(page.locator("#edit-name")).toBeFocused();
 });

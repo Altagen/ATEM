@@ -98,6 +98,25 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     paint();
   }
 
+  let effaceMarque: number | undefined;
+
+  /**
+   * Allume « Enregistré », puis l'efface.
+   *
+   * Les cartes s'écrivent à chaque « ± », sans bouton — et rien ne le disait.
+   * Ange a retiré des cartes, appuyé sur « Enregistrer », et lu « Rien à
+   * enregistrer » : de quoi croire que son retrait avait été jeté. Il ne
+   * l'était pas, mais l'écran ne le disait pas non plus.
+   */
+  function marquerEnregistre(): void {
+    state.savedAt = Date.now();
+    window.clearTimeout(effaceMarque);
+    effaceMarque = window.setTimeout(() => {
+      state.savedAt = null;
+      paint();
+    }, 2_000);
+  }
+
   /** Pose une quantité, et reprend le deck tel que le serveur le rend. */
   async function setCard(passcode: number, zone: DeckZone, quantity: number): Promise<void> {
     const deck = state.opened;
@@ -108,6 +127,7 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
         body: { passcode, zone, quantity },
       });
       state.error = "";
+      marquerEnregistre();
       paint();
     } catch (err) {
       // Le refus du serveur porte sa raison : on la montre telle quelle plutôt
@@ -165,6 +185,16 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       paint();
     });
 
+    const nom = root.querySelector<HTMLInputElement>("#edit-name");
+    nom?.addEventListener("keydown", (event) => {
+      // L'Entrée dans un champ de nom veut dire « valide » : demander en plus
+      // d'aller chercher le bouton est une main de trop.
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void saveName();
+      }
+    });
+
     const coll = root.querySelector<HTMLInputElement>("#coll-search");
     coll?.addEventListener("input", () => {
       window.clearTimeout(chercheApres);
@@ -198,13 +228,13 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       return;
     }
     if (nom === deck.name) {
-      toast(t("Rien à enregistrer."));
+      toast(t("Ce nom est déjà le sien."));
       return;
     }
 
     try {
       await api(`/decks/${encodeURIComponent(deck.id)}`, { method: "PATCH", body: { name: nom } });
-      toast(t("« {nom} » enregistré.", { nom }), "success");
+      toast(t("Renommé en « {nom} ».", { nom }), "success");
       await loadDeck(deck.id);
     } catch (err) {
       toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");

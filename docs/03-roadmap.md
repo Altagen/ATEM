@@ -252,8 +252,28 @@ Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 | Limite de 3 exemplaires | **oui**, garantie par une contrainte de base |
 | Tailles de zone : 40–60 Main, 15 Extra, 15 Side | **oui** — le maximum refuse, le minimum signale |
 
-**Reste pour clore M2** : les dossiers, et la vue galerie de l'atelier. Ni l'un
-ni l'autre n'empêche de construire un deck.
+**Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
+cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
+
+### Pas de brouillon — décision du 2026-09-12
+
+Les cartes s'écrivent **à chaque « ± »**, tout de suite. Il n'y a pas d'état
+« non enregistré » à commettre.
+
+ATEM-old travaillait sur un brouillon : son atelier gardait le deck en mémoire,
+affichait « non enregistré » et attendait un bouton. La transcription en a
+rapporté le bouton sans le brouillon — d'où un « Enregistrer » qui ne touchait
+que le nom, et un « Rien à enregistrer » juste après qu'Ange avait retiré des
+cartes. De quoi croire son retrait jeté ; il ne l'était pas.
+
+Le bouton s'appelle donc « Renommer », et la barre de comptes dit brièvement
+« Enregistré » après chaque écriture — l'inverse de la marque d'ATEM-old, parce
+que l'invariant est inverse.
+
+**La notion de brouillon reste souhaitée** (« il faudrait la notion de
+*brouillon* pour expliquer qu'un deck n'est pas terminé », Ange) mais elle
+répond à un autre besoin : dire qu'un deck est **en cours de conception**, pas
+que ses cartes attendent d'être écrites. À concevoir à part.
 
 **Deux règles tranchées par Ange**, qui referment deux lacunes du triage :
 

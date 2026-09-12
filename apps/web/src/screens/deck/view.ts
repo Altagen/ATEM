@@ -95,7 +95,7 @@ const vignette = (url: string | null | undefined, classe = "thumb"): SafeHtml =>
  * si l'on a dépassé. `count-full` dit « c'est plein » sans crier ; `count-over`
  * crie, parce qu'un deck au-dessus de la limite est injouable.
  */
-function countsBar(deck: DeckDetail): SafeHtml {
+function countsBar(deck: DeckDetail, state: DeckState): SafeHtml {
   return html`<p class="meta-line deck-counts">
     ${DECK_ZONES.map((zone) => {
       const { min, max } = DECK_ZONE_LIMITS[zone];
@@ -108,6 +108,10 @@ function countsBar(deck: DeckDetail): SafeHtml {
     ${when(
       deck.missing > 0,
       html`<span class="warn">${t("{n} à retrouver", { n: deck.missing })}</span>`,
+    )}
+    ${when(
+      state.savedAt !== null,
+      html`<span class="deck-saved">${t("Enregistré")}</span>`,
     )}
   </p>`;
 }
@@ -374,13 +378,20 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
       </div>
       <div class="deck-edit-actions">
         <a class="btn" href="/decks">${t("Tous les decks")}</a>
-        <button type="button" class="btn btn-primary" id="btn-save">${t("Enregistrer")}</button>
+        <!--
+          « Renommer », et non « Enregistrer ».
+          Les cartes s'écrivent à chaque « ± » : un bouton qui promettait
+          d'enregistrer le deck laissait croire qu'elles attendaient, et
+          répondait « rien à enregistrer » juste après qu'on en avait retiré
+          une. Il ne touche que le nom, il le dit.
+        -->
+        <button type="button" class="btn btn-primary" id="btn-save">${t("Renommer")}</button>
         <button type="button" class="icon-btn btn-icon-danger" id="btn-delete"
                 title="${t("Jeter ce deck")}" aria-label="${t("Jeter ce deck")}">🗑</button>
       </div>
     </div>
 
-    ${countsBar(deck)}
+    ${countsBar(deck, state)}
     ${when(state.error, html`<p class="banner banner-err">${state.error}</p>`)}
 
     <!--

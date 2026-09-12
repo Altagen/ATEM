@@ -382,6 +382,18 @@
  * cartes s'affichait comme un Main à quarante.
  */
 .deck-counts .count-short { color: var(--caution); }
+
+/**
+ * « Enregistré », le temps de le lire.
+ *
+ * Les cartes s'écrivent à chaque « ± ». ATEM-old affichait « non enregistré »
+ * parce qu'il travaillait sur un brouillon ; nous disons l'inverse, et
+ * brièvement — une marque permanente deviendrait du décor qu'on ne lit plus.
+ */
+.deck-counts .deck-saved {
+  color: var(--success);
+  font-weight: 600;
+}
 .deck-edit-layout {
   display:grid;
   grid-template-columns:minmax(0,1.55fr) minmax(280px,.9fr);
