@@ -250,12 +250,12 @@ export function refusDeDeposer(
 ): string | null {
   if (moving.kind === "deck") {
     const deck = state.decks.find((d) => d.id === moving.id);
-    return deck && deck.folderId === destination ? t("Il est déjà rangé ici.") : null;
+    return deck && deck.folderId === destination ? t("Déjà ici") : null;
   }
 
   const dossier = folderById(state, moving.id);
   if (!dossier) return null;
-  if (dossier.parentId === destination) return t("Il est déjà rangé ici.");
+  if (dossier.parentId === destination) return t("Déjà ici");
   if (destination === null) return null;
   if (destination === moving.id) return t("Un dossier ne se range pas dans lui-même.");
 

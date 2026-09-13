@@ -154,10 +154,21 @@
   background: transparent;
   color: inherit;
   font: inherit;
+  /* C'est un lien : sans ça, le nom, les comptes et la pastille sortent tous
+     soulignés — la rangée ressemble à un paragraphe de liens. */
+  text-decoration: none;
   text-align: left;
   cursor: pointer;
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  /**
+   * Quatre colonnes : jaquette, nom, comptes, pastille.
+   *
+   * Il n'y en avait que trois pour quatre enfants, et la pastille tombait donc
+   * sur une ligne implicite, seule, contre le bord gauche. Signalé par Ange —
+   * la vue en rangées n'étant pas celle par défaut, personne ne l'avait
+   * regardée d'assez près.
+   */
+  grid-template-columns: 2rem minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.7rem;
   min-width: 0;
@@ -714,6 +725,9 @@
 @media (max-width: 850px) {
   .drive-main { grid-template-columns: 1.75rem minmax(0, 1fr); row-gap: 0.1rem; }
   .drive-meta { grid-column: 2; }
+  /* La pastille suit le nom et les comptes dans la même colonne, au lieu de
+     déborder sous la jaquette. */
+  .drive-main .zone-pill { grid-column: 2; justify-self: start; }
 }
 
 /* ══ Règles portées de la maquette — 3 septembre 2026 ══════════════════════

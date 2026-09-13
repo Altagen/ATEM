@@ -681,7 +681,7 @@ test("un dossier ne se dépose pas dans lui-même, et le bandeau dit pourquoi", 
 
   // À la racine, il y est déjà.
   await expect(page.getByRole("button", { name: "Déplacer ici" })).toBeDisabled();
-  await expect(page.locator(".move-banner-why")).toContainText("déjà rangé ici");
+  await expect(page.locator(".move-banner-why")).toHaveText("Déjà ici");
 
   // Dedans, c'est lui-même.
   await page.locator(".folder-open", { hasText: "Seul" }).click();
@@ -691,6 +691,52 @@ test("un dossier ne se dépose pas dans lui-même, et le bandeau dit pourquoi", 
   // Et l'on peut renoncer.
   await page.getByRole("button", { name: "Annuler" }).click();
   await expect(page.locator(".move-banner")).toHaveCount(0);
+});
+
+test("en rangées, la pastille tient sa place", async ({ page }, info) => {
+  /**
+   * Signalé par Ange : « la petite pastille "Incomplet" est bizarre en desktop ».
+   * `.drive-main` déclarait trois colonnes pour quatre enfants — la pastille
+   * tombait donc sur une ligne implicite, seule, contre le bord gauche, à
+   * gauche même de la jaquette. Et le lien n'ayant pas de `text-decoration`,
+   * tout y était souligné.
+   *
+   * Les trois mesures sont prises en un seul passage : trois appels successifs
+   * à `boundingBox()` peuvent enjamber une repeinture, et l'on comparerait
+   * alors deux états différents.
+   */
+  await signUp(page);
+  await nouveauDeck(page, "Mesuré");
+  await page.locator(".deck-edit-actions a").click();
+  await page.locator('[data-list-view="list"]').click();
+  await expect(page.locator(".zone-pill")).toBeVisible();
+
+  const mesures = await page.evaluate(() => {
+    const rangée = document.querySelector<HTMLElement>(".drive-main[data-drag-deck]")!;
+    const boîte = (sélecteur: string) => {
+      const { top, bottom, left, right } = rangée.querySelector(sélecteur)!.getBoundingClientRect();
+      return { top, bottom, left, right, milieu: (top + bottom) / 2 };
+    };
+    return {
+      nom: boîte(".drive-name"),
+      pastille: boîte(".zone-pill"),
+      souligné: getComputedStyle(rangée).textDecorationLine,
+    };
+  });
+
+  // Jamais à gauche du nom : c'était tout le défaut, sur les deux formats.
+  expect(mesures.pastille.left).toBeGreaterThanOrEqual(mesures.nom.left - 1);
+  expect(mesures.souligné).toBe("none");
+
+  if (info.project.name === "bureau") {
+    // Sur écran large, elle tient sur la ligne du deck, après les comptes.
+    expect(Math.abs(mesures.pastille.milieu - mesures.nom.milieu)).toBeLessThan(6);
+    expect(mesures.pastille.left).toBeGreaterThan(mesures.nom.right);
+  } else {
+    // Sur téléphone, la rangée s'empile volontairement : la pastille passe
+    // dessous, alignée sur le nom.
+    expect(mesures.pastille.top).toBeGreaterThan(mesures.nom.bottom - 1);
+  }
 });
 
 test("on range un deck en le glissant sur un dossier", async ({ page }, info) => {
