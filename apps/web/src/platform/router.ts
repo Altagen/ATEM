@@ -4,7 +4,26 @@
  * Une table de routes, pas une cascade de `if`. ATEM-old dispatchait dans un
  * `if/else` de 250 lignes : lisible à dix écrans, plus du tout au-delà.
  */
-export type Screen = (root: HTMLElement, params: URLSearchParams) => void | Promise<void>;
+/**
+ * Un écran.
+ *
+ * Le troisième argument vit **le temps de l'écran** : il est rompu dès qu'on
+ * navigue ailleurs. Tout ce qu'un écran pose en dehors de son `root` — un
+ * écouteur sur `document`, un minuteur, une requête à annuler — doit s'y
+ * accrocher, sinon il survit à l'écran qui l'a posé.
+ *
+ * Le défaut que ça corrige a été vu : l'écran des decks posait `Échap` sur
+ * `document` à chaque montage. Après deux navigations, trois écouteurs
+ * répondaient ; le plus ancien remettait l'état à zéro et repeignait un `root`
+ * détaché, si bien que les suivants n'avaient plus rien à faire — et la fiche
+ * de carte ne se fermait plus. Le nœud racine est remplacé à chaque rendu, mais
+ * `document`, lui, reste.
+ */
+export type Screen = (
+  root: HTMLElement,
+  params: URLSearchParams,
+  signal: AbortSignal,
+) => void | Promise<void>;
 
 /**
  * Ce qu'il faut savoir d'un écran pour le proposer dans la navigation.
@@ -31,6 +50,8 @@ type Route = {
 
 const routes: Route[] = [];
 let fallback: Screen | null = null;
+/** Rompu au rendu suivant : c'est la durée de vie de l'écran courant. */
+let vieDeLEcran = new AbortController();
 let sessionCheck: () => boolean = () => true;
 const afterRender: (() => void)[] = [];
 
@@ -101,8 +122,14 @@ export async function render(): Promise<void> {
   const match = routes.find((route) => route.path === url.pathname);
   const root = freshRoot();
 
+  // L'écran précédent perd ses écouteurs avant que le suivant ne pose les
+  // siens : sans ça, ils s'additionnent à chaque navigation.
+  vieDeLEcran.abort();
+  vieDeLEcran = new AbortController();
+  const signal = vieDeLEcran.signal;
+
   if (!match) {
-    if (fallback) await fallback(root, url.searchParams);
+    if (fallback) await fallback(root, url.searchParams, signal);
     for (const hook of afterRender) hook();
     return;
   }
@@ -116,7 +143,7 @@ export async function render(): Promise<void> {
   // Ce que le routeur ne remplace pas — une modale posée sur `document.body` —
   // doit pouvoir se refermer de lui-même.
   document.dispatchEvent(new CustomEvent("atem:navigated"));
-  await match.screen(root, url.searchParams);
+  await match.screen(root, url.searchParams, signal);
 }
 
 export function startRouter(): void {

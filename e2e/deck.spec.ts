@@ -128,6 +128,8 @@ test("jeter un deck ne touche pas à la collection", async ({ page }) => {
   await page.locator(".js-coll[data-d='1']").first().click();
   await page.waitForTimeout(500);
 
+  // Jeter est un geste sur l'objet : il vit sur la fiche, pas dans l'atelier.
+  await page.getByRole("link", { name: "← Fiche" }).click();
   page.once("dialog", (d) => d.accept());
   await page.locator("#btn-delete").click();
   await expect(page.getByRole("heading", { name: "Mes decks" })).toBeVisible();
@@ -239,7 +241,7 @@ test("le nom s'écrit tout seul, sans bouton", async ({ page }) => {
   await page.locator("#edit-name").fill("Après");
   await expect(page.locator(".deck-saved")).toContainText("Enregistré");
 
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   await expect(page.locator(".deck-tile-name")).toHaveText("Après");
 });
 
@@ -422,7 +424,7 @@ test("un deck porte l'illustration de la carte qu'il joue le plus", async ({ pag
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
 
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   const jaquette = page.locator(".deck-tile-cover");
   await expect(jaquette).toHaveJSProperty("tagName", "IMG");
   // Chargée, et non simplement demandée : une URL cassée passerait autrement.
@@ -434,7 +436,7 @@ test("un deck vide garde le dos de carte", async ({ page }) => {
   // Le seul cas où il n'y a rien à montrer.
   await signUp(page);
   await nouveauDeck(page, "Sans visage");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
 
   await expect(page.locator(".deck-cover-default")).toBeVisible();
   await expect(page.locator("img.deck-tile-cover")).toHaveCount(0);
@@ -444,7 +446,7 @@ test("la bascule rend les rangées, et la planche revient", async ({ page }) => 
   // La galerie par défaut ; la liste dès qu'on en a beaucoup.
   await signUp(page);
   await nouveauDeck(page, "Bascule");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
 
   await expect(page.locator(".deck-tiles")).toBeVisible();
   await page.locator('[data-list-view="list"]').click();
@@ -595,7 +597,7 @@ test("un deck naît dans le dossier où l'on se trouve", async ({ page }) => {
   await creerDeckIci(page, "Né dedans");
   await expect(page.locator("#edit-name")).toHaveValue("Né dedans");
 
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   // La racine ne montre que le dossier ; le deck est à l'intérieur.
   await expect(page.locator(".deck-tile-name")).toHaveCount(0);
   await page.locator(".folder-open", { hasText: "Rangement" }).click();
@@ -605,7 +607,7 @@ test("un deck naît dans le dossier où l'on se trouve", async ({ page }) => {
 test("on range un deck dans un dossier depuis son menu", async ({ page }) => {
   await signUp(page);
   await nouveauDeck(page, "À ranger");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   await creerDossier(page, "Boîte");
 
   await page.locator(".deck-tile-wrap .folder-menu-btn").click();
@@ -635,7 +637,7 @@ test("jeter un dossier fait remonter son contenu, sans rien perdre", async ({ pa
    */
   await signUp(page);
   await nouveauDeck(page, "Survivant");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   await creerDossier(page, "Éphémère");
 
   await page.locator(".deck-tile-wrap .folder-menu-btn").click();
@@ -707,7 +709,7 @@ test("en rangées, la pastille tient sa place", async ({ page }, info) => {
    */
   await signUp(page);
   await nouveauDeck(page, "Mesuré");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   await page.locator('[data-list-view="list"]').click();
   await expect(page.locator(".zone-pill")).toBeVisible();
 
@@ -749,7 +751,7 @@ test("on range un deck en le glissant sur un dossier", async ({ page }, info) =>
 
   await signUp(page);
   await nouveauDeck(page, "Glissé");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   await creerDossier(page, "Cible");
 
   await page.locator(".deck-tile").dragTo(page.locator(".folder-tile"));
@@ -771,7 +773,7 @@ test("en rangées aussi, on glisse un deck sur un dossier", async ({ page }, inf
 
   await signUp(page);
   await nouveauDeck(page, "En rangée");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   await creerDossier(page, "Casier");
   await page.locator('[data-list-view="list"]').click();
 
@@ -819,7 +821,7 @@ test("on remonte un deck en le glissant sur le fil d'Ariane", async ({ page }, i
   await creerDossier(page, "Dedans");
   await page.locator(".folder-open", { hasText: "Dedans" }).click();
   await creerDeckIci(page, "À sortir");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
   await page.locator(".folder-open", { hasText: "Dedans" }).click();
 
   await page.locator(".deck-tile").dragTo(page.locator('.folder-path-step[data-drop=""]'));
@@ -840,7 +842,7 @@ test("la recherche traverse les dossiers, et dit d'où sort ce qu'elle trouve", 
   await creerDossier(page, "Caché");
   await page.locator(".folder-open", { hasText: "Caché" }).click();
   await creerDeckIci(page, "Dragons blancs");
-  await page.locator(".deck-edit-actions a").click();
+  await page.getByRole("link", { name: "Tous les decks" }).click();
 
   // On est revenu à la racine, où le deck n'est pas.
   await expect(page.locator(".deck-tile-name")).toHaveCount(0);
@@ -878,4 +880,115 @@ test("un nom de dossier ne s'exécute pas, il s'affiche", async ({ page }) => {
   await page.locator(".folder-open").click();
   await expect(page.locator(".folder-path-step[aria-current='page']"))
     .toHaveText("<img src=x onerror=alert(1)>Piégé");
+});
+
+/* ── La fiche du deck ─────────────────────────────────────────────────────
+ * Proposé par Ange, repris d'ATEM-old : ouvrir un deck le **montre**. C'est
+ * aussi ce qui rendra possible de montrer le deck d'un autre joueur sans
+ * écrire un second écran — il suffira de ne pas afficher le crayon.
+ */
+
+test("ouvrir un deck le montre, sans rien pour écrire", async ({ page }) => {
+  await signUp(page);
+  await garnir(page, ["SDCR-FR027"]);
+  await nouveauDeck(page, "Vitrine");
+  await panneau(page, "Ma collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+  await page.getByRole("link", { name: "Tous les decks" }).click();
+
+  await page.locator(".deck-tile").click();
+
+  // La carte est là, et le deck se lit.
+  await expect(page.locator(".item-main")).toHaveCount(1);
+  await expect(page.locator(".qty-pill")).toHaveText("×1");
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+
+  // Rien de ce qui écrit n'existe sur cet écran.
+  await expect(page.locator("#edit-name")).toHaveCount(0);
+  await expect(page.locator(".js-coll, .js-zone")).toHaveCount(0);
+  await expect(page.locator(".deck-stepper")).toHaveCount(0);
+});
+
+test("le crayon ouvre l'atelier, et l'adresse le dit", async ({ page }) => {
+  await signUp(page);
+  await nouveauDeck(page, "À modifier");
+  await page.getByRole("link", { name: "Tous les decks" }).click();
+  await page.locator(".deck-tile").click();
+
+  await page.getByRole("link", { name: "Modifier" }).click();
+
+  await expect(page.locator("#edit-name")).toHaveValue("À modifier");
+  expect(page.url()).toContain("atelier=1");
+
+  // Et l'on revient à la fiche par où l'on est venu.
+  await page.getByRole("link", { name: "← Fiche" }).click();
+  await expect(page.locator("#edit-name")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "À modifier" })).toBeVisible();
+});
+
+test("les onglets de la fiche montrent une zone à la fois", async ({ page }) => {
+  await signUp(page);
+  await garnir(page, ["SDCR-FR028", "SDCR-FR028"]);
+  await nouveauDeck(page, "Deux zones");
+  await panneau(page, "Ma collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+  // La même carte, au Side cette fois. Les onglets de zone vivent dans le
+  // panneau du deck, que le téléphone masque tant qu'on regarde la collection.
+  await panneau(page, "Mon deck");
+  await page.locator('[data-zone="side"]').click();
+  await panneau(page, "Ma collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+  await expect(page.locator(".deck-counts")).toContainText("Side 1");
+
+  await page.getByRole("link", { name: "← Fiche" }).click();
+  // « Tout » : la même carte occupe deux places, donc deux lignes.
+  await expect(page.locator(".item-main")).toHaveCount(2);
+
+  await page.getByRole("tab", { name: /Main/ }).click();
+  await expect(page.locator(".item-main")).toHaveCount(1);
+  await expect(page.locator(".zone-pill")).toContainText("Main");
+
+  await page.getByRole("tab", { name: /Side/ }).click();
+  await expect(page.locator(".zone-pill")).toContainText("Side");
+});
+
+test("cliquer une carte de la fiche l'ouvre en grand", async ({ page }) => {
+  /**
+   * Une ligne de deck ne porte que son nom, son illustration et sa banlist :
+   * la fiche complète se demande à l'ouverture, une fois par carte.
+   */
+  await signUp(page);
+  await garnir(page, ["SDCR-FR029"]);
+  await nouveauDeck(page, "Zoom");
+  await panneau(page, "Ma collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+  await page.getByRole("link", { name: "← Fiche" }).click();
+
+  await page.locator(".item-main").click();
+  await expect(page.locator(".inspect-panel")).toBeVisible();
+  // Le détail vient du catalogue, pas de la ligne : l'ATK en est la preuve.
+  await expect(page.locator(".inspect-panel")).toContainText("ATK");
+  // Et rien pour poser une carte : cette fiche-ci ne fait que montrer.
+  await expect(page.locator(".deck-open-actions")).toHaveCount(0);
+
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".inspect-panel")).toHaveCount(0);
+});
+
+test("la fiche du deck ne déborde pas", async ({ page }) => {
+  await signUp(page);
+  await garnir(page, ["SDCR-FR030"]);
+  await nouveauDeck(page, "Un nom de deck assez long pour éprouver la mise en page");
+  await panneau(page, "Ma collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+  await expect(page.locator(".deck-counts")).toContainText("Main 1");
+  await page.getByRole("link", { name: "← Fiche" }).click();
+
+  await expectNoHorizontalOverflow(page);
+  await page.locator('[data-sheet-view="gallery"]').click();
+  await expect(page.locator(".tile")).toHaveCount(1);
+  await expectNoHorizontalOverflow(page);
 });

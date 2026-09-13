@@ -255,6 +255,32 @@ Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 **Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
 cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
 
+### La fiche d'un deck — 2026-09-13
+
+Proposé par Ange, repris d'ATEM-old (`renderDetail`) : **ouvrir un deck le
+montre**. Une page de lecture bâtie comme la collection — jaquette, nom,
+dossier, comptes, phrase d'état, recherche, liste ou galerie, onglets de zone —
+et un crayon en haut à droite qui mène à l'atelier, `?atelier=1` dans l'adresse.
+
+**C'est la réponse au besoin de lecture seule.** Un écran dont la version par
+défaut n'a *aucune* commande d'écriture rend l'affichage du deck d'un autre
+joueur possible sans écrire un second écran : il suffira de ne pas afficher le
+crayon. C'est ce que dit l'ADR-009, obtenu par la forme de l'écran plutôt que
+par des conditions dispersées.
+
+Deux conséquences : la corbeille quitte l'atelier pour la fiche — jeter un deck
+est un geste sur l'objet, pas sur sa construction — et la collection n'est plus
+chargée que pour l'atelier, qui seul en pose des cartes. La fiche complète d'une
+carte se demande à l'ouverture, une fois par carte : une ligne de deck ne porte
+que son nom, son illustration et sa banlist.
+
+**Un défaut de plateforme trouvé au passage.** `Échap` ne fermait plus la carte
+ouverte depuis la fiche : l'écouteur posé sur `document` survivait au démontage
+de l'écran, et après deux navigations le plus ancien — qui peint dans un `root`
+détaché — répondait le premier. Le routeur donne maintenant à chaque écran un
+`AbortSignal` rompu au rendu suivant. L'écran de collection portait le même
+défaut, silencieusement.
+
 ### Audit des decks — 2026-09-13
 
 Passé à la demande d'Ange, avant de clore. Trois surfaces mortes retirées, et

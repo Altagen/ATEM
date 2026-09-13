@@ -7,7 +7,7 @@
  * ne s'en servait que pour l'affichage, si bien qu'une requête forgée passait.
  */
 import { DECK_ZONES, type DeckZone } from "@atem/shared";
-import { api, ApiError } from "../../platform/api.js";
+import { api, ApiError, type CardDetail } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { lockScroll, unlockScroll } from "../../platform/scroll-lock.js";
 import { toast } from "../../platform/ui.js";
@@ -19,7 +19,11 @@ import {
   type DeckSummary,
 } from "./state.js";
 
-export async function deckScreen(root: HTMLElement, params: URLSearchParams): Promise<void> {
+export async function deckScreen(
+  root: HTMLElement,
+  params: URLSearchParams,
+  signal: AbortSignal,
+): Promise<void> {
   const state = deckState();
   resetView();
   root.className = "deck-page-root";
@@ -122,9 +126,22 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     }
   }
 
+  /**
+   * Ouvre un deck — sa fiche, ou son atelier.
+   *
+   * **La collection ne part que pour l'atelier.** La fiche ne pose pas de
+   * cartes : lui faire traverser deux cents lignes de collection serait payer
+   * un écran qu'on ne montre pas. Les dossiers, eux, sont demandés dans les
+   * deux cas — la fiche dit où le deck est rangé.
+   */
   async function loadDeck(id: string): Promise<void> {
     try {
-      state.opened = await api<DeckDetail>(`/decks/${encodeURIComponent(id)}`);
+      const [deck, dossiers] = await Promise.all([
+        api<DeckDetail>(`/decks/${encodeURIComponent(id)}`),
+        api<{ items: DeckFolder[] }>("/decks/dossiers"),
+      ]);
+      state.opened = deck;
+      state.folders = dossiers.items;
       state.error = "";
     } catch (err) {
       dire(err, "Deck introuvable.");
@@ -132,7 +149,7 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     } finally {
       state.loading = false;
     }
-    await loadCollection();
+    if (state.editing) await loadCollection();
     paint();
   }
 
@@ -227,7 +244,8 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
           });
           state.modal = null;
           toast(t("« {nom} » créé.", { nom: deck.name }), "success");
-          window.history.pushState({}, "", `/decks?deck=${deck.id}`);
+          window.history.pushState({}, "", `/decks?deck=${deck.id}&atelier=1`);
+          state.editing = true;
           state.loading = true;
           await loadDeck(deck.id);
           return;
@@ -309,6 +327,27 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
 
     state.moving = null;
     await relireRangement();
+  }
+
+  /**
+   * La fiche complète d'une carte du deck, demandée à l'ouverture.
+   *
+   * Une seule fois par carte : la deuxième ouverture est instantanée. On ne les
+   * demande pas au chargement du deck — soixante fiches complètes pour celles
+   * qu'on n'ouvrira pas.
+   */
+  async function ouvrirFiche(passcode: number): Promise<void> {
+    if (state.cardDetails.has(passcode)) return;
+    try {
+      const { card } = await api<{ card: CardDetail }>(`/catalogue/cards/${passcode}`);
+      state.cardDetails.set(passcode, card);
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : t("Serveur injoignable."), "error");
+      return;
+    }
+    // On a pu refermer entre-temps : repeindre rouvrirait la fiche.
+    if (state.openedCard !== passcode) return;
+    paint();
   }
 
   async function jeterDossier(id: string): Promise<void> {
@@ -552,8 +591,27 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
 
     const carte = cible?.closest<HTMLElement>(".js-open-card");
     if (carte?.dataset.pc) {
-      state.openedCard = Number(carte.dataset.pc);
+      const passcode = Number(carte.dataset.pc);
+      state.openedCard = passcode;
       lockScroll();
+      paint();
+      // Sur la fiche, la ligne ne porte pas de quoi détailler la carte : on la
+      // demande une fois, et l'écran se repeint quand elle arrive.
+      if (!state.editing) void ouvrirFiche(passcode);
+      return;
+    }
+
+    const ongletFiche = cible?.closest<HTMLElement>("[data-sheet-zone]");
+    if (ongletFiche?.dataset.sheetZone) {
+      const zone = ongletFiche.dataset.sheetZone;
+      state.sheetZone = zone === "all" ? "all" : (zone as DeckZone);
+      paint();
+      return;
+    }
+
+    const vueFiche = cible?.closest<HTMLElement>("[data-sheet-view]");
+    if (vueFiche?.dataset.sheetView) {
+      state.sheetView = vueFiche.dataset.sheetView === "gallery" ? "gallery" : "list";
       paint();
       return;
     }
@@ -729,10 +787,15 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     state.openedCard = null;
     unlockScroll();
     paint();
-  });
+    // `signal` : cet écouteur vit sur `document`, que le routeur ne remplace
+    // pas. Sans lui, un second montage en ajoutait un autre, et le plus ancien
+    // — qui peint dans un `root` détaché — répondait le premier.
+  }, { signal });
 
   paint();
 
   const id = params.get("deck");
+  // `?atelier=1` : l'adresse dit qu'on écrit. Sans lui, on regarde.
+  state.editing = params.get("atelier") === "1";
   await (id ? loadDeck(id) : loadList());
 }

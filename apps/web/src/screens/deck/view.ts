@@ -555,10 +555,13 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
           juste la moitié ». Les cartes partent à chaque « ± » ; le nom part
           quand la frappe se calme et quand le champ rend la main. La barre de
           comptes dit « Enregistré » dans les deux cas.
+
+          Ni corbeille ici : jeter un deck est un geste sur l'objet, pas sur sa
+          construction, et il vit sur la fiche. Deux endroits pour supprimer,
+          c'est un de trop.
         -->
+        <a class="btn" href="/decks?deck=${deck.id}">${t("← Fiche")}</a>
         <a class="btn" href="/decks">${t("Tous les decks")}</a>
-        <button type="button" class="icon-btn btn-icon-danger" id="btn-delete"
-                title="${t("Jeter ce deck")}" aria-label="${t("Jeter ce deck")}">🗑</button>
       </div>
     </div>
 
@@ -672,8 +675,163 @@ function cardSheet(state: DeckState): SafeHtml {
   });
 }
 
+/* ── La fiche du deck ─────────────────────────────────────────────────────
+ *
+ * **Ouvrir un deck le montre, il ne l'ouvre pas en écriture.** Reprise
+ * d'ATEM-old (`renderDetail`) : la fiche liste les cartes comme la collection
+ * les liste, et le crayon mène à l'atelier. Aucune commande n'écrit ici.
+ */
+
+type LigneDeFiche = { entry: DeckDetail["cards"][number]; zone: DeckZone; qty: number };
+
+/**
+ * Les lignes de la fiche, une par zone occupée.
+ *
+ * La même carte peut être au Main et au Side : c'est deux lignes, parce que
+ * c'est deux places dans le deck. Sur « Tout », on les voit toutes les deux.
+ */
+function sheetEntries(deck: DeckDetail, zone: "all" | DeckZone, query: string): LigneDeFiche[] {
+  const q = query.trim().toLowerCase();
+  const lignes: LigneDeFiche[] = [];
+  for (const entry of deck.cards) {
+    if (q && !entry.name.toLowerCase().includes(q) && !String(entry.passcode).includes(q)) continue;
+    for (const z of DECK_ZONES) {
+      if ((zone === "all" || zone === z) && entry[z] > 0) lignes.push({ entry, zone: z, qty: entry[z] });
+    }
+  }
+  return lignes;
+}
+
+function sheetRow({ entry, zone, qty }: LigneDeFiche): SafeHtml {
+  return html`<li class="item">
+    <div class="item-row">
+      <button type="button" class="item-main js-open-card" data-pc="${String(entry.passcode)}">
+        ${vignette(entry.imageUrlSmall, "thumb")}
+        <span class="item-text">
+          <strong>${entry.name}</strong>
+          <span class="item-meta">
+            <span class="qty-pill">×${qty}</span>
+            <span class="zone-pill">${zoneIcon(zone)} ${ZONE_LABELS[zone]}</span>
+            ${banBadge(entry.banlistTcg)}
+          </span>
+        </span>
+      </button>
+    </div>
+  </li>`;
+}
+
+function sheetTile({ entry, zone, qty }: LigneDeFiche): SafeHtml {
+  return html`<div class="tile deck-sheet-tile">
+    <button type="button" class="tile-open js-open-card" data-pc="${String(entry.passcode)}">
+      <div class="tile-art">
+        ${entry.imageUrlSmall
+          ? html`<img loading="lazy" decoding="async" src="${entry.imageUrlSmall}" alt="" />`
+          : raw(`<div class="tile-art-empty">?</div>`)}
+        <span class="tile-qty">×${qty}</span>
+        <span class="tile-zone">${zoneIcon(zone)}</span>
+      </div>
+      <div class="tile-body">
+        <strong class="tile-name">${entry.name}</strong>
+        ${banBadge(entry.banlistTcg)}
+      </div>
+    </button>
+  </div>`;
+}
+
+function sheetHtml(state: DeckState, deck: DeckDetail): SafeHtml {
+  const lignes = sheetEntries(deck, state.sheetZone, state.query);
+  const total = deck.counts.main + deck.counts.extra + deck.counts.side;
+  const dossier = state.folders.find((f) => f.id === deck.folderId);
+
+  return html`<main class="decks-page">
+    <div class="deck-sheet-top">
+      <div class="deck-sheet-identity">
+        <span class="deck-sheet-cover">${deckCover(deck, "deck-sheet-art")}</span>
+        <div class="deck-sheet-titles">
+          <h1>${deck.name}</h1>
+          <p class="muted deck-sheet-place">
+            ${when(dossier !== undefined, html`📁 ${dossier?.path.join(" / ") ?? ""}`)}
+            ${when(dossier === undefined, html`📁 ${t("Racine")}`)}
+          </p>
+        </div>
+      </div>
+      <div class="deck-sheet-actions">
+        <a class="btn" href="/decks">${t("Tous les decks")}</a>
+        <a class="icon-btn" id="btn-edit-deck" href="/decks?deck=${deck.id}&atelier=1"
+           title="${t("Modifier")}" aria-label="${t("Modifier")}">✏️</a>
+        <button type="button" class="icon-btn btn-icon-danger" id="btn-delete"
+                title="${t("Jeter ce deck")}" aria-label="${t("Jeter ce deck")}">🗑</button>
+      </div>
+    </div>
+
+    ${countsBar(deck, state)} ${deckStatusHtml(deck)}
+    ${when(state.error, html`<p class="banner banner-err">${state.error}</p>`)}
+
+    <div class="decks-toolbar">
+      <label class="search">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input type="search" id="deck-search" value="${state.query}"
+               placeholder="${t("Rechercher une carte…")}"
+               aria-label="${t("Rechercher une carte")}" />
+      </label>
+      <div class="view-toggle" role="group" aria-label="${t("Affichage")}">
+        <button type="button" class="icon-btn${state.sheetView === "list" ? " is-active" : ""}"
+                data-sheet-view="list" title="${t("Liste")}" aria-label="${t("Vue liste")}"
+                aria-pressed="${String(state.sheetView === "list")}"><span class="i-list" aria-hidden="true"></span></button>
+        <button type="button" class="icon-btn${state.sheetView === "gallery" ? " is-active" : ""}"
+                data-sheet-view="gallery" title="${t("Galerie")}" aria-label="${t("Vue galerie")}"
+                aria-pressed="${String(state.sheetView === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
+      </div>
+    </div>
+
+    <div class="zone-tabs" role="tablist">
+      <button type="button" class="chip chip-zone${state.sheetZone === "all" ? " is-active" : ""}"
+              data-sheet-zone="all" role="tab" aria-selected="${String(state.sheetZone === "all")}"
+        >${t("Tout")} <span class="muted">${total}</span></button
+      >
+      ${DECK_ZONES.map(
+        (zone) => html`<button type="button"
+          class="chip chip-zone${state.sheetZone === zone ? " is-active" : ""}"
+          data-sheet-zone="${zone}" role="tab" aria-selected="${String(state.sheetZone === zone)}"
+          >${zoneIcon(zone)} ${ZONE_LABELS[zone]} <span class="muted">${deck.counts[zone]}</span></button
+        >`,
+      )}
+    </div>
+
+    ${lignes.length === 0
+      ? html`<div class="empty-state">
+          <p class="empty-title">${t("Aucune carte")}</p>
+          <p class="muted">${t("Ouvrez l'atelier pour en poser.")}</p>
+        </div>`
+      : state.sheetView === "gallery"
+        ? html`<div class="gallery" data-cols="6">${lignes.map(sheetTile)}</div>`
+        : html`<ul class="item-list">${lignes.map(sheetRow)}</ul>`}
+  </main>`;
+}
+
+/**
+ * La carte ouverte depuis la fiche — sans rien pour écrire.
+ *
+ * L'atelier propose « +1 » et « −1 » sur la même fiche de carte ; ici il n'y a
+ * que la carte. C'est ce qui fait de cet écran une lecture, et non un atelier
+ * dont on aurait caché les boutons.
+ */
+function sheetCard(state: DeckState): SafeHtml {
+  const carte = state.openedCard === null ? undefined : state.cardDetails.get(state.openedCard);
+  if (!carte) return raw("");
+  return cardSheetHtml({
+    art: carte.imageUrl ?? carte.imageUrlSmall,
+    title: carte.name,
+    subtitle: `#${carte.passcode}`,
+    card: carte,
+  });
+}
+
 export function deckHtml(state: DeckState): SafeHtml {
   if (!state.opened) return listHtml(state);
+  if (!state.editing) {
+    return html`${sheetHtml(state, state.opened)}${when(state.openedCard !== null, sheetCard(state))}`;
+  }
   return html`${editHtml(state, state.opened)}${when(state.openedCard !== null, cardSheet(state))}`;
 }
 

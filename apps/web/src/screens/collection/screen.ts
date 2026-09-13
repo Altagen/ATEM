@@ -22,7 +22,11 @@ import {
 
 const PAGE_SIZE = 60;
 
-export async function collectionScreen(root: HTMLElement): Promise<void> {
+export async function collectionScreen(
+  root: HTMLElement,
+  _params: URLSearchParams,
+  signal: AbortSignal,
+): Promise<void> {
   const state: ViewState = createState();
   let facets: Facets = EMPTY_FACETS;
   let offset = 0;
@@ -539,7 +543,9 @@ export async function collectionScreen(root: HTMLElement): Promise<void> {
     }
     setFilterPanel(false);
   }
-  document.addEventListener("keydown", onKey);
+  // Même raison que sur les decks : `document` survit au changement d'écran,
+  // et un écouteur de plus par montage finit par répondre à la place du bon.
+  document.addEventListener("keydown", onKey, { signal });
 
   paint();
   await Promise.all([load(true), loadFacets(), refreshPending()]);

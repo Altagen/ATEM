@@ -194,6 +194,50 @@
    de carte, les deux doivent remplir la vignette. */
 .drive-cover, .drive-cover img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 3px; }
 
+/* ── La fiche d'un deck ────────────────────────────────────────────────────
+ * Ouvrir un deck le montre : c'est une page de lecture, bâtie comme la
+ * collection. Le crayon mène à l'atelier, et rien d'autre ici n'écrit.
+ */
+.deck-sheet-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0 0 0.6rem;
+}
+.deck-sheet-identity { display: flex; gap: 0.75rem; align-items: center; min-width: 0; flex: 1; }
+/* La jaquette au format d'une carte, en petit : la même image que la planche. */
+.deck-sheet-cover { width: 3rem; flex-shrink: 0; display: block; }
+.deck-sheet-art {
+  width: 100%;
+  aspect-ratio: 59 / 86;
+  object-fit: cover;
+  display: block;
+  border-radius: 5px;
+}
+.deck-sheet-titles { min-width: 0; }
+/* `break-word` et non `anywhere` : le second coupait « Dragons » en « Drag / ons »
+   dès que la barre d'actions serrait la colonne. */
+.deck-sheet-titles h1 { margin: 0; font-size: 1.3rem; overflow-wrap: break-word; }
+.deck-sheet-place { margin: 0.15rem 0 0; font-size: 0.8rem; }
+.deck-sheet-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
+/* Le crayon est un lien — il change d'écran — mais il se porte comme un bouton. */
+a.icon-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+/* Sur téléphone, l'identité prend toute la largeur et les actions passent
+   dessous : côte à côte, il ne restait au nom qu'une colonne de trois lettres. */
+@media (max-width: 700px) {
+  .deck-sheet-top { flex-direction: column; align-items: stretch; }
+  .deck-sheet-actions { justify-content: flex-end; }
+}
+
+.deck-sheet-tile .tile-zone {
+  position: absolute;
+  left: 0.25rem;
+  bottom: 0.25rem;
+  font-size: 0.8rem;
+  filter: drop-shadow(0 1px 2px #000);
+}
+
 /* ── Les dossiers ──────────────────────────────────────────────────────────
  * On navigue un étage à la fois. Le fil d'Ariane dit où l'on est et ramène
  * d'un clic à n'importe quel étage traversé — sans lui, remonter de deux

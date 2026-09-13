@@ -146,6 +146,29 @@ export type DeckState = {
    * courant, et c'est de là qu'on part.
    */
   folderId: string | null;
+  /**
+   * L'atelier plutôt que la fiche.
+   *
+   * **Ouvrir un deck le montre, il ne l'ouvre pas en écriture.** La fiche n'a
+   * aucune commande qui écrive une carte ; le crayon mène à l'atelier, et
+   * l'adresse le dit (`?atelier=1`). C'est la forme d'ATEM-old, et c'est elle
+   * qui rendra possible de montrer le deck d'un autre joueur sans écrire un
+   * second écran : il suffira de ne pas afficher le crayon.
+   */
+  editing: boolean;
+  /** La zone regardée sur la fiche — « tout » en plus des trois. */
+  sheetZone: "all" | DeckZone;
+  /** Liste ou galerie, pour la fiche du deck. */
+  sheetView: "list" | "gallery";
+  /**
+   * Les fiches de cartes déjà demandées depuis la fiche du deck.
+   *
+   * Une ligne de deck ne porte que son nom, son illustration et sa banlist :
+   * assez pour la lire, pas pour la détailler. Le reste se demande au moment où
+   * on ouvre la carte, une fois par carte — et pas au chargement du deck, où
+   * soixante fiches complètes traverseraient le réseau pour rien.
+   */
+  cardDetails: Map<number, CardDetail>;
   /** Le menu « ⋯ » ouvert : l'identifiant d'un deck ou d'un dossier. */
   menu: string | null;
   /** La fenêtre par-dessus l'écran, s'il y en a une. */
@@ -196,6 +219,10 @@ const state: DeckState = {
   collView: "list",
   folders: [],
   folderId: null,
+  editing: false,
+  sheetZone: "all",
+  sheetView: "list",
+  cardDetails: new Map(),
   menu: null,
   modal: null,
   moving: null,
@@ -216,6 +243,9 @@ export function resetView(): void {
   state.openedCard = null;
   state.folders = [];
   state.folderId = null;
+  state.editing = false;
+  state.sheetZone = "all";
+  state.cardDetails = new Map();
   state.menu = null;
   state.modal = null;
   state.moving = null;
