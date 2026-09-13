@@ -140,10 +140,10 @@ function folderMeta(state: DeckState, folder: DeckFolder): string {
 }
 
 export function folderTile(state: DeckState, folder: DeckFolder): SafeHtml {
-  return html`<li class="folder-tile-li" draggable="true"
-      data-drag-folder="${folder.id}" data-drop="${folder.id}">
+  return html`<li class="folder-tile-li" data-drop="${folder.id}">
     <div class="folder-tile">
-      <button type="button" class="folder-open" data-goto-folder="${folder.id}">
+      <button type="button" class="folder-open" data-goto-folder="${folder.id}"
+              draggable="true" data-drag-folder="${folder.id}">
         <span class="folder-ico" aria-hidden="true">📁</span>
         <strong class="folder-name">${folder.name}</strong>
         <span class="muted folder-meta">${folderMeta(state, folder)}</span>
@@ -154,9 +154,9 @@ export function folderTile(state: DeckState, folder: DeckFolder): SafeHtml {
 }
 
 export function folderRow(state: DeckState, folder: DeckFolder): SafeHtml {
-  return html`<li class="drive-row" draggable="true"
-      data-drag-folder="${folder.id}" data-drop="${folder.id}">
-    <button type="button" class="drive-main drive-folder" data-goto-folder="${folder.id}">
+  return html`<li class="drive-row" data-drop="${folder.id}">
+    <button type="button" class="drive-main drive-folder" data-goto-folder="${folder.id}"
+            draggable="true" data-drag-folder="${folder.id}">
       <span class="drive-ico" aria-hidden="true">📁</span>
       <span class="drive-text"><strong class="drive-name">${folder.name}</strong></span>
       <span class="muted drive-meta">${folderMeta(state, folder)}</span>

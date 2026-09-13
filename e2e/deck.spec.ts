@@ -714,6 +714,55 @@ test("on range un deck en le glissant sur un dossier", async ({ page }, info) =>
   await expect(page.locator(".deck-tile-name")).toHaveText("Glissé");
 });
 
+test("en rangées aussi, on glisse un deck sur un dossier", async ({ page }, info) => {
+  /**
+   * Signalé par Ange : « en mode liste ça ne fonctionne pas le drag and drop ? ».
+   * Il avait raison — l'attribut n'avait pas été posé sur la rangée, et mes deux
+   * épreuves de glissement regardaient toutes les deux la galerie. Une vue sans
+   * épreuve est une vue qui casse en silence.
+   */
+  test.skip(info.project.name === "mobile", "le glisser-déposer n'existe pas au doigt");
+
+  await signUp(page);
+  await nouveauDeck(page, "En rangée");
+  await page.locator(".deck-edit-actions a").click();
+  await creerDossier(page, "Casier");
+  await page.locator('[data-list-view="list"]').click();
+
+  await page
+    .locator(".drive-main[data-drag-deck]")
+    .dragTo(page.locator("li[data-drop]").first());
+
+  await expect(page.locator("[data-drag-deck]")).toHaveCount(0);
+  await expect(page.locator(".drive-meta").first()).toHaveText("1 deck");
+});
+
+test("en rangées, un dossier se glisse dans un autre", async ({ page }, info) => {
+  test.skip(info.project.name === "mobile", "le glisser-déposer n'existe pas au doigt");
+
+  await signUp(page);
+  await page.goto("/decks");
+  await creerDossier(page, "Alpha");
+  await creerDossier(page, "Bêta");
+  await page.locator('[data-list-view="list"]').click();
+
+  // Alpha vient en premier : on le glisse sur Bêta.
+  await page
+    .locator("[data-drag-folder]").first()
+    .dragTo(page.locator("[data-drag-folder]").last());
+
+  /**
+   * La forme tableau, et non la chaîne : tant que le déplacement est en vol,
+   * le sélecteur vise encore deux rangées — `toHaveText("Bêta")` lève alors une
+   * erreur de mode strict *sans réessayer*, et l'épreuve échoue pour une raison
+   * qui n'est pas celle qu'elle mesure. C'est ce qui m'a fait croire un moment
+   * que le glissement ne marchait pas en rangées.
+   */
+  await expect(page.locator(".drive-name")).toHaveText(["Bêta"]);
+  await page.locator(".drive-folder").click();
+  await expect(page.locator(".drive-name")).toHaveText(["..", "Alpha"]);
+});
+
 test("on remonte un deck en le glissant sur le fil d'Ariane", async ({ page }, info) => {
   // Le fil d'Ariane est une cible de dépôt : c'est le chemin le plus court pour
   // sortir d'un dossier.

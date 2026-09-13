@@ -391,7 +391,8 @@ function deckCover(deck: DeckSummary, classe: string): SafeHtml {
 
 function deckDriveRow(state: DeckState, deck: DeckSummary): SafeHtml {
   return html`<li class="drive-row">
-    <a class="drive-main" href="/decks?deck=${deck.id}">
+    <a class="drive-main" href="/decks?deck=${deck.id}"
+       draggable="true" data-drag-deck="${deck.id}">
       <span class="drive-ico drive-ico-cover" aria-hidden="true">
         ${deckCover(deck, "drive-cover")}
       </span>

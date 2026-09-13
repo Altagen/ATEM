@@ -273,6 +273,12 @@ Conséquence assumée : **la destination disparaît aussi de la fenêtre de
 création**. Le deck naît là où l'on regarde, et se déplace ensuite comme le
 reste. Le même menu déroulant s'y trouvait, avec le même défaut.
 
+**Défaut trouvé par Ange le lendemain** : « en mode liste ça ne fonctionne pas le
+drag and drop ? ». L'attribut n'avait pas été posé sur la rangée de deck — un
+remplacement qui avait échoué sans bruit — et **mes deux épreuves de glissement
+regardaient toutes les deux la galerie**. Une vue sans épreuve casse en silence :
+les rangées en ont deux maintenant, dont un dossier glissé dans un autre.
+
 **Le glisser-déposer revient pour le bureau**, comme dans ATEM-old : les
 dossiers, la case « .. » et **le fil d'Ariane** sont des cibles de dépôt. Ce qui
 serait refusé n'accepte pas le dépôt, si bien que le curseur le dit avant qu'on
