@@ -11,10 +11,12 @@ import { api, ApiError } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { lockScroll, unlockScroll } from "../../platform/scroll-lock.js";
 import { toast } from "../../platform/ui.js";
+import { refusDeDeposer } from "./folders.js";
 import { deckHtml, zoneFor } from "./view.js";
 import {
   countByCard, deckState, resetView,
-  type CollectionRow, type DeckDetail, type DeckFolder, type DeckState, type DeckSummary,
+  type CollectionRow, type DeckDetail, type DeckFolder, type DeckMoving, type DeckState,
+  type DeckSummary,
 } from "./state.js";
 
 export async function deckScreen(root: HTMLElement, params: URLSearchParams): Promise<void> {
@@ -210,11 +212,7 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     if (!modal) return;
 
     const nom = root.querySelector<HTMLInputElement>("#modal-name")?.value.trim() ?? "";
-    const cible = root.querySelector<HTMLSelectElement>("#modal-target")?.value ?? "";
-    const destination = cible === "" ? null : cible;
-
-    if ((modal.kind === "new-deck" || modal.kind === "new-folder" || modal.kind === "rename-folder")
-        && nom === "") {
+    if (nom === "") {
       toast(modal.kind === "new-deck" ? t("Donnez un nom au deck.") : t("Donnez un nom au dossier."), "error");
       root.querySelector<HTMLInputElement>("#modal-name")?.focus();
       return;
@@ -225,7 +223,7 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
         case "new-deck": {
           const deck = await api<DeckSummary>("/decks", {
             method: "POST",
-            body: { name: nom, folderId: destination },
+            body: { name: nom, folderId: state.folderId },
           });
           state.modal = null;
           toast(t("« {nom} » créé.", { nom: deck.name }), "success");
@@ -246,18 +244,6 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
             body: { name: nom },
           });
           break;
-        case "move-folder":
-          await api(`/decks/dossiers/${encodeURIComponent(modal.id)}`, {
-            method: "PATCH",
-            body: { parentId: destination },
-          });
-          break;
-        case "move-deck":
-          await api(`/decks/${encodeURIComponent(modal.id)}`, {
-            method: "PATCH",
-            body: { folderId: destination },
-          });
-          break;
       }
     } catch (err) {
       // Le refus du serveur porte sa raison — la profondeur, le cycle, le nom
@@ -267,6 +253,61 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     }
 
     state.modal = null;
+    await relireRangement();
+  }
+
+  /**
+   * Entre dans le mode déplacement.
+   *
+   * Rien ne bouge encore : on ouvre un bandeau, et l'écran redevient un
+   * explorateur. La destination sera **l'endroit où l'on se trouvera** au
+   * moment de valider — c'est le geste de Drive, et il évite le menu déroulant
+   * d'arborescence, qui grandit avec le nombre de dossiers.
+   */
+  function commencerDéplacement(quoi: DeckMoving): void {
+    state.moving = quoi;
+    state.menu = null;
+    paint();
+  }
+
+  function annulerDéplacement(): void {
+    if (state.moving === null) return;
+    state.moving = null;
+    paint();
+  }
+
+  /**
+   * Dépose ce qu'on déplace dans un dossier — ou à la racine.
+   *
+   * Un seul chemin d'écriture pour les deux gestes : le bouton du bandeau et le
+   * dépôt à la souris. Ils ne peuvent donc pas se comporter différemment, et le
+   * refus est vérifié ici, une fois, avec la règle du serveur.
+   */
+  async function déposer(quoi: DeckMoving, destination: string | null): Promise<void> {
+    const refus = refusDeDeposer(state, quoi, destination);
+    if (refus !== null) {
+      toast(refus, "error");
+      return;
+    }
+
+    try {
+      if (quoi.kind === "folder") {
+        await api(`/decks/dossiers/${encodeURIComponent(quoi.id)}`, {
+          method: "PATCH",
+          body: { parentId: destination },
+        });
+      } else {
+        await api(`/decks/${encodeURIComponent(quoi.id)}`, {
+          method: "PATCH",
+          body: { folderId: destination },
+        });
+      }
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+      return;
+    }
+
+    state.moving = null;
     await relireRangement();
   }
 
@@ -320,6 +361,10 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
       if ((event as KeyboardEvent).key !== "Enter") return;
       event.preventDefault();
       void validerFenetre();
+    });
+    root.querySelector("#move-cancel")?.addEventListener("click", annulerDéplacement);
+    root.querySelector("#move-here")?.addEventListener("click", () => {
+      if (state.moving) void déposer(state.moving, state.folderId);
     });
     root.querySelector("#btn-delete")?.addEventListener("click", () => void deleteDeck());
 
@@ -469,7 +514,7 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
 
     const déplacer = cible?.closest<HTMLElement>("[data-folder-move]");
     if (déplacer?.dataset.folderMove) {
-      ouvrirFenetre({ kind: "move-folder", id: déplacer.dataset.folderMove });
+      commencerDéplacement({ kind: "folder", id: déplacer.dataset.folderMove });
       return;
     }
 
@@ -481,7 +526,7 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
 
     const ranger = cible?.closest<HTMLElement>("[data-deck-move]");
     if (ranger?.dataset.deckMove) {
-      ouvrirFenetre({ kind: "move-deck", id: ranger.dataset.deckMove });
+      commencerDéplacement({ kind: "deck", id: ranger.dataset.deckMove });
       return;
     }
 
@@ -583,6 +628,81 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
   });
 
   /**
+   * Le glisser-déposer, à la souris.
+   *
+   * Demandé par Ange pour le bureau : c'est là que le geste est naturel, et
+   * qu'ATEM-old l'avait. Sur un téléphone il n'existe pas — maintenir puis
+   * viser ne se fait pas au pouce — et c'est le mode « Déplacer ici » qui rend
+   * le même service.
+   *
+   * **Le survol se peint sans repeindre.** Une repeinture par `dragover`
+   * remplacerait l'élément que le navigateur est en train de suivre, et le
+   * glissement s'interromprait. On touche donc la classe directement — la
+   * barrière du CSS mort la voit quand même, puisqu'elle lit aussi les chaînes
+   * du code.
+   */
+  let glisse: DeckMoving | null = null;
+
+  function zoneDeDepot(event: DragEvent): { el: HTMLElement; destination: string | null } | null {
+    if (!glisse) return null;
+    const el = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-drop]");
+    if (!el || el.dataset.drop === undefined) return null;
+    const destination = el.dataset.drop || null;
+    // Ce qui serait refusé n'accepte pas le dépôt : le curseur le dit avant
+    // qu'on lâche, plutôt qu'un message après.
+    if (refusDeDeposer(state, glisse, destination) !== null) return null;
+    return { el, destination };
+  }
+
+  root.addEventListener("dragstart", (event) => {
+    const el = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+      "[data-drag-deck], [data-drag-folder]",
+    );
+    const deck = el?.dataset.dragDeck;
+    const dossier = el?.dataset.dragFolder;
+    if (!el || (!deck && !dossier)) return;
+
+    glisse = deck ? { kind: "deck", id: deck } : { kind: "folder", id: dossier as string };
+    // Sans donnée, Firefox n'ouvre pas le glissement.
+    event.dataTransfer?.setData("text/plain", glisse.id);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+    el.classList.add("is-dragging");
+  });
+
+  root.addEventListener("dragend", () => {
+    glisse = null;
+    for (const marqué of root.querySelectorAll(".is-dragging, .is-drag-over")) {
+      marqué.classList.remove("is-dragging", "is-drag-over");
+    }
+  });
+
+  root.addEventListener("dragover", (event) => {
+    const zone = zoneDeDepot(event);
+    if (!zone) return;
+    // Sans `preventDefault`, le navigateur refuse le dépôt : c'est ainsi qu'on
+    // dit « oui » en HTML.
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    zone.el.classList.add("is-drag-over");
+  });
+
+  root.addEventListener("dragleave", (event) => {
+    (event.target as HTMLElement | null)
+      ?.closest<HTMLElement>("[data-drop]")
+      ?.classList.remove("is-drag-over");
+  });
+
+  root.addEventListener("drop", (event) => {
+    const zone = zoneDeDepot(event);
+    const quoi = glisse;
+    if (!zone || !quoi) return;
+    event.preventDefault();
+    zone.el.classList.remove("is-drag-over");
+    glisse = null;
+    void déposer(quoi, zone.destination);
+  });
+
+  /**
    * Échap referme la fiche.
    *
    * Le même geste que dans la collection : une modale qui ne se ferme qu'au
@@ -594,6 +714,10 @@ export async function deckScreen(root: HTMLElement, params: URLSearchParams): Pr
     // fiche. Échap referme ce qu'on voit, pas ce qu'on a oublié.
     if (state.modal !== null) {
       fermerFenetre();
+      return;
+    }
+    if (state.moving !== null) {
+      annulerDéplacement();
       return;
     }
     if (state.menu !== null) {

@@ -610,9 +610,17 @@ test("on range un deck dans un dossier depuis son menu", async ({ page }) => {
 
   await page.locator(".deck-tile-wrap .folder-menu-btn").click();
   await page.getByRole("menuitem", { name: "Déplacer…" }).click();
-  await page.locator("#modal-target").selectOption({ label: "Boîte" });
-  await page.getByRole("button", { name: "Déplacer" }).click();
+  // On navigue : c'est l'écran courant qui désigne la destination.
+  await expect(page.locator(".move-banner")).toContainText("À ranger");
+  await page.locator(".folder-open", { hasText: "Boîte" }).click();
+  await expect(page.locator(".move-banner")).toContainText("vers Boîte");
+  await page.getByRole("button", { name: "Déplacer ici" }).click();
 
+  // Le bandeau se referme, et le deck est là où l'on regardait.
+  await expect(page.locator(".move-banner")).toHaveCount(0);
+  await expect(page.locator(".deck-tile-name")).toHaveText("À ranger");
+
+  await page.locator(".folder-path-step", { hasText: "Racine" }).click();
   // Il a quitté la racine, et se retrouve dans le dossier.
   await expect(page.locator(".deck-tile-name")).toHaveCount(0);
   await expect(page.locator(".folder-meta")).toHaveText("1 deck");
@@ -632,8 +640,9 @@ test("jeter un dossier fait remonter son contenu, sans rien perdre", async ({ pa
 
   await page.locator(".deck-tile-wrap .folder-menu-btn").click();
   await page.getByRole("menuitem", { name: "Déplacer…" }).click();
-  await page.locator("#modal-target").selectOption({ label: "Éphémère" });
-  await page.getByRole("button", { name: "Déplacer" }).click();
+  await page.locator(".folder-open", { hasText: "Éphémère" }).click();
+  await page.getByRole("button", { name: "Déplacer ici" }).click();
+  await page.locator(".folder-path-step", { hasText: "Racine" }).click();
   await expect(page.locator(".folder-meta")).toHaveText("1 deck");
 
   page.once("dialog", (d) => d.accept());
@@ -657,11 +666,11 @@ test("un dossier se renomme depuis son menu", async ({ page }) => {
   await expect(page.locator(".folder-name")).toHaveText("Après");
 });
 
-test("un dossier ne se propose pas comme sa propre destination", async ({ page }) => {
+test("un dossier ne se dépose pas dans lui-même, et le bandeau dit pourquoi", async ({ page }) => {
   /**
-   * L'écran grise ce que le serveur refuserait — même fonction, `folderCanHost`.
-   * Désactivé et non caché : une destination qui disparaît ressemble à une
-   * destination perdue.
+   * L'écran refuse avec la phrase du serveur — `folderCanHost`, la même
+   * fonction. Le bouton est grisé et non caché : un bouton qui disparaît
+   * laisse croire que le mode s'est arrêté.
    */
   await signUp(page);
   await page.goto("/decks");
@@ -670,12 +679,59 @@ test("un dossier ne se propose pas comme sa propre destination", async ({ page }
   await page.locator(".folder-tile .folder-menu-btn").click();
   await page.getByRole("menuitem", { name: "Déplacer…" }).click();
 
-  // On lit l'attribut : Playwright ne tient pas une `option` désactivée pour
-  // un élément désactivé.
-  const option = page.locator("#modal-target option", { hasText: "Seul" });
-  await expect(option).toHaveAttribute("disabled", "");
-  await expect(page.locator("#modal-target option", { hasText: "Racine" }))
-    .not.toHaveAttribute("disabled", "");
+  // À la racine, il y est déjà.
+  await expect(page.getByRole("button", { name: "Déplacer ici" })).toBeDisabled();
+  await expect(page.locator(".move-banner-why")).toContainText("déjà rangé ici");
+
+  // Dedans, c'est lui-même.
+  await page.locator(".folder-open", { hasText: "Seul" }).click();
+  await expect(page.getByRole("button", { name: "Déplacer ici" })).toBeDisabled();
+  await expect(page.locator(".move-banner-why")).toContainText("dans lui-même");
+
+  // Et l'on peut renoncer.
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await expect(page.locator(".move-banner")).toHaveCount(0);
+});
+
+test("on range un deck en le glissant sur un dossier", async ({ page }, info) => {
+  /**
+   * Demandé par Ange pour le bureau, où le geste est naturel — et qu'ATEM-old
+   * avait. Sur un téléphone il n'existe pas : maintenir puis viser ne se fait
+   * pas au pouce, et c'est le bandeau qui rend le même service.
+   */
+  test.skip(info.project.name === "mobile", "le glisser-déposer n'existe pas au doigt");
+
+  await signUp(page);
+  await nouveauDeck(page, "Glissé");
+  await page.locator(".deck-edit-actions a").click();
+  await creerDossier(page, "Cible");
+
+  await page.locator(".deck-tile").dragTo(page.locator(".folder-tile"));
+
+  await expect(page.locator(".deck-tile")).toHaveCount(0);
+  await expect(page.locator(".folder-meta")).toHaveText("1 deck");
+  await page.locator(".folder-open", { hasText: "Cible" }).click();
+  await expect(page.locator(".deck-tile-name")).toHaveText("Glissé");
+});
+
+test("on remonte un deck en le glissant sur le fil d'Ariane", async ({ page }, info) => {
+  // Le fil d'Ariane est une cible de dépôt : c'est le chemin le plus court pour
+  // sortir d'un dossier.
+  test.skip(info.project.name === "mobile", "le glisser-déposer n'existe pas au doigt");
+
+  await signUp(page);
+  await page.goto("/decks");
+  await creerDossier(page, "Dedans");
+  await page.locator(".folder-open", { hasText: "Dedans" }).click();
+  await creerDeckIci(page, "À sortir");
+  await page.locator(".deck-edit-actions a").click();
+  await page.locator(".folder-open", { hasText: "Dedans" }).click();
+
+  await page.locator(".deck-tile").dragTo(page.locator('.folder-path-step[data-drop=""]'));
+
+  await expect(page.locator(".deck-tile")).toHaveCount(0);
+  await page.locator(".folder-path-step", { hasText: "Racine" }).click();
+  await expect(page.locator(".deck-tile-name")).toHaveText("À sortir");
 });
 
 test("la recherche traverse les dossiers, et dit d'où sort ce qu'elle trouve", async ({ page }) => {

@@ -86,9 +86,19 @@ export type DeckFolder = {
 export type DeckModal =
   | { kind: "new-deck" }
   | { kind: "new-folder" }
-  | { kind: "rename-folder"; id: string }
-  | { kind: "move-folder"; id: string }
-  | { kind: "move-deck"; id: string };
+  | { kind: "rename-folder"; id: string };
+
+/**
+ * Ce qu'on est en train de déplacer, et rien d'autre.
+ *
+ * **Le déplacement n'est pas une fenêtre, c'est un mode.** Un menu déroulant
+ * d'arborescence grandit avec le nombre de dossiers et oblige à se représenter
+ * l'arbre au lieu de le regarder ; ici l'on navigue normalement, et « Déplacer
+ * ici » dépose à l'endroit qu'on a sous les yeux. C'est le geste de Google
+ * Drive, proposé par Ange, et c'est le seul qui garde la navigation tactile
+ * comme unique façon de désigner un endroit.
+ */
+export type DeckMoving = { kind: "deck" | "folder"; id: string };
 
 export type DeckDetail = DeckSummary & { cards: DeckCardEntry[] };
 
@@ -138,6 +148,8 @@ export type DeckState = {
   menu: string | null;
   /** La fenêtre par-dessus l'écran, s'il y en a une. */
   modal: DeckModal | null;
+  /** Le déplacement en cours, s'il y en a un. */
+  moving: DeckMoving | null;
   /**
    * Liste ou galerie, pour la page des decks.
    *
@@ -184,6 +196,7 @@ const state: DeckState = {
   folderId: null,
   menu: null,
   modal: null,
+  moving: null,
   listView: "gallery",
   savedAt: null,
   panel: "collection",
@@ -203,6 +216,7 @@ export function resetView(): void {
   state.folderId = null;
   state.menu = null;
   state.modal = null;
+  state.moving = null;
   state.savedAt = null;
   state.error = "";
 }

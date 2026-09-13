@@ -22,7 +22,7 @@ import { translateAttribute } from "../../platform/ygo-labels.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import {
   breadcrumbHtml, childFolders, deckFolderPath, deckMenu, decksIn, folderRow,
-  folderTile, modalHtml, parentRow, parentTile, searchDecks,
+  folderTile, modalHtml, moveBannerHtml, parentRow, parentTile, searchDecks,
 } from "./folders.js";
 import {
   inDeck, type CollectionRow, type DeckDetail, type DeckState, type DeckSummary,
@@ -415,7 +415,8 @@ function deckDriveRow(state: DeckState, deck: DeckSummary): SafeHtml {
 function deckTile(state: DeckState, deck: DeckSummary, chemin = ""): SafeHtml {
   return html`<li class="deck-tile-li">
     <div class="deck-tile-wrap">
-      <a class="deck-tile" href="/decks?deck=${deck.id}" title="${deck.name}">
+      <a class="deck-tile" href="/decks?deck=${deck.id}" title="${deck.name}"
+         draggable="true" data-drag-deck="${deck.id}">
         ${deckCover(deck, "deck-tile-cover")}
         <span class="deck-tile-label">
           <strong class="deck-tile-name">${deck.name}</strong>
@@ -507,7 +508,7 @@ function listHtml(state: DeckState): SafeHtml {
       </p>
     </div>
 
-    ${breadcrumbHtml(state)}
+    ${breadcrumbHtml(state)} ${moveBannerHtml(state)}
 
     <div class="decks-toolbar">
       <label class="search">

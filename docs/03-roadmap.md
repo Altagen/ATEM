@@ -255,6 +255,35 @@ Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 **Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
 cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
 
+### Déplacer : « ici », et le glisser-déposer — 2026-09-13
+
+Ange, sur le sélecteur de destination livré la veille : « plutôt que d'avoir un
+menu et de sélectionner l'arborescence dans un drop down (qui devient hyper long
+quand on a plein de dossiers) il suffit de faire comme avec Google Drive ». Il a
+raison, et c'était le point faible de l'étape 3 : un menu déroulant grandit avec
+le nombre de dossiers, et il oblige à **se représenter** l'arbre au lieu de le
+regarder.
+
+**Déplacer est maintenant un mode, pas une fenêtre.** On choisit « Déplacer… »,
+un bandeau s'ouvre, on navigue normalement, et « Déplacer ici » dépose à
+l'endroit qu'on a sous les yeux. La navigation tactile reste la seule façon de
+désigner un dossier — c'est elle qu'on a soignée, autant s'en servir.
+
+Conséquence assumée : **la destination disparaît aussi de la fenêtre de
+création**. Le deck naît là où l'on regarde, et se déplace ensuite comme le
+reste. Le même menu déroulant s'y trouvait, avec le même défaut.
+
+**Le glisser-déposer revient pour le bureau**, comme dans ATEM-old : les
+dossiers, la case « .. » et **le fil d'Ariane** sont des cibles de dépôt. Ce qui
+serait refusé n'accepte pas le dépôt, si bien que le curseur le dit avant qu'on
+lâche.
+
+Deux détails qui ne se devinent pas : le survol de dépôt se peint **sans
+repeindre** (une repeinture par `dragover` remplacerait l'élément que le
+navigateur suit et interromprait le geste), et le refus affiché par le bandeau
+reprend **mot pour mot** la phrase du serveur — lire deux formulations pour un
+même refus ferait douter qu'il s'agisse de la même règle.
+
 ### L'explorateur de dossiers — 2026-09-13 *(étape 3 sur 3)*
 
 Un étage à la fois, fil d'Ariane, dossiers d'abord et decks ensuite — la forme

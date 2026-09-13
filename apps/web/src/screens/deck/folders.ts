@@ -10,10 +10,10 @@
  * viennent de `folderCanHost`, la fonction que le serveur appelle pour refuser.
  * Une seule règle, deux usages.
  */
-import { folderCanHost, type FolderNode } from "@atem/shared";
+import { folderCanHost, folderIsInside, type FolderNode } from "@atem/shared";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import { t } from "../../platform/i18n/index.js";
-import type { DeckFolder, DeckState, DeckSummary } from "./state.js";
+import type { DeckFolder, DeckMoving, DeckState, DeckSummary } from "./state.js";
 
 /** L'arbre réduit à sa topologie, tel que les règles partagées le lisent. */
 const topologie = (folders: DeckFolder[]): FolderNode[] =>
@@ -71,13 +71,14 @@ export function breadcrumbHtml(state: DeckState): SafeHtml {
   }
 
   return html`<nav class="folder-path" aria-label="${t("Emplacement")}">
-    <button type="button" class="folder-path-step" data-goto-folder=""
+    <button type="button" class="folder-path-step" data-goto-folder="" data-drop=""
             ${state.folderId === null ? raw(' aria-current="page"') : raw("")}>
       ${t("Racine")}
     </button>
     ${étapes.map(
       (étape, rang) => html`<span class="folder-path-sep" aria-hidden="true">/</span>
         <button type="button" class="folder-path-step" data-goto-folder="${étape.id}"
+                data-drop="${étape.id}"
                 ${rang === chemin.length - 1 ? raw(' aria-current="page"') : raw("")}>
           ${étape.name}
         </button>`,
@@ -139,7 +140,8 @@ function folderMeta(state: DeckState, folder: DeckFolder): string {
 }
 
 export function folderTile(state: DeckState, folder: DeckFolder): SafeHtml {
-  return html`<li class="folder-tile-li">
+  return html`<li class="folder-tile-li" draggable="true"
+      data-drag-folder="${folder.id}" data-drop="${folder.id}">
     <div class="folder-tile">
       <button type="button" class="folder-open" data-goto-folder="${folder.id}">
         <span class="folder-ico" aria-hidden="true">📁</span>
@@ -152,7 +154,8 @@ export function folderTile(state: DeckState, folder: DeckFolder): SafeHtml {
 }
 
 export function folderRow(state: DeckState, folder: DeckFolder): SafeHtml {
-  return html`<li class="drive-row">
+  return html`<li class="drive-row" draggable="true"
+      data-drag-folder="${folder.id}" data-drop="${folder.id}">
     <button type="button" class="drive-main drive-folder" data-goto-folder="${folder.id}">
       <span class="drive-ico" aria-hidden="true">📁</span>
       <span class="drive-text"><strong class="drive-name">${folder.name}</strong></span>
@@ -172,7 +175,7 @@ export function parentTile(state: DeckState): SafeHtml {
   const courant = folderById(state, state.folderId);
   if (!courant) return html``;
   const parent = folderById(state, courant.parentId);
-  return html`<li class="folder-tile-li">
+  return html`<li class="folder-tile-li" data-drop="${parent?.id ?? ""}">
     <div class="folder-tile folder-tile-parent">
       <button type="button" class="folder-open" data-goto-folder="${parent?.id ?? ""}">
         <span class="folder-ico" aria-hidden="true">📁</span>
@@ -188,7 +191,7 @@ export function parentRow(state: DeckState): SafeHtml {
   const courant = folderById(state, state.folderId);
   if (!courant) return html``;
   const parent = folderById(state, courant.parentId);
-  return html`<li class="drive-row">
+  return html`<li class="drive-row" data-drop="${parent?.id ?? ""}">
     <button type="button" class="drive-main drive-folder" data-goto-folder="${parent?.id ?? ""}">
       <span class="drive-ico" aria-hidden="true">📁</span>
       <span class="drive-text"><strong class="drive-name">..</strong></span>
@@ -198,39 +201,72 @@ export function parentRow(state: DeckState): SafeHtml {
 }
 
 /**
- * Le choix d'une destination.
+ * Le bandeau du déplacement en cours.
  *
- * Un `select` et non l'arbre dépliant d'ATEM-old : sur un téléphone, viser une
- * ligne d'arbre indentée demande de la précision, là où le sélecteur natif
- * ouvre une liste pleine hauteur. Les destinations impossibles restent
- * **visibles mais désactivées** — les cacher ferait croire à une disparition.
+ * Il dit **ce** qu'on déplace et **où** on le poserait, et il ne propose que
+ * deux gestes. Entre les deux, on navigue comme d'habitude : c'est l'écran
+ * courant qui désigne la destination.
+ *
+ * Le bouton se grise avec la phrase du refus — la même que le serveur rendrait,
+ * puisque c'est la même règle. Grisé et non caché : un bouton qui disparaît
+ * laisse croire que le mode s'est arrêté.
  */
-function destinationSelect(
-  state: DeckState,
-  movingFolderId: string | null,
-  choisi: string | null,
-): SafeHtml {
-  const arbre = topologie(state.folders);
-  const rangé = [...state.folders].sort((a, b) =>
-    a.path.join("/").localeCompare(b.path.join("/"), "fr"),
-  );
+export function moveBannerHtml(state: DeckState): SafeHtml {
+  const moving = state.moving;
+  if (!moving) return html``;
 
-  return html`<label class="menu-field">
-    <span>${t("Destination")}</span>
-    <select id="modal-target">
-      <option value=""${choisi === null ? raw(" selected") : raw("")}>${t("Racine")}</option>
-      ${rangé.map((folder) => {
-        const possible =
-          movingFolderId === null ? true : folderCanHost(arbre, movingFolderId, folder.id);
-        // Deux espaces insécables par étage : l'indentation est la seule chose
-        // qu'un `option` sait porter.
-        const marge = "  ".repeat(folder.depth - 1);
-        return html`<option value="${folder.id}"${possible ? raw("") : raw(" disabled")}${
-          folder.id === choisi ? raw(" selected") : raw("")
-        }>${marge}${folder.name}</option>`;
-      })}
-    </select>
-  </label>`;
+  const quoi =
+    moving.kind === "folder"
+      ? (folderById(state, moving.id)?.name ?? "")
+      : (state.decks.find((deck) => deck.id === moving.id)?.name ?? "");
+  const ici = folderById(state, state.folderId);
+  const refus = refusDeDeposer(state, moving, state.folderId);
+
+  return html`<div class="move-banner" role="status">
+    <span class="move-banner-what">
+      ${t("Déplacement de « {nom} »", { nom: quoi })}
+      <span class="muted">${t("vers {où}", { où: ici?.path.join(" / ") ?? t("Racine") })}</span>
+    </span>
+    ${when(refus !== null, html`<span class="move-banner-why">${refus ?? ""}</span>`)}
+    <span class="move-banner-actions">
+      <button type="button" class="btn" id="move-cancel">${t("Annuler")}</button>
+      <button type="button" class="btn btn-primary" id="move-here"
+              ${refus === null ? raw("") : raw("disabled")}>${t("Déplacer ici")}</button>
+    </span>
+  </div>`;
+}
+
+/**
+ * Pourquoi ce dépôt est impossible — ou `null` s'il ne l'est pas.
+ *
+ * Les phrases sont **celles du serveur**, mot pour mot : il refuserait avec
+ * elles, et lire deux formulations différentes pour un même refus ferait douter
+ * qu'il s'agisse de la même règle.
+ */
+export function refusDeDeposer(
+  state: DeckState,
+  moving: DeckMoving,
+  destination: string | null,
+): string | null {
+  if (moving.kind === "deck") {
+    const deck = state.decks.find((d) => d.id === moving.id);
+    return deck && deck.folderId === destination ? t("Il est déjà rangé ici.") : null;
+  }
+
+  const dossier = folderById(state, moving.id);
+  if (!dossier) return null;
+  if (dossier.parentId === destination) return t("Il est déjà rangé ici.");
+  if (destination === null) return null;
+  if (destination === moving.id) return t("Un dossier ne se range pas dans lui-même.");
+
+  const arbre = topologie(state.folders);
+  if (folderIsInside(arbre, destination, moving.id)) {
+    return t("Un dossier ne se range pas dans l'un des siens.");
+  }
+  if (!folderCanHost(arbre, moving.id, destination)) {
+    return t("Ce dossier et ce qu'il contient dépasseraient le dernier étage.");
+  }
+  return null;
 }
 
 /** Le titre et le corps de la fenêtre, selon ce qu'elle demande. */
@@ -243,11 +279,12 @@ function modalBody(state: DeckState): { titre: string; corps: SafeHtml; valider:
       return {
         titre: t("Nouveau deck"),
         valider: t("Créer"),
+        // Pas de destination à choisir : le deck naît là où l'on regarde, et
+        // se déplace ensuite comme tout le reste.
         corps: html`<label class="menu-field">
-            <span>${t("Nom du deck")}</span>
-            <input type="text" id="modal-name" maxlength="60" placeholder="${t("Nom unique…")}" />
-          </label>
-          ${destinationSelect(state, null, state.folderId)}`,
+          <span>${t("Nom du deck")}</span>
+          <input type="text" id="modal-name" maxlength="60" placeholder="${t("Nom unique…")}" />
+        </label>`,
       };
     case "new-folder":
       return {
@@ -267,22 +304,6 @@ function modalBody(state: DeckState): { titre: string; corps: SafeHtml; valider:
           <input type="text" id="modal-name" maxlength="60"
                  value="${folderById(state, modal.id)?.name ?? ""}" />
         </label>`,
-      };
-    case "move-folder":
-      return {
-        titre: t("Déplacer le dossier"),
-        valider: t("Déplacer"),
-        corps: destinationSelect(state, modal.id, folderById(state, modal.id)?.parentId ?? null),
-      };
-    case "move-deck":
-      return {
-        titre: t("Déplacer le deck"),
-        valider: t("Déplacer"),
-        corps: destinationSelect(
-          state,
-          null,
-          state.decks.find((deck) => deck.id === modal.id)?.folderId ?? null,
-        ),
       };
   }
 }
