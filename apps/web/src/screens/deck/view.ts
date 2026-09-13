@@ -384,8 +384,8 @@ function deckPill(deck: DeckSummary): SafeHtml {
  * deux fois à un lecteur d'écran ferait du bruit, pas de l'information.
  */
 function deckCover(deck: DeckSummary, classe: string): SafeHtml {
-  return deck.cover?.image
-    ? html`<img class="${classe}" src="${deck.cover.image}" alt="" loading="lazy" decoding="async" />`
+  return deck.coverImage
+    ? html`<img class="${classe}" src="${deck.coverImage}" alt="" loading="lazy" decoding="async" />`
     : html`<span class="${classe} deck-cover-default"><span class="deck-cover-ygo">遊戯王</span></span>`;
 }
 

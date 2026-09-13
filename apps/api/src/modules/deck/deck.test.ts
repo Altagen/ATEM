@@ -368,7 +368,7 @@ test("la couverture d'un deck est la carte qu'il joue le plus", async () => {
   await seed(72000401, "DKCV-FR401", { owner: user.id, copies: 3, image: "/i/401.jpg" });
 
   const deck = await createDeck(db, user.id, "Couverture");
-  assert.equal(deck.cover, null, "un deck neuf n'a pas de visage");
+  assert.equal(deck.coverImage, null, "un deck neuf n'a pas de visage");
 
   await setDeckCard(db, user.id, deck.id, { passcode: 72000400, zone: "main", quantity: 1 });
   await setDeckCard(db, user.id, deck.id, { passcode: 72000401, zone: "main", quantity: 3 });
@@ -376,12 +376,10 @@ test("la couverture d'un deck est la carte qu'il joue le plus", async () => {
   // Le nombre d'exemplaires l'emporte, et non l'ordre des lignes ni le passcode
   // — c'est ici le plus grand des deux qui gagne.
   const [sommaire] = await listDecks(db, user.id);
-  assert.equal(sommaire?.cover?.passcode, 72000401);
-  assert.equal(sommaire?.cover?.image, "/i/401.jpg");
-  assert.equal(sommaire?.cover?.name, "Carte 72000401");
+  assert.equal(sommaire?.coverImage, "/i/401.jpg", "celle qu'il joue trois fois");
 
   // La fiche complète répond la même chose : une seule règle, deux écrans.
-  assert.equal((await getDeck(db, user.id, deck.id)).cover?.passcode, 72000401);
+  assert.equal((await getDeck(db, user.id, deck.id)).coverImage, "/i/401.jpg");
 });
 
 test("à égalité d'exemplaires, la couverture ne change pas d'une requête à l'autre", async () => {
@@ -396,7 +394,7 @@ test("à égalité d'exemplaires, la couverture ne change pas d'une requête à 
   await setDeckCard(db, user.id, deck.id, { passcode: 72000410, zone: "main", quantity: 2 });
 
   const [sommaire] = await listDecks(db, user.id);
-  assert.equal(sommaire?.cover?.passcode, 72000410, "le plus petit passcode tranche");
+  assert.equal(sommaire?.coverImage, "/i/410.jpg", "le plus petit passcode tranche");
 });
 
 test("un deck qui n'a que de l'Extra a quand même un visage", async () => {
@@ -409,5 +407,5 @@ test("un deck qui n'a que de l'Extra a quand même un visage", async () => {
   await setDeckCard(db, user.id, deck.id, { passcode: 72000420, zone: "extra", quantity: 1 });
 
   const [sommaire] = await listDecks(db, user.id);
-  assert.equal(sommaire?.cover?.passcode, 72000420);
+  assert.equal(sommaire?.coverImage, "/i/420.jpg");
 });

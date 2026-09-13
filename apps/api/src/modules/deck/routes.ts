@@ -24,7 +24,6 @@ const CreateBody = z.object({
 
 const PatchBody = z.object({
   name: z.string().trim().min(1).max(LIMITS.deckName.max).optional(),
-  notes: z.string().max(LIMITS.deckNotes.max).nullable().optional(),
   /** `null` remet le deck à la racine ; absent ne touche pas au rangement. */
   folderId: z.string().uuid().nullable().optional(),
 });

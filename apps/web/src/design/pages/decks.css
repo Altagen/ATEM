@@ -218,6 +218,11 @@
   cursor: pointer;
 }
 .folder-path-step:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+/* Sur téléphone, chaque étage est aussi une cible de navigation : 26 px de haut
+   se ratent, mesuré sur Pixel 5. */
+@media (max-width: 900px) {
+  .folder-path-step { min-height: 44px; padding-left: 0.5rem; padding-right: 0.5rem; }
+}
 /* L'étage courant ne se clique pas pour rien : il se distingue. */
 .folder-path-step[aria-current="page"] { color: var(--fg); font-weight: 600; cursor: default; }
 .folder-path-sep { color: var(--muted); }
@@ -300,6 +305,10 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: var(--fg);
 }
+/* 44 px : c'est le seul geste qui range un deck au doigt, et la mesure a montré
+   40. Les boutons ronds de l'application en font 40 partout ailleurs — celui-ci
+   ouvre un menu, pas une bascule. */
+.folder-menu-btn { min-width: 44px; min-height: 44px; }
 .folder-ctx-menu {
   position: absolute;
   top: calc(100% + 0.25rem);

@@ -255,6 +255,32 @@ Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
 **Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
 cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
 
+### Audit des decks — 2026-09-13
+
+Passé à la demande d'Ange, avant de clore. Trois surfaces mortes retirées, et
+deux cibles tactiles élargies.
+
+**`notes`.** La route l'acceptait, le validait, l'écrivait en base — et aucun
+écran ne l'affichait ni ne l'envoyait. Retirée partout, colonne comprise. Son
+plafond `LIMITS.deckNotes` servait en réalité à la **note d'un exemplaire de
+collection** : renommé `LIMITS.note`, qui est ce qu'il est.
+
+**La couverture** rendait `passcode`, `name` et `image` ; l'écran ne lit que
+l'image. `coverImage: string | null` — un deck dont la carte de tête n'a pas
+d'illustration retombe sur `null` comme un deck vide, et l'écran pose le dos de
+carte dans les deux cas.
+
+**`type` et `frameType`** voyageaient dans chaque ligne de chaque deck sans que
+rien ne les lise : la question « est-ce une carte d'Extra Deck ? » se pose à
+l'ajout, sur la fiche venue de la collection.
+
+**Au doigt, mesuré sur Pixel 5** dans huit états de l'écran : aucun débordement
+horizontal, les menus tiennent dans la largeur. Deux cibles sous 44 px — le
+« ⋯ » (40) et les étages du fil d'Ariane (26 de haut) — élargies. Ce qui reste
+sous la barre est **l'échelle de toute l'application** : les boutons font 40 px
+et les champs 34 partout, écran de collection compris. C'est une décision
+globale, pas une retouche de la page des decks.
+
 ### Déplacer : « ici », et le glisser-déposer — 2026-09-13
 
 Ange, sur le sélecteur de destination livré la veille : « plutôt que d'avoir un

@@ -43,6 +43,13 @@
       "when": 1789247369966,
       "tag": "0005_milky_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789297603981,
+      "tag": "0006_ambiguous_exiles",
+      "breakpoints": true
     }
   ]
 }

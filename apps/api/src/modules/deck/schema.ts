@@ -65,7 +65,6 @@ export const decks = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    notes: text("notes"),
     /**
      * Le dossier qui le range, ou `null` à la racine.
      *

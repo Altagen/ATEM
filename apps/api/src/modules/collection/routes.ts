@@ -123,7 +123,7 @@ export function collectionRoutes(db: Database) {
       throw invalidInput("Corps de requête illisible.");
     }
     const parsed = z
-      .object({ notes: z.string().max(LIMITS.deckNotes.max).nullable() })
+      .object({ notes: z.string().max(LIMITS.note.max).nullable() })
       .safeParse(raw);
     if (!parsed.success) throw invalidInput("Données invalides.");
 

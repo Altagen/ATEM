@@ -36,8 +36,6 @@ export type CollectionRow = {
 export type DeckCardEntry = {
   passcode: number;
   name: string;
-  type: string | null;
-  frameType: string | null;
   banlistTcg: string | null;
   imageUrlSmall: string | null;
   main: number;
@@ -47,16 +45,20 @@ export type DeckCardEntry = {
   missing: number;
 };
 
+/**
+ * Un deck, tel que l'API le rend.
+ *
+ * Les horodatages n'y sont pas : le serveur les envoie, l'écran ne les montre
+ * nulle part, et déclarer ce qu'on n'affiche pas invite à l'afficher — la même
+ * règle que pour les dossiers.
+ */
 export type DeckSummary = {
   id: string;
   name: string;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
   counts: Record<DeckZone, number>;
   missing: number;
-  /** La carte qui illustre le deck — la plus jouée, choisie par le serveur. */
-  cover: { passcode: number; name: string; image: string | null } | null;
+  /** L'illustration du deck — celle de la carte la plus jouée, choisie par le serveur. */
+  coverImage: string | null;
   /** Le dossier qui le range, ou `null` à la racine. */
   folderId: string | null;
 };

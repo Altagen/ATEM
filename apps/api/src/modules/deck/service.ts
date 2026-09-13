@@ -26,7 +26,6 @@ import { deckCards, decks, type DeckRow } from "./schema.js";
 export type DeckSummary = {
   id: string;
   name: string;
-  notes: string | null;
   createdAt: string;
   updatedAt: string;
   /** Exemplaires par zone — ce que la liste montre sans ouvrir le deck. */
@@ -39,24 +38,36 @@ export type DeckSummary = {
    */
   missing: number;
   /**
-   * La carte qui représente le deck dans une liste, ou rien s'il est vide.
+   * L'illustration qui représente le deck, ou rien.
    *
    * Une couverture choisie à la main demanderait une colonne, un sélecteur et
    * une reprise quand la carte quitte le deck. Celle-ci se déduit : c'est la
    * carte dont le deck a **le plus d'exemplaires au Main** — son identité, en
    * pratique — départagée par le passcode pour que l'illustration ne change pas
    * d'un rafraîchissement à l'autre.
+   *
+   * On rend **l'adresse de l'image et rien d'autre** : le nom et le passcode de
+   * cette carte accompagnaient la réponse sans que rien ne les lise. Un deck
+   * dont la carte de tête n'a pas d'illustration retombe ici sur `null`, comme
+   * un deck vide — l'écran pose le dos de carte dans les deux cas, et n'a donc
+   * pas à les distinguer.
    */
-  cover: { passcode: number; name: string; image: string | null } | null;
+  coverImage: string | null;
   /** Le dossier qui le range, ou `null` à la racine. */
   folderId: string | null;
 };
 
+/**
+ * Une carte d'un deck, telle que l'atelier l'affiche.
+ *
+ * `type` et `frameType` en faisaient partie sans que rien ne les lise : la
+ * question « est-ce une carte d'Extra Deck ? » se pose au moment d'**ajouter**,
+ * sur la fiche venue de la collection, et le serveur la retranche de son côté.
+ * Les envoyer pour chaque ligne de chaque deck ne servait qu'à les envoyer.
+ */
 export type DeckCardEntry = {
   passcode: number;
   name: string;
-  type: string | null;
-  frameType: string | null;
   banlistTcg: string | null;
   imageUrlSmall: string | null;
   main: number;
@@ -73,16 +84,15 @@ const toSummary = (
   row: DeckRow,
   counts: DeckSummary["counts"],
   missing: number,
-  cover: DeckSummary["cover"] = null,
+  coverImage: string | null = null,
 ): DeckSummary => ({
   id: row.id,
   name: row.name,
-  notes: row.notes,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
   counts,
   missing,
-  cover,
+  coverImage,
   folderId: row.folderId,
 });
 
@@ -181,19 +191,7 @@ export async function listDecks(db: Database, ownerId: string): Promise<DeckSumm
       );
     }
     const pc = couvertures.get(row.id) ?? null;
-    const fiche = pc === null ? undefined : fiches.get(pc);
-    return toSummary(
-      row,
-      counts,
-      missing,
-      pc === null
-        ? null
-        : {
-            passcode: pc,
-            name: fiche?.nameFr ?? fiche?.nameEn ?? String(pc),
-            image: fiche?.imageUrlSmall ?? null,
-          },
-    );
+    return toSummary(row, counts, missing, (pc === null ? null : fiches.get(pc)?.imageUrlSmall) ?? null);
   });
 }
 
@@ -231,8 +229,6 @@ export async function getDeck(
       // Le nom imprimé suit la carte, pas l'interface : c'est la règle du
       // référentiel, et un deck se relit comme on l'a construit.
       name: fiche?.nameFr ?? fiche?.nameEn ?? String(ligne.passcode),
-      type: fiche?.type ?? null,
-      frameType: fiche?.frameType ?? null,
       banlistTcg: fiche?.banlistTcg ?? null,
       imageUrlSmall: fiche?.imageUrlSmall ?? null,
       main: ligne.mainQty,
@@ -246,17 +242,9 @@ export async function getDeck(
   entries.sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
   const pc = coverPasscode(lignes);
-  const ficheCouverture = pc === null ? undefined : parPasscode.get(pc);
-  const cover =
-    pc === null
-      ? null
-      : {
-          passcode: pc,
-          name: ficheCouverture?.nameFr ?? ficheCouverture?.nameEn ?? String(pc),
-          image: ficheCouverture?.imageUrlSmall ?? null,
-        };
+  const couverture = (pc === null ? null : parPasscode.get(pc)?.imageUrlSmall) ?? null;
 
-  return { ...toSummary(row, counts, missing, cover), cards: entries };
+  return { ...toSummary(row, counts, missing, couverture), cards: entries };
 }
 
 export async function createDeck(
@@ -298,9 +286,9 @@ export async function createDeck(
 }
 
 /**
- * Renommer un deck, le commenter, ou le ranger ailleurs.
+ * Renommer un deck, ou le ranger ailleurs.
  *
- * Les trois dans le même geste parce que la base les écrit dans la même ligne.
+ * Les deux dans le même geste parce que la base les écrit dans la même ligne.
  * Il s'appelait `renameDeck` tant qu'il ne touchait qu'au nom ; le dossier l'a
  * rendu menteur.
  */
@@ -308,21 +296,17 @@ export async function updateDeck(
   db: Database,
   viewerId: string,
   deckId: string,
-  input: { name?: string; notes?: string | null; folderId?: string | null },
+  input: { name?: string; folderId?: string | null },
 ): Promise<void> {
-  const valeurs: {
-    name?: string;
-    notes?: string | null;
-    folderId?: string | null;
-    updatedAt: Date;
-  } = { updatedAt: new Date() };
+  const valeurs: { name?: string; folderId?: string | null; updatedAt: Date } = {
+    updatedAt: new Date(),
+  };
 
   if (input.name !== undefined) {
     const propre = input.name.trim();
     if (!propre) throw invalidInput("Donnez un nom au deck.");
     valeurs.name = propre;
   }
-  if (input.notes !== undefined) valeurs.notes = input.notes?.trim() || null;
   if (input.folderId !== undefined) {
     // Sans ce contrôle, on rangerait son deck dans le dossier d'un inconnu en
     // devinant un UUID — et il apparaîtrait dans l'explorateur de l'autre.

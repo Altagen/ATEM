@@ -15,7 +15,14 @@ export const LIMITS = {
   email: { max: 254 },
   setCode: { max: 32 },
   deckName: { max: 60 },
-  deckNotes: { max: 2000 },
+  /**
+   * La note d'un exemplaire de collection — état, provenance, prix payé.
+   *
+   * Elle s'appelait `deckNotes` alors qu'aucun deck ne s'en sert : la note des
+   * decks a été retirée, faute d'écran qui l'affiche, et le nom désignait déjà
+   * le mauvais objet.
+   */
+  note: { max: 2000 },
   /** Par ligne de collection comme par ligne de scanliste — même plafond. */
   quantity: { min: 0, max: 1000 },
   csvImport: { maxBytes: 5 * 1024 * 1024 },
