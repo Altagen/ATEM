@@ -270,14 +270,49 @@ test("deux personnes peuvent nommer leur deck pareil", async () => {
   assert.ok(await createDeck(db, b.id, "Dragons Blancs"));
 });
 
-test("le deck d'autrui est introuvable, pas interdit", async () => {
+test("écrire dans le deck d'autrui est interdit, et le dit", async () => {
+  /**
+   * Demandé par Ange : « même si on tente d'aller sur la route pour le
+   * modifier, au final on n'ait un 403 ».
+   *
+   * **Introuvable et interdit ne sont pas la même réponse.** La lecture peut
+   * confondre les deux — c'est même prudent tant que le deck d'un autre ne se
+   * regarde pas. L'écriture, non : le jour où l'on a ce deck sous les yeux, lui
+   * répondre « introuvable » quand on tente de le modifier serait un mensonge.
+   * La garantie vit dans le service, pas dans l'écran qui cache le crayon.
+   */
   const propriétaire = await newUser();
   const autre = await newUser();
+  await seed(72000500, "DKAU-FR500", { owner: propriétaire.id, copies: 1 });
   const deck = await createDeck(db, propriétaire.id, "Privé");
+  await setDeckCard(db, propriétaire.id, deck.id, {
+    passcode: 72000500, zone: "main", quantity: 1,
+  });
 
+  // La lecture ne confirme rien.
   await assert.rejects(() => getDeck(db, autre.id, deck.id), /introuvable/);
-  await assert.rejects(() => updateDeck(db, autre.id, deck.id, { name: "Volé" }), /introuvable/);
-  await assert.rejects(() => deleteDeck(db, autre.id, deck.id), /introuvable/);
+
+  // Les trois écritures refusent, et nomment la raison.
+  await assert.rejects(() => updateDeck(db, autre.id, deck.id, { name: "Volé" }), /pas le vôtre/);
+  await assert.rejects(() => deleteDeck(db, autre.id, deck.id), /pas le vôtre/);
+  await assert.rejects(
+    () => setDeckCard(db, autre.id, deck.id, { passcode: 72000500, zone: "main", quantity: 3 }),
+    /pas le vôtre/,
+  );
+
+  // Et rien n'a bougé.
+  const relu = await getDeck(db, propriétaire.id, deck.id);
+  assert.equal(relu.name, "Privé");
+  assert.equal(relu.counts.main, 1);
+});
+
+test("un deck qui n'existe pas reste introuvable, même en écriture", async () => {
+  // La distinction n'a de sens que dans un sens : on ne dit pas « interdit »
+  // d'un identifiant qui ne désigne rien.
+  const user = await newUser();
+  const fantôme = "00000000-0000-4000-8000-000000000000";
+  await assert.rejects(() => updateDeck(db, user.id, fantôme, { name: "x" }), /introuvable/);
+  await assert.rejects(() => deleteDeck(db, user.id, fantôme), /introuvable/);
 });
 
 test("jeter un deck emporte ses cartes", async () => {

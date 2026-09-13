@@ -54,6 +54,7 @@ export const EN: Record<string, string> = {
   "Carte non identifiée": "Unidentified card",
   "Catégorie": "Category",
   "Ce compte est suspendu.": "This account is suspended.",
+  "Ce deck n'est pas le vôtre.": "This deck is not yours.",
   "Ce dossier est déjà au dernier étage.": "That folder is already on the last level.",
   "Ce dossier et ce qu'il contient dépasseraient le dernier étage.": "That folder and its contents would go past the last level.",
   "Ce lot a déjà été versé.": "This batch has already been poured.",

@@ -16,7 +16,7 @@ import {
   type DeckBlockReason, type DeckZone,
 } from "@atem/shared";
 import type { Database } from "../../db/client.js";
-import { conflict, invalidInput, notFound } from "../../platform/errors.js";
+import { conflict, forbidden, invalidInput, notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { ownedByPasscode } from "../collection/index.js";
 import { cardsByPasscode } from "../referential/index.js";
@@ -139,6 +139,27 @@ async function loadDeck(db: Database, ownerId: string, deckId: string) {
 
   const lignes = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
   return { row, lignes };
+}
+
+/**
+ * Charge un deck **pour écrire dessus**, et distingue les deux refus.
+ *
+ * Introuvable et interdit ne sont pas la même réponse. Une lecture peut se
+ * permettre de confondre — répondre « introuvable » au deck d'un inconnu évite
+ * de confirmer qu'il existe. Une **écriture**, non : le jour où l'on regarde le
+ * deck d'un autre joueur, il est sous nos yeux, et lui répondre « introuvable »
+ * quand on tente de le modifier serait un mensonge que rien n'explique.
+ *
+ * Demandé par Ange : « même si on tente d'aller sur la route pour le modifier,
+ * au final on n'ait un 403 ». La garantie vit **ici**, dans le service, et non
+ * dans l'écran qui cache le crayon : un écran ne garde rien.
+ */
+async function deckPourEcriture(db: Database, viewerId: string, deckId: string) {
+  requireUuid(deckId);
+  const [row] = await db.select().from(decks).where(eq(decks.id, deckId)).limit(1);
+  if (!row) throw notFound("Deck introuvable.");
+  if (row.userId !== viewerId) throw forbidden("Ce deck n'est pas le vôtre.");
+  return row;
 }
 
 /**
@@ -314,22 +335,13 @@ export async function updateDeck(
     valeurs.folderId = input.folderId;
   }
 
-  requireUuid(deckId);
-  const touchés = await db
-    .update(decks)
-    .set(valeurs)
-    .where(and(eq(decks.id, deckId), eq(decks.userId, viewerId)))
-    .returning({ id: decks.id });
-  if (touchés.length === 0) throw notFound("Deck introuvable.");
+  await deckPourEcriture(db, viewerId, deckId);
+  await db.update(decks).set(valeurs).where(eq(decks.id, deckId));
 }
 
 export async function deleteDeck(db: Database, viewerId: string, deckId: string): Promise<void> {
-  requireUuid(deckId);
-  const effacés = await db
-    .delete(decks)
-    .where(and(eq(decks.id, deckId), eq(decks.userId, viewerId)))
-    .returning({ id: decks.id });
-  if (effacés.length === 0) throw notFound("Deck introuvable.");
+  await deckPourEcriture(db, viewerId, deckId);
+  await db.delete(decks).where(eq(decks.id, deckId));
 }
 
 /**
@@ -357,7 +369,8 @@ export async function setDeckCard(
     throw invalidInput("Une zone ne porte pas plus de 3 exemplaires.");
   }
 
-  const { lignes } = await loadDeck(db, viewerId, deckId);
+  await deckPourEcriture(db, viewerId, deckId);
+  const lignes = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
 
   const fiche = (await cardsByPasscode(db, [input.passcode])).get(input.passcode);
   if (!fiche) throw notFound("Carte inconnue.");

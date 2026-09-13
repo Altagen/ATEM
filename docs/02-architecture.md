@@ -252,3 +252,33 @@ Duellistes arriveront, ces lectures seront montées sur un sous-ensemble qui
 refuse structurellement tout ce qui n'est pas `GET`, plutôt que sur une
 vigilance de relecture. La barrière naîtra avec son premier consommateur —
 poser dès maintenant un garde qui ne garde rien serait du code mort.
+
+**Complément du 2026-09-13 — 404 en lecture, 403 en écriture.** Demandé par
+Ange : « même si on tente d'aller sur la route pour le modifier, au final on
+n'ait un 403 ».
+
+Les deux refus ne disent pas la même chose, et la différence dépend du sens.
+Une **lecture** refusée répond « introuvable » : confirmer qu'un deck existe
+serait déjà une fuite tant qu'on n'a pas le droit de le voir. Une **écriture**
+refusée répond « ce deck n'est pas le vôtre » — parce que le jour où l'on
+regarde le deck d'un autre joueur, il est sous nos yeux, et « introuvable »
+serait un mensonge que rien n'explique. Le service `deckPourEcriture` charge la
+ligne par son seul identifiant, puis compare le propriétaire : 404 si elle
+n'existe pas, 403 si elle n'est pas la nôtre.
+
+La garantie vit **dans le service**, jamais dans l'écran. Cacher le crayon est
+une politesse ; ce qui protège, c'est le refus du serveur, et il est éprouvé
+route par route — `PATCH`, `DELETE`, `PUT /cartes`.
+
+Les **dossiers** gardent le 404 dans les deux sens, et ce n'est pas un oubli :
+un dossier est le classement de son propriétaire, il ne se regarde pas. Rien ne
+le mettra jamais sous les yeux d'un autre, donc « introuvable » y reste vrai.
+
+**Ce qui manque encore, et qui ne peut pas être écrit aujourd'hui.** Le crayon
+de la fiche doit disparaître pour qui n'est pas propriétaire. Il faudrait pour
+cela que la fiche puisse afficher le deck d'un autre — ce qu'aucune route ne
+permet encore. Écrire dès maintenant un `isOwner` que rien ne peut rendre faux
+donnerait une condition toujours vraie, invérifiable par une épreuve : du décor.
+Le jour où la lecture s'ouvre, c'est un champ dans la réponse et un `when()`
+autour du crayon ; le refus serveur, lui, est déjà là et n'aura pas à être
+repris.

@@ -76,8 +76,11 @@ test("on n'écrit pas dans le deck d'un autre, même en connaissant son identifi
    * **session**, jamais du chemin : connaître l'identifiant d'un deck ne donne
    * aucun droit dessus.
    *
-   * Et le refus est un 404, pas un 403 : un 403 confirmerait que le deck
-   * existe.
+   * **La lecture répond 404, les écritures 403.** La lecture ne confirme pas
+   * l'existence d'un deck qu'on n'a pas le droit de voir ; l'écriture, elle,
+   * doit dire la vérité — « ce deck n'est pas le vôtre » — parce que le jour où
+   * l'on regarde le deck d'un autre joueur, il est sous nos yeux, et
+   * « introuvable » serait un mensonge que rien n'explique.
    */
   const propriétaire = await freshSession(app, "proprio");
   const intrus = await freshSession(app, "intrus");
@@ -91,11 +94,14 @@ test("on n'écrit pas dans le deck d'un autre, même en connaissant son identifi
     ["PATCH", `/decks/${deck.id}`, { name: "Volé" }],
     ["DELETE", `/decks/${deck.id}`, undefined],
     ["PUT", `/decks/${deck.id}/cartes`, { passcode: 71000001, zone: "main", quantity: 1 }],
-    ["GET", `/decks/${deck.id}`, undefined],
   ] as const) {
     const response = await req(method, path, body, intrus.cookie);
-    assert.equal(response.status, 404, `${method} ${path}`);
+    assert.equal(response.status, 403, `${method} ${path}`);
+    assert.match(((await response.json()) as { message: string }).message, /pas le vôtre/);
   }
+
+  const lecture = await req("GET", `/decks/${deck.id}`, undefined, intrus.cookie);
+  assert.equal(lecture.status, 404, "la lecture ne confirme pas l'existence");
 
   // Et le deck n'a pas bougé.
   const relu = await req("GET", `/decks/${deck.id}`, undefined, propriétaire.cookie);
