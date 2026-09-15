@@ -2,6 +2,12 @@
  * Creates a throwaway database, applies the migrations, runs the tests, and
  * destroys everything — even on failure.
  *
+ * **No database is a failure, not a skip.** This script used to print a warning
+ * and exit 0 when PostgreSQL was unreachable: `check-all.sh` then announced
+ * “all gates pass” while none of the API's integration tests had run. A gate
+ * that reports green on what it did not check is worse than no gate. Skipping
+ * them is still possible, but it has to be asked for: `ATEM_SKIP_DB_TESTS=1`.
+ *
  * The `.mts` extension is deliberate: this file lives outside the workspace
  * packages, and without it tsx would compile it to CommonJS, where top-level
  * `await` is refused.
@@ -32,10 +38,15 @@ function run(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<n
 }
 
 if (!(await reachable())) {
-  console.error(`No database reachable at ${adminUrl} — integration tests skipped.`);
-  console.error("Run:  ./scripts/dev-db.sh up");
   await admin.end();
-  process.exit(0);
+  if (process.env.ATEM_SKIP_DB_TESTS === "1") {
+    console.error(`No database reachable at ${adminUrl} — integration tests skipped on request.`);
+    process.exit(0);
+  }
+  console.error(`✗ No database reachable at ${adminUrl} — the integration tests cannot run.`);
+  console.error("  Start it:  ./scripts/dev-db.sh up");
+  console.error("  Or skip them deliberately:  ATEM_SKIP_DB_TESTS=1");
+  process.exit(1);
 }
 
 await admin.unsafe(`create database "${dbName}"`);
