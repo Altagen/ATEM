@@ -1,37 +1,38 @@
 /**
- * Scanlistes — inventorier sans verser à la collection.
+ * Scanlists — taking stock without pouring into the collection.
  *
- * Le besoin : on reçoit un lot de cinquante cartes et on veut savoir ce qu'on
- * en a avant de décider. Les verser à la collection puis exporter et calculer
- * la différence n'est pas tenable — c'est une soustraction là où il suffisait
- * de ne pas mélanger.
+ * The need: fifty cards arrive and you want to know what is in them before
+ * deciding. Pouring them into the collection, then exporting and computing the
+ * difference, does not hold — that is a subtraction where not mixing would have
+ * been enough.
  *
- * **Une scanliste ne consulte jamais la collection.** C'est l'inventaire de ce
- * qu'on vient de recevoir, et rien d'autre. Le « −1 » du scanner y décrémente
- * la ligne du lot, jamais la collection : une ligne tombée à zéro reste à zéro,
- * et un « −1 » de plus ne va rien retirer ailleurs. Il n'existe simplement
- * aucun chemin pour ça — le lot en cours ne quitte pas le navigateur.
+ * **A scanlist never consults the collection.** It is the inventory of what has
+ * just arrived, and nothing else. The scanner's “−1” decrements the batch line,
+ * never the collection: a line that reaches zero stays at zero, and one more
+ * “−1” removes nothing elsewhere. There is simply no path for that — the batch
+ * in progress never leaves the browser.
  *
- * Au versement, les quantités s'ajoutent à celles de la collection. La liste
- * survit, marquée « versée » : on garde la trace de ce qui est entré et quand,
- * et c'est ce qui permet de refuser un second versement. La jeter reste une
- * action distincte — ranger et détruire ne sont pas le même geste.
+ * On pouring, the quantities add to the collection's. The list survives, marked
+ * “poured”: it keeps the trace of what came in and when, and that is what makes
+ * it possible to refuse a second pour. Discarding it stays a separate action —
+ * filing and destroying are not the same gesture.
  */
+
 /**
- * Une ligne de lot.
+ * A batch line.
  *
- * Son identité est le **code d'extension**, pas le passcode : c'est l'exemplaire
- * imprimé qu'on tient, pas la carte en général. Le même Dragon Blanc existe en
- * `LOB-FR001` et en soixante autres impressions.
+ * Its identity is the **set code**, not the passcode: it is the printed copy
+ * you hold, not the card in general. The same Blue-Eyes exists as `LOB-FR001`
+ * and in sixty other printings.
  */
 export type ScanlistLine = {
   setCode: string;
   /**
-   * Le nom, quand on l'a.
+   * The name, when we have it.
    *
-   * Il arrive **après** la ligne : l'ajout ne l'attend pas. Le navigateur tient
-   * le set code au moment où l'on appuie, c'est donc lui qu'on affiche tant que
-   * le catalogue n'a pas répondu — et pour toujours, s'il ne répond pas.
+   * It arrives **after** the line: adding does not wait for it. The browser
+   * holds the set code at the moment you press, so that is what we display
+   * while the catalogue has not answered — and forever, if it never does.
    */
   name: string | null;
   passcode: number | null;
@@ -42,22 +43,22 @@ export type ScanlistSummary = {
   id: string;
   name: string;
   createdAt: string;
-  /** La date du versement, ou `null` : c'est ce champ qui dit « en attente ». */
+  /** The pour date, or `null`: this field is what says “pending”. */
   pouredAt: string | null;
-  /** Nombre de références distinctes. */
+  /** Number of distinct references. */
   lineCount: number;
-  /** Somme des exemplaires — ce qui entrera en collection au versement. */
+  /** Sum of copies — what will enter the collection on pouring. */
   copyCount: number;
 };
 
 export type ScanlistDetail = ScanlistSummary & { lines: ScanlistLine[] };
 
 /**
- * Le bilan d'un versement.
+ * The outcome of a pour.
  *
- * `poured` compte les exemplaires réellement entrés, `failed` les lignes que le
- * catalogue n'a pas su placer. Les deux sont rendus : une scanliste versée à
- * moitié doit se lire comme telle, pas comme un succès.
+ * `poured` counts the copies that actually came in, `failed` the lines the
+ * catalogue could not place. Both are returned: a half-poured scanlist must
+ * read as such, not as a success.
  */
 export type PourResult = {
   poured: number;
@@ -66,15 +67,15 @@ export type PourResult = {
   errors: { setCode: string; error: string }[];
 };
 
-/** La version du format d'export, écrite dans le fichier et relue à l'import. */
+/** The export format version, written to the file and read back on import. */
 export const SCANLIST_EXPORT_VERSION = 1;
 
 /**
- * Une ligne à zéro n'entre pas dans une liste enregistrée.
+ * A line at zero does not enter a saved list.
  *
- * Elle reste visible pendant qu'on scanne — c'est ce qui permet de voir ce
- * qu'on vient d'annuler, et le plancher est bien zéro, jamais moins. Mais une
- * ligne qui déclare zéro exemplaire ne dit rien qui mérite d'être gardé.
+ * It stays visible while scanning — that is what lets you see what you just
+ * cancelled, and the floor is zero, never less. But a line declaring zero
+ * copies says nothing worth keeping.
  */
 export const keptForSaving = (lines: ScanlistLine[]): ScanlistLine[] =>
   lines.filter((line) => line.quantity > 0);

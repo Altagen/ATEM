@@ -1,44 +1,43 @@
 /**
- * Les règles de construction d'un deck.
+ * The rules for building a deck.
  *
- * Logique pure, partagée par le serveur et l'écran : l'atelier grise un bouton
- * avec la même fonction que celle qui refuse l'écriture. ATEM-old avait déjà
- * écrit l'essentiel — et ne l'appelait **jamais côté serveur**. C'était un
- * utilitaire d'affichage, pas une garde.
+ * Pure logic, shared by the server and the screen: the workshop greys a button
+ * out with the very function that refuses the write. ATEM-old had already
+ * written the essentials — and **never called them server-side**. It was a
+ * display helper, not a guard.
  *
- * **Un deck compte des cartes, pas des impressions.** Trois Dragons Blancs en
- * trois codes d'extension différents restent trois Dragons Blancs pour la règle
- * des trois exemplaires. C'est la règle du jeu, et c'est aussi ce qui rend le
- * plafond exprimable en base : `deck_cards` porte une ligne par carte, et une
- * contrainte de table refuse le quatrième exemplaire.
+ * **A deck counts cards, not printings.** Three Blue-Eyes in three different
+ * set codes remain three Blue-Eyes for the three-copy rule. That is the rule of
+ * the game, and it is also what makes the ceiling expressible in the database:
+ * `deck_cards` holds one row per card, and a table constraint refuses the
+ * fourth copy.
  *
- * ATEM-old ne pouvait pas l'exprimer : son identité de ligne était
- * `(deck, zone, passcode, set_code)`, si bien que la même carte vivait sur
- * plusieurs lignes et totalisait six exemplaires sans qu'aucune contrainte
- * n'agrège. Le plafond était vérifié **par ligne**.
+ * ATEM-old could not express it: its row identity was
+ * `(deck, zone, passcode, set_code)`, so the same card lived on several rows and
+ * totalled six copies without any constraint aggregating them. The ceiling was
+ * checked **per row**.
  */
 
-/** Les trois zones d'un deck. Le plafond de trois porte sur leur somme. */
+/** The three zones of a deck. The three-copy ceiling applies to their sum. */
 export const DECK_ZONES = ["main", "extra", "side"] as const;
 export type DeckZone = (typeof DECK_ZONES)[number];
 
 /**
- * Le plafond absolu : trois exemplaires d'une carte dans tout le deck.
+ * The absolute ceiling: three copies of a card in the whole deck.
  *
- * Il ne dépend ni de la banlist ni de la date. C'est pour ça qu'il vit en base,
- * dans une contrainte, et non dans du code qu'on pourrait oublier d'appeler.
+ * It depends neither on the banlist nor on the date. That is why it lives in
+ * the database, in a constraint, and not in code someone could forget to call.
  */
 export const DECK_MAX_COPIES = 3;
 
 /**
- * Les tailles de zone, telles que les règles du jeu les fixent.
+ * Zone sizes, as the rules of the game set them.
  *
- * **Le maximum se refuse, le minimum se signale.** Une soixante-et-unième carte
- * au Main Deck n'est légale dans aucune situation : on la refuse. Un deck à
- * douze cartes, lui, est un deck en cours de construction — le refuser
- * empêcherait de le construire. La distinction est la même que pour la règle
- * des trois exemplaires : ce qui ne peut jamais être vrai est interdit, ce qui
- * n'est pas encore vrai est dit.
+ * **The maximum is refused, the minimum is signalled.** A sixty-first card in
+ * the Main Deck is legal in no situation: we refuse it. A twelve-card deck, on
+ * the other hand, is a deck under construction — refusing it would prevent
+ * building it. The distinction is the same as for the three-copy rule: what can
+ * never be true is forbidden, what is not true yet is said.
  */
 export const DECK_ZONE_LIMITS = {
   main: { min: 40, max: 60 },
@@ -47,25 +46,24 @@ export const DECK_ZONE_LIMITS = {
 } as const satisfies Record<DeckZone, { min: number; max: number }>;
 
 /**
- * Où en est un deck, en un seul verdict.
+ * Where a deck stands, in a single verdict.
  *
- * `Main 4/60` est un chiffre, pas une réponse : il ne dit ni si le deck est
- * jouable, ni ce qu'il faudrait faire. On rend donc **l'état**, avec de quoi
- * écrire la phrase — le nombre de cartes à retirer, ou à ajouter — et l'écran
- * se charge des mots.
+ * `Main 4/60` is a number, not an answer: it says neither whether the deck is
+ * playable nor what should be done. So we return **the state**, along with what
+ * it takes to write the sentence — how many cards to remove, or to add — and
+ * the screen handles the words.
  *
- * **Un seul état à la fois, par ordre de gravité.** Trois avertissements
- * simultanés ne se lisent pas : on nomme ce qui empêche de jouer d'abord, ce
- * qui reste à faire ensuite.
+ * **One state at a time, by severity.** Three simultaneous warnings do not get
+ * read: we name what prevents play first, what is left to do next.
  *
- * - `over` : au-dessus d'une limite — le deck est refusé en tournoi.
- * - `missing` : il contient plus d'exemplaires que la collection n'en a. Ça
- *   n'arrive pas en construisant (le « + » s'y refuse), mais ça arrive quand on
- *   retire ensuite une carte de sa collection.
- * - `empty` : rien encore. « Encore 40 au Main » sur un deck neuf serait exact
- *   et inutile.
- * - `short` : en construction, sous le minimum du Main.
- * - `ready` : jouable.
+ * - `over`: above a limit — the deck is refused in tournament.
+ * - `missing`: it holds more copies than the collection has. That does not
+ *   happen while building (the “+” refuses), but it happens when a card is
+ *   later removed from the collection.
+ * - `empty`: nothing yet. “40 more in the Main” on a brand-new deck would be
+ *   exact and useless.
+ * - `short`: under construction, below the Main minimum.
+ * - `ready`: playable.
  */
 export type DeckStatus =
   | { kind: "over"; zone: DeckZone; excess: number }
@@ -90,11 +88,11 @@ export function deckStatus(counts: Record<DeckZone, number>, missing: number): D
 export type BanlistStatus = "unlimited" | "semi_limited" | "limited" | "forbidden";
 
 /**
- * Normalise ce que le catalogue écrit.
+ * Normalises what the catalogue writes.
  *
- * YGOPRODeck rend « Banned », « Limited », « Semi-Limited » — et certains flux
- * rendent un chiffre. Les deux formes sont acceptées : les avoir vues suffit à
- * savoir qu'on ne choisit pas ce qu'on reçoit.
+ * YGOPRODeck returns “Banned”, “Limited”, “Semi-Limited” — and some feeds
+ * return a number. Both shapes are accepted: having seen them is enough to know
+ * we do not choose what we receive.
  */
 export function parseBanlistStatus(raw: string | null | undefined): BanlistStatus {
   const value = String(raw ?? "").trim().toLowerCase().replace(/[_-]+/g, " ");
@@ -108,7 +106,7 @@ export function parseBanlistStatus(raw: string | null | undefined): BanlistStatu
   return "unlimited";
 }
 
-/** Ce que la banlist autorise : interdite → 0, limitée → 1, semi → 2, sinon 3. */
+/** What the banlist allows: forbidden → 0, limited → 1, semi → 2, else 3. */
 export function banlistMaxCopies(status: BanlistStatus): number {
   switch (status) {
     case "forbidden": return 0;
@@ -119,11 +117,11 @@ export function banlistMaxCopies(status: BanlistStatus): number {
 }
 
 /**
- * Une carte va-t-elle à l'Extra Deck ?
+ * Does a card belong in the Extra Deck?
  *
- * La question se pose sur le `type` et le `frameType` du catalogue, tous deux en
- * anglais quelle que soit la langue demandée. Un monstre Pendule qui est aussi
- * Fusion ou Synchro va à l'Extra : c'est le cadre qui tranche, pas le nom.
+ * The question is settled on the catalogue's `type` and `frameType`, both in
+ * English whatever language was asked for. A Pendulum monster that is also
+ * Fusion or Synchro goes to the Extra: the frame decides, not the name.
  */
 export function isExtraDeckCard(card: { type?: string | null; frameType?: string | null }): boolean {
   const blob = `${card.type ?? ""} ${card.frameType ?? ""}`.toLowerCase();
@@ -131,54 +129,54 @@ export function isExtraDeckCard(card: { type?: string | null; frameType?: string
 }
 
 /**
- * Ce qui empêche d'en mettre davantage — ou `null` si rien n'empêche.
+ * What prevents adding more — or `null` when nothing does.
  *
- * Quatre bornes, quatre raisons, toutes atteignables. Il n'y a pas de valeur
- * « ok » : l'absence d'empêchement s'écrit `null`, ce qui évite une clé de plus
- * dans les tables de messages — une clé qu'aucun chemin n'atteindrait.
+ * Four bounds, four reasons, all reachable. There is no “ok” value: the absence
+ * of a blocker is written `null`, which spares one more key in the message
+ * tables — a key no path would ever reach.
  */
 export type DeckBlockReason = "forbidden" | "banlist" | "not_owned" | "max_copies";
 
 export type DeckAddCheck = {
   status: BanlistStatus;
-  /** Ce que la banlist autorise. */
+  /** What the banlist allows. */
   legalMax: number;
   /**
-   * Le plafond réel : `min(3, possédés)`.
+   * The real ceiling: `min(3, owned)`.
    *
-   * Décision d'Ange : **un deck est borné par la collection.** On ne peut pas y
-   * mettre une carte qu'on n'a pas, et un deck est donc jouable par
-   * construction. C'est ce qui rend le calcul « possédé / manquant » d'ATEM-old
-   * sans objet — il n'y a rien à manquer au moment où l'on ajoute.
+   * Ange's decision: **a deck is bounded by the collection.** You cannot put in
+   * a card you do not have, so a deck is playable by construction. That is what
+   * makes ATEM-old's “owned / missing” computation moot — there is nothing to
+   * be missing at the moment you add.
    */
   hardCap: number;
-  /** Déjà présents dans tout le deck, main + extra + side confondus. */
+  /** Already present across the whole deck, main + extra + side together. */
   inDeck: number;
-  /** Ce qu'on peut encore ajouter en restant légal. */
+  /** What can still be added while staying legal. */
   remainingLegal: number;
   canAdd: boolean;
-  /** Ce qui empêche, ou `null` si rien n'empêche. */
+  /** What blocks, or `null` when nothing does. */
   blockedBy: DeckBlockReason | null;
 };
 
 /**
- * Peut-on porter cette carte à `wanted` exemplaires de plus ?
+ * Can this card be taken `wanted` copies further?
  *
- * Une seule fonction répond, et les deux côtés l'appellent : l'atelier pour
- * griser son bouton — `wanted` vaut alors 1, « un de plus » —, le serveur pour
- * refuser une écriture qui pose un état. Deux implémentations finiraient par
- * diverger, et c'est celle du serveur qui compte.
+ * One function answers, and both sides call it: the workshop to grey out its
+ * button — `wanted` is 1 there, “one more” — and the server to refuse a write
+ * that sets a state. Two implementations would end up diverging, and it is the
+ * server's that counts.
  *
- * `wanted` est ce qui a supprimé un détour : le serveur demandait « puis-je en
- * ajouter un ? », recevait « oui » — rien ne bloque le *premier* exemplaire —
- * puis devait réinterroger la fonction **au bord** du plafond pour savoir quoi
- * répondre. Il pose maintenant sa vraie question du premier coup.
+ * `wanted` is what removed a detour: the server used to ask “may I add one?”,
+ * received “yes” — nothing blocks the *first* copy — then had to question the
+ * function again **at the edge** of the ceiling to know what to answer. It now
+ * asks its real question the first time.
  */
 export function checkDeckAdd(opts: {
   banlistTcg?: string | null;
   owned: number;
   inDeck: number;
-  /** Combien on veut en plus. 1 par défaut : « un de plus ». */
+  /** How many more are wanted. 1 by default: “one more”. */
   wanted?: number;
 }): DeckAddCheck {
   const status = parseBanlistStatus(opts.banlistTcg);
@@ -190,33 +188,33 @@ export function checkDeckAdd(opts: {
   const wanted = Math.max(1, Math.trunc(opts.wanted ?? 1));
 
   /**
-   * L'ordre des refus est celui qui explique le mieux.
+   * The order of refusals is the one that explains best.
    *
-   * Une carte interdite qu'on ne possède pas se refuse pour la banlist, pas
-   * pour la collection : c'est l'information qui décide, celle qu'on n'aurait
-   * pas devinée. L'inverse enverrait acheter une carte injouable.
+   * A forbidden card you do not own is refused for the banlist, not for the
+   * collection: that is the deciding information, the one you would not have
+   * guessed. The other way round would send you buying an unplayable card.
    *
-   * Et la règle du jeu passe avant la banlist : à trois exemplaires les deux
-   * s'appliquent, mais c'est « trois par deck » qu'il faut dire, pas « la
-   * banlist en autorise trois ».
+   * And the rule of the game comes before the banlist: at three copies both
+   * apply, but “three per deck” is what must be said, not “the banlist allows
+   * three”.
    */
   const canAdd = wanted <= remainingLegal;
 
   /**
-   * La raison se juge **au plafond**, pas à l'état courant.
+   * The reason is judged **at the ceiling**, not at the current state.
    *
-   * Demander trois exemplaires quand deux sont permis n'est pas bloqué par le
-   * premier : c'est le troisième qui bloque. On regarde donc ce qui se passe au
-   * bord — `inDeck + remainingLegal`, l'état qu'on aurait en prenant tout ce
-   * qui reste.
+   * Asking for three copies when two are allowed is not blocked by the first:
+   * the third is what blocks. So we look at what happens at the edge —
+   * `inDeck + remainingLegal`, the state we would reach by taking all that is
+   * left.
    */
-  const auBord = inDeck + remainingLegal;
+  const atEdge = inDeck + remainingLegal;
   let blockedBy: DeckBlockReason | null = null;
   if (!canAdd) {
     if (status === "forbidden") blockedBy = "forbidden";
     else if (owned === 0) blockedBy = "not_owned";
-    else if (auBord >= DECK_MAX_COPIES) blockedBy = "max_copies";
-    else if (auBord >= legalMax) blockedBy = "banlist";
+    else if (atEdge >= DECK_MAX_COPIES) blockedBy = "max_copies";
+    else if (atEdge >= legalMax) blockedBy = "banlist";
     else blockedBy = "not_owned";
   }
 
@@ -224,14 +222,14 @@ export function checkDeckAdd(opts: {
 }
 
 /**
- * Ce qui manque à un deck pour être jouable — **et rien d'autre**.
+ * What a deck lacks to be playable — **and nothing else**.
  *
- * Un deck est borné par la collection à l'ajout, mais la collection bouge
- * ensuite : on vend une carte, on la donne. Le manque se calcule donc à la
- * lecture, carte par carte, et **seulement quand il y en a un**.
+ * A deck is bounded by the collection when adding, but the collection moves
+ * afterwards: a card gets sold, or given away. So the shortfall is computed on
+ * read, card by card, and **only when there is one**.
  *
- * Quatre exemplaires possédés, trois au deck, un vendu : `max(0, 3 − 3) = 0`.
- * Il ne se passe rien, et rien ne s'affiche. Le silence quand tout va bien.
+ * Four copies owned, three in the deck, one sold: `max(0, 3 − 3) = 0`. Nothing
+ * happens, and nothing is displayed. Silence when all is well.
  */
 export const missingCopies = (inDeck: number, owned: number): number =>
   Math.max(0, inDeck - owned);

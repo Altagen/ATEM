@@ -1,87 +1,86 @@
 /**
- * La topologie des dossiers de decks — profondeur, cycles, déplacements.
+ * The topology of deck folders — depth, cycles, moves.
  *
- * **Une seule implémentation, deux appelants.** Le serveur refuse, l'écran
- * grise : si chacun calculait sa propre réponse, on retomberait sur le travers
- * d'ATEM-old, où `checkDeckAdd` servait à l'affichage pendant que le serveur
- * laissait passer. Ici les deux appellent les mêmes fonctions.
+ * **One implementation, two callers.** The server refuses, the screen greys
+ * out: if each computed its own answer, we would fall back into ATEM-old's
+ * flaw, where `checkDeckAdd` served the display while the server let requests
+ * through. Here both call the same functions.
  *
- * Elles ne connaissent que `{ id, parentId }` : ni nom, ni date, ni ligne de
- * base. C'est ce qui les rend éprouvables sans base de données.
+ * They know nothing but `{ id, parentId }`: no name, no date, no database row.
+ * That is what makes them testable without a database.
  */
 
 /**
- * Jusqu'où les dossiers s'emboîtent.
+ * How deep folders nest.
  *
- * Trois étages, comme dans ATEM-old. Ce n'est pas une limite technique : c'est
- * qu'au-delà on ne retrouve plus rien sans se souvenir de son propre
- * classement, et qu'un fil d'Ariane à quatre niveaux ne tient plus sur un
- * téléphone.
+ * Three levels, as in ATEM-old. It is not a technical limit: past that you can
+ * no longer find anything without remembering your own filing, and a
+ * four-level breadcrumb no longer fits on a phone.
  */
 export const DECK_FOLDER_MAX_DEPTH = 3;
 
 export type FolderNode = { id: string; parentId: string | null };
 
 /**
- * Remonte la chaîne des parents, en s'arrêtant net sur un cycle.
+ * Walks up the chain of parents, stopping dead on a cycle.
  *
- * La garde n'est pas de la superstition : si un cycle entrait en base par un
- * chemin qui ne passe pas par le service, une remontée sans garde tournerait
- * sans fin — côté serveur, la requête ne rendrait jamais la main ; côté écran,
- * l'onglet se figerait.
+ * The guard is not superstition: if a cycle entered the database by a path that
+ * does not go through the service, an unguarded walk would spin forever — on
+ * the server the request would never return; on the screen the tab would
+ * freeze.
  */
-function* remontee(nodes: FolderNode[], id: string): Generator<FolderNode> {
-  const parIdentifiant = new Map(nodes.map((node) => [node.id, node]));
-  const vus = new Set<string>();
-  let courant = parIdentifiant.get(id);
-  while (courant && !vus.has(courant.id)) {
-    vus.add(courant.id);
-    yield courant;
-    courant = courant.parentId ? parIdentifiant.get(courant.parentId) : undefined;
+function* ancestry(nodes: FolderNode[], id: string): Generator<FolderNode> {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const seen = new Set<string>();
+  let current = byId.get(id);
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    yield current;
+    current = current.parentId ? byId.get(current.parentId) : undefined;
   }
 }
 
-/** À quel étage se trouve ce dossier ? 1 à la racine, 0 s'il est inconnu. */
+/** Which level is this folder on? 1 at the root, 0 when unknown. */
 export function folderDepth(nodes: FolderNode[], id: string | null): number {
   if (id === null) return 0;
-  let étages = 0;
-  for (const _ of remontee(nodes, id)) étages += 1;
-  return étages;
+  let levels = 0;
+  for (const _ of ancestry(nodes, id)) levels += 1;
+  return levels;
 }
 
-/** Combien d'étages ce dossier occupe-t-il, lui compris ? 1 s'il est vide. */
+/** How many levels does this folder occupy, itself included? 1 when empty. */
 export function folderSubtreeHeight(nodes: FolderNode[], id: string): number {
-  const enfants = nodes.filter((node) => node.parentId === id);
-  if (enfants.length === 0) return 1;
-  // La remontée garde contre les cycles ; ici c'est la descente qu'on borne,
-  // en ne redescendant jamais dans un dossier déjà traversé.
-  const vus = new Set<string>([id]);
-  const hauteur = (courant: string): number => {
-    const suivants = nodes.filter((node) => node.parentId === courant && !vus.has(node.id));
-    if (suivants.length === 0) return 1;
-    for (const suivant of suivants) vus.add(suivant.id);
-    return 1 + Math.max(...suivants.map((suivant) => hauteur(suivant.id)));
+  const children = nodes.filter((node) => node.parentId === id);
+  if (children.length === 0) return 1;
+  // The upward walk guards against cycles; here it is the descent we bound, by
+  // never going back down into a folder already crossed.
+  const seen = new Set<string>([id]);
+  const heightFrom = (current: string): number => {
+    const below = nodes.filter((node) => node.parentId === current && !seen.has(node.id));
+    if (below.length === 0) return 1;
+    for (const child of below) seen.add(child.id);
+    return 1 + Math.max(...below.map((child) => heightFrom(child.id)));
   };
-  return hauteur(id);
+  return heightFrom(id);
 }
 
-/** `id` est-il dans la branche de `ancetre` — ou cet ancêtre lui-même ? */
-export function folderIsInside(nodes: FolderNode[], id: string, ancetre: string): boolean {
-  for (const node of remontee(nodes, id)) {
-    if (node.id === ancetre) return true;
+/** Is `id` inside `ancestor`'s branch — or that ancestor itself? */
+export function folderIsInside(nodes: FolderNode[], id: string, ancestor: string): boolean {
+  for (const node of ancestry(nodes, id)) {
+    if (node.id === ancestor) return true;
   }
   return false;
 }
 
 /**
- * Ce dossier peut-il être déposé là ?
+ * Can this folder be dropped there?
  *
- * Trois refus : dans lui-même, dans l'un des siens — la branche disparaîtrait
- * de l'arbre sans que rien ne l'efface — et au-delà du dernier étage, en
- * comptant **ce qu'il emporte** et non lui seul.
+ * Three refusals: into itself, into one of its own — the branch would vanish
+ * from the tree without anything deleting it — and past the last level, which
+ * counts **what it carries** and not the folder alone.
  *
- * La racine (`null`) accepte toujours : un sous-arbre y tient forcément,
- * puisqu'il tenait déjà quelque part.
+ * The root (`null`) always accepts: a subtree necessarily fits there, since it
+ * already fitted somewhere.
  */
 export function folderCanHost(
   nodes: FolderNode[],

@@ -8,20 +8,20 @@ import {
   toEnglishLookupSetCode,
 } from "./set-code.js";
 
-test("normalise la casse et les espaces", () => {
+test("normalises case and whitespace", () => {
   assert.equal(normalizeSetCode("  ltgy fr008 "), "LTGY-FR008");
   assert.equal(normalizeSetCode("lob-en001"), "LOB-EN001");
 });
 
-test("découpe la forme courante", () => {
+test("splits the common shape", () => {
   assert.deepEqual(parseSetCode("LOB-EN001"), {
     prefix: "LOB", region: "EN", number: "001",
   });
 });
 
-test("découpe un numéro qui commence par une lettre", () => {
-  // ATEM-old ne savait pas lire ces codes : sa forme exigeait des chiffres après
-  // la région. 5 249 impressions réelles sur 44 517 tombaient dans ce cas.
+test("splits a number that starts with a letter", () => {
+  // ATEM-old could not read these codes: its shape required digits after the
+  // region. 5,249 real printings out of 44,517 fell into that case.
   assert.deepEqual(parseSetCode("NECH-ENS10"), {
     prefix: "NECH", region: "EN", number: "S10",
   });
@@ -33,56 +33,56 @@ test("découpe un numéro qui commence par une lettre", () => {
   });
 });
 
-test("découpe les éditions européennes à une lettre", () => {
-  // On essaie les régions à deux lettres d'abord : sinon « E0 » serait pris pour
-  // une région et le numéro serait faux.
+test("splits the one-letter European editions", () => {
+  // Two-letter regions are tried first: otherwise “E0” would be taken for a
+  // region and the number would be wrong.
   assert.deepEqual(parseSetCode("PSV-E088"), {
     prefix: "PSV", region: "E", number: "088",
   });
 });
 
-test("accepte un code sans région", () => {
+test("accepts a code without a region", () => {
   assert.deepEqual(parseSetCode("BPT-001"), {
     prefix: "BPT", region: null, number: "001",
   });
 });
 
-test("refuse ce qui n'est pas un set code", () => {
-  // Entrées malformées présentes dans la base YGOPRODeck : pas de tiret.
-  // Elles doivent partir vers la correction manuelle, pas être devinées.
+test("refuses what is not a set code", () => {
+  // Malformed entries present in the YGOPRODeck data: no dash. They must go to
+  // manual correction, not be guessed at.
   assert.equal(parseSetCode("DB13"), null);
   assert.equal(parseSetCode(""), null);
   assert.equal(parseSetCode("LOB-"), null);
 });
 
-test("déduit la langue du code imprimé", () => {
+test("deduces the language from the printed code", () => {
   assert.equal(languageFromSetCode("LTGY-FR008"), "fr");
   assert.equal(languageFromSetCode("SDRE-EN005"), "en");
   assert.equal(languageFromSetCode("PSV-F088"), "fr");
-  // Sans région : les premières éditions n'existaient qu'en anglais.
+  // No region: the first editions existed in English only.
   assert.equal(languageFromSetCode("BPT-001"), "en");
 });
 
-test("bascule vers le code anglais pour l'interrogation", () => {
-  // Mesuré contre l'API : LOB-FR001 et SDK-FR001 renvoient « No card matching ».
-  // Seuls les codes anglais sont indexés chez YGOPRODeck.
+test("switches to the English code for lookups", () => {
+  // Measured against the API: LOB-FR001 and SDK-FR001 return “No card
+  // matching”. Only English codes are indexed at YGOPRODeck.
   assert.equal(toEnglishLookupSetCode("LTGY-FR008"), "LTGY-EN008");
   assert.equal(toEnglishLookupSetCode("SDK-FR001"), "SDK-EN001");
-  // Les éditions européennes anciennes gardent leur région à une lettre.
+  // Old European editions keep their one-letter region.
   assert.equal(toEnglishLookupSetCode("PSV-F088"), "PSV-E088");
 });
 
-test("laisse intact un code déjà anglais ou sans région", () => {
+test("leaves an already-English or region-less code untouched", () => {
   assert.equal(toEnglishLookupSetCode("LOB-EN001"), "LOB-EN001");
   assert.equal(toEnglishLookupSetCode("BPT-001"), "BPT-001");
   assert.equal(toEnglishLookupSetCode("DB13"), "DB13");
 });
 
-test("réunit les deux notations d'une même impression", () => {
-  // Le dump YGOPRODeck écrit « LOB-001 », cardsetsinfo.php répond sur
-  // « LOB-EN001 », et les cartes physiques portent l'une ou l'autre forme selon
-  // leur année d'impression. Sans clé canonique, deux moitiés du catalogue
-  // s'ignorent — constaté en exécutant l'import réel.
+test("brings together the two notations of one printing", () => {
+  // The YGOPRODeck dump writes “LOB-001”, cardsetsinfo.php answers on
+  // “LOB-EN001”, and physical cards carry one shape or the other depending on
+  // their print year. Without a canonical key, two halves of the catalogue
+  // ignore each other — seen by running the real import.
   assert.equal(canonicalSetCode("LOB-001"), "LOB-001");
   assert.equal(canonicalSetCode("LOB-EN001"), "LOB-001");
   assert.equal(canonicalSetCode("LOB-FR001"), "LOB-001");
@@ -90,9 +90,9 @@ test("réunit les deux notations d'une même impression", () => {
   assert.equal(canonicalSetCode("NECH-ENS10"), "NECH-S10");
 });
 
-test("la clé canonique et le code d'interrogation sont deux choses", () => {
-  // L'une joint en local, l'autre part sur le réseau. Les confondre était le
-  // défaut : joindre sur le code anglais séparait « LOB-001 » de « LOB-EN001 ».
+test("the canonical key and the lookup code are two different things", () => {
+  // One joins locally, the other goes over the network. Confusing them was the
+  // defect: joining on the English code separated “LOB-001” from “LOB-EN001”.
   assert.equal(canonicalSetCode("LTGY-FR008"), "LTGY-008");
   assert.equal(toEnglishLookupSetCode("LTGY-FR008"), "LTGY-EN008");
 });

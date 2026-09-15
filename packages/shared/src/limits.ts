@@ -1,13 +1,13 @@
 /**
- * Les bornes, en un seul endroit.
+ * The bounds, in one place.
  *
- * ATEM-old a vécu la dérive que ce fichier empêche : la même limite décidée à
- * trois endroits différents, avec trois valeurs, si bien que le compteur de
- * l'interface affichait vert sur une saisie que l'API refusait.
+ * ATEM-old lived the drift this file prevents: the same limit decided in three
+ * different places, with three values, so that the interface counter showed
+ * green on input the API refused.
  *
- * Une borne manquait aussi complètement — la quantité d'un exemplaire en
- * collection n'avait aucun plafond, là où les scanlistes plafonnaient à 1000.
- * Un fichier CSV avec `quantity=999999999` passait.
+ * One bound was missing entirely — the quantity of a collection copy had no
+ * ceiling at all, where scanlists capped at 1000. A CSV file carrying
+ * `quantity=999999999` went through.
  */
 export const LIMITS = {
   password: { min: 16, max: 512 },
@@ -16,14 +16,14 @@ export const LIMITS = {
   setCode: { max: 32 },
   deckName: { max: 60 },
   /**
-   * La note d'un exemplaire de collection — état, provenance, prix payé.
+   * The note on a collection copy — condition, provenance, price paid.
    *
-   * Elle s'appelait `deckNotes` alors qu'aucun deck ne s'en sert : la note des
-   * decks a été retirée, faute d'écran qui l'affiche, et le nom désignait déjà
-   * le mauvais objet.
+   * It was called `deckNotes` while no deck used it: the deck note has been
+   * removed for want of a screen showing it, and the name already pointed at
+   * the wrong object.
    */
   note: { max: 2000 },
-  /** Par ligne de collection comme par ligne de scanliste — même plafond. */
+  /** Per collection line as per scanlist line — the same ceiling. */
   quantity: { min: 0, max: 1000 },
   csvImport: { maxBytes: 5 * 1024 * 1024 },
   scanlist: { maxLines: 2000 },

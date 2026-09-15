@@ -1,27 +1,27 @@
 /**
- * La force d'un mot de passe — **une seule règle, partagée**.
+ * Password strength — **one rule, shared**.
  *
- * Le serveur l'applique à l'inscription et au changement de mot de passe ;
- * l'écran s'en sert pour dessiner sa jauge. C'est la même fonction, pas une
- * copie : ATEM-old en avait quatre implémentations divergentes — une au
- * serveur, deux dans le front, une dans la maquette — tenues ensemble par des
- * tests « miroir » qui vérifiaient qu'elles racontaient la même chose.
+ * The server applies it on registration and on password change; the screen uses
+ * it to draw its meter. It is the same function, not a copy: ATEM-old had four
+ * diverging implementations — one on the server, two in the front, one in the
+ * mock-up — held together by “mirror” tests checking they told the same story.
  *
- * Elles ne la racontaient pas. La maquette jugeait qu'une phrase longue vaut
- * mieux qu'un mot court et tordu : vrai en général, faux ici. Une phrase de
- * vingt-huit lettres sans chiffre s'affichait « Solide » et se faisait refuser
- * à l'envoi. Un écran qui approuve ce que le serveur rejette est pire qu'un
- * écran muet.
+ * They did not. The mock-up judged that a long phrase beats a short twisted
+ * word: true in general, false here. A twenty-eight letter phrase without a
+ * digit displayed “Solid” and was refused on submit. A screen that approves
+ * what the server rejects is worse than a silent one.
  *
- * Exigence : **seize caractères et les quatre familles** — majuscule,
- * minuscule, chiffre, caractère spécial.
+ * Requirement: **sixteen characters and the four families** — uppercase,
+ * lowercase, digit, special character.
  */
+
 /**
- * Le niveau porte un **code**, pas un libellé.
+ * The level carries a **code**, not a label.
  *
- * Il en portait un — « Faible », « Moyen » — et l'écran l'affichait tel quel :
- * la jauge disait donc « Force : Faible » à un compte anglais. Un paquet de
- * règles n'a pas à connaître la langue de qui le lit ; l'écran traduit le code.
+ * It used to carry one — « Faible », « Moyen » — and the screen displayed it as
+ * is: the meter therefore said “Force : Faible” to an English account. A rules
+ * package has no business knowing the language of whoever reads it; the screen
+ * translates the code.
  */
 export type PasswordLevel = "weak" | "fair" | "strong" | "excellent";
 
@@ -83,10 +83,10 @@ export function checkPasswordStrength(password: string): PasswordStrengthResult 
 }
 
 /**
- * Les critères, dans l'ordre où l'écran les montre — **par identifiant**.
+ * The criteria, in the order the screen shows them — **by identifier**.
  *
- * Leur libellé vivait ici, en français, dans un paquet que le serveur importe
- * aussi. L'écran le traduit maintenant depuis cet identifiant.
+ * Their label used to live here, in French, in a package the server imports
+ * too. The screen now translates it from this identifier.
  */
 export const PASSWORD_CRITERIA = [
   "hasMinLength",
