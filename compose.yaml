@@ -1,9 +1,9 @@
-# Le déploiement complet, en une commande.
+# The full deployment, in one command.
 #
-# `docker compose up` sur une machine vierge doit suffire. C'est le critère de
-# sortie de M0 — et précisément ce qu'ATEM-old ne savait pas faire : son propre
-# compose.yaml portait l'avertissement « Dev-only. Not the application ship
-# stack », et le déploiement réel demandait neuf étapes manuelles.
+# `docker compose up` on a blank machine must be enough. It is M0's exit
+# criterion — and precisely what ATEM-old could not do: its own compose.yaml
+# carried the warning “Dev-only. Not the application ship stack”, and the real
+# deployment took nine manual steps.
 
 services:
   db:
@@ -15,8 +15,8 @@ services:
     volumes:
       - atem_pg_data:/var/lib/postgresql/data
     ports:
-      # Publiée sur la boucle locale seulement : de quoi inspecter la base ou
-      # la sauvegarder depuis la machine hôte, sans jamais l'exposer au réseau.
+      # Published on the loopback only: enough to inspect or back up the
+      # database from the host machine, without ever exposing it to the network.
       - "127.0.0.1:${ATEM_DB_PORT:-55432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U atem -d atem"]
@@ -24,8 +24,8 @@ services:
       timeout: 3s
       retries: 20
 
-  # Les migrations tournent une fois, jusqu'au bout, avant que l'API démarre.
-  # Sans ce séquencement, l'API sert des requêtes sur un schéma incomplet.
+  # Migrations run once, to completion, before the API starts. Without this
+  # ordering, the API serves requests on an incomplete schema.
   migrate:
     build: { context: ., dockerfile: Containerfile }
     command: ["node", "dist/db/migrate.js"]
@@ -39,9 +39,9 @@ services:
     build: { context: ., dockerfile: Containerfile }
     environment:
       DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD:-atem}@db:5432/atem
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET est requise — générez-la avec « openssl rand -base64 32 »}
-      # Dans le réseau du compose, l'API doit accepter les connexions du proxy :
-      # 127.0.0.1 ne serait joignable que depuis son propre conteneur.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required — generate it with “openssl rand -base64 32”}
+      # On the compose network, the API must accept the proxy's connections:
+      # 127.0.0.1 would only be reachable from its own container.
       ATEM_HOST: 0.0.0.0
       ATEM_PORT: 3000
     depends_on:

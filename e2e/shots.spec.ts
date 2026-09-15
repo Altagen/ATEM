@@ -1,12 +1,11 @@
 /**
- * Les captures d'écran de revue.
+ * Review screenshots.
  *
- * Ce n'est pas un test : rien n'y est asserté. C'est le moyen de **regarder**
- * ce qui a été construit, sur les deux profils, sans avoir à ouvrir un
- * navigateur à la main — et de le refaire à l'identique après chaque
- * changement, pour voir ce qui a bougé.
+ * This is not a test: nothing is asserted. It is the way to **look** at what
+ * was built, on both profiles, without opening a browser by hand — and to do it
+ * again identically after every change, to see what moved.
  *
- * Lancer : pnpm e2e:shots
+ * Run: pnpm e2e:shots
  */
 import { test } from "@playwright/test";
 import { addBySetCode, signUp } from "./helpers.js";
@@ -14,31 +13,30 @@ import { addBySetCode, signUp } from "./helpers.js";
 const shot = (name: string, project: string) => `e2e/shots/${project}-${name}.png`;
 
 /**
- * Les captures montrent la barre du bas deux fois.
+ * The screenshots show the bottom bar twice.
  *
- * Vérifié plutôt que supposé : le DOM n'en contient qu'une, et couper le
- * `backdrop-filter` fait disparaître la seconde. C'est donc le flou
- * d'arrière-plan qui se compose mal dans une capture sans affichage — pas un
- * défaut de l'écran.
+ * Checked rather than assumed: the DOM holds only one, and turning off
+ * `backdrop-filter` makes the second disappear. So it is the background blur
+ * compositing badly in a headless capture — not a defect of the screen.
  *
- * Les captures au format réel restent plus fidèles pour juger d'une mise en
- * page : une capture pleine page étire ce qui est fixe.
+ * Viewport-sized captures stay more faithful for judging a layout: a full-page
+ * capture stretches what is fixed.
  */
 const viewport = { fullPage: false } as const;
 
-test.describe("Captures de revue", () => {
-  test("les écrans principaux", async ({ page }, testInfo) => {
+test.describe("Review screenshots", () => {
+  test("the main screens", async ({ page }, testInfo) => {
     const profile = testInfo.project.name;
     test.setTimeout(90_000);
 
     await page.goto("/login");
-    await page.screenshot({ path: shot("01-connexion", profile), fullPage: true });
+    await page.screenshot({ path: shot("01-login", profile), fullPage: true });
 
     await page.goto("/register");
-    await page.screenshot({ path: shot("02-inscription", profile), fullPage: true });
+    await page.screenshot({ path: shot("02-register", profile), fullPage: true });
 
     await signUp(page);
-    await page.screenshot({ path: shot("03-collection-vide", profile), ...viewport });
+    await page.screenshot({ path: shot("03-collection-empty", profile), ...viewport });
 
     for (const code of ["LTGY-FR008", "LOB-FR001", "SDK-001", "PSV-F088", "ZZZZ-FR999"]) {
       await addBySetCode(page, code);
@@ -46,37 +44,35 @@ test.describe("Captures de revue", () => {
     await page.screenshot({ path: shot("04-collection", profile), fullPage: true });
     await page.getByRole("button", { name: "Vue galerie" }).click();
     await page.locator(".gallery").waitFor();
-    await page.screenshot({ path: shot("04c-galerie", profile), ...viewport });
+    await page.screenshot({ path: shot("04c-gallery", profile), ...viewport });
     await page.getByRole("button", { name: "Vue liste" }).click();
     await page.locator(".item-list").waitFor();
-    await page.screenshot({ path: shot("04b-collection-ecran", profile), ...viewport });
+    await page.screenshot({ path: shot("04b-collection-viewport", profile), ...viewport });
 
     await page.getByRole("button", { name: "Trier et filtrer" }).click();
     await page.locator("#filter-panel").waitFor();
-    await page.screenshot({ path: shot("05-filtres", profile), fullPage: true });
+    await page.screenshot({ path: shot("05-filters", profile), fullPage: true });
     await page.getByRole("button", { name: "Fermer" }).first().click();
 
-    // La collection s'ouvre en liste : c'est la ligne qu'on ouvre.
+    // The collection opens as a list: it is the row that gets opened.
     await page.locator(".item-main").first().click();
     await page.locator("#inspect-panel").waitFor();
-    await page.screenshot({ path: shot("06-fiche-carte", profile), fullPage: true });
+    await page.screenshot({ path: shot("06-card-sheet", profile), fullPage: true });
     await page.keyboard.press("Escape");
 
-    // L'écran Catalogue a été supprimé : il doublait une fonction que la
-    // collection assure, et n'existait pas dans ATEM-old.
     await page.getByRole("button", { name: /Options/ }).click();
-    await page.screenshot({ path: shot("07-ajout-avance", profile), ...viewport });
+    await page.screenshot({ path: shot("07-advanced-add", profile), ...viewport });
   });
 
-  test("le scanner", async ({ page }, testInfo) => {
+  test("the scanner", async ({ page }, testInfo) => {
     const profile = testInfo.project.name;
     test.setTimeout(90_000);
 
     await signUp(page);
     await page.getByRole("button", { name: "Scanner" }).click();
     await page.locator(".scan-modal").waitFor();
-    // La caméra n'existe pas dans un navigateur d'épreuve : l'écran doit rester
-    // utilisable et proposer la saisie manuelle. C'est ce que la capture montre.
+    // There is no camera in a test browser: the screen must stay usable and
+    // offer manual entry. That is what the capture shows.
     await page.waitForTimeout(1200);
     await page.screenshot({ path: shot("08-scanner", profile), fullPage: true });
   });

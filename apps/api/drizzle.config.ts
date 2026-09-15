@@ -1,7 +1,7 @@
 import type { Config } from "drizzle-kit";
 
 export default {
-  // L'agrégateur, pas un fichier de déclaration : chaque module possède ses tables.
+  // The aggregator, not a declaration file: each module owns its tables.
   schema: "./src/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",

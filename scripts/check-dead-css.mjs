@@ -1,23 +1,22 @@
 /**
- * Aucune règle CSS ne doit habiller une classe que rien ne pose.
+ * No CSS rule may style a class that nothing sets.
  *
- * Porté d'ATEM-old, où ce contrôle avait trouvé **362 classes déclarées et
- * jamais employées — 2 763 lignes, un tiers des feuilles**. Elles venaient
- * toutes du même mouvement : une version d'écran remplacée par une autre, dont
- * le balisage partait mais dont l'habillage restait.
+ * Ported from ATEM-old, where this check had found **362 classes declared and
+ * never used — 2,763 lines, a third of the sheets**. They all came from the
+ * same movement: one version of a screen replaced by another, whose markup left
+ * but whose styling stayed.
  *
- * Du CSS mort ne casse rien, et c'est justement le problème : il ne se signale
- * jamais, il alourdit chaque page, et il fait croire qu'une fonctionnalité
- * existe encore.
+ * Dead CSS breaks nothing, and that is precisely the problem: it never reports
+ * itself, it weighs down every page, and it suggests a feature still exists.
  *
- * Il compte double ici : on vient de reprendre 10 000 lignes de feuilles
- * validées, écrites pour un périmètre plus large que le nôtre. Tout ce qui
- * habillait les guildes, l'administration ou la boîte de réception est mort
- * chez nous — et doit partir plutôt que d'être traîné.
+ * It counts double here: we have just taken 10,000 lines of validated sheets,
+ * written for a wider scope than ours. Everything that styled guilds,
+ * administration or the inbox is dead for us — and must go rather than be
+ * dragged along.
  *
- * Usage :
- *   node scripts/check-dead-css.mjs           # barrière : échoue s'il en reste
- *   node scripts/check-dead-css.mjs --list    # liste, pour trier
+ * Usage:
+ *   node scripts/check-dead-css.mjs           # gate: fails if any remain
+ *   node scripts/check-dead-css.mjs --list    # list, for sorting
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -26,13 +25,7 @@ import { files, groupBody, lineOf, readMarkup, rules } from "./lib/dead-css.mjs"
 const ROOT = path.resolve(import.meta.dirname, "..", "apps", "web", "src");
 const STYLES = path.join(ROOT, "design");
 
-/**
- * Classes qu'aucun balisage ne pose, et c'est voulu : elles nomment un état que
- * le navigateur applique lui-même.
- */
-const HORS_BALISAGE = new Set([]);
-
-const { ruleAlive } = readMarkup(ROOT, HORS_BALISAGE);
+const { ruleAlive } = readMarkup(ROOT);
 
 const listOnly = process.argv.includes("--list");
 let deadRules = 0;
@@ -85,13 +78,13 @@ for (const sheet of files(STYLES, ".css")) {
 }
 
 if (deadRules === 0) {
-  console.log("✓ aucune règle CSS morte");
+  console.log("✓ no dead CSS rule");
   process.exit(0);
 }
 
-console.log(`${deadRules} règles mortes, ~${deadLines} lignes\n`);
+console.log(`${deadRules} dead rules, ~${deadLines} lines\n`);
 for (const [file, dead] of [...byFile].sort((a, b) => b[1].length - a[1].length)) {
-  console.log(`  ${file} — ${dead.length} règles`);
+  console.log(`  ${file} — ${dead.length} rules`);
   if (listOnly) {
     for (const d of dead) {
       console.log(`      ${String(d.line).padStart(5)}  ${d.selector.replace(/\s+/g, " ").slice(0, 90)}`);
@@ -100,6 +93,6 @@ for (const [file, dead] of [...byFile].sort((a, b) => b[1].length - a[1].length)
 }
 
 if (!listOnly) {
-  console.log("\n  node scripts/check-dead-css.mjs --list   pour le détail");
+  console.log("\n  node scripts/check-dead-css.mjs --list   for the details");
 }
 process.exit(listOnly ? 0 : 1);

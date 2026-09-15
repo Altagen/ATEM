@@ -1,32 +1,30 @@
 /**
- * Aucun export ne doit exister sans que rien ne l'appelle.
+ * No export may exist without anything calling it.
  *
- * Pendant du contrôle de CSS mort, pour le TypeScript. Il distingue deux
- * défauts qui se soignent différemment :
+ * The counterpart of the dead-CSS check, for TypeScript. It tells apart three
+ * defects that are treated differently:
  *
- * — **Mort** : rien ne s'en sert, ni ailleurs, ni dans son propre fichier, ni
- *   dans un test. Ce code ne fait rien qu'alourdir, et il fait croire qu'une
- *   fonctionnalité existe. Il part.
+ * — **Dead**: nothing uses it, not elsewhere, not in its own file, not in a
+ *   test. This code only adds weight, and suggests a feature exists. It goes.
  *
- * — **Exposé sans raison** : utilisé, mais seulement à l'intérieur de son
- *   fichier. Ce n'est pas mort ; c'est une frontière percée pour rien, et ça
- *   invite le prochain module à s'en servir. Le mot-clé `export` part.
+ * — **Exposed for no reason**: used, but only inside its own file. It is not
+ *   dead; it is a boundary pierced for nothing, and it invites the next module
+ *   to use it. The `export` keyword goes.
  *
- * — **Vivant seulement par son test** : aucune ligne de production ne l'appelle,
- *   mais une épreuve le fait — ce qui suffisait à le tenir hors des deux listes
- *   précédentes. C'est du code que seul son propre contrôle justifie, et la
- *   distinction compte : un crochet de test (`resetResolveQueue`) est
- *   légitime, une fonction de production que rien n'appelle ne l'est pas.
- *   Signalé sans bloquer, parce que la réponse dépend de laquelle des deux
- *   c'est.
+ * — **Alive only through its test**: no production line calls it, but a test
+ *   does — which was enough to keep it out of the two previous lists. It is code
+ *   only its own check justifies, and the distinction matters: a test hook
+ *   (`resetResolveQueue`) is legitimate, a production function nothing calls is
+ *   not. Reported without blocking, because the answer depends on which of the
+ *   two it is.
  *
- * Ce que le contrôle **ne** signale pas : le code qui prépare la fonctionnalité
- * suivante et qui vit dans `design/staged/` ou derrière un module réservé. On
- * cherche ce qui n'a plus de rapport avec rien, pas ce qui n'a pas encore servi.
+ * What the check does **not** read: code staged for the next feature in
+ * `design/staged/`. We look for what no longer relates to anything, not for what
+ * has not been used yet.
  *
- * Usage :
- *   node scripts/check-dead-exports.mjs           # barrière
- *   node scripts/check-dead-exports.mjs --list    # détail
+ * Usage:
+ *   node scripts/check-dead-exports.mjs           # gate
+ *   node scripts/check-dead-exports.mjs --list    # details
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -36,14 +34,14 @@ const AREAS = ["apps/api/src", "apps/web/src", "packages/shared/src"];
 const IGNORED_DIRS = new Set(["node_modules", "dist", "staged"]);
 
 /**
- * Exports dont l'absence d'appelant est normale.
+ * Exports for which having no caller is normal.
  *
- * Un point d'entrée n'est appelé par personne : c'est le système qui le lance.
- * Un crochet de test n'est appelé que si le test existe — le signaler
- * pousserait à supprimer le moyen d'écrire ce test.
+ * An entry point is called by nobody: the system launches it. A test hook is
+ * only called if the test exists — reporting it would push towards deleting the
+ * means of writing that test.
  */
 const EXPECTED_UNUSED = new Set([
-  // Points d'entrée de commande.
+  // Command entry points.
   "syncCatalogue",
 ]);
 
@@ -59,22 +57,22 @@ function files(dir, acc = []) {
 
 const sources = AREAS.flatMap((area) => files(path.join(ROOT, area)));
 
-/** Les commentaires ne consomment rien — même leçon que pour le CSS. */
+/** Comments consume nothing — same lesson as for CSS. */
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
 
 /**
- * Un ré-export ne consomme rien non plus.
+ * A re-export consumes nothing either.
  *
- * `export { requireAdmin } from "./middleware.js"` mentionne le symbole sans
- * l'appeler : il l'expose, c'est tout. Compter cette mention comme un usage
- * rendait le contrôle **aveugle à toute la surface publique** — et comme
- * l'architecture impose que rien ne traverse un module autrement que par son
- * `index.ts`, cet angle mort couvrait l'essentiel du code.
+ * `export { requireAdmin } from "./middleware.js"` mentions the symbol without
+ * calling it: it exposes it, that is all. Counting that mention as a use made
+ * the check **blind to the whole public surface** — and since the architecture
+ * requires that nothing crosses a module except through its `index.ts`, that
+ * blind spot covered most of the code.
  *
- * Trouvé en cherchant à la main ce que la barrière laissait passer : cinq
- * exports morts s'y cachaient, dont une garde d'administration que personne ne
- * monte et le reste d'un écran supprimé.
+ * Found by searching by hand for what the gate let through: five dead exports
+ * hid there, including an administration guard nobody mounts and the remains of
+ * a deleted screen.
  */
 const stripReExports = (src) =>
   src.replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;?/g, " ");
@@ -84,7 +82,7 @@ const stripped = new Map(
   [...contents].map(([f, src]) => [f, stripReExports(stripComments(src))]),
 );
 
-/** Compte les occurrences d'un identifiant, hors sa propre ligne de déclaration. */
+/** Counts an identifier's occurrences, excluding its own declaration line. */
 function countIn(src, symbol, declarationLine) {
   const pattern = new RegExp(`\\b${symbol}\\b`, "g");
   let count = 0;
@@ -128,22 +126,21 @@ for (const file of sources) {
     if (outside > 0) continue;
 
     /**
-     * Un type qui nomme le contrat d'une fonction exportée n'est pas
-     * sur-exposé.
+     * A type naming an exported function's contract is not over-exposed.
      *
-     * `export type DeckDetail` sert à lire `getDeck(): Promise<DeckDetail>` :
-     * l'appelant ne le nomme jamais — il reçoit l'objet — mais le retirer
-     * rendrait la signature muette. Le signaler poussait à abîmer ce qui se lit
-     * bien pour satisfaire un compteur.
+     * `export type DeckDetail` is there to read `getDeck(): Promise<DeckDetail>`:
+     * the caller never names it — it receives the object — but removing it
+     * would make the signature mute. Reporting it pushed towards damaging what
+     * reads well to satisfy a counter.
      */
-    const estType = /^export\s+(?:type|interface)\s/.test(line.trim());
-    if (estType) {
+    const isType = /^export\s+(?:type|interface)\s/.test(line.trim());
+    if (isType) {
       /**
-       * La signature court sur plusieurs lignes, et c'est la règle ici.
+       * The signature runs over several lines, and that is the rule here.
        *
-       * Ne lire que la première ratait tout ce qui s'écrit en colonne —
+       * Reading only the first missed everything written in a column —
        * `export async function getDeck(\n  db: Database,\n  …\n): Promise<DeckDetail>`.
-       * On prend donc du mot-clé jusqu'à l'accolade ouvrante.
+       * So we take from the keyword to the opening brace.
        */
       const signatures =
         own.match(/^export\s+(?:async\s+)?(?:function|const)[\s\S]*?(?:\{|=>|;)/gm) ?? [];
@@ -162,38 +159,38 @@ for (const file of sources) {
 const listOnly = process.argv.includes("--list");
 
 if (dead.length === 0 && overExposed.length === 0 && testOnly.length === 0) {
-  console.log("✓ aucun export mort ni exposé sans raison");
+  console.log("✓ no dead export, none exposed for no reason");
   process.exit(0);
 }
 
 if (dead.length > 0) {
-  console.log(`${dead.length} exports morts — rien ne les appelle, nulle part :\n`);
+  console.log(`${dead.length} dead exports — nothing calls them, anywhere:\n`);
   for (const entry of dead) console.log(`    ${entry.file}  ${entry.symbol}`);
 }
 
 if (overExposed.length > 0) {
   console.log(
-    `\n${overExposed.length} exports exposés sans raison — utilisés seulement chez eux :\n`,
+    `\n${overExposed.length} exports exposed for no reason — only used in their own file:\n`,
   );
   if (listOnly) {
     for (const entry of overExposed) console.log(`    ${entry.file}  ${entry.symbol}`);
   } else {
-    console.log("    node scripts/check-dead-exports.mjs --list   pour le détail");
+    console.log("    node scripts/check-dead-exports.mjs --list   for the details");
   }
 }
 
 if (testOnly.length > 0) {
   console.log(
-    `\n${testOnly.length} exports que seul leur test emploie — aucune ligne de production :\n`,
+    `\n${testOnly.length} exports only their test uses — no production line:\n`,
   );
   for (const entry of testOnly) console.log(`    ${entry.file}  ${entry.symbol}`);
   console.log(
-    "\n    Un crochet de test est légitime ; une fonction de production que rien" +
-      "\n    n'appelle ne l'est pas. La réponse dépend de laquelle c'est.",
+    "\n    A test hook is legitimate; a production function nothing calls" +
+      "\n    is not. The answer depends on which one it is.",
   );
 }
 
-// Les exports morts font échouer ; l'exposition inutile et le vivant-par-test
-// sont signalés sans bloquer — ce sont des défauts de frontière ou de jugement,
-// pas du code qui ne sert à rien.
+// Dead exports fail the gate; needless exposure and test-only life are reported
+// without blocking — they are boundary or judgement defects, not code that does
+// nothing.
 process.exit(dead.length > 0 ? 1 : 0);

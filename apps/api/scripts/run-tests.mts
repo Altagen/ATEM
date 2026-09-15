@@ -1,11 +1,10 @@
 /**
- * Extension `.mts` volontaire : ce fichier vit hors des paquets du workspace,
- * et sans elle tsx le compilerait en CommonJS, où `await` de premier niveau
- * est refusé.
- */
-/**
- * Monte une base jetable, y applique les migrations, lance les tests, détruit
- * tout — même en cas d'échec.
+ * Creates a throwaway database, applies the migrations, runs the tests, and
+ * destroys everything — even on failure.
+ *
+ * The `.mts` extension is deliberate: this file lives outside the workspace
+ * packages, and without it tsx would compile it to CommonJS, where top-level
+ * `await` is refused.
  */
 import { spawn } from "node:child_process";
 import postgres from "postgres";
@@ -33,8 +32,8 @@ function run(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<n
 }
 
 if (!(await reachable())) {
-  console.error(`Aucune base joignable sur ${adminUrl} — tests d'intégration ignorés.`);
-  console.error("Lancez :  ./scripts/dev-db.sh up");
+  console.error(`No database reachable at ${adminUrl} — integration tests skipped.`);
+  console.error("Run:  ./scripts/dev-db.sh up");
   await admin.end();
   process.exit(0);
 }
@@ -44,7 +43,7 @@ let code = 1;
 try {
   const env = { DATABASE_URL: testUrl };
   const migrated = await run("pnpm", ["exec", "tsx", "src/db/migrate.ts"], env);
-  if (migrated !== 0) throw new Error("les migrations ont échoué");
+  if (migrated !== 0) throw new Error("the migrations failed");
   code = await run("node", ["--import", "tsx", "--test", ...process.argv.slice(2)], env);
 } finally {
   await admin.unsafe(`drop database if exists "${dbName}" with (force)`);

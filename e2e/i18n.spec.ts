@@ -2,53 +2,53 @@ import { expect, test } from "@playwright/test";
 import { addBySetCode, signUp } from "./helpers.js";
 
 /**
- * La langue de l'interface.
+ * The interface language.
  *
- * Elle vit sur le compte, pas dans le navigateur : c'est un réglage qu'on
- * choisit une fois et qu'on retrouve d'un appareil à l'autre. Ces épreuves
- * vérifient ce qu'aucune barrière ne peut voir — que la bascule atteint
- * réellement l'écran, jusqu'aux messages que renvoie le serveur.
+ * It lives on the account, not in the browser: it is a setting chosen once and
+ * found again from one device to the next. These tests check what no gate can
+ * see — that the switch really reaches the screen, down to the messages the
+ * server returns.
  */
 
 /**
- * Le sélecteur existe à deux endroits — la barre du haut et la feuille de
- * compte — et un seul est visible à la fois. Sur téléphone, il faut ouvrir la
- * feuille pour l'atteindre, puis la refermer.
+ * The switch exists in two places — the top bar and the account sheet — and
+ * only one is visible at a time. On a phone, the sheet has to be opened to reach
+ * it, then closed.
  */
-const basculer = async (page: import("@playwright/test").Page, code: "FR" | "EN") => {
-  const surTéléphone = await page.locator(".global-mobile-bottom-nav").isVisible();
-  if (surTéléphone) await page.getByRole("button", { name: /Mon compte|My account/ }).click();
+const switchLanguage = async (page: import("@playwright/test").Page, code: "FR" | "EN") => {
+  const onPhone = await page.locator(".global-mobile-bottom-nav").isVisible();
+  if (onPhone) await page.getByRole("button", { name: /Mon compte|My account/ }).click();
 
-  const groupe = surTéléphone ? "#account-sheet" : ".app-bar";
-  await page.locator(`${groupe} .lang-switch-item`, { hasText: code }).click();
-  await expect(page.locator(`${groupe} .lang-switch-item.is-active`)).toHaveText(code);
+  const scope = onPhone ? "#account-sheet" : ".app-bar";
+  await page.locator(`${scope} .lang-switch-item`, { hasText: code }).click();
+  await expect(page.locator(`${scope} .lang-switch-item.is-active`)).toHaveText(code);
 
   /**
-   * Sur téléphone, la feuille se referme d'elle-même : le changement de langue
-   * reconstruit toute la navigation, et `renderNavigation` referme la feuille
-   * avant de la réécrire. On le vérifie plutôt que de cliquer dans le vide.
+   * On a phone, the sheet closes by itself: changing language rebuilds the whole
+   * navigation, and `renderNavigation` closes the sheet before rewriting it. We
+   * check it rather than clicking into the void.
    */
-  if (surTéléphone) await expect(page.locator("#account-sheet")).toBeHidden();
+  if (onPhone) await expect(page.locator("#account-sheet")).toBeHidden();
 };
 
-test("la collection bascule en anglais, et y reste", async ({ page }) => {
+test("the collection switches to English, and stays there", async ({ page }) => {
   await signUp(page);
   await expect(page.getByRole("heading", { name: "Ma collection" })).toBeVisible();
 
-  await basculer(page, "EN");
+  await switchLanguage(page, "EN");
   await expect(page.getByRole("heading", { name: "My collection" })).toBeVisible();
   await expect(page.getByPlaceholder("Search for a card…")).toBeVisible();
   await expect(page.getByText("No cards")).toBeVisible();
 
-  // Le choix est porté par le compte : il survit à un rechargement complet.
+  // The choice is carried by the account: it survives a full reload.
   await page.reload();
   await expect(page.getByRole("heading", { name: "My collection" })).toBeVisible();
   await expect(page.locator(".app-bar .lang-switch-item.is-active, #account-sheet .lang-switch-item.is-active").first()).toHaveText("EN");
 });
 
-test("les scanlistes aussi", async ({ page }) => {
+test("the scanlists too", async ({ page }) => {
   await signUp(page);
-  await basculer(page, "EN");
+  await switchLanguage(page, "EN");
 
   await page.locator(".tools-bar .scanlist-link").click();
   await expect(page.getByRole("heading", { name: "Scanlists" })).toBeVisible();
@@ -57,12 +57,12 @@ test("les scanlistes aussi", async ({ page }) => {
   await expect(page.getByText("Nothing yet. Scan a card, or type its code.")).toBeVisible();
 });
 
-test("le vocabulaire Yu-Gi-Oh! reprend sa forme d'origine", async ({ page }) => {
+test("the Yu-Gi-Oh! vocabulary returns to its original form", async ({ page }) => {
   /**
-   * L'API rend `Fish`, `WATER`, `Effect Monster` : en anglais, il n'y a rien à
-   * traduire — la valeur brute **est** l'anglais. Ce vocabulaire n'a donc pas
-   * sa place dans le dictionnaire général : « Poisson » n'est pas une phrase
-   * d'interface, c'est le nom français d'une valeur du catalogue.
+   * The API returns `Fish`, `WATER`, `Effect Monster`: in English there is
+   * nothing to translate — the raw value **is** the English. So this vocabulary
+   * has no place in the general dictionary: “Poisson” is not an interface
+   * sentence, it is the French name of a catalogue value.
    */
   await signUp(page);
   await addBySetCode(page, "LTGY-FR008");
@@ -71,40 +71,39 @@ test("le vocabulaire Yu-Gi-Oh! reprend sa forme d'origine", async ({ page }) => 
   await expect(page.locator(".inspect-info-body")).toContainText("Poisson");
 
   await page.locator("#inspect-close").click();
-  await basculer(page, "EN");
+  await switchLanguage(page, "EN");
   await page.locator(".item-main").first().click();
   await expect(page.locator(".inspect-info-body")).toContainText("Fish");
   await expect(page.locator(".inspect-info-body")).not.toContainText("Poisson");
 });
 
-test("les messages du serveur sont traduits eux aussi", async ({ page }) => {
+test("the server's messages are translated too", async ({ page }) => {
   /**
-   * L'API répond **en anglais** — sa phrase est la clé du dictionnaire, et le
-   * front la traduit avant de l'afficher. Un écran français dont les erreurs
-   * parlent anglais serait le pire moment pour ne pas comprendre.
+   * The API answers **in English** — its sentence is the dictionary key, and the
+   * front translates it before displaying it. A French screen whose errors speak
+   * English would be the worst moment not to understand.
    *
-   * L'inverse était vrai jusqu'au 2026-09-14 : la clé était française.
+   * The reverse was true until 2026-09-14: the key was French.
    */
   await signUp(page);
-  await basculer(page, "EN");
+  await switchLanguage(page, "EN");
 
-  // Le serveur refuse, en anglais ; l'écran rendra sa version française.
-  const compte = await page.evaluate(async () => {
-    const réponse = await fetch("/api/auth/register", {
+  const refusal = await page.evaluate(async () => {
+    const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // Un corps valide pour Zod, refusé par la règle de force : c'est le
-      // message du service qu'on veut voir, pas celui du schéma.
+      // A body Zod accepts, refused by the strength rule: it is the service's
+      // message we want to see, not the schema's.
       body: JSON.stringify({
-        email: `faible-${Date.now()}@exemple.test`,
-        password: "trop-court",
-        displayName: "Testeur",
+        email: `weak-${Date.now()}@example.test`,
+        password: "too-short",
+        displayName: "Tester",
       }),
     });
-    return (await réponse.json()) as { message?: string };
+    return (await response.json()) as { message?: string };
   });
-  // Le serveur parle bien anglais : c'est le front qui traduit.
-  expect(compte.message).toContain("password");
+  // The server does speak English: the front is what translates.
+  expect(refusal.message).toContain("password");
 
   await page.locator(".tools-bar .scanlist-link").click();
   await page.getByRole("button", { name: "New batch" }).click();
@@ -112,12 +111,12 @@ test("les messages du serveur sont traduits eux aussi", async ({ page }) => {
   await expect(page.getByText("Give the batch a name.")).toBeVisible();
 });
 
-test("revenir au français rend tout le français", async ({ page }) => {
+test("switching back to French brings all the French back", async ({ page }) => {
   await signUp(page);
-  await basculer(page, "EN");
+  await switchLanguage(page, "EN");
   await expect(page.getByRole("heading", { name: "My collection" })).toBeVisible();
 
-  await basculer(page, "FR");
+  await switchLanguage(page, "FR");
   await expect(page.getByRole("heading", { name: "Ma collection" })).toBeVisible();
   await expect(page.getByPlaceholder("Rechercher une carte…")).toBeVisible();
 });

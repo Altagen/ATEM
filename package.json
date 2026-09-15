@@ -2,7 +2,7 @@
   "name": "atem",
   "private": true,
   "version": "0.0.0",
-  "description": "ATEM — assistant de collection et de duel Yu-Gi-Oh! auto-hébergeable",
+  "description": "ATEM — a self-hostable Yu-Gi-Oh! companion for paper players: collection and decks",
   "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=22"

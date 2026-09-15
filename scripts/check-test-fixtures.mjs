@@ -1,17 +1,17 @@
 /**
- * Deux fichiers de test ne partagent pas un set code.
+ * No two test files share a set code.
  *
- * Les épreuves d'API tournent toutes sur **la même base**, créée le temps d'une
- * exécution. Un set code est une identité : `upsertPrint("AAAA-FR001", …)` dans
- * un fichier réécrit l'impression qu'un autre fichier avait posée, et la
- * repointe vers une autre carte.
+ * The API tests all run against **the same database**, created for the length
+ * of one run. A set code is an identity: `upsertPrint("AAAA-FR001", …)` in one
+ * file rewrites the printing another file had set, and points it at another
+ * card.
  *
- * Le défaut ne se voit pas là où il est commis. Un test tout neuf sur les decks
- * a fait tomber une épreuve de la collection écrite trois jours plus tôt, qui
- * attendait « Grande Baleine » et recevait « Carte 70000001 ». On cherche alors
- * la panne dans le module qu'on vient d'écrire, ou pire dans celui qui tombe.
+ * The defect does not show where it is committed. A brand new deck test brought
+ * down a collection test written three days earlier, which expected
+ * “Grande Baleine” and received “Carte 70000001”. You then look for the failure
+ * in the module you just wrote, or worse in the one that fails.
  *
- * Chaque fichier prend donc son propre préfixe. Ce contrôle le vérifie.
+ * So each file takes its own prefix. This check verifies it.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -20,12 +20,12 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 const API = path.join(ROOT, "apps/api/src");
 
 /**
- * Les codes venus du vrai catalogue, que plusieurs fichiers peuvent nommer.
+ * Codes from the real catalogue, which several files may name.
  *
- * Ils ne sont pas fabriqués par une épreuve : les poser deux fois donne la même
- * impression, pointant la même carte. C'est l'inverse du défaut qu'on cherche.
+ * They are not made up by a test: setting them twice gives the same printing,
+ * pointing at the same card. That is the opposite of the defect we look for.
  */
-const REELS = new Set(["LTGY-FR008", "LOB-FR001", "LOB-EN001", "RA03-FR004", "RA03-EN004"]);
+const REAL_CODES = new Set(["LTGY-FR008", "LOB-FR001", "LOB-EN001", "RA03-FR004", "RA03-EN004"]);
 
 function tests(dir, acc = []) {
   for (const name of readdirSync(dir)) {
@@ -37,36 +37,36 @@ function tests(dir, acc = []) {
   return acc;
 }
 
-/** La forme d'un set code : quatre lettres ou plus, un tiret, une fin. */
+/** A set code's shape: a prefix of letters, a dash, an ending. */
 const SET_CODE = /"([A-Z]{2,6}-[A-Z]{0,2}\d{1,4}[A-Z]?)"/g;
 
-const parCode = new Map();
+const filesByCode = new Map();
 for (const file of tests(API)) {
   const relative = path.relative(ROOT, file);
   for (const match of readFileSync(file, "utf8").matchAll(SET_CODE)) {
     const code = match[1];
-    if (REELS.has(code)) continue;
-    if (!parCode.has(code)) parCode.set(code, new Set());
-    parCode.get(code).add(relative);
+    if (REAL_CODES.has(code)) continue;
+    if (!filesByCode.has(code)) filesByCode.set(code, new Set());
+    filesByCode.get(code).add(relative);
   }
 }
 
-const partagés = [...parCode]
-  .filter(([, fichiers]) => fichiers.size > 1)
+const shared = [...filesByCode]
+  .filter(([, files]) => files.size > 1)
   .sort(([a], [b]) => a.localeCompare(b));
 
-if (partagés.length === 0) {
-  console.log(`✓ ${parCode.size} set codes d'épreuve, aucun partagé`);
+if (shared.length === 0) {
+  console.log(`✓ ${filesByCode.size} test set codes, none shared`);
   process.exit(0);
 }
 
-console.log(`${partagés.length} set codes employés par plusieurs fichiers :\n`);
-for (const [code, fichiers] of partagés) {
-  console.log(`    ${code.padEnd(14)} ${[...fichiers].join(", ")}`);
+console.log(`${shared.length} set codes used by several files:\n`);
+for (const [code, files] of shared) {
+  console.log(`    ${code.padEnd(14)} ${[...files].join(", ")}`);
 }
 console.log(
-  "\n  Les épreuves d'API partagent une base : le second écrase le premier," +
-    "\n  et la panne tombe dans le fichier qui n'a rien fait." +
-    "\n  Donnez à chaque fichier son propre préfixe.",
+  "\n  The API tests share a database: the second overwrites the first," +
+    "\n  and the failure lands in the file that did nothing." +
+    "\n  Give each file its own prefix.",
 );
 process.exit(1);

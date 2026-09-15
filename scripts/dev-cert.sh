@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Un certificat de développement, pour que le scan marche depuis un téléphone.
+# A development certificate, so scanning works from a phone.
 #
-# `getUserMedia` exige un contexte sécurisé. Le navigateur excepte `localhost`,
-# jamais une adresse réseau : sans HTTPS, ouvrir le scanner depuis un téléphone
-# donne un refus de caméra que rien n'explique.
+# `getUserMedia` requires a secure context. The browser exempts `localhost`,
+# never a network address: without HTTPS, opening the scanner from a phone
+# yields a camera refusal that nothing explains.
 #
-# Le certificat porte l'adresse locale **et** l'adresse réseau de la machine,
-# pour qu'il vaille des deux côtés. Il est auto-signé : le navigateur affichera
-# un avertissement à accepter une fois.
+# The certificate carries the machine's local **and** network addresses, so it
+# holds on both sides. It is self-signed: the browser will show a warning to
+# accept once.
 set -euo pipefail
 cd "$(dirname "$0")/../apps/web"
 
@@ -15,17 +15,17 @@ DEST=".certs"
 mkdir -p "$DEST"
 
 if [ -f "$DEST/dev-cert.pem" ] && [ -f "$DEST/dev-key.pem" ]; then
-  echo "certificat déjà présent — supprimez apps/web/.certs pour le refaire"
+  echo "certificate already present — delete apps/web/.certs to make a new one"
   exit 0
 fi
 
 LAN=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -oP 'src \K[0-9.]+' || echo "127.0.0.1")
-echo "── certificat pour localhost et $LAN"
+echo "── certificate for localhost and $LAN"
 
 openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
   -keyout "$DEST/dev-key.pem" -out "$DEST/dev-cert.pem" \
-  -subj "/CN=ATEM développement" \
+  -subj "/CN=ATEM development" \
   -addext "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:$LAN" 2>/dev/null
 
-echo "── prêt. Relancez le serveur : l'interface passe en https://"
-echo "   Depuis le téléphone : https://$LAN:5174 — acceptez l'avertissement."
+echo "── ready. Restart the server: the interface switches to https://"
+echo "   From the phone: https://$LAN:5174 — accept the warning."

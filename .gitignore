@@ -9,9 +9,9 @@ __pycache__/
 *.pyc
 .DS_Store
 
-# Le moteur OCR : sept mégaoctets de binaires, téléchargés et vérifiés par
-# empreinte au build (scripts/vendor-tesseract.sh). Le dépôt garde l'empreinte,
-# pas le binaire.
+# The OCR engine: seven megabytes of binaries, downloaded and checked by
+# fingerprint at build time (scripts/vendor-tesseract.sh). The repository keeps
+# the fingerprint, not the binary.
 apps/web/public/tesseract/
 
 # Playwright
@@ -19,5 +19,5 @@ test-results/
 playwright-report/
 e2e/shots/
 
-# Certificat de développement, propre à chaque machine.
+# Development certificate, specific to each machine.
 apps/web/.certs/

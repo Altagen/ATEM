@@ -1,24 +1,24 @@
 /**
- * Rien de visible ne doit échapper au dictionnaire.
+ * Nothing visible may escape the dictionary.
  *
- * Trois défauts, trois refus :
+ * Three defects, three refusals:
  *
- * — **Une chaîne affichée hors de `t()`.** Elle restera en anglais pour un
- *   compte français, sans que rien ne le signale. C'est le défaut qui ne se voit
- *   qu'en basculant la langue, donc jamais.
+ * — **A displayed string outside `t()`.** It will stay in English for a French
+ *   account, with nothing reporting it. It is the defect that only shows when
+ *   switching language, so never.
  *
- * — **Une chaîne traduite qui n'a pas d'anglais.** `t()` rend alors le français
- *   par repli : l'écran est à moitié traduit, ce qui est pire qu'un écran qui
- *   ne l'est pas.
+ * — **A translated string with no French entry.** `t()` then falls back to the
+ *   English key: the screen is half translated, which is worse than a screen
+ *   that is not translated at all.
  *
- * — **Une entrée du dictionnaire que plus rien n'emploie.** C'est l'objection
- *   classique au « français en clé » : changer la phrase orphelinerait sa
- *   traduction en silence. Ici elle fait échouer la construction, et l'ancienne
- *   entrée se voit — on sait quoi reprendre.
+ * — **A dictionary entry nothing uses any more.** It is the classic objection
+ *   to phrase-as-key: changing the sentence would orphan its translation in
+ *   silence. Here it fails the build, and the old entry shows — you know what to
+ *   take back.
  *
- * Usage :
- *   node scripts/check-translations.mjs           # barrière
- *   node scripts/check-translations.mjs --list    # le détail, pour travailler
+ * Usage:
+ *   node scripts/check-translations.mjs           # gate
+ *   node scripts/check-translations.mjs --list    # the details, to work from
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -26,17 +26,16 @@ import path from "node:path";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const WEB = path.join(ROOT, "apps/web/src");
 const API = path.join(ROOT, "apps/api/src");
-const DICO = path.join(WEB, "platform/i18n/fr.ts");
+const DICTIONARY = path.join(WEB, "platform/i18n/fr.ts");
 
 /**
- * Ce que le contrôle ne regarde pas.
+ * What the check does not look at.
  *
- * Le moteur OCR est repris tel quel d'ATEM-old, commentaires anglais compris,
- * et n'affiche rien : ses chaînes sont des étiquettes de journal. Les
- * dictionnaires, eux, sont l'endroit où le français a le droit d'être une
- * donnée.
+ * The OCR engine is taken as is from ATEM-old and displays nothing: its strings
+ * are log labels. The dictionaries are the place where French is allowed to be
+ * data.
  */
-const HORS_CONTROLE = [
+const EXCLUDED = [
   "screens/collection/ocr/",
   "platform/i18n/",
   "platform/ygo-labels.ts",
@@ -55,325 +54,320 @@ function files(dir, acc = []) {
 }
 
 /**
- * Retire les commentaires **sans déplacer les lignes**.
+ * Removes comments **without moving lines**.
  *
- * Les remplacer par une espace collapsait les retours à la ligne, et chaque
- * numéro rapporté ensuite était faux d'autant — d'autant plus faux que le
- * fichier était commenté, c'est-à-dire partout ici. On rend donc autant de
- * retours à la ligne que le commentaire en contenait.
+ * Replacing them with a space collapsed the line breaks, and every line number
+ * reported afterwards was off by that much — all the more off as the file was
+ * commented, that is, everywhere here. So we give back as many line breaks as
+ * the comment contained.
  */
-const blanchir = (bloc) => bloc.replace(/[^\n]/g, " ");
+const blankOut = (block) => block.replace(/[^\n]/g, " ");
 
 const stripComments = (src) =>
   src
-    .replace(/\/\*[\s\S]*?\*\//g, blanchir)
+    .replace(/\/\*[\s\S]*?\*\//g, blankOut)
     .replace(/^\s*\/\/.*$/gm, "")
-    // `<!-- … -->` explique le balisage à qui le lit, pas à qui l'affiche.
-    .replace(/<!--[\s\S]*?-->/g, blanchir);
+    // `<!-- … -->` explains the markup to whoever reads it, not to whoever sees it.
+    .replace(/<!--[\s\S]*?-->/g, blankOut);
 
 /**
- * Ce qui est visible, et ce qui ne l'est pas.
+ * What is visible, and what is not.
  *
- * Deux règles, pas une heuristique unique :
+ * Two rules, not a single heuristic:
  *
- * — **Le texte du balisage et les attributs qui s'affichent** — `title`,
- *   `aria-label`, `placeholder`, `alt` — sont visibles **par nature**. On exige
- *   la traduction dès qu'ils portent une lettre, sans se demander s'ils ont
- *   l'air français. La première version cherchait des accents ou deux mots
- *   français courants, et laissait passer « Scanner », « Compact »,
- *   « Croissant », « Ajouter au lot » : quatre libellés bien visibles, trop
- *   courts ou trop peu accentués pour être reconnus.
+ * — **Markup text and the attributes that display** — `title`, `aria-label`,
+ *   `placeholder`, `alt` — are visible **by nature**. Translation is required as
+ *   soon as they carry a letter. The first version looked for what “looked
+ *   French”, and let through “Scanner”, “Compact”, “Croissant”, “Ajouter au
+ *   lot”: four clearly visible labels, too short or too unaccented to be
+ *   recognised.
  *
- * — **Les chaînes ordinaires du code** — arguments de `toast`, de `el`, d'une
- *   `Error` — sont majoritairement techniques. Là, l'heuristique reste : un
- *   accent, ou deux mots français courants.
+ * — **Ordinary strings in the code** — arguments of `toast`, of `el`, of an
+ *   `Error` — are mostly technical. There, only what looks like a sentence is
+ *   required: see `PHRASE`.
  */
-const LETTRE = /\p{L}{2}/u;
+const LETTERS = /\p{L}{2}/u;
 /**
- * Une phrase affichée commence par une majuscule et contient une espace.
+ * A displayed sentence starts with a capital letter and contains a space.
  *
- * La règle précédente cherchait des accents ou des mots-outils français — elle
- * n'a plus d'objet depuis que la source est anglaise (2026-09-14). Celle-ci ne
- * dépend d'aucune langue : « Deck not found. » est une phrase, `text/plain`,
- * `POST` et `deck-tile` n'en sont pas.
+ * The previous rule looked for accents or French function words — it lost its
+ * purpose once the source became English (2026-09-14). This one depends on no
+ * language: “Deck not found.” is a sentence, `text/plain`, `POST` and
+ * `deck-tile` are not.
  */
 const PHRASE = /^\p{Lu}[^]*\s/u;
 /**
- * Ce qui ressemble à du code n'est pas une phrase.
+ * What looks like code is not a sentence.
  *
- * Le balayage `>texte<` court sur tout le fichier : entre le chevron d'une
- * balise et celui d'une autre, il ramasse parfois des lignes de TypeScript
- * entières — un point-virgule, un accent grave ou un guillemet suffisent à les
- * reconnaître, et aucun n'apparaît dans le texte qu'on affiche. Un `${` qui
- * survit au nettoyage dit la même chose : on a mal découpé, ce n'est pas du
- * texte.
+ * The `>text<` sweep runs over the whole file: between the angle bracket of one
+ * tag and that of another, it sometimes picks up whole lines of TypeScript — a
+ * semicolon, a backtick or a double quote is enough to recognise them, and none
+ * appears in displayed text. A `${` surviving the clean-up says the same: the
+ * cut was wrong, it is not text.
  */
 const CODE = /[;`"=]|\$\{/;
 
 /**
- * Un tracé SVG n'est pas une phrase.
+ * An SVG path is not a sentence.
  *
- * `M12 2l4 8 8 1-6 5 2 8-8-4-8 4 2-8-6-5 8-1z` commence par une majuscule et
- * contient des espaces : la règle « majuscule puis espace » le prenait pour du
- * texte. Un tracé n'a que des commandes et des nombres.
+ * `M12 2l4 8 8 1-6 5 2 8-8-4-8 4 2-8-6-5 8-1z` starts with a capital letter and
+ * contains spaces: the “capital then space” rule took it for text. A path only
+ * has commands and numbers.
  */
-const TRACE_SVG = /^[MmLlHhVvCcSsQqTtAaZz][\d\s.,-]*[MmLlHhVvCcSsQqTtAaZz\d\s.,-]*$/;
+const SVG_PATH = /^[MmLlHhVvCcSsQqTtAaZz][\d\s.,-]*[MmLlHhVvCcSsQqTtAaZz\d\s.,-]*$/;
 
 /**
- * Le balisage : toute suite de lettres compte.
+ * Markup: any run of letters counts.
  *
- * Sauf une annotation de type — `Record<string, string>(tag: K, attrs: Record<`
- * fabrique un faux nœud entre deux chevrons de générique. Deux mots séparés par
- * un deux-points n'apparaissent pas dans du texte affiché.
+ * Except a type annotation — `Record<string, string>(tag: K, attrs: Record<`
+ * produces a fake node between two generic angle brackets. Two words separated
+ * by a colon do not appear in displayed text.
  */
 const ANNOTATION = /[\w)\]]\s*:\s*\w/;
 
 /**
- * Une liste de classes n'est pas une phrase.
+ * A class list is not a sentence.
  *
- * `"deck-stepper item-actions"` choisi par un ternaire à l'intérieur d'un
- * attribut `class` : que des minuscules et des tirets, jamais de majuscule ni
- * de ponctuation. Aucun texte affiché ne ressemble à ça.
+ * `"deck-stepper item-actions"` chosen by a ternary inside a `class` attribute:
+ * only lowercase letters and dashes, never a capital or punctuation. No
+ * displayed text looks like that.
  */
 const CLASSES = /^[a-z0-9 -]+$/;
 
 /**
- * Un glyphe décoratif non latin n'est pas à traduire.
+ * A decorative non-Latin glyph is not to be translated.
  *
- * La vignette par défaut d'un deck porte « 遊戯王 » — le nom du jeu en japonais,
- * qui reste le même dans toutes les langues. Réclamer sa traduction serait
- * demander de traduire un logo.
+ * A deck's default thumbnail carries “遊戯王” — the game's name in Japanese,
+ * which stays the same in every language. Asking for its translation would be
+ * asking to translate a logo.
  */
 const LATIN = /\p{Script=Latin}/u;
 
-const estBalisage = (texte) =>
-  !CODE.test(texte) &&
-  !ANNOTATION.test(texte) &&
-  !(CLASSES.test(texte.trim()) && texte.includes("-")) &&
-  LATIN.test(texte) &&
-  LETTRE.test(texte.trim());
+const isMarkupText = (text) =>
+  !CODE.test(text) &&
+  !ANNOTATION.test(text) &&
+  !(CLASSES.test(text.trim()) && text.includes("-")) &&
+  LATIN.test(text) &&
+  LETTERS.test(text.trim());
 
-/** Le code ordinaire : on ne réclame que ce qui ressemble à une phrase. */
-const estVisible = (texte) =>
-  texte.trim().length >= 4 &&
-  !CODE.test(texte) &&
-  !TRACE_SVG.test(texte.trim()) &&
-  PHRASE.test(texte.trim());
+/** Ordinary code: only what looks like a sentence is required. */
+const isVisible = (text) =>
+  text.trim().length >= 4 &&
+  !CODE.test(text) &&
+  !SVG_PATH.test(text.trim()) &&
+  PHRASE.test(text.trim());
 
-/** Le dictionnaire, lu comme un texte : on ne l'exécute pas pour l'inspecter. */
-const dico = new Set();
-for (const match of stripComments(readFileSync(DICO, "utf8")).matchAll(
+/** The dictionary, read as text: we do not execute it to inspect it. */
+const dictionary = new Set();
+for (const match of stripComments(readFileSync(DICTIONARY, "utf8")).matchAll(
   /"((?:[^"\\]|\\.)*)"\s*:/g,
 )) {
-  dico.add(match[1].replace(/\\"/g, '"'));
+  dictionary.add(match[1].replace(/\\"/g, '"'));
 }
 
-/** Les clés employées, et les endroits qui n'ont pas traduit. */
-const employees = new Set();
-const nonTraduites = [];
+/** The keys in use, and the places that did not translate. */
+const usedKeys = new Set();
+const untranslated = [];
 
-/** `t("…")` et `t(`…`)`, avec la chaîne littérale en premier argument. */
-const APPEL_T = /\bt\(\s*(?:"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`)/g;
+/** `t("…")` and `t(`…`)`, with the literal string as first argument. */
+const T_CALL = /\bt\(\s*(?:"((?:[^"\\]|\\.)*)"|`((?:[^`\\$]|\\.)*)`)/g;
 
 for (const file of [...files(WEB), ...files(API)]) {
   const relative = path.relative(ROOT, file);
-  if (HORS_CONTROLE.some((p) => relative.includes(p))) continue;
+  if (EXCLUDED.some((p) => relative.includes(p))) continue;
   const source = stripComments(readFileSync(file, "utf8"));
-  const estApi = relative.startsWith("apps/api/");
+  const isApi = relative.startsWith("apps/api/");
 
-  for (const match of source.matchAll(APPEL_T)) {
-    employees.add((match[1] ?? match[2]).replace(/\\"/g, '"'));
+  for (const match of source.matchAll(T_CALL)) {
+    usedKeys.add((match[1] ?? match[2]).replace(/\\"/g, '"'));
   }
 
   /**
-   * Les tables d'étiquettes, traduites à la lecture.
+   * Label tables, translated when read.
    *
-   * Une table déclarée au niveau du module est évaluée à l'import, avant que la
-   * langue du compte soit connue : y appeler `t()` à la déclaration figerait le
-   * français pour toute la session. Ses valeurs passent donc par `t()` au moment
-   * de l'affichage. Le suffixe `_LABELS` est la convention qui les désigne, et
-   * la barrière les traite comme des chaînes traduites — elles doivent l'être.
+   * A table declared at module level is evaluated at import, before the
+   * account's language is known: calling `t()` at declaration would freeze the
+   * default language for the whole session. So its values go through `t()` at
+   * display time. The `_LABELS` suffix is the convention naming them, and the
+   * gate treats them as translated strings — they must be.
    */
   for (const table of source.matchAll(
     /\b[A-Z][A-Z0-9_]*_LABELS[^=]*=\s*\{([\s\S]*?)\n\};/g,
   )) {
     /**
-     * Toutes les valeurs, pas seulement celles qui « ont l'air françaises ».
+     * Every value, not only those that “look like sentences”.
      *
-     * Une table d'étiquettes ne contient que des libellés affichés — « En
-     * ligne », « Injoignable » n'ont ni accent ni mot outil, et l'heuristique
-     * les laissait passer. Les noms de classes CSS qui voisinent dans la même
-     * table s'en distinguent : ils n'ont pas d'espace.
+     * A label table only holds displayed labels — “Online”, “Unreachable” are
+     * single words the sentence rule would let through. The CSS class names
+     * that sit in the same table stand apart: they have no space.
      */
-    for (const valeur of table[1].matchAll(/:\s*"((?:[^"\\]|\\.)+)"/g)) {
-      if (estBalisage(valeur[1]) && !/^[a-z0-9-]+$/.test(valeur[1])) {
-        employees.add(valeur[1]);
+    for (const value of table[1].matchAll(/:\s*"((?:[^"\\]|\\.)+)"/g)) {
+      if (isMarkupText(value[1]) && !/^[a-z0-9-]+$/.test(value[1])) {
+        usedKeys.add(value[1]);
       }
     }
   }
 
   /**
-   * Côté serveur, les phrases voyagent telles quelles jusqu'à l'écran : ce sont
-   * les messages d'erreur, et le front les cherche au dictionnaire. Elles n'ont
-   * donc pas à passer par `t()`, mais elles doivent être traduites.
+   * Server-side, sentences travel as they are to the screen: they are the error
+   * messages, and the front looks them up in the dictionary. So they do not go
+   * through `t()`, but they must be translated.
    */
-  if (estApi) {
+  if (isApi) {
     for (const match of source.matchAll(
       /\b(?:invalidInput|conflict|notFound|unauthorized|forbidden)\(\s*"((?:[^"\\]|\\.)*)"/g,
     )) {
-      employees.add(match[1]);
+      usedKeys.add(match[1]);
     }
     /**
-     * `new AppError(code, message)` aussi.
+     * `new AppError(code, message)` too.
      *
-     * La phrase de la limitation de débit passait par là, et par là seulement :
-     * elle n'a jamais été traduite, et personne ne l'a vu — c'est l'écran qui
-     * l'affiche quand on se trompe trois fois de mot de passe.
+     * The rate-limiting sentence went through there, and only there: it was
+     * never translated, and nobody saw it — it is what the screen shows after
+     * three wrong passwords.
      */
     for (const match of source.matchAll(
       /\bnew AppError\(\s*"[a-z_]+"\s*,\s*"((?:[^"\\]|\\.)*)"/g,
     )) {
-      employees.add(match[1]);
+      usedKeys.add(match[1]);
     }
     continue;
   }
 
   /**
-   * Le texte du balisage, balayé sur **tout le fichier**.
+   * Markup text, swept over **the whole file**.
    *
-   * On délimitait d'abord les gabarits `html\`…\`` pour n'y chercher que là.
-   * Mais un gabarit en contient d'autres — une ligne de liste, une puce de
-   * filtre — et la recherche non gourmande s'arrêtait au premier accent grave
-   * rencontré. Tout ce qui suivait dans le gabarit extérieur échappait au
-   * contrôle, dont un paragraphe entier de l'aide des filtres.
+   * We first delimited the `html\`…\`` templates to look only there. But a
+   * template contains others — a list row, a filter chip — and the non-greedy
+   * search stopped at the first backtick met. Everything after it in the outer
+   * template escaped the check, including a whole paragraph of the filters'
+   * help.
    *
-   * Chercher `>texte<` partout est plus grossier et ne rate rien. Hors d'un
-   * gabarit, ce motif n'apparaît pas dans du TypeScript.
+   * Looking for `>text<` everywhere is cruder and misses nothing. Outside a
+   * template, that pattern does not appear in TypeScript.
    */
-  const signaler = (texte, décalage) => {
-    if (!estBalisage(texte)) return;
-    nonTraduites.push({
+  const report = (text, offset) => {
+    if (!isMarkupText(text)) return;
+    untranslated.push({
       file: relative,
-      line: source.slice(0, décalage).split("\n").length,
-      texte: texte.trim().replace(/\s+/g, " ").slice(0, 70),
+      line: source.slice(0, offset).split("\n").length,
+      text: text.trim().replace(/\s+/g, " ").slice(0, 70),
     });
   };
 
   /**
-   * Les opérateurs ne sont pas des balises.
+   * Operators are not tags.
    *
-   * `=>`, `>=`, `<=` et `->` fabriquaient des faux « nœuds de texte » qui
-   * couraient sur des lignes de code entières. On exige donc un chevron seul de
-   * chaque côté.
+   * `=>`, `>=`, `<=` and `->` produced fake “text nodes” running over whole
+   * lines of code. So a lone angle bracket is required on each side.
    */
-  for (const noeud of source.matchAll(/(^|[^=!<>-])>([^<>]*)<(?!=)/gm)) {
-    signaler(noeud[2].replace(/\$\{[\s\S]*?\}/g, " "), noeud.index);
+  for (const node of source.matchAll(/(^|[^=!<>-])>([^<>]*)<(?!=)/gm)) {
+    report(node[2].replace(/\$\{[\s\S]*?\}/g, " "), node.index);
   }
   for (const attr of source.matchAll(
     /\b(?:title|aria-label|placeholder|alt)="((?:[^"$]|\$(?!\{))*)"/g,
   )) {
-    signaler(attr[1], attr.index);
+    report(attr[1], attr.index);
   }
 
   /**
-   * Les libellés déclarés ailleurs que dans un gabarit.
+   * Labels declared outside a template.
    *
-   * `register("/decks", écran, { nav: { label: "Decks" } })` : le mot s'affiche
-   * dans la barre de navigation, mais il est écrit dans une déclaration de
-   * route, loin de tout balisage. « Collection » a masqué le défaut longtemps —
-   * il s'écrit pareil dans les deux langues.
+   * `register("/decks", screen, { nav: { label: "Decks" } })`: the word displays
+   * in the navigation bar, but it is written in a route declaration, far from
+   * any markup. “Collection” hid the defect for a long time — it is spelled the
+   * same in both languages.
    */
-  for (const étiquette of source.matchAll(/\blabel:\s*"((?:[^"\\]|\\.)+)"/g)) {
-    if (estBalisage(étiquette[1])) {
-      employees.add(étiquette[1]);
+  for (const label of source.matchAll(/\blabel:\s*"((?:[^"\\]|\\.)+)"/g)) {
+    if (isMarkupText(label[1])) {
+      usedKeys.add(label[1]);
     }
   }
 
   /**
-   * Les tableaux d'étiquettes — `[string, string][]`.
+   * Label arrays — `[string, string][]`.
    *
-   * Une fiche de carte est une suite de couples « intitulé, valeur » déclarés
-   * dans un tableau. L'intitulé s'affiche, mais il n'est ni dans un gabarit ni
-   * passé à une fonction : quatre d'entre eux — « Attribut », « Niveau »,
-   * « Langue », « Exemplaires » — sont restés en français dans une fiche
-   * entièrement anglaise, sans que rien ne le signale.
+   * A card sheet is a series of “heading, value” pairs declared in an array.
+   * The heading displays, but it is neither in a template nor passed to a
+   * function: four of them — “Attribute”, “Level”, “Language”, “Copies” — stayed
+   * untranslated in an otherwise translated sheet, with nothing reporting it.
    */
-  for (const tableau of source.matchAll(/:\s*\[string,\s*string\]\[\]\s*=([\s\S]*?)\n\s*\];/g)) {
-    for (const couple of tableau[1].matchAll(/\[\s*"((?:[^"\\]|\\.)+)"\s*,/g)) {
-      // Une valeur d'identifiant — `monster`, `unresolved` — ne s'affiche pas :
-      // c'est la clé du couple, pas son intitulé. Elle s'écrit en minuscules.
-      if (/^[a-z0-9_-]+$/.test(couple[1])) continue;
-      if (estBalisage(couple[1])) nonTraduites.push({
+  for (const array of source.matchAll(/:\s*\[string,\s*string\]\[\]\s*=([\s\S]*?)\n\s*\];/g)) {
+    for (const pair of array[1].matchAll(/\[\s*"((?:[^"\\]|\\.)+)"\s*,/g)) {
+      // An identifier value — `monster`, `unresolved` — does not display: it is
+      // the pair's key, not its heading. It is written in lowercase.
+      if (/^[a-z0-9_-]+$/.test(pair[1])) continue;
+      if (isMarkupText(pair[1])) untranslated.push({
         file: relative,
-        line: source.slice(0, tableau.index + couple.index).split("\n").length,
-        texte: couple[1].slice(0, 70),
+        line: source.slice(0, array.index + pair.index).split("\n").length,
+        text: pair[1].slice(0, 70),
       });
     }
   }
 
   /**
-   * Les gabarits à interpolation, hors balisage.
+   * Interpolated templates, outside markup.
    *
-   * `meta.textContent = \`${n}/${total} édition(s)\`` est une phrase affichée,
-   * et rien ne la distinguait d'un chemin ou d'une requête : le contrôle ne
-   * regardait que les chaînes entre guillemets. Trois fuites s'y cachaient,
-   * dont la ligne de bilan de la collection — visible sur chaque écran.
+   * `meta.textContent = \`${n}/${total} printing(s)\`` is a displayed sentence,
+   * and nothing told it apart from a path or a query: the check only looked at
+   * double-quoted strings. Three leaks hid there, including the collection's
+   * summary line — visible on every screen.
    *
-   * Les valeurs insérées sont retirées avant l'examen : ce qui reste est la
-   * phrase, et c'est elle qui doit passer par `t()` avec des `{nom}`.
+   * Inserted values are removed before the examination: what remains is the
+   * sentence, and it is what must go through `t()` with `{name}` placeholders.
    */
-  for (const gabarit of source.matchAll(/`((?:[^`\\]|\\.)*)`/g)) {
-    const phrase = gabarit[1].replace(/\$\{[^}]*\}/g, " ");
-    if (!estVisible(phrase)) continue;
+  for (const template of source.matchAll(/`((?:[^`\\]|\\.)*)`/g)) {
+    const phrase = template[1].replace(/\$\{[^}]*\}/g, " ");
+    if (!isVisible(phrase)) continue;
     if (phrase.includes("<")) continue;
-    nonTraduites.push({
+    untranslated.push({
       file: relative,
-      line: source.slice(0, gabarit.index).split("\n").length,
-      texte: phrase.trim().replace(/\s+/g, " ").slice(0, 70),
+      line: source.slice(0, template.index).split("\n").length,
+      text: phrase.trim().replace(/\s+/g, " ").slice(0, 70),
     });
   }
 
-  // Les chaînes passées à `el(...)`, `toast(...)`, `throw new Error(...)`.
+  // Strings passed to `el(...)`, `toast(...)`, `throw new Error(...)`.
   for (const match of source.matchAll(/"((?:[^"\\\n]|\\.){4,})"/g)) {
-    const texte = match[1];
-    if (!estVisible(texte)) continue;
-    if (employees.has(texte) || dico.has(texte)) continue;
-    const avant = source.slice(Math.max(0, match.index - 40), match.index);
-    if (/\bt\(\s*$/.test(avant)) continue;
-    nonTraduites.push({
+    const text = match[1];
+    if (!isVisible(text)) continue;
+    if (usedKeys.has(text) || dictionary.has(text)) continue;
+    const before = source.slice(Math.max(0, match.index - 40), match.index);
+    if (/\bt\(\s*$/.test(before)) continue;
+    untranslated.push({
       file: relative,
       line: source.slice(0, match.index).split("\n").length,
-      texte: texte.slice(0, 70),
+      text: text.slice(0, 70),
     });
   }
 }
 
-const sansAnglais = [...employees].filter((clé) => !dico.has(clé)).sort();
-const orphelines = [...dico].filter((clé) => !employees.has(clé)).sort();
+const missingFrench = [...usedKeys].filter((key) => !dictionary.has(key)).sort();
+const orphans = [...dictionary].filter((key) => !usedKeys.has(key)).sort();
 
 const listOnly = process.argv.includes("--list");
-const total = nonTraduites.length + sansAnglais.length + orphelines.length;
+const total = untranslated.length + missingFrench.length + orphans.length;
 
 if (total === 0) {
-  console.log(`✓ ${employees.size} chaînes, toutes traduites`);
+  console.log(`✓ ${usedKeys.size} strings, all translated`);
   process.exit(0);
 }
 
-const bloc = (titre, entrées, rendre) => {
-  if (entrées.length === 0) return;
-  console.log(`\n${entrées.length} ${titre} :\n`);
-  const montrées = listOnly ? entrées : entrées.slice(0, 8);
-  for (const e of montrées) console.log(`    ${rendre(e)}`);
-  if (!listOnly && entrées.length > montrées.length) {
-    console.log(`    … et ${entrées.length - montrées.length} autres`);
+const section = (title, entries, render) => {
+  if (entries.length === 0) return;
+  console.log(`\n${entries.length} ${title}:\n`);
+  const shown = listOnly ? entries : entries.slice(0, 8);
+  for (const entry of shown) console.log(`    ${render(entry)}`);
+  if (!listOnly && entries.length > shown.length) {
+    console.log(`    … and ${entries.length - shown.length} more`);
   }
 };
 
-bloc("chaînes visibles hors du dictionnaire", nonTraduites, (e) =>
-  `${e.file}:${e.line}  « ${e.texte} »`,
+section("visible strings outside the dictionary", untranslated, (e) =>
+  `${e.file}:${e.line}  “${e.text}”`,
 );
-bloc("chaînes affichées absentes du dictionnaire", sansAnglais, (c) => `« ${c} »`);
-bloc("entrées du dictionnaire que plus rien n'emploie", orphelines, (c) => `« ${c} »`);
+section("displayed strings missing from the dictionary", missingFrench, (key) => `“${key}”`);
+section("dictionary entries nothing uses any more", orphans, (key) => `“${key}”`);
 
-if (!listOnly) console.log("\n  node scripts/check-translations.mjs --list   pour tout voir");
+if (!listOnly) console.log("\n  node scripts/check-translations.mjs --list   to see everything");
 process.exit(1);

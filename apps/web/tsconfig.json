@@ -3,8 +3,8 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
-    // `node` est nécessaire aux fichiers de test, qui tournent sous le lanceur
-    // natif de Node même si le code testé vise le navigateur.
+    // `node` is needed by the test files, which run under Node's native runner
+    // even though the code under test targets the browser.
     "types": ["vite/client", "node"]
   },
   "include": ["src/**/*"]

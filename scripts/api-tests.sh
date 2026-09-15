@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
-# Les tests de l'API, sur une base jetable.
+# The API tests, on a throwaway database.
 #
-# Une base par exécution, nommée par horodatage et pid : deux campagnes
-# simultanées ne se marchent pas dessus, et un test qui laisse des données
-# derrière lui ne pollue pas le suivant. Le motif vient d'ATEM-old.
+# One database per run, named by timestamp and pid: two simultaneous runs do
+# not step on each other, and a test that leaves data behind does not pollute
+# the next. The pattern comes from ATEM-old.
 #
-# La création et la destruction passent par le driver déjà présent dans le
-# projet, pas par `psql` : le harnais ne doit rien exiger que le dépôt
-# n'installe lui-même.
+# Creation and teardown go through the driver the project already has, not
+# through `psql`: the harness must require nothing the repository does not
+# install itself.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 export ATEM_TEST_ADMIN_URL="${ATEM_TEST_ADMIN_URL:-postgres://atem:atem@127.0.0.1:55432/postgres}"
-export JWT_SECRET="${JWT_SECRET:-cle_de_test_de_plus_de_trente_deux_caracteres}"
+export JWT_SECRET="${JWT_SECRET:-test_key_longer_than_thirty_two_characters}"
 
-# Les plafonds d'authentification ont leur propre test, qui les fixe lui-même.
-# Les laisser à leur valeur de production ferait échouer, à la cinquième
-# inscription, des tests qui ne parlent pas d'authentification.
+# The authentication ceilings have their own test, which sets them itself.
+# Leaving them at their production value would make tests that are not about
+# authentication fail at the fifth sign-up.
 export ATEM_REGISTER_ATTEMPTS_MAX="${ATEM_REGISTER_ATTEMPTS_MAX:-10000}"
 export ATEM_LOGIN_ATTEMPTS_MAX="${ATEM_LOGIN_ATTEMPTS_MAX:-10000}"
 
-# Les chemins sont relatifs à apps/api : c'est le répertoire de travail que
-# `pnpm --filter` impose au processus lancé.
+# Paths are relative to apps/api: that is the working directory `pnpm --filter`
+# imposes on the launched process.
 mapfile -t files < <(cd apps/api && find src -name "*.test.ts" | sort)
 if [ ${#files[@]} -eq 0 ]; then
-  echo "Aucun test d'API pour l'instant."
+  echo "No API tests yet."
   exit 0
 fi
 

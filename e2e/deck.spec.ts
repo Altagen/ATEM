@@ -2,15 +2,15 @@ import { expect, test } from "@playwright/test";
 import { expectNoHorizontalOverflow, signUp } from "./helpers.js";
 
 /**
- * Les decks — la liste et l'atelier.
+ * Decks — the list and the workshop.
  *
- * Ce qui compte ici : l'écran refuse **avec la même règle** que le serveur.
- * ATEM-old avait le bon calcul et ne s'en servait que pour griser un bouton ;
- * une requête forgée passait. Les deux côtés appellent maintenant `checkDeckAdd`.
+ * What counts here: the screen refuses **with the same rule** as the server.
+ * ATEM-old had the right computation and only used it to grey out a button; a
+ * forged request went through. Both sides now call `checkDeckAdd`.
  */
 
-/** Ajoute des cartes à la collection, pour avoir de quoi piocher. */
-async function garnir(page: import("@playwright/test").Page, codes: string[]) {
+/** Adds cards to the collection, so there is something to draw from. */
+async function stockCollection(page: import("@playwright/test").Page, codes: string[]) {
   for (const code of codes) {
     await page.getByLabel(/Ajouter par set code/).fill(code);
     await page.getByRole("button", { name: /Ajouter la carte/ }).click();
@@ -18,84 +18,84 @@ async function garnir(page: import("@playwright/test").Page, codes: string[]) {
   }
 }
 
-async function nouveauDeck(page: import("@playwright/test").Page, nom: string) {
+async function newDeck(page: import("@playwright/test").Page, name: string) {
   await page.goto("/decks");
-  await creerDeckIci(page, nom);
-  // Le nom vit dans un champ, pas dans un titre : c'est l'atelier d'ATEM-old,
-  // où l'on renomme sans changer d'écran.
-  await expect(page.locator("#edit-name")).toHaveValue(nom);
+  await createDeckHere(page, name);
+  // The name lives in a field, not a heading: it is ATEM-old's workshop, where
+  // you rename without changing screen.
+  await expect(page.locator("#edit-name")).toHaveValue(name);
 }
 
-/** La fenêtre de création, là où l'on se trouve. */
-async function creerDeckIci(page: import("@playwright/test").Page, nom: string) {
+/** The creation window, wherever you are. */
+async function createDeckHere(page: import("@playwright/test").Page, name: string) {
   await page.getByRole("button", { name: "Construire un deck" }).click();
-  await page.locator("#modal-name").fill(nom);
+  await page.locator("#modal-name").fill(name);
   await page.getByRole("button", { name: "Créer" }).click();
 }
 
-/** La fenêtre de création de dossier, à l'étage courant. */
-async function creerDossier(page: import("@playwright/test").Page, nom: string) {
+/** The folder creation window, at the current level. */
+async function createFolder(page: import("@playwright/test").Page, name: string) {
   await page.getByRole("button", { name: "Nouveau dossier" }).click();
-  await page.locator("#modal-name").fill(nom);
+  await page.locator("#modal-name").fill(name);
   await page.getByRole("button", { name: "Créer" }).click();
-  await expect(page.locator(".folder-name", { hasText: nom })).toBeVisible();
+  await expect(page.locator(".folder-name", { hasText: name })).toBeVisible();
 }
 
-/** Sur téléphone, les deux panneaux se relaient : on choisit lequel on regarde. */
-async function panneau(page: import("@playwright/test").Page, lequel: "Ma collection" | "Mon deck") {
+/** On a phone, the two panels take turns: choose which one to look at. */
+async function showPanel(page: import("@playwright/test").Page, which: "collection" | "deck") {
   /**
-   * On vise l'attribut, pas le rôle ni le nom.
+   * Aim at the attribute, not the role or the name.
    *
-   * Ces boutons portent `role="tab"` — ce qui remplace leur rôle implicite, si
-   * bien que `getByRole("button")` ne les trouve pas — et leur nom accessible
-   * porte l'émoji et le compte : « 🃏 Mon deck 0 ». `data-panel` ne bouge pas.
+   * These buttons carry `role="tab"` — which replaces their implicit role, so
+   * `getByRole("button")` does not find them — and their accessible name
+   * carries the emoji and the count: “🃏 Mon deck 0”. `data-panel` does not move.
    */
-  const bascule = page.locator(".deck-panel-switch");
-  if (!(await bascule.isVisible())) return;
-  await bascule.locator(`[data-panel="${lequel === "Ma collection" ? "collection" : "zones"}"]`).click();
+  const toggle = page.locator(".deck-panel-switch");
+  if (!(await toggle.isVisible())) return;
+  await toggle.locator(`[data-panel="${which === "collection" ? "collection" : "zones"}"]`).click();
 }
 
-test("on crée un deck et on y pose une carte de sa collection", async ({ page }) => {
+test("a deck is created and a card from the collection is put in it", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["LTGY-FR008", "LTGY-FR008"]);
-  await nouveauDeck(page, "Premier deck");
+  await stockCollection(page, ["LTGY-FR008", "LTGY-FR008"]);
+  await newDeck(page, "First deck");
 
-  await panneau(page, "Ma collection");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await page.waitForTimeout(500);
 
-  await panneau(page, "Mon deck");
+  await showPanel(page, "deck");
   await expect(page.locator(".zone-edit-row")).toHaveCount(1);
   await expect(page.locator(".zone-edit-row .deck-stepper-qty")).toHaveText("×1");
-  // L'onglet Main porte le compte.
+  // The Main tab carries the count.
   await expect(page.locator("[data-zone='main']")).toContainText("1");
 });
 
-test("le « + » se grise quand on a tout mis", async ({ page }) => {
+test("the “+” greys out once everything is in", async ({ page }) => {
   /**
-   * Le plafond est `min(3, possédés)` : deux exemplaires possédés, deux au
-   * deck, et le bouton ne propose plus rien. C'est la même fonction qui grise
-   * ici et qui refuse côté serveur.
+   * The ceiling is `min(3, owned)`: two copies owned, two in the deck, and the
+   * button offers nothing more. The same function greys out here and refuses on
+   * the server.
    */
   await signUp(page);
-  await garnir(page, ["LTGY-FR008", "LTGY-FR008"]);
-  await nouveauDeck(page, "Plafond");
+  await stockCollection(page, ["LTGY-FR008", "LTGY-FR008"]);
+  await newDeck(page, "Ceiling");
 
-  await panneau(page, "Ma collection");
-  const ajouter = page.locator(".js-coll[data-d='1']").first();
-  await ajouter.click();
+  await showPanel(page, "collection");
+  const add = page.locator(".js-coll[data-d='1']").first();
+  await add.click();
   await page.waitForTimeout(450);
-  await ajouter.click();
+  await add.click();
   await page.waitForTimeout(450);
 
   await expect(page.locator(".js-coll[data-d='1']").first()).toBeDisabled();
 });
 
-test("le deck se dit incomplet tant qu'il n'est pas jouable", async ({ page }) => {
+test("the deck says it is incomplete until it is playable", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["LTGY-FR008"]);
-  await nouveauDeck(page, "Incomplet");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LTGY-FR008"]);
+  await newDeck(page, "Incomplete");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await page.waitForTimeout(500);
 
@@ -104,31 +104,32 @@ test("le deck se dit incomplet tant qu'il n'est pas jouable", async ({ page }) =
   await expect(page.locator(".deck-ready")).toHaveCount(0);
 });
 
-test("retirer la dernière carte vide la zone", async ({ page }) => {
+test("removing the last card empties the zone", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["LTGY-FR008"]);
-  await nouveauDeck(page, "À vider");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LTGY-FR008"]);
+  await newDeck(page, "To empty");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await page.waitForTimeout(500);
 
-  await panneau(page, "Mon deck");
+  await showPanel(page, "deck");
   await page.locator(".js-zone[data-d='-1']").first().click();
   await page.waitForTimeout(500);
   await expect(page.locator(".zone-edit-row")).toHaveCount(0);
   await expect(page.locator(".zone-edit-empty")).toBeVisible();
 });
 
-test("jeter un deck ne touche pas à la collection", async ({ page }) => {
-  // Un deck est une intention, pas une possession.
+test("discarding a deck does not touch the collection", async ({ page }) => {
+  // A deck is an intention, not a possession.
   await signUp(page);
-  await garnir(page, ["LTGY-FR008"]);
-  await nouveauDeck(page, "Sans effet");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LTGY-FR008"]);
+  await newDeck(page, "No effect");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await page.waitForTimeout(500);
 
-  // Jeter est un geste sur l'objet : il vit sur la fiche, pas dans l'atelier.
+  // Discarding is a gesture on the object: it lives on the sheet, not in the
+  // workshop.
   await page.getByRole("link", { name: "← Fiche" }).click();
   page.once("dialog", (d) => d.accept());
   await page.locator("#btn-delete").click();
@@ -138,23 +139,23 @@ test("jeter un deck ne touche pas à la collection", async ({ page }) => {
   await expect(page.locator(".content").getByText("LTGY-FR008").first()).toBeVisible();
 });
 
-test("l'atelier ne déborde pas", async ({ page }) => {
+test("the workshop does not overflow", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["LTGY-FR008", "LOB-FR001"]);
-  await nouveauDeck(page, "Largeur");
+  await stockCollection(page, ["LTGY-FR008", "LOB-FR001"]);
+  await newDeck(page, "Width");
   expect(await expectNoHorizontalOverflow(page)).toBeLessThanOrEqual(0);
 });
 
-test("sur téléphone, les deux panneaux se relaient", async ({ page }, info) => {
-  test.skip(info.project.name !== "mobile", "règle propre au téléphone");
+test("on a phone, the two panels take turns", async ({ page }, info) => {
+  test.skip(info.project.name !== "mobile", "phone-only rule");
   /**
-   * Empiler la collection et les zones obligerait à traverser quarante cartes
-   * pour atteindre son deck. Au-delà de 900 px les deux tiennent côte à côte,
-   * et la bascule disparaît.
+   * Stacking the collection and the zones would force you to cross forty cards
+   * to reach your deck. Past 900 px the two fit side by side, and the toggle
+   * disappears.
    */
   await signUp(page);
-  await garnir(page, ["LTGY-FR008"]);
-  await nouveauDeck(page, "Bascule");
+  await stockCollection(page, ["LTGY-FR008"]);
+  await newDeck(page, "Toggle");
 
   await expect(page.locator(".deck-edit-collection")).toBeVisible();
   await expect(page.locator(".deck-edit-zones")).toBeHidden();
@@ -164,52 +165,52 @@ test("sur téléphone, les deux panneaux se relaient", async ({ page }, info) =>
   await expect(page.locator(".deck-edit-collection")).toBeHidden();
 });
 
-test("sur écran large, les deux panneaux tiennent ensemble", async ({ page }, info) => {
-  test.skip(info.project.name !== "bureau", "règle propre à l'écran large");
+test("on a wide screen, the two panels fit together", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "wide-screen-only rule");
   await signUp(page);
-  await garnir(page, ["LTGY-FR008"]);
-  await nouveauDeck(page, "Côte à côte");
+  await stockCollection(page, ["LTGY-FR008"]);
+  await newDeck(page, "Side by side");
 
   await expect(page.locator(".deck-panel-switch")).toBeHidden();
   const collection = (await page.locator(".deck-edit-collection").boundingBox())!;
   const zones = (await page.locator(".deck-edit-zones").boundingBox())!;
-  expect(collection.x + collection.width, "la collection est à gauche").toBeLessThanOrEqual(zones.x + 1);
+  expect(collection.x + collection.width, "the collection is on the left").toBeLessThanOrEqual(zones.x + 1);
 });
 
-test("les filtres de l'atelier trient la collection", async ({ page }) => {
+test("the workshop's filters sort the collection", async ({ page }) => {
   /**
-   * Les mêmes catégories que l'écran Collection, plus « Extra » — qui n'y a pas
-   * de sens et qui en a un ici : c'est la seule pile qu'on remplit à part.
+   * The same categories as the Collection screen, plus “Extra” — which makes no
+   * sense there and makes some here: it is the only pile filled separately.
    */
   await signUp(page);
-  await garnir(page, ["LTGY-FR008", "RA03-FR004"]);
-  await nouveauDeck(page, "Filtres");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LTGY-FR008", "RA03-FR004"]);
+  await newDeck(page, "Filters");
+  await showPanel(page, "collection");
 
-  const lignes = page.locator(".deck-edit-coll-list .item");
-  await expect(lignes).toHaveCount(2);
+  const rows = page.locator(".deck-edit-coll-list .item");
+  await expect(rows).toHaveCount(2);
 
-  // Les deux sont des monstres : « Magie » ne doit rien laisser.
+  // Both are monsters: “Spell” must let nothing through.
   await page.locator("[data-filter-kind='spell']").click();
   await expect(page.locator(".deck-edit-coll-list .item")).toHaveCount(0);
 
   await page.locator("[data-filter-kind='']").click();
-  await expect(lignes).toHaveCount(2);
+  await expect(rows).toHaveCount(2);
 
-  // L'attribut EAU les garde toutes les deux (Grande Baleine, Diva).
+  // The WATER attribute keeps both (Grande Baleine, Diva).
   await page.locator("[data-filter-attr='WATER']").click();
-  await expect(lignes).toHaveCount(2);
-  // Et TÉNÈBRES n'en garde aucune.
+  await expect(rows).toHaveCount(2);
+  // And DARK keeps none.
   await page.locator("[data-filter-attr='WATER']").click();
   await page.locator("[data-filter-attr='DARK']").click();
   await expect(page.locator(".deck-edit-coll-list .item")).toHaveCount(0);
 });
 
-test("la galerie montre les mêmes cartes que la liste", async ({ page }) => {
+test("the gallery shows the same cards as the list", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["LTGY-FR008", "LOB-FR001"]);
-  await nouveauDeck(page, "Galerie");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LTGY-FR008", "LOB-FR001"]);
+  await newDeck(page, "Gallery");
+  await showPanel(page, "collection");
 
   await expect(page.locator(".deck-edit-coll-list .item")).toHaveCount(2);
   await page.locator("[data-coll-view='gallery']").click();
@@ -217,83 +218,82 @@ test("la galerie montre les mêmes cartes que la liste", async ({ page }) => {
   await expect(page.locator(".deck-edit-gallery .deck-coll-tile")).toHaveCount(2);
 });
 
-test("le compteur de zones porte les limites", async ({ page }) => {
-  // C'est la seule chose qu'on regarde en construisant : combien il en manque.
+test("the zone counter carries the limits", async ({ page }) => {
+  // It is the only thing you look at while building: how many are missing.
   await signUp(page);
-  await garnir(page, ["LTGY-FR008"]);
-  await nouveauDeck(page, "Compteur");
+  await stockCollection(page, ["LTGY-FR008"]);
+  await newDeck(page, "Counter");
 
-  const compteur = page.locator(".deck-counts");
-  await expect(compteur).toContainText("Main");
-  await expect(compteur).toContainText("/60");
-  await expect(compteur).toContainText("/15");
+  const counter = page.locator(".deck-counts");
+  await expect(counter).toContainText("Main");
+  await expect(counter).toContainText("/60");
+  await expect(counter).toContainText("/15");
 });
 
-test("le nom s'écrit tout seul, sans bouton", async ({ page }) => {
+test("the name is written by itself, with no button", async ({ page }) => {
   /**
-   * Ange : « c'est bizarre comme UX de valider automatiquement les cartes mais
-   * pas le nom… soit tu mets tout à jour soit tu mets rien à jour mais pas
-   * juste la moitié ». On tape, on ne touche à rien, et c'est écrit.
+   * Ange: “it is odd UX to validate the cards automatically but not the name…
+   * either you update everything or you update nothing, but not just half of
+   * it”. You type, you touch nothing else, and it is written.
    */
   await signUp(page);
-  await nouveauDeck(page, "Avant");
+  await newDeck(page, "Before");
 
-  await page.locator("#edit-name").fill("Après");
+  await page.locator("#edit-name").fill("After");
   await expect(page.locator(".deck-saved")).toContainText("Enregistré");
 
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  await expect(page.locator(".deck-tile-name")).toHaveText("Après");
+  await expect(page.locator(".deck-tile-name")).toHaveText("After");
 });
 
-test("l'atelier n'a aucun bouton d'enregistrement", async ({ page }) => {
+test("the workshop has no save button", async ({ page }) => {
   /**
-   * Signalé trois fois par Ange, de trois façons. Le bouton ne répondait rien
-   * quand le nom n'avait pas changé ; appelé « Enregistrer » à côté de cartes
-   * qui s'écrivent au « ± », il faisait croire qu'elles attendaient ; et
-   * renommé « Renommer », il laissait une moitié de l'écran à valider à la
-   * main quand l'autre partait seule. Il n'y en a plus.
+   * Reported three times by Ange, in three ways. The button answered nothing
+   * when the name had not changed; called “Enregistrer” next to cards written at
+   * the “±”, it suggested they were waiting; and renamed “Renommer”, it left
+   * one half of the screen to confirm by hand while the other went by itself.
+   * There is none any more.
    */
   await signUp(page);
-  await nouveauDeck(page, "Sans bouton");
+  await newDeck(page, "No button");
 
   await expect(page.getByRole("button", { name: "Enregistrer" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Renommer" })).toHaveCount(0);
 });
 
-test("l'atelier dit où en est le deck, pas seulement combien", async ({ page }) => {
+test("the workshop says where the deck stands, not only how many", async ({ page }) => {
   /**
-   * Ange : « on est à 4/60, on peut mettre "Deck incomplet" ou ce genre de
-   * choses ? ». Le compteur est un chiffre : il faut connaître la règle des
-   * quarante cartes pour le lire. La phrase la porte, et dit le reste à faire.
+   * Ange: “we are at 4/60, could we say ‘Deck incomplete’ or something like
+   * that?”. The counter is a number: you have to know the forty-card rule to
+   * read it. The sentence carries it, and says what is left to do.
    */
   await signUp(page);
-  await garnir(page, ["SDCR-FR012"]);
-  await nouveauDeck(page, "Verdict");
+  await stockCollection(page, ["SDCR-FR012"]);
+  await newDeck(page, "Verdict");
 
-  // Un deck neuf : « encore 40 au Main » serait exact et inutile.
+  // A new deck: “40 more in the Main” would be accurate and useless.
   await expect(page.locator(".deck-status")).toContainText("Deck vide");
 
-  await panneau(page, "Ma collection");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
 
-  const état = page.locator(".deck-status");
-  await expect(état).toContainText("Deck incomplet");
-  // Le reste à faire, en cartes, pour qu'on n'ait pas à soustraire de tête.
-  await expect(état).toContainText("encore 39");
-  await expect(état).toHaveClass(/deck-status-short/);
+  const status = page.locator(".deck-status");
+  await expect(status).toContainText("Deck incomplet");
+  // What is left to do, in cards, so nobody has to subtract in their head.
+  await expect(status).toContainText("encore 39");
+  await expect(status).toHaveClass(/deck-status-short/);
 });
 
-test("le deck signale ce qu'il ne peut plus aligner", async ({ page }) => {
+test("the deck reports what it can no longer field", async ({ page }) => {
   /**
-   * Le « + » refuse une carte qu'on ne possède pas, donc un deck est jouable
-   * par construction — jusqu'à ce qu'on retire la carte de sa **collection**
-   * après l'avoir posée. C'est le seul chemin vers un manque, et il ne doit pas
-   * être silencieux.
+   * The “+” refuses a card you do not own, so a deck is playable by
+   * construction — until the card is removed from the **collection** after
+   * being placed. It is the only path to a shortage, and it must not be silent.
    */
   await signUp(page);
-  await garnir(page, ["SDCR-FR013"]);
-  await nouveauDeck(page, "Manque");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["SDCR-FR013"]);
+  await newDeck(page, "Shortage");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
 
@@ -307,35 +307,35 @@ test("le deck signale ce qu'il ne peut plus aligner", async ({ page }) => {
 
   await page.goto("/decks");
   await page.locator(".deck-tile").click();
-  const état = page.locator(".deck-status");
-  await expect(état).toContainText("à retrouver");
-  await expect(état).toHaveClass(/deck-status-over/);
+  const status = page.locator(".deck-status");
+  await expect(status).toContainText("à retrouver");
+  await expect(status).toHaveClass(/deck-status-over/);
 });
 
-test("l'écran dit que les cartes sont enregistrées", async ({ page }) => {
+test("the screen says the cards are saved", async ({ page }) => {
   /**
-   * C'est ce qui manquait : les cartes s'écrivent à chaque « ± », et rien ne le
-   * disait. ATEM-old affichait « non enregistré » parce qu'il travaillait sur
-   * un brouillon ; nous disons l'inverse, et brièvement.
+   * That is what was missing: cards are written at every “±”, and nothing said
+   * so. ATEM-old displayed “unsaved” because it worked on a draft; we say the
+   * reverse, and briefly.
    */
   await signUp(page);
-  await garnir(page, ["LTGY-FR008"]);
-  await nouveauDeck(page, "Marque");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LTGY-FR008"]);
+  await newDeck(page, "Mark");
+  await showPanel(page, "collection");
 
   await expect(page.locator(".deck-saved")).toHaveCount(0);
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-saved")).toContainText("Enregistré");
-  // Puis la marque s'efface : permanente, elle deviendrait du décor.
+  // Then the mark fades: permanent, it would become decoration.
   await expect(page.locator(".deck-saved")).toHaveCount(0, { timeout: 4000 });
 });
 
-test("les cartes posées survivent à un rechargement", async ({ page }) => {
-  // La question qu'Ange se posait, et à laquelle l'écran ne répondait pas.
+test("placed cards survive a reload", async ({ page }) => {
+  // The question Ange was asking, and that the screen did not answer.
   await signUp(page);
-  await garnir(page, ["LTGY-FR008", "LTGY-FR008"]);
-  await nouveauDeck(page, "Persistance");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LTGY-FR008", "LTGY-FR008"]);
+  await newDeck(page, "Persistence");
+  await showPanel(page, "collection");
 
   const plus = page.locator(".js-coll[data-d='1']").first();
   await plus.click();
@@ -343,7 +343,7 @@ test("les cartes posées survivent à un rechargement", async ({ page }) => {
   await plus.click();
   await expect(page.locator(".deck-counts")).toContainText("Main 2");
 
-  await panneau(page, "Mon deck");
+  await showPanel(page, "deck");
   await page.locator(".js-zone[data-d='-1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
 
@@ -351,101 +351,101 @@ test("les cartes posées survivent à un rechargement", async ({ page }) => {
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
 });
 
-test("l'Entrée dans le champ de nom écrit sans attendre", async ({ page }) => {
+test("Enter in the name field writes without waiting", async ({ page }) => {
   await signUp(page);
-  await nouveauDeck(page, "Clavier");
+  await newDeck(page, "Keyboard");
 
-  await page.locator("#edit-name").fill("Au clavier");
+  await page.locator("#edit-name").fill("By keyboard");
   await page.locator("#edit-name").press("Enter");
   await expect(page.locator(".deck-saved")).toContainText("Enregistré");
 
   await page.reload();
-  await expect(page.locator("#edit-name")).toHaveValue("Au clavier");
+  await expect(page.locator("#edit-name")).toHaveValue("By keyboard");
 });
 
-test("quitter le champ écrit, sans attendre le délai de frappe", async ({ page }) => {
+test("leaving the field writes, without waiting for the typing delay", async ({ page }) => {
   await signUp(page);
-  await nouveauDeck(page, "Au clic");
+  await newDeck(page, "By click");
 
-  await page.locator("#edit-name").fill("Ailleurs");
+  await page.locator("#edit-name").fill("Elsewhere");
   await page.locator("#edit-name").blur();
   await expect(page.locator(".deck-saved")).toContainText("Enregistré");
 
   await page.reload();
-  await expect(page.locator("#edit-name")).toHaveValue("Ailleurs");
+  await expect(page.locator("#edit-name")).toHaveValue("Elsewhere");
 });
 
-test("un nom vidé n'écrase rien : le champ reprend celui du deck", async ({ page }) => {
-  // Un deck a toujours un nom. Plutôt que d'envoyer une chaîne vide que le
-  // serveur refuserait, le champ revient sur ses pas.
+test("an emptied name overwrites nothing: the field takes the deck's back", async ({ page }) => {
+  // A deck always has a name. Rather than sending an empty string the server
+  // would refuse, the field goes back to what it was.
   await signUp(page);
-  await nouveauDeck(page, "À vider");
+  await newDeck(page, "To empty");
 
   await page.locator("#edit-name").fill("   ");
   await page.locator("#edit-name").blur();
   await expect(page.locator(".toast")).toContainText("Donnez un nom");
-  await expect(page.locator("#edit-name")).toHaveValue("À vider");
+  await expect(page.locator("#edit-name")).toHaveValue("To empty");
 
   await page.reload();
-  await expect(page.locator("#edit-name")).toHaveValue("À vider");
+  await expect(page.locator("#edit-name")).toHaveValue("To empty");
 });
 
-test("le champ de nom porte l'habillage de l'application", async ({ page }) => {
+test("the name field wears the application's styling", async ({ page }) => {
   /**
-   * Signalé par Ange : « un fond gris qui dénote de l'UI ». La règle de
-   * `.menu-field` ne visait que `select` ; un `input` dans le même bloc tombait
-   * sur le gris par défaut du navigateur. ATEM-old avait le même travers, et le
-   * transcrire fidèlement l'a rapporté avec.
+   * Reported by Ange: “a grey background that clashes with the UI”. The
+   * `.menu-field` rule only targeted `select`; an `input` in the same block fell
+   * back on the browser's default grey. ATEM-old had the same flaw, and
+   * transcribing it faithfully brought it along.
    */
   await signUp(page);
-  await nouveauDeck(page, "Habillage");
+  await newDeck(page, "Styling");
 
-  const champ = page.locator("#edit-name");
-  const fond = await champ.evaluate((n) => getComputedStyle(n).backgroundColor);
-  // Le gris par défaut des navigateurs est clair ; le nôtre est sombre.
-  const [r, g, b] = fond.match(/\d+/g)!.map(Number) as [number, number, number];
-  expect(r + g + b, `fond du champ : ${fond}`).toBeLessThan(120);
+  const field = page.locator("#edit-name");
+  const background = await field.evaluate((n) => getComputedStyle(n).backgroundColor);
+  // Browsers' default grey is light; ours is dark.
+  const [r, g, b] = background.match(/\d+/g)!.map(Number) as [number, number, number];
+  expect(r + g + b, `field background: ${background}`).toBeLessThan(120);
 
-  // Et il est encadré comme les autres champs, pas nu.
-  const bordure = await champ.evaluate((n) => getComputedStyle(n).borderTopWidth);
-  expect(bordure).not.toBe("0px");
+  // And it is framed like the other fields, not bare.
+  const border = await field.evaluate((n) => getComputedStyle(n).borderTopWidth);
+  expect(border).not.toBe("0px");
 });
 
-test("un deck porte l'illustration de la carte qu'il joue le plus", async ({ page }) => {
+test("a deck wears the artwork of the card it plays most", async ({ page }) => {
   /**
-   * Demandé par Ange avec les dossiers. Le serveur choisit la carte — la plus
-   * jouée, son identité — et l'écran la pose. Ce qui compte ici : l'image
-   * arrive vraiment, et ce n'est plus le dos de carte.
+   * Asked for by Ange along with folders. The server picks the card — the most
+   * played, its identity — and the screen places it. What counts here: the
+   * image really arrives, and it is no longer the card back.
    */
   await signUp(page);
-  await garnir(page, ["SDCR-FR016"]);
-  await nouveauDeck(page, "Illustré");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["SDCR-FR016"]);
+  await newDeck(page, "Illustrated");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
 
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  const jaquette = page.locator(".deck-tile-cover");
-  await expect(jaquette).toHaveJSProperty("tagName", "IMG");
-  // Chargée, et non simplement demandée : une URL cassée passerait autrement.
-  await expect(jaquette).toHaveJSProperty("complete", true);
+  const cover = page.locator(".deck-tile-cover");
+  await expect(cover).toHaveJSProperty("tagName", "IMG");
+  // Loaded, not merely requested: a broken URL would otherwise pass.
+  await expect(cover).toHaveJSProperty("complete", true);
   await expect(page.locator(".deck-cover-default")).toHaveCount(0);
 });
 
-test("un deck vide garde le dos de carte", async ({ page }) => {
-  // Le seul cas où il n'y a rien à montrer.
+test("an empty deck keeps the card back", async ({ page }) => {
+  // The only case where there is nothing to show.
   await signUp(page);
-  await nouveauDeck(page, "Sans visage");
+  await newDeck(page, "Faceless");
   await page.getByRole("link", { name: "Tous les decks" }).click();
 
   await expect(page.locator(".deck-cover-default")).toBeVisible();
   await expect(page.locator("img.deck-tile-cover")).toHaveCount(0);
 });
 
-test("la bascule rend les rangées, et la planche revient", async ({ page }) => {
-  // La galerie par défaut ; la liste dès qu'on en a beaucoup.
+test("the toggle shows rows, and the board comes back", async ({ page }) => {
+  // Gallery by default; the list as soon as there are many.
   await signUp(page);
-  await nouveauDeck(page, "Bascule");
+  await newDeck(page, "Toggle");
   await page.getByRole("link", { name: "Tous les decks" }).click();
 
   await expect(page.locator(".deck-tiles")).toBeVisible();
@@ -457,18 +457,18 @@ test("la bascule rend les rangées, et la planche revient", async ({ page }) => 
   await expect(page.locator(".deck-tile")).toHaveCount(1);
 });
 
-test("la recherche de la liste filtre sans toucher au réseau", async ({ page }) => {
+test("the list's search filters without touching the network", async ({ page }) => {
   /**
-   * On revient à la liste par son lien, pas par un rechargement.
+   * We come back to the list through its link, not a reload.
    *
-   * Deux `goto` de plus par épreuve suffisaient à faire trébucher le serveur de
-   * développement — `ERR_TOO_MANY_RETRIES`, par intermittence. Et c'est de
-   * toute façon le geste réel : « Tous les decks » est là pour ça.
+   * Two more `goto` per test were enough to trip the development server —
+   * `ERR_TOO_MANY_RETRIES`, intermittently. And it is the real gesture anyway:
+   * “Tous les decks” is there for that.
    */
   await signUp(page);
-  await nouveauDeck(page, "Dragons");
+  await newDeck(page, "Dragons");
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  await nouveauDeck(page, "Sorciers");
+  await newDeck(page, "Wizards");
   await page.getByRole("link", { name: "Tous les decks" }).click();
 
   await expect(page.locator(".deck-tile")).toHaveCount(2);
@@ -477,172 +477,172 @@ test("la recherche de la liste filtre sans toucher au réseau", async ({ page })
   await expect(page.locator(".deck-tile-name")).toHaveText("Dragons");
 });
 
-test("cliquer une carte de l'atelier l'ouvre en grand", async ({ page }) => {
+test("clicking a card in the workshop opens it full size", async ({ page }) => {
   /**
-   * Demandé par Ange : « quand je clique sur une carte depuis l'atelier, il
-   * faudrait que ça zoome comme dans la collection ». C'est la même fiche —
-   * même composant, mêmes classes. Ce qui change, c'est ce qu'on peut faire
-   * depuis là : poser un exemplaire dans la zone active.
+   * Asked for by Ange: “when I click a card from the workshop, it should zoom
+   * like in the collection”. It is the same sheet — same component, same
+   * classes. What changes is what you can do from there: put a copy in the
+   * active zone.
    */
   await signUp(page);
-  await garnir(page, ["LOB-FR001"]);
-  await nouveauDeck(page, "Fiche");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LOB-FR001"]);
+  await newDeck(page, "Sheet");
+  await showPanel(page, "collection");
 
   await page.locator(".js-open-card").first().click();
-  const fiche = page.locator("#inspect-panel");
-  await expect(fiche).toBeVisible();
-  await expect(fiche.locator(".inspect-art")).toBeVisible();
-  await expect(fiche).toContainText("Dragon Blanc aux Yeux Bleus");
-  // Les caractéristiques, comme dans la collection.
-  await expect(fiche).toContainText("ATK / DEF");
-  await expect(fiche).toContainText("Effet");
-  // Et ce que la collection n'a pas : où en est la carte dans ce deck.
-  await expect(fiche).toContainText("Zone active");
+  const sheet = page.locator("#inspect-panel");
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator(".inspect-art")).toBeVisible();
+  await expect(sheet).toContainText("Dragon Blanc aux Yeux Bleus");
+  // The stats, as in the collection.
+  await expect(sheet).toContainText("ATK / DEF");
+  await expect(sheet).toContainText("Effet");
+  // And what the collection does not have: where the card stands in this deck.
+  await expect(sheet).toContainText("Zone active");
 });
 
-test("on pose une carte depuis sa fiche, sans la refermer", async ({ page }) => {
+test("a card is placed from its sheet, without closing it", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["LOB-FR001"]);
-  await nouveauDeck(page, "Depuis la fiche");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LOB-FR001"]);
+  await newDeck(page, "From the sheet");
+  await showPanel(page, "collection");
   await page.locator(".js-open-card").first().click();
 
-  const fiche = page.locator("#inspect-panel");
-  await expect(fiche.locator(".in-deck-qty-label")).toHaveText("×0");
-  await fiche.locator(".deck-open-btns .btn-primary").click();
+  const sheet = page.locator("#inspect-panel");
+  await expect(sheet.locator(".in-deck-qty-label")).toHaveText("×0");
+  await sheet.locator(".deck-open-btns .btn-primary").click();
 
-  // La fiche reste ouverte et se met à jour : on enchaîne sans rouvrir.
-  await expect(fiche).toBeVisible();
-  await expect(fiche.locator(".in-deck-qty-label")).toHaveText("×1");
+  // The sheet stays open and updates: you carry on without reopening.
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator(".in-deck-qty-label")).toHaveText("×1");
 });
 
-test("la fiche se referme au fond, à la croix et à Échap", async ({ page }) => {
+test("the sheet closes on the backdrop, the cross and Escape", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["LOB-FR001"]);
-  await nouveauDeck(page, "Fermeture");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LOB-FR001"]);
+  await newDeck(page, "Closing");
+  await showPanel(page, "collection");
 
-  const ouvrir = async () => {
+  const open = async () => {
     await page.locator(".js-open-card").first().click();
     await expect(page.locator("#inspect-panel")).toBeVisible();
   };
 
-  await ouvrir();
+  await open();
   await page.locator("#inspect-close").click();
   await expect(page.locator("#inspect-panel")).toHaveCount(0);
 
-  await ouvrir();
+  await open();
   /**
-   * `dispatchEvent` et non `click` : le panneau couvre le centre du fond, et
-   * Playwright viserait donc le panneau. Ce qu'on éprouve ici c'est le
-   * gestionnaire, pas la géométrie — la zone cliquable du fond est ce qui
-   * dépasse autour, et elle se voit à l'œil.
+   * `dispatchEvent` rather than `click`: the panel covers the backdrop's
+   * centre, so Playwright would aim at the panel. What is tested here is the
+   * handler, not the geometry — the backdrop's clickable area is what sticks
+   * out around it, and it is visible to the eye.
    */
   await page.locator("#inspect-backdrop").dispatchEvent("click");
   await expect(page.locator("#inspect-panel")).toHaveCount(0);
 
-  await ouvrir();
+  await open();
   await page.keyboard.press("Escape");
   await expect(page.locator("#inspect-panel")).toHaveCount(0);
 });
 
-test("la fiche de l'atelier fige la page derrière elle", async ({ page }) => {
+test("the workshop's sheet freezes the page behind it", async ({ page }) => {
   /**
-   * Même exigence que dans la collection : deux barres de défilement sur la
-   * même page font croire qu'on descend dans la fiche alors que c'est l'atelier
-   * qui bouge — et en refermant, on ne se retrouve plus où l'on était.
+   * Same requirement as in the collection: two scrollbars on the same page make
+   * you believe you are scrolling down the sheet while it is the workshop that
+   * moves — and on closing, you are no longer where you were.
    */
   await signUp(page);
-  await garnir(page, ["LOB-FR001", "LTGY-FR008", "RA03-FR004"]);
-  await nouveauDeck(page, "Verrou");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["LOB-FR001", "LTGY-FR008", "RA03-FR004"]);
+  await newDeck(page, "Lock");
+  await showPanel(page, "collection");
 
   await page.locator(".js-open-card").first().click();
   await expect(page.locator("#inspect-panel")).toBeVisible();
-  // Le corps est fixé : c'est la technique qui tient aussi sur iOS Safari.
+  // The body is fixed: that is the technique that also holds on iOS Safari.
   expect(await page.evaluate(() => document.body.style.position)).toBe("fixed");
 
   await page.locator("#inspect-close").click();
   expect(await page.evaluate(() => document.body.style.position)).toBe("");
 });
 
-/* ── Les dossiers ─────────────────────────────────────────────────────────
- * Repris d'ATEM-old : on navigue un étage à la fois, les dossiers d'abord, les
- * decks ensuite. Ce qui change, c'est le rangement au menu plutôt qu'au
- * glisser-déposer — viser une cible en maintenant le doigt ne se fait pas.
+/* ── Folders ──────────────────────────────────────────────────────────────
+ * Taken from ATEM-old: navigation goes one level at a time, folders first,
+ * decks next. Filing goes through the “⋯” menu and the move banner everywhere,
+ * and through drag and drop on the desktop.
  */
 
-test("on crée un dossier, on y descend, et l'on en remonte", async ({ page }) => {
+test("a folder is created, entered, and left", async ({ page }) => {
   await signUp(page);
   await page.goto("/decks");
-  await creerDossier(page, "Meta");
+  await createFolder(page, "Meta");
 
   await page.locator(".folder-open", { hasText: "Meta" }).click();
   await expect(page.locator(".folder-path-step[aria-current='page']")).toHaveText("Meta");
   await expect(page.locator(".empty-title")).toHaveText("Dossier vide");
 
-  // La case « .. » porte le nom de là où elle mène, pas seulement deux points.
+  // The “..” card carries the name of where it leads, not just two dots.
   await page.locator(".folder-tile-parent .folder-open").click();
   await expect(page.locator(".folder-path-step[aria-current='page']")).toHaveText("Racine");
 });
 
-test("un deck naît dans le dossier où l'on se trouve", async ({ page }) => {
-  // Créer puis déplacer ferait deux écritures et un clignotement.
+test("a deck is born in the folder you are in", async ({ page }) => {
+  // Creating then moving would mean two writes and a flicker.
   await signUp(page);
   await page.goto("/decks");
-  await creerDossier(page, "Rangement");
-  await page.locator(".folder-open", { hasText: "Rangement" }).click();
+  await createFolder(page, "Storage");
+  await page.locator(".folder-open", { hasText: "Storage" }).click();
 
-  await creerDeckIci(page, "Né dedans");
-  await expect(page.locator("#edit-name")).toHaveValue("Né dedans");
+  await createDeckHere(page, "Born inside");
+  await expect(page.locator("#edit-name")).toHaveValue("Born inside");
 
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  // La racine ne montre que le dossier ; le deck est à l'intérieur.
+  // The root only shows the folder; the deck is inside.
   await expect(page.locator(".deck-tile-name")).toHaveCount(0);
-  await page.locator(".folder-open", { hasText: "Rangement" }).click();
-  await expect(page.locator(".deck-tile-name")).toHaveText("Né dedans");
+  await page.locator(".folder-open", { hasText: "Storage" }).click();
+  await expect(page.locator(".deck-tile-name")).toHaveText("Born inside");
 });
 
-test("on range un deck dans un dossier depuis son menu", async ({ page }) => {
+test("a deck is filed into a folder from its menu", async ({ page }) => {
   await signUp(page);
-  await nouveauDeck(page, "À ranger");
+  await newDeck(page, "To file");
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  await creerDossier(page, "Boîte");
+  await createFolder(page, "Box");
 
   await page.locator(".deck-tile-wrap .folder-menu-btn").click();
   await page.getByRole("menuitem", { name: "Déplacer…" }).click();
-  // On navigue : c'est l'écran courant qui désigne la destination.
-  await expect(page.locator(".move-banner")).toContainText("À ranger");
-  await page.locator(".folder-open", { hasText: "Boîte" }).click();
-  await expect(page.locator(".move-banner")).toContainText("vers Boîte");
+  // You navigate: the current screen designates the destination.
+  await expect(page.locator(".move-banner")).toContainText("To file");
+  await page.locator(".folder-open", { hasText: "Box" }).click();
+  await expect(page.locator(".move-banner")).toContainText("vers Box");
   await page.getByRole("button", { name: "Déplacer ici" }).click();
 
-  // Le bandeau se referme, et le deck est là où l'on regardait.
+  // The banner closes, and the deck is where you were looking.
   await expect(page.locator(".move-banner")).toHaveCount(0);
-  await expect(page.locator(".deck-tile-name")).toHaveText("À ranger");
+  await expect(page.locator(".deck-tile-name")).toHaveText("To file");
 
   await page.locator(".folder-path-step", { hasText: "Racine" }).click();
-  // Il a quitté la racine, et se retrouve dans le dossier.
+  // It left the root, and is now in the folder.
   await expect(page.locator(".deck-tile-name")).toHaveCount(0);
   await expect(page.locator(".folder-meta")).toHaveText("1 deck");
-  await page.locator(".folder-open", { hasText: "Boîte" }).click();
-  await expect(page.locator(".deck-tile-name")).toHaveText("À ranger");
+  await page.locator(".folder-open", { hasText: "Box" }).click();
+  await expect(page.locator(".deck-tile-name")).toHaveText("To file");
 });
 
-test("jeter un dossier fait remonter son contenu, sans rien perdre", async ({ page }) => {
+test("discarding a folder moves its contents up, losing nothing", async ({ page }) => {
   /**
-   * La règle d'ATEM-old, et la bonne : un dossier est un rangement, pas un
-   * propriétaire. Sa base disait pourtant l'inverse.
+   * ATEM-old's rule, and the right one: a folder is a filing place, not an
+   * owner. Its database said the opposite, though.
    */
   await signUp(page);
-  await nouveauDeck(page, "Survivant");
+  await newDeck(page, "Survivor");
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  await creerDossier(page, "Éphémère");
+  await createFolder(page, "Ephemeral");
 
   await page.locator(".deck-tile-wrap .folder-menu-btn").click();
   await page.getByRole("menuitem", { name: "Déplacer…" }).click();
-  await page.locator(".folder-open", { hasText: "Éphémère" }).click();
+  await page.locator(".folder-open", { hasText: "Ephemeral" }).click();
   await page.getByRole("button", { name: "Déplacer ici" }).click();
   await page.locator(".folder-path-step", { hasText: "Racine" }).click();
   await expect(page.locator(".folder-meta")).toHaveText("1 deck");
@@ -652,129 +652,127 @@ test("jeter un dossier fait remonter son contenu, sans rien perdre", async ({ pa
   await page.getByRole("menuitem", { name: "Supprimer" }).click();
 
   await expect(page.locator(".folder-tile")).toHaveCount(0);
-  await expect(page.locator(".deck-tile-name")).toHaveText("Survivant");
+  await expect(page.locator(".deck-tile-name")).toHaveText("Survivor");
 });
 
-test("un dossier se renomme depuis son menu", async ({ page }) => {
+test("a folder is renamed from its menu", async ({ page }) => {
   await signUp(page);
   await page.goto("/decks");
-  await creerDossier(page, "Avant");
+  await createFolder(page, "Before");
 
   await page.locator(".folder-tile .folder-menu-btn").click();
   await page.getByRole("menuitem", { name: "Renommer" }).click();
-  await page.locator("#modal-name").fill("Après");
+  await page.locator("#modal-name").fill("After");
   await page.getByRole("button", { name: "Renommer" }).click();
 
-  await expect(page.locator(".folder-name")).toHaveText("Après");
+  await expect(page.locator(".folder-name")).toHaveText("After");
 });
 
-test("un dossier ne se dépose pas dans lui-même, et le bandeau dit pourquoi", async ({ page }) => {
+test("a folder is not dropped into itself, and the banner says why", async ({ page }) => {
   /**
-   * L'écran refuse avec la phrase du serveur — `folderCanHost`, la même
-   * fonction. Le bouton est grisé et non caché : un bouton qui disparaît
-   * laisse croire que le mode s'est arrêté.
+   * The screen refuses with the server's sentence — `folderCanHost`, the same
+   * function. The button is greyed out, not hidden: a button that disappears
+   * suggests the mode has stopped.
    */
   await signUp(page);
   await page.goto("/decks");
-  await creerDossier(page, "Seul");
+  await createFolder(page, "Alone");
 
   await page.locator(".folder-tile .folder-menu-btn").click();
   await page.getByRole("menuitem", { name: "Déplacer…" }).click();
 
-  // À la racine, il y est déjà.
+  // At the root, it is already there.
   await expect(page.getByRole("button", { name: "Déplacer ici" })).toBeDisabled();
   await expect(page.locator(".move-banner-why")).toHaveText("Déjà ici");
 
-  // Dedans, c'est lui-même.
-  await page.locator(".folder-open", { hasText: "Seul" }).click();
+  // Inside, it is itself.
+  await page.locator(".folder-open", { hasText: "Alone" }).click();
   await expect(page.getByRole("button", { name: "Déplacer ici" })).toBeDisabled();
   await expect(page.locator(".move-banner-why")).toContainText("dans lui-même");
 
-  // Et l'on peut renoncer.
+  // And you can give up.
   await page.getByRole("button", { name: "Annuler" }).click();
   await expect(page.locator(".move-banner")).toHaveCount(0);
 });
 
-test("en rangées, la pastille tient sa place", async ({ page }, info) => {
+test("in rows, the pill keeps its place", async ({ page }, info) => {
   /**
-   * Signalé par Ange : « la petite pastille "Incomplet" est bizarre en desktop ».
-   * `.drive-main` déclarait trois colonnes pour quatre enfants — la pastille
-   * tombait donc sur une ligne implicite, seule, contre le bord gauche, à
-   * gauche même de la jaquette. Et le lien n'ayant pas de `text-decoration`,
-   * tout y était souligné.
+   * Reported by Ange: “the little ‘Incomplete’ pill looks odd on desktop”.
+   * `.drive-main` declared three columns for four children — so the pill fell
+   * onto an implicit row, alone, against the left edge, left even of the cover.
+   * And the link having no `text-decoration`, everything in it was underlined.
    *
-   * Les trois mesures sont prises en un seul passage : trois appels successifs
-   * à `boundingBox()` peuvent enjamber une repeinture, et l'on comparerait
-   * alors deux états différents.
+   * The three measurements are taken in a single pass: three successive
+   * `boundingBox()` calls can straddle a repaint, and would then compare two
+   * different states.
    */
   await signUp(page);
-  await nouveauDeck(page, "Mesuré");
+  await newDeck(page, "Measured");
   await page.getByRole("link", { name: "Tous les decks" }).click();
   await page.locator('[data-list-view="list"]').click();
   await expect(page.locator(".zone-pill")).toBeVisible();
 
-  const mesures = await page.evaluate(() => {
-    const rangée = document.querySelector<HTMLElement>(".drive-main[data-drag-deck]")!;
-    const boîte = (sélecteur: string) => {
-      const { top, bottom, left, right } = rangée.querySelector(sélecteur)!.getBoundingClientRect();
-      return { top, bottom, left, right, milieu: (top + bottom) / 2 };
+  const measures = await page.evaluate(() => {
+    const row = document.querySelector<HTMLElement>(".drive-main[data-drag-deck]")!;
+    const box = (selector: string) => {
+      const { top, bottom, left, right } = row.querySelector(selector)!.getBoundingClientRect();
+      return { top, bottom, left, right, middle: (top + bottom) / 2 };
     };
     return {
-      nom: boîte(".drive-name"),
-      pastille: boîte(".zone-pill"),
-      souligné: getComputedStyle(rangée).textDecorationLine,
+      name: box(".drive-name"),
+      pill: box(".zone-pill"),
+      underline: getComputedStyle(row).textDecorationLine,
     };
   });
 
-  // Jamais à gauche du nom : c'était tout le défaut, sur les deux formats.
-  expect(mesures.pastille.left).toBeGreaterThanOrEqual(mesures.nom.left - 1);
-  expect(mesures.souligné).toBe("none");
+  // Never left of the name: that was the whole defect, on both formats.
+  expect(measures.pill.left).toBeGreaterThanOrEqual(measures.name.left - 1);
+  expect(measures.underline).toBe("none");
 
-  if (info.project.name === "bureau") {
-    // Sur écran large, elle tient sur la ligne du deck, après les comptes.
-    expect(Math.abs(mesures.pastille.milieu - mesures.nom.milieu)).toBeLessThan(6);
-    expect(mesures.pastille.left).toBeGreaterThan(mesures.nom.right);
+  if (info.project.name === "desktop") {
+    // On a wide screen, it sits on the deck's line, after the counts.
+    expect(Math.abs(measures.pill.middle - measures.name.middle)).toBeLessThan(6);
+    expect(measures.pill.left).toBeGreaterThan(measures.name.right);
   } else {
-    // Sur téléphone, la rangée s'empile volontairement : la pastille passe
-    // dessous, alignée sur le nom.
-    expect(mesures.pastille.top).toBeGreaterThan(mesures.nom.bottom - 1);
+    // On a phone, the row stacks on purpose: the pill moves below, aligned
+    // with the name.
+    expect(measures.pill.top).toBeGreaterThan(measures.name.bottom - 1);
   }
 });
 
-test("on range un deck en le glissant sur un dossier", async ({ page }, info) => {
+test("a deck is filed by dragging it onto a folder", async ({ page }, info) => {
   /**
-   * Demandé par Ange pour le bureau, où le geste est naturel — et qu'ATEM-old
-   * avait. Sur un téléphone il n'existe pas : maintenir puis viser ne se fait
-   * pas au pouce, et c'est le bandeau qui rend le même service.
+   * Asked for by Ange on the desktop, where the gesture is natural — and which
+   * ATEM-old had. On a phone it does not exist: holding then aiming is not a
+   * thumb gesture, and the banner renders the same service.
    */
-  test.skip(info.project.name === "mobile", "le glisser-déposer n'existe pas au doigt");
+  test.skip(info.project.name === "mobile", "drag and drop does not exist by finger");
 
   await signUp(page);
-  await nouveauDeck(page, "Glissé");
+  await newDeck(page, "Dragged");
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  await creerDossier(page, "Cible");
+  await createFolder(page, "Target");
 
   await page.locator(".deck-tile").dragTo(page.locator(".folder-tile"));
 
   await expect(page.locator(".deck-tile")).toHaveCount(0);
   await expect(page.locator(".folder-meta")).toHaveText("1 deck");
-  await page.locator(".folder-open", { hasText: "Cible" }).click();
-  await expect(page.locator(".deck-tile-name")).toHaveText("Glissé");
+  await page.locator(".folder-open", { hasText: "Target" }).click();
+  await expect(page.locator(".deck-tile-name")).toHaveText("Dragged");
 });
 
-test("en rangées aussi, on glisse un deck sur un dossier", async ({ page }, info) => {
+test("in rows too, a deck is dragged onto a folder", async ({ page }, info) => {
   /**
-   * Signalé par Ange : « en mode liste ça ne fonctionne pas le drag and drop ? ».
-   * Il avait raison — l'attribut n'avait pas été posé sur la rangée, et mes deux
-   * épreuves de glissement regardaient toutes les deux la galerie. Une vue sans
-   * épreuve est une vue qui casse en silence.
+   * Reported by Ange: “drag and drop does not work in list mode?”. Rightly —
+   * the attribute had not been set on the row, and both drag tests looked at
+   * the gallery. A view without a test is a view that breaks in silence.
    */
-  test.skip(info.project.name === "mobile", "le glisser-déposer n'existe pas au doigt");
+  test.skip(info.project.name === "mobile", "drag and drop does not exist by finger");
 
   await signUp(page);
-  await nouveauDeck(page, "En rangée");
+  await newDeck(page, "In a row");
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  await creerDossier(page, "Casier");
+  await createFolder(page, "Locker");
   await page.locator('[data-list-view="list"]').click();
 
   await page
@@ -785,165 +783,164 @@ test("en rangées aussi, on glisse un deck sur un dossier", async ({ page }, inf
   await expect(page.locator(".drive-meta").first()).toHaveText("1 deck");
 });
 
-test("en rangées, un dossier se glisse dans un autre", async ({ page }, info) => {
-  test.skip(info.project.name === "mobile", "le glisser-déposer n'existe pas au doigt");
+test("in rows, a folder is dragged into another", async ({ page }, info) => {
+  test.skip(info.project.name === "mobile", "drag and drop does not exist by finger");
 
   await signUp(page);
   await page.goto("/decks");
-  await creerDossier(page, "Alpha");
-  await creerDossier(page, "Bêta");
+  await createFolder(page, "Alpha");
+  await createFolder(page, "Beta");
   await page.locator('[data-list-view="list"]').click();
 
-  // Alpha vient en premier : on le glisse sur Bêta.
+  // Alpha comes first: drag it onto Beta.
   await page
     .locator("[data-drag-folder]").first()
     .dragTo(page.locator("[data-drag-folder]").last());
 
   /**
-   * La forme tableau, et non la chaîne : tant que le déplacement est en vol,
-   * le sélecteur vise encore deux rangées — `toHaveText("Bêta")` lève alors une
-   * erreur de mode strict *sans réessayer*, et l'épreuve échoue pour une raison
-   * qui n'est pas celle qu'elle mesure. C'est ce qui m'a fait croire un moment
-   * que le glissement ne marchait pas en rangées.
+   * The array form, not the string: while the move is in flight, the selector
+   * still targets two rows — `toHaveText("Beta")` then throws a strict-mode
+   * error *without retrying*, and the test fails for a reason that is not the
+   * one it measures. That is what made it look, for a while, as if dragging
+   * did not work in rows.
    */
-  await expect(page.locator(".drive-name")).toHaveText(["Bêta"]);
+  await expect(page.locator(".drive-name")).toHaveText(["Beta"]);
   await page.locator(".drive-folder").click();
   await expect(page.locator(".drive-name")).toHaveText(["..", "Alpha"]);
 });
 
-test("on remonte un deck en le glissant sur le fil d'Ariane", async ({ page }, info) => {
-  // Le fil d'Ariane est une cible de dépôt : c'est le chemin le plus court pour
-  // sortir d'un dossier.
-  test.skip(info.project.name === "mobile", "le glisser-déposer n'existe pas au doigt");
+test("a deck is moved up by dragging it onto the breadcrumb", async ({ page }, info) => {
+  // The breadcrumb is a drop target: it is the shortest way out of a folder.
+  test.skip(info.project.name === "mobile", "drag and drop does not exist by finger");
 
   await signUp(page);
   await page.goto("/decks");
-  await creerDossier(page, "Dedans");
-  await page.locator(".folder-open", { hasText: "Dedans" }).click();
-  await creerDeckIci(page, "À sortir");
+  await createFolder(page, "Inside");
+  await page.locator(".folder-open", { hasText: "Inside" }).click();
+  await createDeckHere(page, "To take out");
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  await page.locator(".folder-open", { hasText: "Dedans" }).click();
+  await page.locator(".folder-open", { hasText: "Inside" }).click();
 
   await page.locator(".deck-tile").dragTo(page.locator('.folder-path-step[data-drop=""]'));
 
   await expect(page.locator(".deck-tile")).toHaveCount(0);
   await page.locator(".folder-path-step", { hasText: "Racine" }).click();
-  await expect(page.locator(".deck-tile-name")).toHaveText("À sortir");
+  await expect(page.locator(".deck-tile-name")).toHaveText("To take out");
 });
 
-test("la recherche traverse les dossiers, et dit d'où sort ce qu'elle trouve", async ({ page }) => {
+test("the search crosses folders, and says where each result comes from", async ({ page }) => {
   /**
-   * ATEM-old ne filtrait que l'étage courant : chercher « dragon » et ne rien
-   * trouver parce qu'on est dans le mauvais dossier est une réponse fausse à
-   * une question simple.
+   * ATEM-old only filtered the current level: searching “dragon” and finding
+   * nothing because you are in the wrong folder is a wrong answer to a simple
+   * question.
    */
   await signUp(page);
   await page.goto("/decks");
-  await creerDossier(page, "Caché");
-  await page.locator(".folder-open", { hasText: "Caché" }).click();
-  await creerDeckIci(page, "Dragons blancs");
+  await createFolder(page, "Hidden");
+  await page.locator(".folder-open", { hasText: "Hidden" }).click();
+  await createDeckHere(page, "White dragons");
   await page.getByRole("link", { name: "Tous les decks" }).click();
 
-  // On est revenu à la racine, où le deck n'est pas.
+  // Back at the root, where the deck is not.
   await expect(page.locator(".deck-tile-name")).toHaveCount(0);
   await page.getByLabel("Rechercher un deck").fill("dragons");
-  await expect(page.locator(".deck-tile-name")).toHaveText("Dragons blancs");
-  await expect(page.locator(".deck-tile-meta").first()).toContainText("Caché");
+  await expect(page.locator(".deck-tile-name")).toHaveText("White dragons");
+  await expect(page.locator(".deck-tile-meta").first()).toContainText("Hidden");
 });
 
-test("la fenêtre de création tient dans l'écran", async ({ page }) => {
+test("the creation window fits on the screen", async ({ page }) => {
   await signUp(page);
   await page.goto("/decks");
   await page.getByRole("button", { name: "Construire un deck" }).click();
 
   await expect(page.locator(".deck-modal")).toBeVisible();
-  await expectNoHorizontalOverflow(page);
-  // Échap referme, comme la fiche.
+  expect(await expectNoHorizontalOverflow(page)).toBeLessThanOrEqual(0);
+  // Escape closes it, like the sheet.
   await page.keyboard.press("Escape");
   await expect(page.locator(".deck-modal")).toHaveCount(0);
 });
 
-test("un nom de dossier ne s'exécute pas, il s'affiche", async ({ page }) => {
+test("a folder name is displayed, never executed", async ({ page }) => {
   /**
-   * Le nom d'un dossier est écrit par l'utilisateur et ressort à cinq endroits :
-   * la tuile, le fil d'Ariane, la rangée, la liste des destinations et la
-   * confirmation de suppression. Le gabarit échappe par défaut — cette épreuve
-   * est là pour que ça reste vrai le jour où quelqu'un ajoutera un `raw()`.
+   * A folder's name is written by the user and comes back out in five places:
+   * the tile, the breadcrumb, the row, the move banner and the delete
+   * confirmation. The template escapes by default — this test is here so that
+   * it stays true the day someone adds a `raw()`.
    */
   await signUp(page);
   await page.goto("/decks");
-  await creerDossier(page, "<img src=x onerror=alert(1)>Piégé");
+  await createFolder(page, "<img src=x onerror=alert(1)>Trapped");
 
-  await expect(page.locator(".folder-name")).toHaveText("<img src=x onerror=alert(1)>Piégé");
+  await expect(page.locator(".folder-name")).toHaveText("<img src=x onerror=alert(1)>Trapped");
   await expect(page.locator(".folder-tile img")).toHaveCount(0);
 
   await page.locator(".folder-open").click();
   await expect(page.locator(".folder-path-step[aria-current='page']"))
-    .toHaveText("<img src=x onerror=alert(1)>Piégé");
+    .toHaveText("<img src=x onerror=alert(1)>Trapped");
 });
 
-/* ── La fiche du deck ─────────────────────────────────────────────────────
- * Proposé par Ange, repris d'ATEM-old : ouvrir un deck le **montre**. C'est
- * aussi ce qui rendra possible de montrer le deck d'un autre joueur sans
- * écrire un second écran — il suffira de ne pas afficher le crayon.
+/* ── The deck sheet ───────────────────────────────────────────────────────
+ * Proposed by Ange, taken from ATEM-old: opening a deck **shows** it. It is also
+ * what will make showing another player's deck possible without writing a
+ * second screen — it will be enough not to display the pencil.
  */
 
-test("ouvrir un deck le montre, sans rien pour écrire", async ({ page }) => {
+test("opening a deck shows it, with nothing to write with", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["SDCR-FR027"]);
-  await nouveauDeck(page, "Vitrine");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["SDCR-FR027"]);
+  await newDeck(page, "Showcase");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
   await page.getByRole("link", { name: "Tous les decks" }).click();
 
   await page.locator(".deck-tile").click();
 
-  // La carte est là, et le deck se lit.
+  // The card is there, and the deck reads.
   await expect(page.locator(".item-main")).toHaveCount(1);
   await expect(page.locator(".qty-pill")).toHaveText("×1");
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
 
-  // Rien de ce qui écrit n'existe sur cet écran.
+  // Nothing that writes exists on this screen.
   await expect(page.locator("#edit-name")).toHaveCount(0);
   await expect(page.locator(".js-coll, .js-zone")).toHaveCount(0);
   await expect(page.locator(".deck-stepper")).toHaveCount(0);
 });
 
-test("le crayon ouvre l'atelier, et l'adresse le dit", async ({ page }) => {
+test("the pencil opens the workshop, and the address says so", async ({ page }) => {
   await signUp(page);
-  await nouveauDeck(page, "À modifier");
+  await newDeck(page, "To edit");
   await page.getByRole("link", { name: "Tous les decks" }).click();
   await page.locator(".deck-tile").click();
 
   await page.getByRole("link", { name: "Modifier" }).click();
 
-  await expect(page.locator("#edit-name")).toHaveValue("À modifier");
+  await expect(page.locator("#edit-name")).toHaveValue("To edit");
   expect(page.url()).toContain("workshop=1");
 
-  // Et l'on revient à la fiche par où l'on est venu.
+  // And you come back to the sheet the way you came.
   await page.getByRole("link", { name: "← Fiche" }).click();
   await expect(page.locator("#edit-name")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "À modifier" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "To edit" })).toBeVisible();
 });
 
-test("les onglets de la fiche montrent une zone à la fois", async ({ page }) => {
+test("the sheet's tabs show one zone at a time", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["SDCR-FR028", "SDCR-FR028"]);
-  await nouveauDeck(page, "Deux zones");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["SDCR-FR028", "SDCR-FR028"]);
+  await newDeck(page, "Two zones");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
-  // La même carte, au Side cette fois. Les onglets de zone vivent dans le
-  // panneau du deck, que le téléphone masque tant qu'on regarde la collection.
-  await panneau(page, "Mon deck");
+  // The same card, in the Side this time. The zone tabs live in the deck
+  // panel, which the phone hides while you look at the collection.
+  await showPanel(page, "deck");
   await page.locator('[data-zone="side"]').click();
-  await panneau(page, "Ma collection");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Side 1");
 
   await page.getByRole("link", { name: "← Fiche" }).click();
-  // « Tout » : la même carte occupe deux places, donc deux lignes.
+  // “All zones”: the same card holds two places, so two rows.
   await expect(page.locator(".item-main")).toHaveCount(2);
 
   await page.getByRole("tab", { name: /Main/ }).click();
@@ -954,41 +951,41 @@ test("les onglets de la fiche montrent une zone à la fois", async ({ page }) =>
   await expect(page.locator(".zone-pill")).toContainText("Side");
 });
 
-test("cliquer une carte de la fiche l'ouvre en grand", async ({ page }) => {
+test("clicking a card on the sheet opens it full size", async ({ page }) => {
   /**
-   * Une ligne de deck ne porte que son nom, son illustration et sa banlist :
-   * la fiche complète se demande à l'ouverture, une fois par carte.
+   * A deck row only carries its name, its artwork and its banlist status: the
+   * full record is requested on opening, once per card.
    */
   await signUp(page);
-  await garnir(page, ["SDCR-FR029"]);
-  await nouveauDeck(page, "Zoom");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["SDCR-FR029"]);
+  await newDeck(page, "Zoom");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
   await page.getByRole("link", { name: "← Fiche" }).click();
 
   await page.locator(".item-main").click();
   await expect(page.locator(".inspect-panel")).toBeVisible();
-  // Le détail vient du catalogue, pas de la ligne : l'ATK en est la preuve.
+  // The detail comes from the catalogue, not the row: the ATK proves it.
   await expect(page.locator(".inspect-panel")).toContainText("ATK");
-  // Et rien pour poser une carte : cette fiche-ci ne fait que montrer.
+  // And nothing to place a card: this sheet only shows.
   await expect(page.locator(".deck-open-actions")).toHaveCount(0);
 
   await page.keyboard.press("Escape");
   await expect(page.locator(".inspect-panel")).toHaveCount(0);
 });
 
-test("la fiche du deck ne déborde pas", async ({ page }) => {
+test("the deck sheet does not overflow", async ({ page }) => {
   await signUp(page);
-  await garnir(page, ["SDCR-FR030"]);
-  await nouveauDeck(page, "Un nom de deck assez long pour éprouver la mise en page");
-  await panneau(page, "Ma collection");
+  await stockCollection(page, ["SDCR-FR030"]);
+  await newDeck(page, "A deck name long enough to put the layout to the test");
+  await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
   await page.getByRole("link", { name: "← Fiche" }).click();
 
-  await expectNoHorizontalOverflow(page);
+  expect(await expectNoHorizontalOverflow(page)).toBeLessThanOrEqual(0);
   await page.locator('[data-sheet-view="gallery"]').click();
   await expect(page.locator(".tile")).toHaveCount(1);
-  await expectNoHorizontalOverflow(page);
+  expect(await expectNoHorizontalOverflow(page)).toBeLessThanOrEqual(0);
 });

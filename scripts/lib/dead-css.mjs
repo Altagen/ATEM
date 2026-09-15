@@ -1,11 +1,11 @@
 /**
- * Ce qui décide qu'une règle CSS est morte — **en un seul endroit**.
+ * What decides that a CSS rule is dead — **in one place only**.
  *
- * `check-dead-css.mjs` et `prune-dead-css.mjs` portaient chacun leur copie de
- * ce raisonnement. Ils ne pouvaient donc pas diverger sans qu'on s'en aperçoive
- * — ils ont fait pire : ils ont porté le même défaut, et le contrôle a déclaré
- * la feuille propre pendant que 58 règles y dormaient. Une logique dupliquée ne
- * se contredit pas, elle se trompe deux fois.
+ * `check-dead-css.mjs` and `prune-dead-css.mjs` each carried their own copy of
+ * this reasoning. So they could not diverge without it being noticed — they did
+ * worse: they carried the same defect, and the check declared the sheet clean
+ * while 58 rules slept in it. Duplicated logic does not contradict itself, it is
+ * wrong twice.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -24,14 +24,14 @@ export function files(dir, ext, acc = [], ignored = new Set(["staged"])) {
 }
 
 /**
- * Relève ce que le balisage pose, et ce qu'il assemble à l'exécution.
+ * Collects what the markup sets, and what it assembles at runtime.
  *
- * Les classes construites — `star-badge-${kind}`, `"toast-" + tone` —
- * n'apparaissent nulle part en entier. On garde les fragments littéraux qui
- * précèdent une interpolation, et l'on tient pour vivante toute classe qui
- * commence par l'un d'eux et dont le reste est un jeton du code.
+ * Built classes — `star-badge-${kind}`, `"toast-" + tone` — appear nowhere in
+ * full. We keep the literal fragments preceding an interpolation, and count as
+ * alive any class starting with one of them whose remainder is a token of the
+ * code.
  */
-export function readMarkup(sourceRoot, horsBalisage = new Set()) {
+export function readMarkup(sourceRoot) {
   const sources = files(sourceRoot, ".ts").filter((f) => !f.endsWith(".test.ts"));
   const markup = sources.map((f) => stripComments(readFileSync(f, "utf8"))).join("\n");
   const tokens = new Set(markup.match(/[A-Za-z][\w-]*/g) ?? []);
@@ -47,7 +47,7 @@ export function readMarkup(sourceRoot, horsBalisage = new Set()) {
   }
 
   function alive(cls) {
-    if (tokens.has(cls) || horsBalisage.has(cls)) return true;
+    if (tokens.has(cls)) return true;
     for (const prefix of prefixes) {
       if (!cls.startsWith(prefix)) continue;
       const rest = cls.slice(prefix.length);
@@ -57,9 +57,9 @@ export function readMarkup(sourceRoot, horsBalisage = new Set()) {
   }
 
   /**
-   * Un sélecteur est vivant si **toutes** ses classes le sont : `.chip.chip-level`
-   * ne s'applique jamais si `chip-level` n'est posée nulle part, même si `.chip`
-   * l'est. Un sélecteur sans classe — `body`, `:root`, `a:hover` — est vivant.
+   * A selector is alive if **all** its classes are: `.chip.chip-level` never
+   * applies if `chip-level` is set nowhere, even if `.chip` is. A selector with
+   * no class — `body`, `:root`, `a:hover` — is alive.
    */
   const selectorAlive = (selector) => {
     const classes = selector.match(/\.(-?[a-zA-Z][\w-]*)/g) ?? [];
@@ -67,42 +67,41 @@ export function readMarkup(sourceRoot, horsBalisage = new Set()) {
   };
 
   /**
-   * Le commentaire qui précède une règle n'en fait pas partie.
+   * The comment preceding a rule is not part of it.
    *
-   * `rules()` fait courir le « sélecteur » depuis la fin de la règle
-   * précédente, commentaires compris — c'est ce qui permet à la purge de les
-   * emporter avec la règle qu'ils expliquent. Mais le test découpe sur les
-   * virgules : la moindre virgule dans un commentaire fabriquait un fragment
-   * **sans aucune classe**, tenu pour un sélecteur vivant, et `some` déclarait
-   * la règle vivante.
+   * `rules()` runs the “selector” from the end of the previous rule, comments
+   * included — that is what lets the purge take them along with the rule they
+   * explain. But the test splits on commas: the slightest comma in a comment
+   * produced a fragment **with no class at all**, counted as a live selector,
+   * and `some` declared the rule alive.
    *
-   * Autrement dit : toute règle précédée d'un commentaire contenant une virgule
-   * était intouchable. Dans une base commentée comme celle-ci, c'était
-   * l'écrasante majorité — 58 règles, ~679 lignes. Découvert parce qu'un toast
-   * s'affichait transparent : `.toast-ok` n'était posée par aucun balisage et
-   * dormait là depuis le début.
+   * In other words: any rule preceded by a comment containing a comma was
+   * untouchable. In a codebase commented like this one, that was the vast
+   * majority — 58 rules, ~679 lines. Found because a toast displayed
+   * transparent: `.toast-ok` was set by no markup and had slept there from the
+   * start.
    */
   const ruleAlive = (selectors) => {
     const parts = selectors
       .replace(/\/\*[\s\S]*?\*\//g, " ")
       .split(",")
       .filter((part) => part.trim());
-    // Plus rien à juger une fois les commentaires retirés : on ne condamne pas
-    // ce qu'on n'a pas su lire.
+    // Nothing left to judge once comments are removed: we do not condemn what
+    // we could not read.
     if (parts.length === 0) return true;
     return parts.some(selectorAlive);
   };
 
-  return { alive, selectorAlive, ruleAlive };
+  return { ruleAlive };
 }
 
 /**
- * Découpe une feuille en règles, **sélecteur compris**.
+ * Cuts a sheet into rules, **selector included**.
  *
- * `from` pointe le début du sélecteur, pas l'accolade ouvrante. La distinction
- * n'est pas cosmétique : découper sur l'accolade laissait le sélecteur derrière
- * lui à chaque suppression, et produisait des feuilles que PostCSS refusait de
- * lire — `@media (max-width: 900px)` sans corps, `.edition-set,` sans règle.
+ * `from` points at the start of the selector, not the opening brace. The
+ * distinction is not cosmetic: cutting at the brace left the selector behind at
+ * every removal, and produced sheets PostCSS refused to read —
+ * `@media (max-width: 900px)` with no body, `.edition-set,` with no rule.
  */
 export function rules(css) {
   const out = [];

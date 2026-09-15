@@ -1,26 +1,25 @@
 /**
- * Un module ne touche jamais les fichiers internes d'un autre.
+ * A module never touches another module's internal files.
  *
- * C'est la règle R1 de `docs/05-structure.md`, et elle n'existe pas pour la
- * beauté du geste : chez ATEM-old, `collection` et `decks` écrivaient
- * directement dans les tables du catalogue. Il en est sorti **trois
- * implémentations concurrentes** de « carte pas encore résolue », chacune
- * ignorant les deux autres, et un passcode négatif dont le signe portait un
- * sens métier recopié à la main dans quatre fichiers.
+ * It is rule R1 of `docs/05-structure.md`, and it does not exist for style: in
+ * ATEM-old, `collection` and `decks` wrote directly into the catalogue's tables.
+ * The result was **three competing implementations** of “card not resolved
+ * yet”, each unaware of the other two, and a negative passcode whose sign
+ * carried a business meaning copied by hand into four files.
  *
- * La discipline seule ne l'avait pas empêché. Cette barrière, si.
+ * Discipline alone had not prevented it. This gate does.
  *
- * Ce qui est autorisé :
- *   - importer `../<autre>/index.js` — la porte d'entrée du module
- *   - importer `../../platform/…` et `../../db/…` — l'infrastructure partagée
- *   - importer `@atem/shared`
- *   - à l'intérieur d'un module, tout
+ * What is allowed:
+ *   - importing `../<other>/index.js` — the module's front door
+ *   - importing `../../platform/…` and `../../db/…` — shared infrastructure
+ *   - importing `@atem/shared`
+ *   - inside a module, anything
  *
- * Ce qui ne l'est pas : `../<autre>/service.js`, `../<autre>/schema.js`, ou
- * n'importe quel autre fichier interne.
+ * What is not: `../<other>/service.js`, `../<other>/schema.js`, or any other
+ * internal file.
  *
- * L'exception `db/schema.ts` est nommée : c'est l'agrégateur que drizzle-kit
- * lit, il réunit les schémas de tous les modules et ne contient rien d'autre.
+ * The `db/schema.ts` exception is named: it is the aggregator drizzle-kit reads,
+ * it gathers every module's schema and contains nothing else.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -28,7 +27,7 @@ import path from "node:path";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const MODULES_DIR = path.join(ROOT, "apps/api/src/modules");
 
-/** Fichiers autorisés à réunir les modules, par construction. */
+/** Files allowed to gather modules, by construction. */
 const AGGREGATORS = new Set([path.join(ROOT, "apps/api/src/db/schema.ts")]);
 
 function files(dir, acc = []) {
@@ -61,22 +60,21 @@ for (const file of files(MODULES_DIR)) {
     if (targetModule === owner) continue;
 
     const entry = target.slice(1).join("/");
-    // `index.js` est la porte ; tout le reste est l'intérieur de la maison.
+    // `index.js` is the door; everything else is the inside of the house.
     if (entry === "index.js" || entry === "index.ts" || entry === "index") continue;
 
     /**
-     * Un schéma peut référencer le schéma d'un autre module.
+     * A schema may reference another module's schema.
      *
-     * Une clé étrangère est une relation **déclarée**, que la base fait
-     * respecter — `owned_cards.print_id` doit pointer une impression réelle, et
-     * Drizzle a besoin de l'objet table pour l'écrire. Ce n'est pas un
-     * contournement : ça ne donne pas le droit d'interroger les tables de
-     * l'autre module, seulement de s'y raccrocher.
+     * A foreign key is a **declared** relation, which the database enforces —
+     * `owned_cards.print_id` must point at a real printing, and Drizzle needs
+     * the table object to write it. It is not a workaround: it grants no right
+     * to query the other module's tables, only to attach to them.
      *
-     * La distinction tient à ceci : un schéma qui en référence un autre dit
-     * « ma ligne dépend de la sienne ». Un *service* qui lit le schéma d'un
-     * autre dit « je sais comment ses tables sont faites » — et c'est ça qui a
-     * produit trois logiques concurrentes chez ATEM-old.
+     * The distinction is this: a schema referencing another says “my row
+     * depends on its row”. A *service* reading another's schema says “I know how
+     * its tables are built” — and that is what produced three competing logics
+     * in ATEM-old.
      */
     const isSchemaToSchema =
       file.endsWith(`${path.sep}schema.ts`) && entry === "schema.js";
@@ -90,23 +88,23 @@ for (const file of files(MODULES_DIR)) {
   }
 }
 
-/** Les tests ont le droit de regarder l'intérieur de leur propre module. */
+/** Tests may reach into another module's internals to set up their state: they are counted, not refused. */
 const external = violations.filter((v) => !v.file.endsWith(".test.ts"));
 const fromTests = violations.filter((v) => v.file.endsWith(".test.ts"));
 
 if (external.length === 0) {
-  const suffix = fromTests.length > 0 ? ` (${fromTests.length} depuis des tests, tolérés)` : "";
-  console.log(`✓ frontières de modules respectées${suffix}`);
+  const suffix = fromTests.length > 0 ? ` (${fromTests.length} from tests, tolerated)` : "";
+  console.log(`✓ module boundaries respected${suffix}`);
   process.exit(0);
 }
 
-console.log(`${external.length} franchissements de frontière :\n`);
+console.log(`${external.length} boundary crossings:\n`);
 for (const violation of external) {
   console.log(`    ${violation.file}`);
-  console.log(`      → ${violation.target}  (le module « ${violation.owner} » entre chez un autre)`);
+  console.log(`      → ${violation.target}  (module “${violation.owner}” walks into another one)`);
 }
 console.log(
-  "\n  Un module s'adresse à un autre par son index.ts, jamais par ses fichiers." +
-    "\n  Voir docs/05-structure.md, règle R1.",
+  "\n  A module addresses another through its index.ts, never through its files." +
+    "\n  See docs/05-structure.md, rule R1.",
 );
 process.exit(1);

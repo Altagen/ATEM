@@ -1,17 +1,17 @@
 /**
- * Le catalogue de préfixes d'extension, pour l'OCR.
+ * The catalogue of set prefixes, for the OCR.
  *
- * La reconnaissance ne devine pas : elle compare ce qu'elle a lu à ce qui
- * existe. Un préfixe présent au catalogue vaut +100 au score de confiance, un
- * préfixe inconnu −80 — c'est ce qui sépare `LTGY-FR008` d'un `LTGV-FR0O8` mal
- * lu. Sans ce fichier, le moteur retombe sur une liste de secours d'environ
- * 120 sets, et la reconnaissance perd beaucoup.
+ * Recognition does not guess: it compares what it read to what exists. A
+ * prefix present in the catalogue is worth +100 to the confidence score, an
+ * unknown prefix −80 — that is what separates `LTGY-FR008` from a misread
+ * `LTGV-FR0O8`. Without this file, the engine falls back on an emergency list of
+ * about 120 sets, and recognition loses a lot.
  *
- * Le fichier est **dérivé** du catalogue en base, jamais écrit à la main : il
- * se régénère après chaque synchronisation, et ne peut donc pas dériver de ce
- * que le référentiel contient réellement.
+ * The file is **derived** from the catalogue in the database, never written by
+ * hand: it is regenerated after every sync, and so cannot drift from what the
+ * reference data really contains.
  *
- * Usage : pnpm --filter @atem/api ocr:build-dict
+ * Usage: pnpm --filter @atem/api ocr:build-dict
  */
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -36,9 +36,9 @@ for (const row of rows) {
   if (!parts) continue;
   prefixes.add(parts.prefix);
 
-  // Le moteur ne retient que les numéros purement chiffrés, de 2 à 4 chiffres :
-  // c'est sur eux qu'il autorise une correction à une lettre près. Les numéros
-  // à préfixe alphabétique (`ENS10`) sont trop rares pour valoir ce risque.
+  // The engine only keeps purely numeric card numbers, 2 to 4 digits: those are
+  // the ones where it allows a one-letter correction. Numbers with a letter
+  // prefix (`ENS10`) are too rare to be worth that risk.
   const digits = parts.number.replace(/\D/g, "");
   if (digits.length >= 2 && digits.length <= 4) {
     const bucket = prints.get(parts.prefix) ?? new Set<string>();
@@ -53,7 +53,7 @@ const dict = {
     [...prints].map(([prefix, numbers]) => [prefix, [...numbers].sort()]),
   ),
   generated_at: new Date().toISOString(),
-  source: "catalogue local ATEM, dérivé de YGOPRODeck",
+  source: "ATEM local catalogue, derived from YGOPRODeck",
 };
 
 await mkdir(dirname(OUTPUT), { recursive: true });
@@ -62,5 +62,5 @@ await sql.end();
 
 const numbers = [...prints.values()].reduce((sum, set) => sum + set.size, 0);
 console.log(
-  `[atem] ${dict.prefixes.length} préfixes et ${numbers} numéros écrits dans ${OUTPUT}`,
+  `[atem] ${dict.prefixes.length} prefixes and ${numbers} numbers written to ${OUTPUT}`,
 );

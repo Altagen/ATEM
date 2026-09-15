@@ -1,12 +1,12 @@
 /**
- * Retire du livré les règles que rien ne pose — sans les perdre.
+ * Removes from the shipped sheets the rules nothing sets — without losing them.
  *
- * Les règles retirées sont écrites dans `design/staged/pruned/`, avec leur
- * feuille d'origine et leur ligne. Elles ne sont plus chargées, donc ne pèsent
- * plus rien ; et le jour où l'écran qu'elles habillaient arrive, on sait où
- * elles sont plutôt que de les redécouvrir dans ATEM-old.
+ * Removed rules are written to `design/staged/pruned/`, one file per original
+ * sheet. They are no longer loaded, so they weigh nothing; and the day the
+ * screen they styled arrives, we know where they are instead of rediscovering
+ * them in ATEM-old.
  *
- * Usage : node scripts/prune-dead-css.mjs [--dry]
+ * Usage: node scripts/prune-dead-css.mjs [--dry]
  */
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
@@ -17,7 +17,7 @@ const STYLES = path.join(ROOT, "design");
 const PRUNED = path.join(STYLES, "staged", "pruned");
 const dry = process.argv.includes("--dry");
 
-// Le même jugement que la barrière, au sens propre : la même fonction.
+// The same judgement as the gate, literally: the same function.
 const { ruleAlive } = readMarkup(ROOT);
 
 let removedRules = 0;
@@ -30,10 +30,10 @@ for (const sheet of files(STYLES, ".css")) {
 
   for (const rule of rules(css)) {
     /**
-     * Un bloc imbriqué (`@media`, `@supports`) est traité de l'intérieur : on
-     * en retire les règles mortes une par une, et le bloc entier ne part que
-     * s'il ne reste rien. Ne juger que le bloc entier laissait passer une règle
-     * morte dès qu'une seule de ses voisines était vivante.
+     * A nested block (`@media`, `@supports`) is handled from the inside: its
+     * dead rules are removed one by one, and the whole block only goes if
+     * nothing is left. Judging only the whole block let a dead rule through as
+     * soon as a single neighbour was alive.
      */
     const group = groupBody(css, rule);
     if (group) {
@@ -47,14 +47,14 @@ for (const sheet of files(STYLES, ".css")) {
       if (nested.length > 0 && deadNested.length === 0) continue;
 
       if (deadNested.length === nested.length) {
-        // Plus rien de vivant : le bloc entier part.
+        // Nothing alive left: the whole block goes.
         keep.push(css.slice(cursor, rule.from));
         drop.push(inner);
         cursor = rule.to;
         continue;
       }
 
-      // Bloc partiellement vivant : on le réécrit sans ses règles mortes.
+      // Partly alive block: rewrite it without its dead rules.
       let innerKeep = "";
       let innerCursor = 0;
       for (const n of deadNested) {
@@ -81,25 +81,25 @@ for (const sheet of files(STYLES, ".css")) {
   removedRules += drop.length;
 
   const relative = path.relative(STYLES, sheet).replace(/[\\/]/g, "-");
-  console.log(`  ${path.relative(ROOT, sheet)} — ${drop.length} règles retirées`);
+  console.log(`  ${path.relative(ROOT, sheet)} — ${drop.length} rules removed`);
 
   if (dry) continue;
 
   /**
-   * On ajoute, on n'écrase pas.
+   * Append, do not overwrite.
    *
-   * Une seconde passe écrasait sinon ce que la première avait mis de côté :
-   * 208 règles conservées, puis remplacées par les 47 suivantes. Le fichier
-   * disait la vérité sur la dernière passe, pas sur ce qui avait été retiré.
+   * Otherwise a second pass overwrote what the first had set aside: 208 rules
+   * kept, then replaced by the next 47. The file told the truth about the last
+   * pass, not about what had been removed.
    */
   const target = path.join(PRUNED, relative);
   if (!existsSync(target)) {
     writeFileSync(
       target,
-      `/**\n * Règles retirées de \`design/${path.relative(STYLES, sheet)}\`.\n *\n` +
-        ` * Rien ne les posait dans le balisage livré : elles habillaient des écrans\n` +
-        ` * qui n'existent pas encore ici (guildes, réglages, administration, accueil).\n` +
-        ` * Conservées telles quelles — quand leur écran arrive, elles remontent.\n */\n`,
+      `/**\n * Rules removed from \`design/${path.relative(STYLES, sheet)}\`.\n *\n` +
+        ` * Nothing set them in the shipped markup: they styled screens that do not\n` +
+        ` * exist here yet (guilds, settings, administration, landing page).\n` +
+        ` * Kept as they were — when their screen arrives, they move back up.\n */\n`,
     );
   }
   appendFileSync(target, `\n${drop.join("\n\n")}\n`);
@@ -108,6 +108,6 @@ for (const sheet of files(STYLES, ".css")) {
 
 console.log(
   removedRules === 0
-    ? "✓ rien à retirer"
-    : `\n${removedRules} règles retirées du livré, conservées dans design/staged/pruned/`,
+    ? "✓ nothing to remove"
+    : `\n${removedRules} rules removed from the shipped sheets, kept in design/staged/pruned/`,
 );

@@ -58,7 +58,7 @@ export function toCardDetail(row: CardRow, locale: string): CardDetail {
     passcode: row.passcode,
     name: (wantsFr ? row.nameFr : null) ?? row.nameEn,
     desc: (wantsFr ? row.descFr : null) ?? row.descEn,
-    // Le nom et le texte manquent ensemble : aucune carte n'a l'un sans l'autre
+    // Name and text are missing together: no card has one without the other
     // (checked over the 11,661 translated ones). One flag is enough.
     frenchPending: wantsFr && !row.nameFr,
     type: row.type,

@@ -1,12 +1,12 @@
--- Repart d'une instance vierge, **sans** refaire l'import du référentiel.
+-- Starts again from a blank instance, **without** redoing the reference import.
 --
--- Les 14 524 cartes et les 44 510 impressions identifiées restent : les
--- réimporter demanderait 40 Mo et une minute à YGOPRODeck pour un résultat
--- identique, et la résolution d'un set code déjà connu se fait sans réseau.
+-- The 14,524 cards and 44,510 identified printings stay: re-importing them would
+-- take 40 MB and a minute from YGOPRODeck for an identical result, and resolving
+-- an already known set code needs no network.
 --
--- Ce qui part : les comptes, leurs inventaires, les compteurs de tentatives
--- d'authentification, et les impressions provisoires nées des essais — codes
--- inventés, codes suffixés du wiki qui ne résolvent pas.
+-- What goes: accounts, their inventories, the authentication attempt counters,
+-- and the provisional printings born from trials — made-up codes, the wiki's
+-- suffixed codes that do not resolve.
 begin;
 
 truncate table owned_cards, users, auth_attempts restart identity cascade;

@@ -1,18 +1,17 @@
 /**
- * Toute route servie doit être atteinte par quelque chose.
+ * Every served route must be reached by something.
  *
- * Une route que personne n'appelle est une surface exposée pour rien : elle
- * s'authentifie, elle lit la base, elle vieillit — et le jour où elle a un
- * défaut, personne ne s'en aperçoit puisque personne ne l'emprunte.
+ * A route nobody calls is surface exposed for nothing: it authenticates, it
+ * reads the database, it ages — and the day it has a defect, nobody notices
+ * since nobody uses it.
  *
- * « Atteinte » veut dire : appelée par le front, ou exercée par un test. Les
- * deux comptent, et pour des raisons différentes — l'une prouve qu'elle sert,
- * l'autre qu'elle marche. Une route qui n'a ni l'un ni l'autre n'a pas de
- * raison d'être déployée.
+ * “Reached” means: called by the front, or exercised by a test. Both count, for
+ * different reasons — one proves it is useful, the other that it works. A route
+ * with neither has no reason to be deployed.
  *
- * ATEM-old avait le contrôle inverse (des routes déclarées jamais montées) et
- * s'était fait avoir par un détail qu'on reprend ici : **une route citée dans
- * un commentaire passait pour atteinte**. Les commentaires n'appellent rien.
+ * ATEM-old had the reverse check (routes declared but never mounted) and was
+ * caught out by a detail handled here: **a route quoted in a comment counted as
+ * reached**. Comments call nothing.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -34,18 +33,18 @@ function files(dir, acc = []) {
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
 
-/** Les préfixes de montage, lus dans `app.ts` : `app.route("/auth", …)`. */
+/** The mount prefixes, read from `app.ts`: `app.route("/auth", …)`. */
 const appSource = stripComments(readFileSync(path.join(API, "app.ts"), "utf8"));
 const mounts = new Map();
 for (const match of appSource.matchAll(/app\.route\(\s*["']([^"']+)["']\s*,\s*(\w+)\(/g)) {
   mounts.set(match[2], match[1]);
 }
 
-/** Les routes déclarées dans chaque module, avec leur méthode. */
+/** The routes declared in each module, with their method. */
 const METHOD_RE = /app\.(get|post|patch|put|delete)\(\s*["']([^"']+)["']/g;
 const routes = [];
 
-// Les routes servies directement par `app.ts` (santé, etc.).
+// Routes served directly by `app.ts` (health, etc.).
 for (const match of appSource.matchAll(METHOD_RE)) {
   routes.push({ method: match[1].toUpperCase(), path: match[2], source: "app.ts" });
 }
@@ -58,7 +57,7 @@ for (const file of files(API)) {
   if (factory && !mounts.has(factory)) {
     routes.push({
       method: "—",
-      path: `${path.relative(ROOT, file)} (jamais monté)`,
+      path: `${path.relative(ROOT, file)} (never mounted)`,
       source: path.relative(ROOT, file),
       unmounted: true,
     });
@@ -74,7 +73,7 @@ for (const file of files(API)) {
   }
 }
 
-/** Ce que le front demande, et ce que les tests exercent. */
+/** What the front requests, and what the tests exercise. */
 const webCalls = files(WEB)
   .map((f) => stripComments(readFileSync(f, "utf8")))
   .join("\n");
@@ -84,9 +83,9 @@ const testCalls = files(API)
   .join("\n");
 
 /**
- * Une route est atteinte si son chemin, paramètres remplacés par un joker,
- * apparaît dans un appel. `/collection/:id/favorite` correspond à
- * `` `/collection/${id}/favorite` `` comme à `"/collection/12/favorite"`.
+ * A route is reached if its path, parameters replaced by a wildcard, appears in
+ * a call. `/collection/:id/favorite` matches `` `/collection/${id}/favorite` ``
+ * as well as `"/collection/12/favorite"`.
  */
 function reaches(source, routePath) {
   const pattern = routePath
@@ -109,23 +108,23 @@ for (const route of routes) {
 }
 
 if (unreached.length === 0 && unmounted.length === 0) {
-  console.log(`✓ ${routes.length} routes, toutes atteintes`);
+  console.log(`✓ ${routes.length} routes, all reached`);
   process.exit(0);
 }
 
 if (unmounted.length > 0) {
-  console.log(`${unmounted.length} fichiers de routes jamais montés :\n`);
+  console.log(`${unmounted.length} route files never mounted:\n`);
   for (const route of unmounted) console.log(`    ${route.path}`);
 }
 
 if (unreached.length > 0) {
-  console.log(`\n${unreached.length} routes que rien n'atteint :\n`);
+  console.log(`\n${unreached.length} routes nothing reaches:\n`);
   for (const route of unreached) {
     console.log(`    ${route.method.padEnd(6)} ${route.path.padEnd(34)} ${route.source}`);
   }
   console.log(
-    "\n  Une route sans appelant ni test n'a pas de raison d'être servie :" +
-      "\n  soit le front doit s'en servir, soit un test doit la couvrir, soit elle part.",
+    "\n  A route with no caller and no test has no reason to be served:" +
+      "\n  either the front uses it, or a test covers it, or it goes.",
   );
 }
 process.exit(1);

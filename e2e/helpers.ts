@@ -1,20 +1,20 @@
 import type { Page } from "@playwright/test";
 
 /**
- * Un compte neuf par épreuve.
+ * A fresh account per test.
  *
- * Les épreuves partagent une instance : réutiliser un compte ferait dépendre
- * chaque résultat de ce que les précédentes y ont laissé, et un échec isolé
- * deviendrait impossible à lire.
+ * The tests share one instance: reusing an account would make each outcome
+ * depend on what the previous tests left in it, and an isolated failure would
+ * become impossible to read.
  */
 export function freshAccount() {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   return {
-    email: `e2e-${stamp}@exemple.test`,
-    // Seize caractères et les quatre familles : la règle du serveur, qui est
-    // aussi celle que la jauge affiche.
-    password: "Mot-De-Passe-Test-7!",
-    displayName: `Testeur ${stamp.slice(-4)}`,
+    email: `e2e-${stamp}@example.test`,
+    // Sixteen characters and all four families: the server's rule, which is
+    // also the one the meter displays.
+    password: "Test-Password-Strong-7!",
+    displayName: `Tester ${stamp.slice(-4)}`,
   };
 }
 
@@ -30,22 +30,21 @@ export async function signUp(page: Page): Promise<ReturnType<typeof freshAccount
   return account;
 }
 
-/** Ajoute une carte par son set code, depuis l'écran de collection. */
+/** Adds a card by its set code, from the collection screen. */
 export async function addBySetCode(page: Page, setCode: string): Promise<void> {
   await page.getByLabel("Ajouter par set code").fill(setCode);
   await page.getByRole("button", { name: "Ajouter la carte" }).click();
-  // On attend que la grille ait repris : sans ça, l'assertion suivante peut
-  // lire l'état d'avant le rechargement.
+  // Wait for the grid to settle: without this, the next assertion may read the
+  // state from before the reload.
   await page.locator(".content").getByText(setCode, { exact: true }).first().waitFor();
 }
 
 /**
- * Vérifie que la page ne déborde pas horizontalement.
+ * Returns how far the page overflows horizontally.
  *
- * C'est le défaut mobile le plus courant et le plus discret : une grille ou un
- * tableau un peu large, et toute la page se met à glisser latéralement. Ça ne
- * casse rien, ça rend juste l'écran désagréable — et personne ne le voit sur un
- * moniteur de bureau.
+ * It is the most common and the quietest mobile defect: a slightly wide grid or
+ * table, and the whole page starts sliding sideways. It breaks nothing, it just
+ * makes the screen unpleasant — and nobody sees it on a desktop monitor.
  */
 export async function expectNoHorizontalOverflow(page: Page): Promise<number> {
   return page.evaluate(() => {
@@ -55,11 +54,11 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<number> {
 }
 
 /**
- * Bascule en vue galerie.
+ * Switches to gallery view.
  *
- * La collection s'ouvre en **liste**, comme ATEM-old : c'est là que vivent les
- * boutons « +1 » et « −1 ». La galerie est une vue de consultation, où l'on
- * ouvre la carte pour agir.
+ * The collection opens as a **list**, like ATEM-old: that is where the “+1” and
+ * “−1” buttons live. The gallery is a browsing view, where you open the card to
+ * act.
  */
 export async function useGalleryView(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Vue galerie" }).click();

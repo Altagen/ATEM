@@ -1,27 +1,26 @@
 #!/usr/bin/env bash
 #
-# Servir Tesseract nous-mêmes, plutôt que de le charger depuis un CDN.
+# Serve Tesseract ourselves, rather than loading it from a CDN.
 #
-# Le scan OCR chargeait son moteur depuis `cdn.jsdelivr.net` : du code tiers
-# exécuté dans notre origine, à chaque ouverture de l'écran. Le cookie de
-# session est `httpOnly`, donc ce code ne peut pas le lire — mais il peut
-# appeler l'API au nom de la personne connectée. Et l'épinglage par version ne
-# protège de rien : c'est le CDN qui décide de ce qu'il sert sous ce nom.
+# OCR scanning loaded its engine from `cdn.jsdelivr.net`: third-party code
+# running in our origin, every time the screen opened. The session cookie is
+# `httpOnly`, so that code cannot read it — but it can call the API on behalf of
+# the signed-in person. And pinning by version protects nothing: the CDN decides
+# what it serves under that name.
 #
-# Les quatre fichiers sont donc téléchargés une fois, **vérifiés par empreinte**,
-# et servis depuis notre domaine. L'empreinte est ce qui change tout : une
-# version épinglée fait confiance à un nom, une empreinte ne fait confiance
-# qu'au contenu.
+# The four files are therefore downloaded once, **checked by fingerprint**, and
+# served from our own domain. The fingerprint is what changes everything: a
+# pinned version trusts a name, a fingerprint trusts only the content.
 #
-# Ils ne sont pas dans le dépôt — sept mégaoctets de binaires n'y ont pas leur
-# place. `pnpm build` appelle ce script, qui ne retélécharge que ce qui manque.
+# They are not in the repository — seven megabytes of binaries do not belong
+# there. `pnpm build` calls this script, which only downloads what is missing.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
 DEST="apps/web/public/tesseract"
-EMPREINTES="scripts/tesseract.sha256"
+FINGERPRINTS="scripts/tesseract.sha256"
 
-# Version épinglée **et** contenu vérifié. Changer l'une sans l'autre échoue.
+# Pinned version **and** checked content. Changing one without the other fails.
 JS="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"
 WORKER="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js"
 CORE="https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1/tesseract-core-lstm.wasm.js"
@@ -29,53 +28,53 @@ LANG="https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int/eng.tra
 
 mkdir -p "$DEST/lang"
 
-telecharger() {
-  local url="$1" cible="$2"
-  if [ -s "$cible" ]; then return 0; fi
-  echo "   ↓ $(basename "$cible")"
-  if ! curl -fsSL --max-time 180 -o "$cible.part" "$url"; then
-    echo "   ✗ téléchargement impossible : $url" >&2
-    rm -f "$cible.part"
+download() {
+  local url="$1" target="$2"
+  if [ -s "$target" ]; then return 0; fi
+  echo "   ↓ $(basename "$target")"
+  if ! curl -fsSL --max-time 180 -o "$target.part" "$url"; then
+    echo "   ✗ download failed: $url" >&2
+    rm -f "$target.part"
     return 1
   fi
-  mv "$cible.part" "$cible"
+  mv "$target.part" "$target"
 }
 
-echo "── Moteur OCR, servi depuis notre domaine"
-manque=0
-telecharger "$JS"     "$DEST/tesseract.min.js"        || manque=1
-telecharger "$WORKER" "$DEST/worker.min.js"           || manque=1
-telecharger "$CORE"   "$DEST/tesseract-core-lstm.wasm.js" || manque=1
-telecharger "$LANG"   "$DEST/lang/eng.traineddata.gz" || manque=1
+echo "── OCR engine, served from our own domain"
+missing=0
+download "$JS"     "$DEST/tesseract.min.js"        || missing=1
+download "$WORKER" "$DEST/worker.min.js"           || missing=1
+download "$CORE"   "$DEST/tesseract-core-lstm.wasm.js" || missing=1
+download "$LANG"   "$DEST/lang/eng.traineddata.gz" || missing=1
 
-if [ "$manque" -ne 0 ]; then
-  cat >&2 <<'FIN'
+if [ "$missing" -ne 0 ]; then
+  cat >&2 <<'END'
 
-   Les fichiers manquent et n'ont pas pu être téléchargés. Le reste de
-   l'application fonctionne ; seul le scan OCR restera muet, et le dira.
-FIN
+   Files are missing and could not be downloaded. The rest of the application
+   works; only OCR scanning will stay silent, and will say so.
+END
   exit 1
 fi
 
-echo "── Empreintes"
-if [ ! -f "$EMPREINTES" ]; then
+echo "── Fingerprints"
+if [ ! -f "$FINGERPRINTS" ]; then
   ( cd "$DEST" && find . -type f -name '*' ! -name '*.part' -print0 \
-      | sort -z | xargs -0 sha256sum ) > "$EMPREINTES"
-  echo "   · empreintes enregistrées pour la première fois — à relire avant de committer"
-  cat "$EMPREINTES" | sed 's/^/       /'
+      | sort -z | xargs -0 sha256sum ) > "$FINGERPRINTS"
+  echo "   · fingerprints recorded for the first time — review them before committing"
+  cat "$FINGERPRINTS" | sed 's/^/       /'
   exit 0
 fi
 
-if ( cd "$DEST" && sha256sum --quiet -c "../../../../$EMPREINTES" ) 2>/dev/null; then
-  echo "   ✓ les quatre fichiers correspondent aux empreintes enregistrées"
+if ( cd "$DEST" && sha256sum --quiet -c "../../../../$FINGERPRINTS" ) 2>/dev/null; then
+  echo "   ✓ all four files match the recorded fingerprints"
 else
-  cat >&2 <<'FIN'
-   ✗ Un fichier ne correspond pas à son empreinte.
+  cat >&2 <<'END'
+   ✗ A file does not match its fingerprint.
 
-   Soit le contenu servi sous ce nom a changé — ce qui est précisément ce que
-   l'empreinte sert à détecter — soit un téléchargement s'est mal terminé.
-   Effacer apps/web/public/tesseract et relancer ; si l'écart persiste, ne pas
-   le contourner.
-FIN
+   Either the content served under that name has changed — which is precisely
+   what the fingerprint exists to detect — or a download ended badly. Delete
+   apps/web/public/tesseract and run again; if the mismatch persists, do not
+   work around it.
+END
   exit 1
 fi

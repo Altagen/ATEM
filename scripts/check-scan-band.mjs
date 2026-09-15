@@ -1,19 +1,19 @@
 /**
- * La bande dessinée et la bande lue doivent être la même.
+ * The drawn band and the read band must be the same.
  *
- * Le moteur OCR découpe une bande définie par `SCAN_ZOOM_BAND` ; la feuille de
- * style en dessine une autre, définie par `.scan-zoom-band`. Ce sont deux
- * écritures de la même chose, et rien dans le langage ne les relie.
+ * The OCR engine crops a band defined by `SCAN_ZOOM_BAND`; the stylesheet draws
+ * another, defined by `.scan-zoom-band`. They are two spellings of the same
+ * thing, and nothing in the language links them.
  *
- * ATEM-old a vécu la panne : les pourcentages du CSS ont été inventés en
- * habillant des classes qui n'avaient pas de règle, la bande dessinée s'est
- * retrouvée en bas du viseur et la bande lue au milieu. On cadrait le set code
- * à un endroit, l'OCR regardait ailleurs, et le scan répondait « rien de
- * fiable » sans que rien n'explique pourquoi. Le module l'annonçait pourtant,
- * juste au-dessus de ses constantes — « doit correspondre au CSS » — et rien ne
- * le vérifiait.
+ * ATEM-old lived through the failure: the CSS percentages were invented while
+ * styling classes that had no rule, the drawn band ended up at the bottom of the
+ * viewfinder and the read band in the middle. You framed the set code in one
+ * place, the OCR looked elsewhere, and the scan answered “nothing reliable”
+ * with nothing explaining why. The module said so, though, right above its
+ * constants — “Must match CSS .scan-zoom-band percentages” — and nothing
+ * checked it.
  *
- * Maintenant si.
+ * Now something does.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -27,7 +27,7 @@ const sheet = readFileSync(SHEET, "utf8");
 
 const engineBlock = engine.match(/export const SCAN_ZOOM_BAND\s*=\s*\{([^}]*)\}/);
 if (!engineBlock) {
-  console.error(`✗ SCAN_ZOOM_BAND introuvable dans ${path.relative(ROOT, ENGINE)}`);
+  console.error(`✗ SCAN_ZOOM_BAND not found in ${path.relative(ROOT, ENGINE)}`);
   process.exit(1);
 }
 
@@ -45,12 +45,12 @@ const fromEngine = {
 
 const cssBlock = sheet.match(/\.scan-zoom-band\s*\{([\s\S]*?)\}/);
 if (!cssBlock) {
-  console.error(`✗ .scan-zoom-band introuvable dans ${path.relative(ROOT, SHEET)}`);
+  console.error(`✗ .scan-zoom-band not found in ${path.relative(ROOT, SHEET)}`);
   process.exit(1);
 }
 
 const readPercent = (source, property) => {
-  // On saute les commentaires : ils citent souvent les valeurs qu'ils expliquent.
+  // Skip comments: they often quote the values they explain.
   const clean = source.replace(/\/\*[\s\S]*?\*\//g, " ");
   const match = clean.match(new RegExp(`(?:^|;|\\s)${property}\\s*:\\s*([0-9.]+)%`));
   return match ? Number(match[1]) / 100 : null;
@@ -70,31 +70,31 @@ for (const key of ["x", "y", "w", "h"]) {
   const engineValue = fromEngine[key];
   const cssValue = fromCss[key];
   if (engineValue === null || cssValue === null) {
-    mismatches.push(`${NAMES[key]} : valeur illisible (moteur ${engineValue}, CSS ${cssValue})`);
+    mismatches.push(`${NAMES[key]}: unreadable value (engine ${engineValue}, CSS ${cssValue})`);
     continue;
   }
-  // Une tolérance d'un dixième de pourcent absorbe l'arrondi de l'écriture en
-  // pourcentage, sans laisser passer un décalage visible.
+  // A tolerance of a tenth of a percent absorbs the rounding of the percentage
+  // notation, without letting a visible offset through.
   if (Math.abs(engineValue - cssValue) > 0.001) {
     mismatches.push(
-      `${NAMES[key]} : moteur ${engineValue} (${(engineValue * 100).toFixed(1)} %) ` +
-        `≠ CSS ${(cssValue * 100).toFixed(1)} %`,
+      `${NAMES[key]}: engine ${engineValue} (${(engineValue * 100).toFixed(1)}%) ` +
+        `≠ CSS ${(cssValue * 100).toFixed(1)}%`,
     );
   }
 }
 
 if (mismatches.length > 0) {
-  console.error("✗ la bande dessinée et la bande lue ne coïncident pas :\n");
+  console.error("✗ the drawn band and the read band do not match:\n");
   for (const line of mismatches) console.error(`    ${line}`);
   console.error(
-    "\n  Le viseur montrerait au joueur une zone que l'OCR ne lit pas," +
-      "\n  et le scan échouerait sans rien expliquer.",
+    "\n  The viewfinder would show the player an area the OCR does not read," +
+      "\n  and the scan would fail without explaining anything.",
   );
   process.exit(1);
 }
 
 console.log(
-  `✓ bande de visée cohérente — ${(fromEngine.x * 100).toFixed(0)} % / ` +
-    `${(fromEngine.y * 100).toFixed(0)} % · ${(fromEngine.w * 100).toFixed(0)} % × ` +
-    `${(fromEngine.h * 100).toFixed(0)} %`,
+  `✓ aiming band consistent — ${(fromEngine.x * 100).toFixed(0)}% / ` +
+    `${(fromEngine.y * 100).toFixed(0)}% · ${(fromEngine.w * 100).toFixed(0)}% × ` +
+    `${(fromEngine.h * 100).toFixed(0)}%`,
 );
