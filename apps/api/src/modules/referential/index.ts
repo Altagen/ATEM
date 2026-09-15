@@ -2,7 +2,7 @@
  * The public API of the referential module.
  *
  * `ensurePlaceholderPrint` and `upsertPrint` are here because `collection` and
- * `decks` need them — which is precisely what spares them writing into `cards`
+ * `deck` need them — which is precisely what spares them writing into `cards`
  * and `card_prints` themselves, as they did in ATEM-old.
  */
 export {

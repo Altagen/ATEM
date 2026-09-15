@@ -1,120 +1,137 @@
-# Étape 3 — Structure du monorepo et frontières
+# Monorepo structure and boundaries
 
-## Le mal à soigner
+## The ailment to treat
 
-ATEM-old déclarait ses 21 tables dans **un seul fichier de 780 lignes**, mêlant
-utilisateurs, invitations, limitation de débit, réglages, guildes, notifications, cartes,
-decks et scanlistes. Chaque table prise isolément est saine ; c'est leur cohabitation qui
-empoisonne. Conséquence directe : trois modules écrivaient dans les tables du catalogue,
-chacun avec sa propre logique de carte provisoire, sans connaître les deux autres.
+ATEM-old declared its 21 tables in **a single 780-line file**, mixing users,
+invitations, rate limiting, settings, guilds, notifications, cards, decks and
+scanlists. Each table taken alone is sound; it is their cohabitation that poisons.
+Direct consequence: three modules wrote into the catalogue tables, each with its
+own provisional-card logic, unaware of the other two.
 
-**La frontière n'est pas un principe esthétique : c'est ce qui empêche cette dérive.**
+**The boundary is not an aesthetic principle: it is what prevents that drift.**
 
-## Arborescence
+## Tree
+
+What exists today, and — marked *(planned)* — what the boundaries already make
+room for.
 
 ```
 ATEM/
 ├─ apps/
 │  ├─ api/
+│  │  ├─ scripts/            test harness, OCR prefix dictionary
 │  │  └─ src/
 │  │     ├─ modules/
-│  │     │  ├─ referential/     cartes, impressions, sets, images, résolution
-│  │     │  ├─ identity/        comptes, sessions, mots de passe, débit
-│  │     │  ├─ collection/      exemplaires possédés, scanlistes
-│  │     │  ├─ decks/           dossiers, decks, entrées
-│  │     │  ├─ social/          amitiés, blocages, contrôle d'accès
-│  │     │  └─ data/            import, export, effacement de compte
-│  │     ├─ platform/           erreurs, en-têtes, arrêt propre, corps de requête
-│  │     ├─ db/                 client, migrations, agrégateur de schéma
+│  │     │  ├─ referential/  cards, printings, resolution, outbound rate
+│  │     │  ├─ identity/     accounts, sessions, passwords, rate limiting
+│  │     │  ├─ collection/   owned copies, deferred resolution queue
+│  │     │  ├─ scanlist/     batches inventoried outside the collection
+│  │     │  ├─ deck/         folders, decks, deck cards
+│  │     │  ├─ social/       (planned) friendships, blocks, access control
+│  │     │  └─ data/         (planned) import, export
+│  │     ├─ platform/        errors, headers, graceful shutdown, identifiers
+│  │     ├─ db/              client, migrations, schema aggregator
 │  │     └─ app.ts
 │  └─ web/
 │     └─ src/
-│        ├─ design/             tokens.css, base.css — la fondation
-│        ├─ components/         toast, modale, pagineur, avatar…
-│        ├─ screens/            collection/, decks/, settings/, players/
-│        ├─ platform/           routeur, client d'API, i18n, préférences
+│        ├─ design/          tokens, base, page and component sheets
+│        ├─ screens/         auth/, collection/, scanlist/, deck/, shared/
+│        ├─ platform/        router, API client, i18n, session, scroll lock
 │        └─ main.ts
-└─ packages/
-   └─ shared/                   contrats Zod, bornes, identité de set code
+├─ packages/
+│  └─ shared/                rules and limits shared by server and screens
+├─ e2e/                      Playwright, desktop and mobile profiles
+└─ scripts/                  executable gates, development tooling
 ```
 
-### Anatomie d'un module serveur
+### Anatomy of a server module
 
 ```
-modules/<nom>/
-  schema.ts     ses tables Drizzle, et elles seules
-  service.ts    sa logique métier — la seule porte d'entrée
-  routes.ts     ses routes HTTP, qui n'appellent que son service
-  <nom>.test.ts
-  index.ts      son API publique : ce que les autres modules ont le droit d'appeler
+modules/<name>/
+  schema.ts     its Drizzle tables, and only those
+  service.ts    its business logic — the only way in
+  routes.ts     its HTTP routes, which only call its service
+  <name>.test.ts
+  index.ts      its public API: what other modules are allowed to call
 ```
 
-`db/schema.ts` **n'existe plus comme fichier de déclaration**. Il devient un agrégateur
-de six lignes qui réexporte les schémas des modules pour drizzle-kit. Il ne peut plus
-grossir : il n'y a rien à y écrire.
+`db/schema.ts` **is no longer a declaration file**. It is an aggregator that
+re-exports the modules' schemas for drizzle-kit. It cannot grow: there is nothing
+to write in it.
 
-## Les quatre règles de frontière
+## The four boundary rules
 
-**R1 — Un module ne lit ni n'écrit jamais les tables d'un autre.** Il appelle une
-fonction exportée par son `index.ts`. ATEM-old avait un modèle de cette règle bien
-appliquée : `scanlists/service.ts` ne touchait aucune table étrangère et passait par
-`addToCollection`. On généralise ce patron.
+**R1 — A module never reads or writes another module's tables.** It calls a
+function exported by that module's `index.ts`. ATEM-old had a model of this rule
+well applied: `scanlists/service.ts` touched no foreign table and went through
+`addToCollection`. We generalise that pattern — today `scanlist` pours through
+`collection`'s `adjustQuantity`. `scripts/check-module-boundaries.mjs` enforces
+it.
 
-**R2 — Le référentiel expose une API d'écriture.** `upsertCard`, `upsertPrint`,
-`ensurePlaceholderPrint`. C'est le seul remède aux trois implémentations concurrentes de
-la carte provisoire. `collection` et `decks` cessent d'écrire dans `cards` et
-`card_prints`.
+**R2 — The referential module exposes a write API.** `upsertCard`, `upsertPrint`,
+`ensurePlaceholderPrint`. It is the only cure for the three competing
+implementations of the provisional card. `collection` and `deck` do not write into
+`cards` and `card_prints`.
 
-**R3 — Un seul point de contrôle d'accès.** `social` expose `canView(viewerId, targetId,
-resource)`. Aucune vérification d'amitié ou de blocage n'est recopiée ailleurs.
-ATEM-old en avait déjà deux copies indépendantes, avant même que les decks et la
-collection d'autrui soient consultables — la troisième était garantie.
+**R3 — A single access-control point.** When `social` arrives, it exposes
+`canView(viewerId, targetId, resource)`. No friendship or block check is copied
+anywhere else. ATEM-old already had two independent copies, before other players'
+decks and collections were even viewable — the third was guaranteed.
 
-**R4 — Une seule direction de dépendance.**
+**R4 — A single dependency direction.** As the imports stand today:
 
 ```
-data ──▶ collection ──▶ referential
-  │           │              ▲
-  │           └──▶ decks ────┘
-  └──▶ social ──▶ identity ◀─┘
+scanlist ──▶ collection ──▶ referential
+                 ▲               ▲
+deck ────────────┴───────────────┘
+
+every module's routes ──▶ identity   (the session guard)
 ```
 
-`referential` et `identity` ne dépendent de rien. Aucun cycle. Une dépendance qui
-remonterait cette flèche est un défaut de conception, pas un cas particulier.
+`identity` depends on nothing, and `referential` only on its session guard, for its
+routes. When they arrive, `data` will sit above `collection` and `social` above
+`identity`. No cycle. A dependency going back up those arrows is a design defect,
+not a special case.
 
-## La carte provisoire — décision
+## The provisional card — decision
 
-Le besoin est réel : `POST /collection` doit répondre immédiatement, sans attendre
-YGOPRODeck. ATEM-old marquait le provisoire par un **passcode négatif** issu d'un hachage
-du set code — convention implicite recopiée à la main dans quatre modules, sans garde-fou
-de type, avec un risque de collision non testé.
+The need is real: `POST /collection/adjust` must answer immediately, without
+waiting for YGOPRODeck. ATEM-old marked the provisional state with a **negative
+passcode** derived from a hash of the set code — an implicit convention copied by
+hand into four modules, with no type guard, and an untested collision risk.
 
-**ATEM remplace ça par un état explicite** porté par la ligne :
+**ATEM replaces that with an explicit state** carried by the row:
 
 ```
 resolve_status : 'resolved' | 'pending' | 'unidentified'
 ```
 
-Une seule fonction, `ensurePlaceholderPrint`, propriété de `referential`, crée une ligne
-provisoire. Le signe d'un entier ne porte plus de sens métier.
+A single function, `ensurePlaceholderPrint`, owned by `referential`, creates a
+provisional row. The sign of an integer no longer carries business meaning.
 
 ## Conventions
 
-**Nommage** — identifiants, noms de fichiers et de tables en **anglais** ; commentaires
-et documentation en **français**. ATEM-old mélangeait les deux dans les identifiants
-(`erreurs.ts` à côté de `service.ts`), sans règle.
+**Language** — everything in the repository is written in **English**:
+identifiers, file and table names, comments, documentation, commit messages,
+URLs. The only French lives where it is data: the i18n dictionary
+(`apps/web/src/platform/i18n/fr.ts`), the Yu-Gi-Oh! vocabulary
+(`platform/ygo-labels.ts`), French card names in test data, and the French
+interface strings the end-to-end tests assert. The application itself still
+displays in French by default. ATEM-old mixed both languages in its identifiers
+(`erreurs.ts` next to `service.ts`), with no rule.
 
-**Commentaires** — on garde la meilleure pratique d'ATEM-old : un commentaire explique
-le *pourquoi* et l'incident qui a motivé le choix, pas le *quoi*. Un commentaire qui
-paraphrase le code ne sert à rien ; un commentaire qui dit « le noir et blanc pur faisait
-confondre 8 et S » évite de refaire l'erreur.
+**Comments** — we keep ATEM-old's best practice: a comment explains the *why* and
+the incident behind the choice, not the *what*. A comment paraphrasing the code is
+useless; a comment saying “pure black and white made 8 and S look alike” avoids
+making the mistake again.
 
-**Tests** — co-localisés, lanceur natif `node --test`. Intégration sur base PostgreSQL
-jetable horodatée, détruite en sortie (le mécanisme d'ATEM-old est repris tel quel).
+**Tests** — co-located, native `node --test` runner. Integration tests on a
+throwaway, timestamped PostgreSQL database, destroyed on exit (ATEM-old's
+mechanism taken as is).
 
-**Deux règles héritées, et elles s'appliquent à moi :**
-- **Ne jamais fabriquer de donnée.** Pas de repli inventé, pas de contenu de
-  démonstration affiché en cas d'erreur.
-- **Ne jamais écrire de fichier de statut de projet en prose.** Un état se mesure par une
-  barrière exécutable. ATEM-old avait vidé son `MEMORY.md` précisément parce que les
-  auto-évaluations d'agent s'étaient révélées fausses sur des points vérifiables.
+**Two inherited rules, and they apply to agents too:**
+- **Never fabricate data.** No invented fallback, no demo content displayed on
+  error.
+- **Never write a prose project status file.** A state is measured by an
+  executable gate. ATEM-old emptied its `MEMORY.md` precisely because agents'
+  self-assessments had turned out wrong on verifiable points.

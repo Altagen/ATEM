@@ -1,37 +1,37 @@
-# Référence — formats d'import / export de collection
+# Reference — collection import / export formats
 
-Connaissance extraite d'ATEM-old, où elle était fonctionnelle. Ce document fait
-autorité : **il survit à la réécriture même si tout le code est jeté.**
+Knowledge extracted from ATEM-old, where it worked. This document is
+authoritative: **it survives the rewrite even if all the code is thrown away.**
 
-## Règles communes
+## Common rules
 
-**Encodage** UTF-8. **BOM** : à l'export, ATEM-old l'ajoutait *côté client* — un lien
-direct vers `/export.csv` produisait donc un fichier qu'Excel en locale française lit en
-latin-1 et dont il abîme les accents.
-→ **Décision ATEM : le BOM est écrit côté serveur.** À l'import, un BOM de tête est
-retiré s'il est présent ; le fichier est accepté avec ou sans.
+**Encoding** UTF-8. **BOM**: on export, ATEM-old added it *client-side* — a direct
+link to `/export.csv` therefore produced a file that Excel in a French locale reads
+as latin-1, mangling the accents.
+→ **ATEM decision: the BOM is written server-side.** On import, a leading BOM is
+removed if present; the file is accepted with or without it.
 
-**Fins de ligne** : `\r?\n` accepté en lecture (CRLF et LF). En écriture, `\n` final
-après la dernière ligne. Les lignes vides sont filtrées.
+**Line endings**: `\r?\n` accepted when reading (CRLF and LF). When writing, a final
+`\n` after the last line. Empty lines are filtered out.
 
-**Séparateur** : détecté **une seule fois**, sur la ligne d'en-tête, en comptant les
-virgules et les points-virgules **hors guillemets**. S'il y a plus de `;` que de `,`, tout
-le fichier est lu en `;`. Un seul séparateur pour tout le fichier.
+**Separator**: detected **once**, on the header line, by counting commas and
+semicolons **outside quotes**. If there are more `;` than `,`, the whole file is read
+with `;`. A single separator for the whole file.
 
-**Échappement en écriture** : une cellule est entourée de guillemets doubles dès qu'elle
-contient une virgule, **un point-virgule**, un guillemet, `\n` ou `\r`. Le point-virgule
-est protégé même dans un fichier séparé par virgules, parce qu'un tableur français le
-lit comme séparateur. Un guillemet interne est doublé (`"` → `""`). `null` → chaîne vide.
+**Escaping when writing**: a cell is wrapped in double quotes as soon as it contains
+a comma, **a semicolon**, a quote, `\n` or `\r`. The semicolon is protected even in a
+comma-separated file, because a French spreadsheet reads it as a separator. An inner
+quote is doubled (`"` → `""`). `null` → empty string.
 
-**Lecture** : parseur à état gérant les guillemets doublés et ignorant le séparateur à
-l'intérieur d'un champ cité.
+**Reading**: a state-machine parser handling doubled quotes and ignoring the
+separator inside a quoted field.
 
-## Reconnaissance des colonnes
+## Column recognition
 
-L'en-tête est normalisé (`trim`, minuscules, puis suppression de tout sauf
-`[a-z0-9_ ]`) avant comparaison. Table d'alias :
+The header is normalised (`trim`, lowercase, then removal of everything except
+`[a-z0-9_ ]`) before comparison. Alias table:
 
-| Colonne cible | Variantes acceptées en en-tête |
+| Target column | Variants accepted in the header |
 |---|---|
 | `set_code` | `set_code`, `set code`, `card number`, `card_number`, `number`, `code`, `set_id`, `setid`, `cardnumber`, `expansion_code`, `expansion code`, `set_number`, `expansion/set` |
 | `name` | `name`, `card_name`, `card name`, `title`, `cardname`, `card` |
@@ -41,62 +41,66 @@ L'en-tête est normalisé (`trim`, minuscules, puis suppression de tout sauf
 | `passcode` | `passcode`, `pass_code`, `pass code`, `card_id`, `card id`, `id`, `ygoprodeck_id` |
 | `notes` | `notes`, `note`, `comment`, `comments`, `remark`, `remarks`, `condition` |
 
-**Seule `set_code` est obligatoire.** Son absence rejette le fichier entier
+The French aliases (`quantité`, `rarité`, `langue`) are data: they are what French
+spreadsheets write.
+
+**Only `set_code` is required.** Its absence rejects the whole file
 (`missing_column_set_code`).
 
-## Normalisation des valeurs
+## Value normalisation
 
-**`set_code`** : `trim`, suppression d'un `#` de tête, puis passage en majuscules et
-espaces → tiret.
+**`set_code`**: `trim`, removal of a leading `#`, then uppercase and spaces → dash.
 
-**`language`** : code ISO à deux lettres, nom complet FR/EN, ou **code numérique Konami**
-hérité — `1`=en, `2`=fr, `3`=de, `4`=es, `5`=it, `6`=pt, `7`=ja, `8`=ko. Colonne absente
-ou vide → langue **déduite du set code** (`LTGY-FR008` → `fr`). Valeur non reconnue →
-deux premiers caractères en minuscules.
+**`language`**: two-letter ISO code, full FR/EN name, or inherited **Konami numeric
+code** — `1`=en, `2`=fr, `3`=de, `4`=es, `5`=it, `6`=pt, `7`=ja, `8`=ko. Missing or
+empty column → language **inferred from the set code** (`LTGY-FR008` → `fr`).
+Unrecognised value → first two characters, lowercased.
 
-**`quantity`** : `1` par défaut si la colonne est absente, non numérique, nulle ou
-négative — silencieusement, sans erreur de ligne.
-→ **Décision ATEM** : ajouter une **borne haute** (ATEM-old n'en avait aucune, un CSV
-avec `quantity=999999999` passait). On aligne sur la borne des scanlistes : **1000**.
+**`quantity`**: `1` by default if the column is missing, non-numeric, zero or
+negative — silently, without a line error.
+→ **ATEM decision**: add an **upper bound** (ATEM-old had none, a CSV with
+`quantity=999999999` went through). Aligned on the scanlists' bound: **1000**.
 
-## Les trois formats
+## The three formats
 
-### ATEM (natif)
+### ATEM (native)
 
 ```
 set_code,name,quantity,rarity,language,passcode,notes
 ```
-Séparateur `,` · fichier `collection.csv` · seul format où `set_code` est en tête, parce
-que c'est l'identité de la ligne au réimport.
+Separator `,` · file `collection.csv` · the only format with `set_code` first,
+because it is the row's identity on re-import.
 
-### ScanFlip (en-têtes TCGplayer)
+### ScanFlip (TCGplayer headers)
 
 ```
 Card Name,Set Code,Quantity,Rarity,Language,Passcode,Notes
 ```
-Séparateur `,` · fichier `scanflip_collection.csv` · langue écrite telle quelle.
+Separator `,` · file `scanflip_collection.csv` · language written as is.
 
 ### Cardmarket
 
 ```
 Card Name;Card Number;Quantity;Rarity;Language;Comments
 ```
-Séparateur **`;`** (les exports Cardmarket réels l'utilisent) · fichier
+Separator **`;`** (real Cardmarket exports use it) · file
 `cardmarket_collection.csv`.
 
-- **Pas de colonne passcode** — Cardmarket identifie par le numéro d'extension.
-- `set_code` → colonne `Card Number` ; `notes` → colonne `Comments`.
-- **Langue en toutes lettres** : `fr` → `French`, `en` → `English`. ATEM-old ne traduisait
-  que ces deux-là et laissait les autres en code ISO. → **À compléter** : de, es, it, pt,
-  ja, ko.
+- **No passcode column** — Cardmarket identifies by the set number.
+- `set_code` → column `Card Number`; `notes` → column `Comments`.
+- **Language spelled out**: `fr` → `French`, `en` → `English`. ATEM-old only
+  translated those two and left the others as ISO codes. → **To complete**: de, es,
+  it, pt, ja, ko.
 
-## Format JSON (scanliste)
+## JSON format (scanlist)
+
+### ATEM-old's format
 
 ```json
 {
   "version": 1,
-  "scanliste": "<nom du lot>",
-  "date": "<date de création>",
+  "scanliste": "<batch name>",
+  "date": "<creation date>",
   "lignes": [
     { "set_code": "SDRE-FR005", "name": "…", "quantity": 3, "passcode": 26976414 },
     { "set_code": "ZZZ-FR999", "name": "…", "quantity": 1 }
@@ -104,36 +108,58 @@ Séparateur **`;`** (les exports Cardmarket réels l'utilisent) · fichier
 }
 ```
 
-**`passcode` est omis, jamais `null`, quand la carte n'est pas identifiée — et c'est un
-entier, jamais une chaîne.** Bug vécu : la première version l'émettait en chaîne, et
-chaque ligne était rejetée par le schéma serveur, en silence.
+**`passcode` is omitted, never `null`, when the card is not identified — and it is an
+integer, never a string.** Bug lived through: the first version emitted it as a
+string, and every line was rejected by the server schema, silently.
 
-L'import détecte le JSON tout seul (premier caractère non blanc `[` ou `{`), sans
-paramètre de format. Formes acceptées : tableau nu, ou enveloppe `{lignes:[…]}` ou
-`{rows:[…]}` — les autres clés sont ignorées sans erreur. Toute autre forme →
-`expected_array_or_lignes`. JSON invalide → `invalid_json`.
+The import detects JSON by itself (first non-blank character `[` or `{`), with no
+format parameter. Accepted shapes: bare array, or an envelope `{lignes:[…]}` or
+`{rows:[…]}` — other keys are ignored without error. Any other shape →
+`expected_array_or_lignes`. Invalid JSON → `invalid_json`.
 
-## Modes d'import
+### What ATEM exports today
 
-**`merge` n'additionne pas.** C'est le point le moins intuitif du format.
+The scanlist screen's “Export as JSON” (`SCANLIST_EXPORT_VERSION = 1`) writes
+English keys, and **does not follow the rule above** for unidentified cards:
 
-- **`merge`** (défaut) : la quantité de la ligne existante est **alignée** sur celle du
-  fichier (`delta = fichier − existant`), pas ajoutée. Les lignes possédées mais absentes
-  du fichier sont conservées intactes. Si seule la note change, seule la note est écrite.
-- **`replace`** : même traitement, puis **suppression** de toute ligne possédée dont le
-  `set_code` n'apparaît pas dans le fichier. Une ligne du fichier **en échec compte quand
-  même comme présente** et épargne la ligne correspondante — comportement délibéré, à
-  conserver : un fichier partiellement illisible ne doit pas provoquer de suppression.
+```json
+{
+  "version": 1,
+  "name": "<batch name>",
+  "createdAt": "<ISO date>",
+  "pouredAt": "<ISO date or null>",
+  "lines": [
+    { "setCode": "SDRE-FR005", "name": "…", "passcode": 26976414, "quantity": 3 },
+    { "setCode": "ZZZ-FR999", "name": null, "passcode": null, "quantity": 1 }
+  ]
+}
+```
 
-**Échecs par ligne** : chaque ligne est traitée indépendamment. Un échec ajoute une entrée
-au rapport (`{line, set_code, error}`) sans interrompre les suivantes. Bilan retourné :
-`mode`, `imported`, `removed`, `failed`, `errors[]`.
+No import exists yet, so nothing breaks today. **When import arrives, it must
+accept both shapes** — ATEM-old's files, and this one — and treat a `null` passcode
+as absent.
 
-**Doublons de `set_code` dans un même fichier** : ATEM-old faisait « dernière ligne
-gagne », sans test ni spécification, alors que la création de scanliste fusionne.
-→ **Décision ATEM : fusionner**, en additionnant les quantités et en conservant le
-premier nom identifié.
+## Import modes
 
-**Taille maximale** : 5 Mo, vérifiée **deux fois** — d'abord sur `Content-Length` pour
-rejeter tôt, puis sur la taille réelle du texte lu, parce que l'en-tête peut mentir ou
-être absent en `chunked`.
+**`merge` does not add up.** It is the least intuitive point of the format.
+
+- **`merge`** (default): the existing row's quantity is **aligned** on the file's
+  (`delta = file − existing`), not added. Rows owned but absent from the file are
+  kept intact. If only the note changes, only the note is written.
+- **`replace`**: same treatment, then **deletion** of every owned row whose
+  `set_code` does not appear in the file. A **failed** file line **still counts as
+  present** and spares the matching row — deliberate behaviour, to keep: a partly
+  unreadable file must not cause a deletion.
+
+**Per-line failures**: each line is processed independently. A failure adds an entry
+to the report (`{line, set_code, error}`) without interrupting the following ones.
+Returned summary: `mode`, `imported`, `removed`, `failed`, `errors[]`.
+
+**Duplicate `set_code` in the same file**: ATEM-old did “last line wins”, with no
+test or specification, while scanlist creation merges.
+→ **ATEM decision: merge**, adding up quantities and keeping the first identified
+name.
+
+**Maximum size**: 5 MB, checked **twice** — first on `Content-Length` to reject
+early, then on the real size of the text read, because the header can lie or be
+absent with `chunked`.

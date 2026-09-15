@@ -1,570 +1,567 @@
-# ATEM — Feuille de route
+# ATEM — Roadmap
 
-Chaque jalon est une tranche **verticale** livrable et démontrable. On ne passe au
-suivant que lorsque le précédent tourne réellement en `docker compose up`.
+Each milestone is a **vertical** slice, shippable and demonstrable. We only move to
+the next once the previous one really runs with `docker compose up`.
 
-À chaque jalon, une étape « archéologie ATEM-old » ciblée : on n'inspecte que ce qui
-concerne le jalon en cours, et on classe chaque élément **Reprendre / Adapter /
-Refaire**. Pas de cartographie exhaustive de l'ancien projet.
+At each milestone, a targeted “ATEM-old archaeology” step: we only inspect what
+concerns the current milestone, and classify each element **Take / Adapt / Redo**.
+No exhaustive map of the old project.
 
 ---
 
-## M0 — Squelette qui marche  ✅ *terminé le 2026-09-09*
+## M0 — A skeleton that works  ✅ *finished on 2026-09-09*
 
-**Objectif.** `docker compose up` sur une machine vierge donne une application où l'on
-s'inscrit, se connecte, et cherche une carte dans le référentiel complet.
+**Goal.** `docker compose up` on a blank machine gives an application where you
+sign up, sign in, and search for a card in the full reference data.
 
-- Monorepo, compose, base de données, migrations, CI minimale
-- Job d'amorçage du référentiel : 2 dumps → tables → index de set codes normalisés
-- Téléchargement des images en tâche de fond, reprenable
-- Inscription / connexion / déconnexion (scrypt)
-- Une page : recherche de carte par nom, avec image *(retirée en M1 : l'écran
-  Catalogue qu'elle servait n'existait pas dans ATEM-old et doublait la
-  collection — voir plus bas)*
+- Monorepo, compose, database, migrations, minimal CI
+- Reference data bootstrap job: 2 dumps → tables → index of normalised set codes
+- Background image download, resumable
+- Sign-up / sign-in / sign-out (scrypt)
+- One page: card search by name, with image *(removed in M1: the Catalogue screen
+  it served did not exist in ATEM-old and duplicated the collection — see below)*
 
-**Archéologie ciblée.** Configuration du monorepo, compose, client API YGOPRODeck,
-socle d'authentification.
+**Targeted archaeology.** Monorepo configuration, compose, YGOPRODeck API client,
+authentication foundation.
 
-**Terminé quand.** Machine vierge → application utilisable en une commande, sans étape
-manuelle. Le référentiel contient les 14 524 cartes et 44 517 impressions.
+**Done when.** Blank machine → usable application in one command, with no manual
+step. The reference data holds the 14,524 cards and 44,517 printings.
 
-### Ce qui a été vérifié, et non supposé
+### What was checked, not assumed
 
-| Mesure | Résultat |
+| Measurement | Result |
 |---|---|
-| Import du catalogue complet | **12,4 s** — 14 524 cartes, 44 496 impressions, 12 codes malformés écartés |
-| Résolution d'un set code français déjà en base | **39 ms**, zéro appel réseau |
-| Découpage des set codes réels | **100 %** (44 505 / 44 517), contre 88,2 % pour ATEM-old |
-| Tests | 11 dans `shared`, 7 dans `api`, tous au vert *(68 dans `api` au 2026-09-10)* |
-| Poids du front construit | 7,9 ko de JS, 4,5 ko de CSS |
+| Full catalogue import | **12.4 s** — 14,524 cards, 44,496 printings, 12 malformed codes set aside |
+| Resolving a French set code already in the database | **39 ms**, zero network calls |
+| Splitting real set codes | **100%** (44,505 / 44,517), against 88.2% for ATEM-old |
+| Tests | 11 in `shared`, 7 in `api`, all green *(68 in `api` as of 2026-09-10)* |
+| Built front weight | 7.9 kB of JS, 4.5 kB of CSS |
 
-Parcours validé de bout en bout à travers le proxy du front : inscription →
-session par cookie → recherche par nom → résolution d'un set code français.
+Path validated end to end through the front's proxy: sign-up → cookie session →
+search by name → resolution of a French set code.
 
-**Deux défauts trouvés en exécutant, pas en relisant** — voir ADR-007 (les deux
-formes de set code) et le durcissement du schéma Zod : une carte sur 14 524 a
-`attribute: null`, et un champ absent n'est pas un champ nul.
+**Two defects found by running, not by reviewing** — see ADR-007 (the two set code
+shapes) and the hardening of the Zod schema: one card out of 14,524 has
+`attribute: null`, and a missing field is not a null field.
 
 ---
 
-## M1 — Collection *(le cœur)*  ◐ *mis d'équerre ; reste l'essai sur cartes réelles*
+## M1 — Collection *(the heart)*  ✅ *finished on 2026-09-11*
 
-- Recherche par set code, via la forme normalisée (ADR-004) — **P0**
-- Ajout à la collection depuis le résultat — **P0**
-- Grille de collection : `+1` / `-1` par impression, favori — **P0**
-- Fiche carte plein écran, toutes informations — **P0**
-- Recherche par nom et **filtres complets** (type, race, attribut, niveau, atk/def,
-  archétype, set, rareté, favoris) — **P0**
-- Scan OCR `tesseract.js` : capture → set code reconnu → correction manuelle →
-  `+1`/`-1` → nouvelle capture — **P0**
-- Scanliste : lot de scans indépendant, exportable en JSON, versable dans la
-  collection à la demande — **P1**
+- Search by set code, through the normalised shape (ADR-004) — **P0**
+- Add to the collection from the result — **P0**
+- Collection grid: `+1` / `-1` per printing, favourite — **P0**
+- Full-screen card sheet, all information — **P0**
+- Search by name and **full filters** (type, race, attribute, level, atk/def,
+  archetype, set, rarity, favourites) — **P0**
+- `tesseract.js` OCR scan: capture → recognised set code → manual correction →
+  `+1`/`-1` → new capture — **P0**
+- Scanlist: independent batch of scans, exportable as JSON, poured into the
+  collection on demand — **P1**
 
-**Archéologie ciblée.** Composants de grille et de fiche carte, réglages OCR
-(prétraitement image, restriction de charset, zone de capture), interface de filtres.
+**Targeted archaeology.** Grid and card sheet components, OCR settings (image
+preprocessing, charset restriction, capture area), filter interface.
 
-**Terminé quand.** Une pile de cartes physiques est inventoriée par scan, de bout en
-bout, sans passer par la base à la main.
+**Done when.** A pile of physical cards is inventoried by scanning, end to end,
+without touching the database by hand.
 
-### État au 2026-09-09
+### State as of 2026-09-09
 
-**Fait et vérifié** — recherche et ajout par set code, grille avec `+1` / `−1`,
-favoris, fiche plein écran, filtres alimentés par ce que la collection contient
-réellement, écran de scan complet. Le moteur OCR d'ATEM-old est repris **tel
-quel** : 2 319 lignes sans aucun import, avec ses 46 tests, tous au vert.
+**Done and checked** — search and add by set code, grid with `+1` / `−1`,
+favourites, full-screen sheet, filters fed by what the collection really holds,
+full scan screen. ATEM-old's OCR engine is taken **as is**: 2,319 lines with no
+imports, with its 46 tests, all green.
 
-| Mesure | Résultat |
+| Measurement | Result |
 |---|---|
-| Tests | 11 partagés · 22 API · 46 OCR — 79 au total, tous au vert |
-| Fragment principal du front | 19,4 ko (7,3 ko compressés) |
-| Fragment du scanner | 24,4 ko, chargé seulement à l'ouverture de la caméra |
-| Dictionnaire de préfixes OCR | 650 préfixes, 34 746 numéros, dérivés du catalogue local |
-| Moteur Tesseract | vendorisé, 4 Mo, vérifié par empreinte SHA-256 |
+| Tests | 11 shared · 22 API · 46 OCR — 79 in total, all green |
+| Main front chunk | 19.4 kB (7.3 kB compressed) |
+| Scanner chunk | 24.4 kB, only loaded when the camera opens |
+| OCR prefix dictionary | 650 prefixes, 34,746 numbers, derived from the local catalogue |
+| Tesseract engine | vendored, 4 MB, checked by SHA-256 fingerprint |
 
-**Deux défauts d'ATEM-old corrigés au passage.** Le premier : une impression déjà
-identifiée l'emportait sur une provisoire seulement par hasard, si bien que la
-consolidation ne se déclenchait jamais quand les raretés différaient — trouvé en
-écrivant le test, pas en relisant le code. Le second : aucune borne haute
-n'existait sur les quantités.
+**Two ATEM-old defects fixed along the way.** The first: an already identified
+printing won over a provisional one only by chance, so consolidation never
+triggered when rarities differed — found while writing the test, not by reviewing
+the code. The second: there was no upper bound on quantities.
 
-**Playwright est en place**, avec deux profils — bureau 1440×900 et Pixel 5 —
-et **chaque épreuve tourne sur les deux**. 28 épreuves au vert, en 18 secondes.
+**Playwright is in place**, with two profiles — desktop 1440×900 and Pixel 5 — and
+**every test runs on both**. 28 tests green, in 18 seconds.
 
-Trois défauts ont été trouvés en *regardant* l'écran, qu'aucun test serveur
-n'aurait révélés :
+Three defects were found by *looking* at the screen, which no server test would
+have revealed:
 
-1. **Les noms s'affichaient en anglais sur des cartes françaises.** Après un
-   import complet, le catalogue ne contient que les codes anglais ;
-   `ensurePlaceholderPrint` retournait l'impression anglaise trouvée par la clé
-   canonique au lieu de matérialiser le code du joueur. Corrigé, avec deux tests
-   de régression.
-2. **La barre de navigation restait en retard d'une action.** Elle se mettait à
-   jour sur les clics, or le clic précède la réponse du serveur : juste après la
-   connexion, elle affichait encore « Connexion ». Elle suit désormais le rendu
-   de route.
-3. **La mise en page mobile.** En-tête dont les trois blocs se chevauchaient,
-   zone de capture du scanner si haute qu'elle repoussait `+1` et `−1` sous la
-   ligne de flottaison, pastille de carte non identifiée flottant dans un coin.
+1. **Names displayed in English on French cards.** After a full import, the
+   catalogue only holds English codes; `ensurePlaceholderPrint` returned the English
+   printing found by the canonical key instead of materialising the player's code.
+   Fixed, with two regression tests.
+2. **The navigation bar lagged one action behind.** It updated on clicks, but the
+   click comes before the server's answer: right after signing in, it still showed
+   “Sign in”. It now follows the route rendering.
+3. **The mobile layout.** A header whose three blocks overlapped, a scanner capture
+   area so tall it pushed `+1` and `−1` below the fold, an unidentified-card pill
+   floating in a corner.
 
-Les épreuves qui les verrouillent mesurent aussi le débordement horizontal et la
-taille des cibles tactiles — 44 px minimum, parce que cet écran sert à
-inventorier des centaines de cartes au pouce.
+The tests locking them also measure horizontal overflow and touch target size —
+44 px minimum, because this screen serves to inventory hundreds of cards by thumb.
 
-**Parité avec ATEM-old atteinte le 2026-09-10** — passcode à l'ajout et à la
-recherche, sens du tri, densité, regroupement par type, filtres de rang Xyz et
-de valeur de Lien, note d'exemplaire. L'écran Catalogue, qui n'existait pas dans
-ATEM-old et doublait la collection sans permettre d'agir, est supprimé.
+**Parity with ATEM-old reached on 2026-09-10** — passcode when adding and searching,
+sort direction, density, grouping by type, Xyz rank and Link rating filters, copy
+note. The Catalogue screen, which did not exist in ATEM-old and duplicated the
+collection without letting you act, is deleted.
 
-**Audit du 2026-09-10.** Passé sur tout ce qui était livré. Corrigés : la file
-de résolution ne reprenait rien au redémarrage (109 lignes en attente l'ont été
-au premier lancement corrigé), l'état `unidentified` n'était jamais écrit, les
-appels sortants n'avaient pas de délai d'attente, un 429 ne retenait que l'appel
-refusé, `?level=abc` répondait 500, la borne de corps ne tenait pas sans
-`Content-Length`, le scanner laissait deux écouteurs par ouverture, `?suite=`
-partait sans contrôle, et `check-dead-exports` était aveugle à toute la surface
-publique des modules. Une barrière de plus : `check-outbound.mjs`.
+**Audit of 2026-09-10.** Run over everything shipped. Fixed: the resolution queue
+resumed nothing on restart (109 pending rows were resumed at the first fixed
+launch), the `unidentified` state was never written, outbound calls had no timeout,
+a 429 only held back the refused call, `?level=abc` answered 500, the body limit did
+not hold without `Content-Length`, the scanner left two listeners behind per
+opening, `?suite=` went through unchecked, and `check-dead-exports` was blind to the
+modules' entire public surface. One more gate: `check-outbound.mjs`.
 
-**Le scan a été essayé sur cartes physiques le 2026-09-10**, au téléphone, sur
-le réseau local. C'était le dernier point qu'aucune épreuve ne pouvait couvrir :
-aucun navigateur d'épreuve n'a de caméra, et les réglages OCR étaient mesurés
-sans que l'ergonomie du geste le soit. Verdict d'Ange : « l'expérience
-utilisateur est très confortable ».
+**Scanning was tried on physical cards on 2026-09-10**, on a phone, over the local
+network. It was the last point no test could cover: no test browser has a camera,
+and the OCR settings had been measured without the gesture's ergonomics being
+measured. Ange's verdict: “the user experience is very comfortable”.
 
-Trois défauts trouvés là, et nulle part ailleurs :
+Three defects found there, and nowhere else:
 
-- **le champ prenait le focus tout seul** après chaque lecture, ce qui faisait
-  monter le clavier par-dessus la barre de déclenchement — il fallait taper à
-  côté pour le refermer avant chaque nouvelle photo ;
-- **le « +1 » n'avait aucune couleur**, indistinguable du « −1 » d'à côté ;
-- **rien ne disait que la lecture travaillait** : l'obturateur grisait, ce qui
-  se lit comme une panne. Sa pulsation existait en CSS, branchée nulle part.
+- **the field grabbed focus by itself** after each reading, raising the keyboard
+  over the shutter bar — you had to tap beside it to dismiss it before every new
+  photo;
+- **the “+1” had no colour**, indistinguishable from the “−1” next to it;
+- **nothing said the reading was working**: the shutter greyed out, which reads as a
+  failure. Its pulse existed in CSS, wired nowhere.
 
-Aucun ne se voyait à l'écran d'un ordinateur, et aucune barrière ne pouvait les
-signaler. C'est l'argument pour continuer à valider au doigt, écran par écran.
+None showed on a computer screen, and no gate could report them. That is the
+argument for continuing to validate by finger, screen by screen.
 
-### Scanlistes — livré le 2026-09-11
+### Scanlists — shipped on 2026-09-11
 
-Inventorier un lot sans le verser : un arrivage, un échange, une boîte à trier.
+Inventory a batch without pouring it: a delivery, a trade, a box to sort.
 
-**Le lot en cours ne quitte pas le navigateur.** C'est ce qui rend sa règle
-propre au lieu d'en faire un cas particulier : le « −1 » d'un lot décrémente sa
-ligne, plancher à zéro, et ne peut pas atteindre la collection — il n'existe
-aucun chemin. La ligne reste visible à zéro, pour montrer ce qu'on vient
-d'annuler ; elle est écartée à l'enregistrement.
+**The batch in progress does not leave the browser.** That is what makes its rule
+clean instead of a special case: a batch's “−1” decrements its line, floor at zero,
+and cannot reach the collection — there is no path. The line stays visible at zero,
+to show what you just cancelled; it is dropped at save time.
 
-**Rien ne survit sans validation explicite** (décision d'Ange) : pas de
-`localStorage`, pas de demi-état qu'on retrouve trois jours plus tard sans
-savoir ce qu'il contient. Le brouillon traverse une navigation interne et meurt
-avec l'onglet.
+**Nothing survives without explicit confirmation** (Ange's decision): no
+`localStorage`, no half-state found again three days later without knowing what it
+holds. The draft survives in-app navigation and dies with the tab.
 
-**Le nom n'attend jamais l'ajout.** La ligne entre avec son set code, que le
-navigateur tient déjà ; une résolution part en arrière-plan avec 2,5 s de délai.
-Si le nom arrive, il se pose ; sinon le code reste et dit l'essentiel.
+**The name never holds up the addition.** The line enters with its set code, which
+the browser already holds; a resolution runs in the background with a 2.5 s timeout.
+If the name arrives, it lands; otherwise the code stays and says what matters.
 
-Le scanner est réutilisé **sans changement de logique** — il rapporte
-`{ setCode, quantity, label }` à qui l'a ouvert, au lieu de rendre un objet de
-collection.
+The scanner is reused **with no change of logic** — it reports
+`{ setCode, quantity, label }` to whoever opened it, instead of returning a
+collection object.
 
-Trois défauts trouvés en construisant : `resetView()` remplaçait l'objet d'état
-que l'écran avait capturé (plus aucun bouton ne répondait) ; une repeinture
-asynchrone effaçait la saisie en cours quand un nom arrivait ; et le compteur
-d'une ligne portait le style du compteur de page, marge basse comprise.
+Three defects found while building: `resetView()` replaced the state object the
+screen had captured (no button answered any more); an asynchronous repaint erased the
+typing in progress when a name arrived; and a line's counter carried the page
+counter's style, bottom margin included.
 
-**Reste à faire** — rien pour M1.
+**Left to do** — nothing for M1.
 
-### Les traductions — livrées le 2026-09-11
+### Translations — shipped on 2026-09-11
 
-**La phrase est la clé.** `t("My collection")` rend la phrase telle quelle en
-anglais, sa traduction en français. Les gabarits restent lisibles : on y lit la
-phrase, pas un identifiant à résoudre ailleurs. L'objection habituelle — changer
-la phrase source orpheline silencieusement sa traduction — ne tient pas :
-`scripts/check-translations.mjs` refuse toute chaîne sans traduction **et** toute
-traduction que plus rien n'emploie.
+**The sentence is the key.** `t("My collection")` renders the sentence as is in
+English, and its translation in French. Templates stay readable: you read the
+sentence, not an identifier to resolve elsewhere. The usual objection — changing the
+source sentence silently orphans its translation — does not hold:
+`scripts/check-translations.mjs` refuses any string without a translation **and** any
+translation nothing uses any more.
 
-*Le français était la clé jusqu'au 2026-09-14* ; le dépôt part sur GitHub, et on
-ne demande pas de parler français pour lire la source. La langue affichée, elle,
-reste le français par défaut : c'est un choix de produit, pas de code.
+*French was the key until 2026-09-14*; the repository is going to GitHub, and nobody
+should need French to read the source. The displayed language stays French by
+default: a product choice, not a code one.
 
-**Le dictionnaire couvre aussi le serveur.** L'API répond en anglais — sa phrase
-est la clé ; le front la traduit avant de l'afficher. Cela évite d'inventer un
-code d'erreur distinct pour chacune de ses trente phrases — et referme le vrai
-piège : un écran français dont les erreurs parlent anglais.
+**The dictionary covers the server too.** The API answers in English — its sentence
+is the key; the front translates it before displaying it. That avoids inventing a
+distinct error code for each of its thirty sentences — and closes the real trap: a
+French screen whose errors speak English.
 
-**Le vocabulaire Yu-Gi-Oh! n'y est pas.** `Fish`, `WATER`, `Effect Monster` : en
-anglais, la valeur brute de l'API **est** l'anglais. `ygo-labels.ts` ne
-s'applique donc qu'en français. « Poisson » n'est pas une phrase d'interface.
+**The Yu-Gi-Oh! vocabulary is not in it.** `Fish`, `WATER`, `Effect Monster`: in
+English, the API's raw value **is** the English. `ygo-labels.ts` therefore only
+applies in French. “Poisson” is not an interface sentence.
 
-**La langue vit sur le compte** (`PATCH /auth/me/locale`), pas dans le
-navigateur : on la choisit une fois, on la retrouve d'un appareil à l'autre.
+**The language lives on the account** (`PATCH /auth/me/locale`), not in the browser:
+you choose it once, and find it again from one device to the next.
 
-**Pas de moteur de pluriel.** Le français s'en passe ici — « ex. » ne s'accorde
-pas — et l'anglais est écrit pour se lire juste à n'importe quel nombre : « ×1 »
-plutôt que « 1 copies ». Le jour où une phrase ne s'y prêtera pas, il faudra
-autre chose.
+**No plural engine.** French does without here — “ex.” does not agree — and the
+English is written to read correctly at any number: “×1” rather than “1 copies”. The
+day a sentence does not lend itself to that, something else will be needed.
 
-La barrière a été durcie quatre fois, chaque fois après avoir **vu** du français
-sur une capture anglaise : chaînes courtes sans accent (« Scanner »,
-« Compact »), gabarits à interpolation (`textContent = \`${n}/${total}
-édition(s)\``), tableaux `[string, string][]` (« Attribut », « Niveau »,
-« Langue »), tables `_LABELS` (« En ligne », les étapes du scan). Elle rapportait
-aussi des numéros de ligne faux — elle blanchissait les commentaires en une
-espace, ce qui collapsait les retours à la ligne.
+The gate was hardened four times, each time after **seeing** French on an English
+screenshot: short unaccented strings (“Scanner”, “Compact”), interpolated templates
+(`textContent = \`${n}/${total} édition(s)\``), `[string, string][]` arrays
+(“Attribut”, “Niveau”, “Langue”), `_LABELS` tables (“En ligne”, the scan's stages).
+It also reported wrong line numbers — it blanked comments into a single space, which
+collapsed the line breaks.
 
-209 chaînes, toutes traduites.
+209 strings, all translated.
 
-> Le prétraitement de l'image avant OCR est le vrai point dur de ce jalon, pas
-> `tesseract.js` lui-même. Ce que fait ATEM-old ici est probablement l'actif le plus
-> précieux de l'ancien projet.
+> Image preprocessing before OCR is the real hard point of this milestone, not
+> `tesseract.js` itself. What ATEM-old does here is probably the old project's most
+> valuable asset.
 
 ---
 
-## Coquille de navigation  ✅ *2026-09-10*
+## Navigation shell  ✅ *2026-09-10*
 
-Hors jalon, faite avant M2 parce qu'elle le porte : barre du haut, barre du bas
-sur téléphone, feuille de compte, état du service. Les destinations viennent du
-routeur, si bien qu'un écran déclare sa route et sa place d'un seul geste.
+Outside the milestones, done before M2 because it carries it: top bar, bottom bar on
+a phone, account sheet, service status. Destinations come from the router, so a
+screen declares its route and its place in a single gesture.
 
-Le mode tiroir de la fiche de carte est supprimé — deux façons d'ouvrir la même
-chose, dont l'une n'apportait rien.
+The card sheet's drawer mode is deleted — two ways to open the same thing, one of
+which brought nothing.
 
 ---
 
 ## M2 — Decks
 
-- Arborescence de dossiers — **P1**
-- Liste des decks, recherche par nom, vue liste / galerie — **P1**
-- Atelier : collection à gauche, deck à droite (Main / Extra / Side), vue liste /
-  galerie, paramètres du deck, enregistrement — **P1**
-- Indicateur « possédé / manquant » calculé selon D3 (somme sur toutes les impressions)
-- Contrôle des limites : 3 exemplaires max, 40–60 en Main, 15 en Extra et Side
+- Folder tree — **P1**
+- Deck list, search by name, list / gallery view — **P1**
+- Workshop: collection on the left, deck on the right (Main / Extra / Side), list /
+  gallery view, deck settings, saving — **P1**
+- “Owned / missing” indicator computed according to D3 (sum over all printings)
+- Limit checks: 3 copies max, 40–60 in the Main, 15 in the Extra and Side
 
-**Archéologie ciblée.** Interface de l'atelier, glisser-déposer, rendu des sections.
+**Targeted archaeology.** Workshop interface, drag and drop, section rendering.
 
-**Terminé quand.** Un deck se construit depuis sa collection et signale ce qui manque.
+**Done when.** A deck is built from your collection and reports what is missing.
 
-### État au 2026-09-12 — démontrable
+### State as of 2026-09-12 — demonstrable
 
-Un deck se crée, se remplit depuis la collection, et dit s'il est jouable.
+A deck is created, filled from the collection, and says whether it is playable.
 
-| Ligne | |
+| Line | |
 |---|---|
-| Arborescence de dossiers (P1) | **non** — sortie de la tranche, à faire ensuite |
-| Liste des decks, état prêt / incomplet | **oui** |
-| Recherche par nom, vue liste / galerie (P1) | recherche **oui**, galerie **non** |
-| Atelier collection / deck (P1) | **oui** — deux panneaux, qui se relaient sur téléphone |
-| « Possédé / manquant » | **oui**, et seulement quand il y a un manque |
-| Limite de 3 exemplaires | **oui**, garantie par une contrainte de base |
-| Tailles de zone : 40–60 Main, 15 Extra, 15 Side | **oui** — le maximum refuse, le minimum signale |
+| Folder tree (P1) | **no** — left out of the slice, to do next |
+| Deck list, ready / incomplete state | **yes** |
+| Search by name, list / gallery view (P1) | search **yes**, gallery **no** |
+| Collection / deck workshop (P1) | **yes** — two panels, which take turns on a phone |
+| “Owned / missing” | **yes**, and only when something is missing |
+| 3-copy limit | **yes**, guaranteed by a database constraint |
+| Zone sizes: 40–60 Main, 15 Extra, 15 Side | **yes** — the maximum refuses, the minimum reports |
 
-**Reste pour clore M2** : les dossiers de decks, et la modale d'options (tailles
-cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
+**Left to close M2**: deck folders, and the options modal (target sizes per deck).
+Neither prevents building a deck. *Folders and the gallery have since shipped
+(2026-09-12 and 13, sections below); the options modal remains.*
 
-### La fiche d'un deck — 2026-09-13
+### A deck's sheet — 2026-09-13
 
-Proposé par Ange, repris d'ATEM-old (`renderDetail`) : **ouvrir un deck le
-montre**. Une page de lecture bâtie comme la collection — jaquette, nom,
-dossier, comptes, phrase d'état, recherche, liste ou galerie, onglets de zone —
-et un crayon en haut à droite qui mène à l'atelier, `?workshop=1` dans l'adresse.
+Proposed by Ange, taken from ATEM-old (`renderDetail`): **opening a deck shows it**.
+A reading page built like the collection — cover, name, folder, counts, status
+sentence, search, list or gallery, zone tabs — and a pencil at the top right leading
+to the workshop, `?workshop=1` in the address.
 
-**C'est la réponse au besoin de lecture seule.** Un écran dont la version par
-défaut n'a *aucune* commande d'écriture rend l'affichage du deck d'un autre
-joueur possible sans écrire un second écran : il suffira de ne pas afficher le
-crayon. C'est ce que dit l'ADR-009, obtenu par la forme de l'écran plutôt que
-par des conditions dispersées.
+**It is the answer to the read-only need.** A screen whose default version has *no*
+writing control makes displaying another player's deck possible without writing a
+second screen: hiding the pencil will be enough. That is what ADR-009 says, obtained
+through the screen's shape rather than scattered conditions.
 
-Deux conséquences : la corbeille quitte l'atelier pour la fiche — jeter un deck
-est un geste sur l'objet, pas sur sa construction — et la collection n'est plus
-chargée que pour l'atelier, qui seul en pose des cartes. La fiche complète d'une
-carte se demande à l'ouverture, une fois par carte : une ligne de deck ne porte
-que son nom, son illustration et sa banlist.
+Two consequences: the bin leaves the workshop for the sheet — discarding a deck is a
+gesture on the object, not on its building — and the collection is now only loaded
+for the workshop, the only screen that places cards from it. A card's full record is
+requested on opening, once per card: a deck row only carries its name, its artwork
+and its banlist status.
 
-**Un défaut de plateforme trouvé au passage.** `Échap` ne fermait plus la carte
-ouverte depuis la fiche : l'écouteur posé sur `document` survivait au démontage
-de l'écran, et après deux navigations le plus ancien — qui peint dans un `root`
-détaché — répondait le premier. Le routeur donne maintenant à chaque écran un
-`AbortSignal` rompu au rendu suivant. L'écran de collection portait le même
-défaut, silencieusement.
+**A platform defect found along the way.** Escape no longer closed the card opened
+from the sheet: the listener attached to `document` survived the screen's
+unmounting, and after two navigations the oldest — which paints into a detached
+`root` — answered first. The router now gives each screen an `AbortSignal` aborted
+at the next render. The collection screen had the same defect, silently.
 
-### Audit des decks — 2026-09-13
+### Deck audit — 2026-09-13
 
-Passé à la demande d'Ange, avant de clore. Trois surfaces mortes retirées, et
-deux cibles tactiles élargies.
+Run at Ange's request, before closing. Three dead surfaces removed, and two touch
+targets enlarged.
 
-**`notes`.** La route l'acceptait, le validait, l'écrivait en base — et aucun
-écran ne l'affichait ni ne l'envoyait. Retirée partout, colonne comprise. Son
-plafond `LIMITS.deckNotes` servait en réalité à la **note d'un exemplaire de
-collection** : renommé `LIMITS.note`, qui est ce qu'il est.
+**`notes`.** The route accepted it, validated it, wrote it to the database — and no
+screen displayed or sent it. Removed everywhere, column included. Its ceiling
+`LIMITS.deckNotes` was actually used for the **note on a collection copy**: renamed
+`LIMITS.note`, which is what it is.
 
-**La couverture** rendait `passcode`, `name` et `image` ; l'écran ne lit que
-l'image. `coverImage: string | null` — un deck dont la carte de tête n'a pas
-d'illustration retombe sur `null` comme un deck vide, et l'écran pose le dos de
-carte dans les deux cas.
+**The cover** returned `passcode`, `name` and `image`; the screen only reads the
+image. `coverImage: string | null` — a deck whose top card has no artwork falls back
+to `null` like an empty deck, and the screen shows the card back in both cases.
 
-**`type` et `frameType`** voyageaient dans chaque ligne de chaque deck sans que
-rien ne les lise : la question « est-ce une carte d'Extra Deck ? » se pose à
-l'ajout, sur la fiche venue de la collection.
+**`type` and `frameType`** travelled in every row of every deck without anything
+reading them: the question “is this an Extra Deck card?” comes up when adding, on the
+record coming from the collection.
 
-**Au doigt, mesuré sur Pixel 5** dans huit états de l'écran : aucun débordement
-horizontal, les menus tiennent dans la largeur. Deux cibles sous 44 px — le
-« ⋯ » (40) et les étages du fil d'Ariane (26 de haut) — élargies. Ce qui reste
-sous la barre est **l'échelle de toute l'application** : les boutons font 40 px
-et les champs 34 partout, écran de collection compris. C'est une décision
-globale, pas une retouche de la page des decks.
+**By finger, measured on a Pixel 5** in eight states of the screen: no horizontal
+overflow, menus fit in the width. Two targets under 44 px — the “⋯” (40) and the
+breadcrumb levels (26 high) — enlarged. What remains under the bar is **the scale of
+the whole application**: buttons are 40 px and fields 34 everywhere, collection
+screen included. It is a global decision, not a touch-up of the decks page.
 
-### Déplacer : « ici », et le glisser-déposer — 2026-09-13
+### Moving: “here”, and drag and drop — 2026-09-13
 
-Ange, sur le sélecteur de destination livré la veille : « plutôt que d'avoir un
-menu et de sélectionner l'arborescence dans un drop down (qui devient hyper long
-quand on a plein de dossiers) il suffit de faire comme avec Google Drive ». Il a
-raison, et c'était le point faible de l'étape 3 : un menu déroulant grandit avec
-le nombre de dossiers, et il oblige à **se représenter** l'arbre au lieu de le
-regarder.
+Ange, about the destination picker shipped the day before: “rather than having a menu
+and selecting the tree in a drop-down (which gets super long when you have lots of
+folders) just do it like Google Drive”. Rightly, and it was step 3's weak point: a
+drop-down grows with the number of folders, and it forces you to **picture** the tree
+instead of looking at it.
 
-**Déplacer est maintenant un mode, pas une fenêtre.** On choisit « Déplacer… »,
-un bandeau s'ouvre, on navigue normalement, et « Déplacer ici » dépose à
-l'endroit qu'on a sous les yeux. La navigation tactile reste la seule façon de
-désigner un dossier — c'est elle qu'on a soignée, autant s'en servir.
+**Moving is now a mode, not a window.** You choose “Move…”, a banner opens, you
+navigate normally, and “Move here” drops at the place in front of you. Touch
+navigation stays the only way to designate a folder — it is the thing that was
+polished, so use it.
 
-Conséquence assumée : **la destination disparaît aussi de la fenêtre de
-création**. Le deck naît là où l'on regarde, et se déplace ensuite comme le
-reste. Le même menu déroulant s'y trouvait, avec le même défaut.
+A deliberate consequence: **the destination also disappears from the creation
+window**. The deck is born where you are looking, and moves afterwards like
+everything else. The same drop-down was there, with the same defect.
 
-**Défaut trouvé par Ange le lendemain** : « en mode liste ça ne fonctionne pas le
-drag and drop ? ». L'attribut n'avait pas été posé sur la rangée de deck — un
-remplacement qui avait échoué sans bruit — et **mes deux épreuves de glissement
-regardaient toutes les deux la galerie**. Une vue sans épreuve casse en silence :
-les rangées en ont deux maintenant, dont un dossier glissé dans un autre.
+**Defect found by Ange the next day**: “drag and drop doesn't work in list mode?”.
+The attribute had not been set on the deck row — a replacement that had failed
+silently — and **both drag tests looked at the gallery**. A view without a test
+breaks in silence: rows now have two, including a folder dragged into another.
 
-**Le glisser-déposer revient pour le bureau**, comme dans ATEM-old : les
-dossiers, la case « .. » et **le fil d'Ariane** sont des cibles de dépôt. Ce qui
-serait refusé n'accepte pas le dépôt, si bien que le curseur le dit avant qu'on
-lâche.
+**Drag and drop comes back for the desktop**, as in ATEM-old: folders, the “..” card
+and **the breadcrumb** are drop targets. What would be refused does not accept the
+drop, so the cursor says so before you let go.
 
-Deux détails qui ne se devinent pas : le survol de dépôt se peint **sans
-repeindre** (une repeinture par `dragover` remplacerait l'élément que le
-navigateur suit et interromprait le geste), et le refus affiché par le bandeau
-reprend **mot pour mot** la phrase du serveur — lire deux formulations pour un
-même refus ferait douter qu'il s'agisse de la même règle.
+Two details that cannot be guessed: the drop hover is painted **without repainting**
+(a repaint on `dragover` would replace the element the browser follows and break off
+the gesture), and the refusal displayed by the banner repeats the server's sentence
+**word for word** — reading two wordings for the same refusal would make you doubt it
+is the same rule.
 
-### L'explorateur de dossiers — 2026-09-13 *(étape 3 sur 3)*
+### The folder explorer — 2026-09-13 *(step 3 of 3)*
 
-Un étage à la fois, fil d'Ariane, dossiers d'abord et decks ensuite — la forme
-d'ATEM-old, à laquelle il avait lui-même fini par revenir après avoir déplié
-tout l'arbre d'un coup. Trois divergences, chacune pour une raison :
+One level at a time, breadcrumb, folders first and decks next — ATEM-old's shape, the
+one it had itself come back to after unfolding the whole tree at once. Three
+departures, each for a reason:
 
-1. **Le rangement passe par un menu « ⋯ », pas par le glisser-déposer.** Viser
-   une cible en maintenant le doigt ne se fait pas sur un téléphone, et c'était
-   le seul moyen de déplacer un deck dans ATEM-old.
-2. **La recherche traverse les dossiers.** Chercher « dragon » et ne rien
-   trouver parce qu'on est dans le mauvais dossier est une réponse fausse à une
-   question simple. Chaque résultat dit alors d'où il sort.
-3. **Une fenêtre remplace `window.prompt`** pour créer un deck — demandé par
-   Ange. Elle porte le nom **et** la destination, ce qu'une invite native ne
-   sait pas faire, et le deck naît là où l'on regarde plutôt que d'être créé
-   puis déplacé.
+1. **Filing goes through a “⋯” menu, not drag and drop.** Aiming at a target while
+   holding a finger down does not work on a phone, and it was the only way to move a
+   deck in ATEM-old. *(Drag and drop has since come back for the desktop — see
+   above.)*
+2. **The search crosses folders.** Searching “dragon” and finding nothing because you
+   are in the wrong folder is a wrong answer to a simple question. Each result then
+   says where it comes from.
+3. **A window replaces `window.prompt`** to create a deck — asked for by Ange. It
+   carried the name **and** the destination, which a native prompt cannot do, and the
+   deck is born where you are looking rather than created then moved.
 
-**Ce que l'écran grise, le serveur le refuse** : les destinations impossibles
-viennent de `folderCanHost`, dans `@atem/shared`, que le service appelle aussi.
-C'est la leçon de `checkDeckAdd` dans ATEM-old — la même règle écrite deux fois
-finit par diverger, et c'est toujours l'écran qui a raison trop tôt.
+**What the screen greys out, the server refuses**: impossible destinations come from
+`folderCanHost`, in `@atem/shared`, which the service calls too. That is the lesson of
+`checkDeckAdd` in ATEM-old — the same rule written twice ends up diverging, and it is
+always the screen that is right too early.
 
-### Les dossiers, socle serveur — 2026-09-12 *(étape 2 sur 3)*
+### Folders, server foundation — 2026-09-12 *(step 2 of 3)*
 
-`deck_folders` : `id`, `user_id`, `parent_id`, `name`, horodatages. **Pas de
-`sort_order`** — ATEM-old l'écrivait à chaque création et son écran triait par
-nom de toute façon.
+`deck_folders`: `id`, `user_id`, `parent_id`, `name`, timestamps. **No
+`sort_order`** — ATEM-old wrote it at every creation and its screen sorted by name
+anyway.
 
-Trois choses qu'ATEM-old faisait bien et qu'on garde : profondeur maximale de
-trois étages, détection de cycle au déplacement (sous-arbre compris), et une
-suppression qui **réattache** au parent au lieu de cascader. Trois qu'on change :
+Three things ATEM-old did well and that we keep: a maximum depth of three levels,
+cycle detection on move (subtree included), and a deletion that **re-attaches** to
+the parent instead of cascading. Three that we change:
 
-1. **La cascade en base part.** Son schéma déclarait `on delete cascade` sur
-   `parent_id` pendant que son service réattachait : deux réponses
-   contradictoires, et c'est la base qui gagne dès qu'une suppression passe
-   ailleurs. Ici la base ne répond rien, et la transaction du service est seule
-   à réattacher. `decks.folder_id` reste en `set null` — perdre le rangement est
-   réparable, perdre les decks ne l'est pas.
-2. **Une lecture au lieu de vingt.** `depthOf` relisait toute la table à chaque
-   contrôle, trois fois de suite pour une création.
-3. **Deux dossiers frères ne portent plus le même nom** — contrainte
-   `nulls not distinct`, sans laquelle la règle ne vaudrait pas à la racine,
-   c'est-à-dire pas là où l'on crée le plus.
+1. **The database cascade goes.** Its schema declared `on delete cascade` on
+   `parent_id` while its service re-attached: two contradictory answers, and the
+   database wins as soon as a deletion goes elsewhere. Here the database answers
+   nothing, and the service's transaction alone re-attaches. `decks.folder_id` stays
+   `set null` — losing the filing can be repaired, losing the decks cannot.
+2. **One read instead of twenty.** `depthOf` re-read the whole table at every check,
+   three times in a row for one creation.
+3. **Two sibling folders no longer share a name** — a `nulls not distinct`
+   constraint, without which the rule would not hold at the root, that is, not where
+   people create the most.
 
-`category`, le `@deprecated` d'ATEM-old, ne revient pas.
+`category`, ATEM-old's `@deprecated`, does not come back.
 
-Douze épreuves, dont celle qui tient l'ordre des routes (`/decks/folders`
-déclarée après `/decks/:id` serait avalée) et celle qui vérifie qu'effacer son
-compte emporte bien l'arbre malgré le `parent_id` sans cascade.
+Twelve tests, including the one holding route order (`/decks/folders` declared after
+`/decks/:id` would be swallowed) and the one checking that deleting your account
+takes the whole tree despite the non-cascading `parent_id`.
 
-### Les aperçus de decks — 2026-09-12 *(étape 1 sur 3 de la page des decks)*
+### Deck previews — 2026-09-12 *(step 1 of 3 of the decks page)*
 
-Ange : « on peut s'attaquer à la page de deck avec les dossiers et les preview
-de cartes ? ». Découpé en trois : les aperçus, puis le socle des dossiers, puis
-l'explorateur.
+Ange: “can we tackle the deck page with folders and card previews?”. Split in three:
+previews, then the folder foundation, then the explorer.
 
-**La couverture se déduit, elle ne se choisit pas.** ATEM-old avait une colonne
-`cover_url` — donc un sélecteur à écrire, et une reprise à faire quand la carte
-quitte le deck. La nôtre est la carte dont le deck a **le plus d'exemplaires au
-Main**, son identité en pratique, départagée par le passcode pour que
-l'illustration ne change pas d'un rafraîchissement à l'autre. Zéro colonne, zéro
-écran de réglage. Le jour où choisir sa jaquette devient un besoin, la colonne
-s'ajoute et cette règle devient le repli.
+**The cover is derived, not chosen.** ATEM-old had a `cover_url` column — so a picker
+to write, and a fix-up to do when the card leaves the deck. Ours is the card the deck
+holds **the most copies of in the Main**, its identity in practice, with ties broken
+by passcode so the artwork does not change from one refresh to the next. Zero
+columns, zero settings screen. The day choosing your cover becomes a need, the column
+is added and this rule becomes the fallback.
 
-Les couvertures partent en **une** requête pour toute la liste, pas une par
-deck. La page des decks s'ouvre sur la planche d'illustrations ; la liste en
-rangées reste à un clic, et garde sa vignette.
+Covers go out in **one** query for the whole list, not one per deck. The decks page
+opens on the board of artworks; the row list stays one click away, and keeps its
+thumbnail.
 
-### La phrase d'état de l'atelier — 2026-09-12
+### The workshop's status sentence — 2026-09-12
 
-Ange : « on est à 4/60, on peut mettre "Deck incomplet" ou ce genre de choses ?
-on avait quelques trucs comme ça dans ATEM-old ». ATEM-old en avait deux (« non
-enregistré », « limite dépassée ») ; la liste de nos decks portait déjà une
-pastille « Prêt / Incomplet », mais l'atelier ne disait rien.
+Ange: “we are at 4/60, could we say ‘Deck incomplete’ or something like that? we had
+a few things like that in ATEM-old”. ATEM-old had two (“unsaved”, “limit exceeded”);
+our deck list already carried a “Ready / Incomplete” pill, but the workshop said
+nothing.
 
-`deckStatus(counts, missing)`, dans `@atem/shared`, rend **un seul** verdict,
-rangé par gravité : `over` (au-dessus d'une limite) → `missing` (le deck compte
-plus d'exemplaires que la collection) → `empty` → `short` (sous le minimum du
-Main) → `ready`. Trois avertissements simultanés ne se lisent pas ; on nomme ce
-qui empêche de jouer d'abord, ce qui reste à faire ensuite.
+`deckStatus(counts, missing)`, in `@atem/shared`, returns **a single** verdict,
+ordered by severity: `over` (above a limit) → `missing` (the deck holds more copies
+than the collection) → `empty` → `short` (below the Main minimum) → `ready`. Three
+simultaneous warnings cannot be read; what prevents playing is named first, what is
+left to do next.
 
-Il rend aussi **de quoi écrire la phrase** — le nombre à retirer, ou à ajouter —
-pour qu'on n'ait pas à soustraire de tête : « Deck incomplet : encore 39 au Main
-(minimum 40). » Et il remplace `deckIsPlayable`, qui répondait par oui ou non à
-la même question : la pastille de la liste et la phrase de l'atelier sortent
-maintenant du même jugement, deux écrans ne pouvant plus se contredire.
+It also returns **what is needed to write the sentence** — the number to remove, or to
+add — so nobody has to subtract in their head: “Deck incomplete: 39 more in the Main
+(minimum 40).” And it replaces `deckIsPlayable`, which answered the same question
+with yes or no: the list's pill and the workshop's sentence now come from the same
+judgement, two screens no longer able to contradict each other.
 
-### Pas de brouillon — décision du 2026-09-12
+### No draft — decision of 2026-09-12
 
-Les cartes s'écrivent **à chaque « ± »**, tout de suite. Il n'y a pas d'état
-« non enregistré » à commettre.
+Cards are written **at every “±”**, right away. There is no “unsaved” state to commit.
 
-ATEM-old travaillait sur un brouillon : son atelier gardait le deck en mémoire,
-affichait « non enregistré » et attendait un bouton. La transcription en a
-rapporté le bouton sans le brouillon — d'où un « Enregistrer » qui ne touchait
-que le nom, et un « Rien à enregistrer » juste après qu'Ange avait retiré des
-cartes. De quoi croire son retrait jeté ; il ne l'était pas.
+ATEM-old worked on a draft: its workshop kept the deck in memory, displayed “unsaved”
+and waited for a button. The transcription brought back the button without the
+draft — hence a “Save” that only touched the name, and a “Nothing to save” right after
+Ange had removed cards. Enough to believe the removal had been thrown away; it had
+not.
 
-Renommer le bouton en « Renommer » n'a pas suffi, et Ange a mis le doigt sur ce
-qui restait : « c'est bizarre comme UX de valider automatiquement les cartes
-mais pas le nom… soit tu mets tout à jour soit tu mets rien à jour mais pas
-juste la moitié ». **L'atelier n'a donc plus aucun bouton d'enregistrement** :
-les cartes partent au « ± », le nom part quand la frappe se calme (700 ms) et
-quand le champ rend la main. La barre de comptes dit brièvement « Enregistré »
-après chaque écriture — l'inverse de la marque d'ATEM-old, parce que l'invariant
-est inverse.
+Renaming the button “Rename” was not enough, and Ange put a finger on what remained:
+“it is odd UX to validate the cards automatically but not the name… either you update
+everything or you update nothing, but not just half of it”. **So the workshop no
+longer has any save button**: cards leave at the “±”, the name leaves when the typing
+settles (700 ms) and when the field hands focus back. The counts bar briefly says
+“Saved” after every write — the reverse of ATEM-old's mark, because the invariant is
+the reverse.
 
-Écrire le nom **ne recharge pas le deck** : c'est un mot qui a changé, pas les
-cartes, et l'aller-retour complet emporterait la collection avec lui à chaque
-pause de frappe. Vidé, le champ reprend le nom du deck plutôt que d'envoyer une
-chaîne vide que le serveur refuserait : un deck a toujours un nom.
+Writing the name **does not reload the deck**: one word changed, not the cards, and
+the full round trip would carry the collection along at every pause in typing.
+Emptied, the field takes the deck's name back rather than sending an empty string the
+server would refuse: a deck always has a name.
 
-**La notion de brouillon reste souhaitée** (« il faudrait la notion de
-*brouillon* pour expliquer qu'un deck n'est pas terminé », Ange) mais elle
-répond à un autre besoin : dire qu'un deck est **en cours de conception**, pas
-que ses cartes attendent d'être écrites. À concevoir à part.
+**The notion of a draft is still wanted** (“we would need the notion of a *draft* to
+explain that a deck is not finished”, Ange) but it answers another need: saying that
+a deck is **being designed**, not that its cards are waiting to be written. To be
+designed separately.
 
-**Deux règles tranchées par Ange**, qui referment deux lacunes du triage :
+**Two rules decided by Ange**, which close two gaps from the triage:
 
-- **Un deck compte des cartes, pas des impressions.** Trois Dragons Blancs en
-  trois codes d'extension restent trois Dragons Blancs. C'est ce qui rend le
-  plafond exprimable en base — `deck_cards` porte une ligne par carte, et
-  `check (main + extra + side between 0 and 3)` refuse le quatrième exemplaire.
-  ATEM-old identifiait ses lignes par `(deck, zone, passcode, set_code)` : la
-  même carte vivait sur plusieurs lignes et totalisait six exemplaires. **Lacune
-  n°1 refermée par le schéma**, pas par de la vigilance.
-- **Un deck est borné par la collection.** On n'y met pas une carte qu'on n'a
-  pas, donc il est jouable par construction. **La lacune n°2 — « possédé /
-  manquant » — disparaît par décision** plutôt que par implémentation. Reste le
-  seul cas qui dérive : vendre une carte engagée. Le manque se calcule alors à
-  la lecture, carte par carte, et **ne se signale que s'il y en a un** — quatre
-  possédées, trois au deck, une vendue : il ne se passe rien.
+- **A deck counts cards, not printings.** Three Blue-Eyes across three set codes
+  remain three Blue-Eyes. That is what makes the ceiling expressible in the
+  database — `deck_cards` holds one row per card, and
+  `check (main + extra + side between 0 and 3)` refuses the fourth copy. ATEM-old
+  identified its rows by `(deck, zone, passcode, set_code)`: the same card lived on
+  several rows and totalled six copies. **Gap no. 1 closed by the schema**, not by
+  vigilance.
+- **A deck is bounded by the collection.** You do not put in a card you do not have,
+  so it is playable by construction. **Gap no. 2 — “owned / missing” — disappears by
+  decision** rather than by implementation. One case remains that drifts: selling a
+  card in use. The shortage is then computed at read time, card by card, and **is
+  only reported when there is one** — four owned, three in the deck, one sold:
+  nothing happens.
 
-`decks.category` n'est pas reconduite : la colonne `@deprecated` qu'ATEM-old
-recalculait à chaque écriture.
+`decks.category` is not carried over: the `@deprecated` column ATEM-old recomputed at
+every write.
 
 ---
 
-## M3 — Paramètres & souveraineté des données
+## The repository moves to English — 2026-09-14 to 16
 
-- Compte : email, UUID, date de création, statut
-- Changement de mot de passe
-- Langue FR/EN et mode d'inspection des cartes
-- Export CSV : formats ATEM, ScanFlip, Cardmarket
-- Import CSV : mêmes formats, modes fusion / remplacement
-- Historique d'importation avec rapport des lignes en échec
-- Zone de danger : réinitialisation de la collection, effacement total du compte
+“Everything must be in English, it is a project that will go on GitHub”, Ange. Six
+batches, each with every gate and the full test suite green: the translation key
+(1), `packages/shared` (2), `apps/api` (3), `apps/web` and the URLs (4), end-to-end
+tests, scripts and configuration (5), documentation (6). Commit messages were
+rewritten in English before the first push. The interface still displays in French by
+default.
 
-**Archéologie ciblée.** Spécifications exactes des colonnes ScanFlip et Cardmarket —
-c'est de la connaissance de format, pas du code : à récupérer tel quel.
+Translating meant rereading everything, and the rereading found what no gate saw:
 
-**Terminé quand.** Un utilisateur exporte, efface tout, réimporte, et retrouve sa
-collection à l'identique.
-
----
-
-## M4 — Duellistes
-
-- Annuaire des joueurs, recherche par pseudo, filtres amis / en ligne
-- Carte d'aperçu : pseudo, icône, badges, lien vers le profil
-- Demande d'ami (envoi, attente, acceptation, suppression), blocage
-- Profil public consultable
-- **Consultation de la collection et des decks d'un autre joueur**, via le point de contrôle
-  d'accès unique décrit dans « Frontières de modules » (02-architecture.md)
-
-Le bouton « lancer un duel » est présent mais inactif jusqu'au cadrage de la mécanique.
-
-**Terminé quand.** Deux comptes se voient, deviennent amis, et consultent mutuellement
-leurs collections en respectant leurs réglages de visibilité.
+- five interface texts had disappeared from the screen since the first translation
+  pass, with valid markup hiding it;
+- the dead-CSS gate had never looked inside a `@media` block — nine dead or empty
+  rules sat there, and the phone scanner had lost its full-screen layout;
+- two end-to-end tests asserted nothing, and the API test harness reported success
+  when the database was unreachable.
 
 ---
 
-## Après M4 — à cadrer, dans cet ordre
+## M3 — Settings & data sovereignty
 
-1. **Mécanique de duel.** Décision préalable : écran partagé ou deux appareils
-   synchronisés. Détermine s'il faut du temps réel (ADR-006).
-2. **Guildes.** Rôles, candidatures, invitations, journal d'activité.
-3. **Boîte de réception.** Prend son sens une fois les guildes en place.
-4. **Tournois.** Dépend des duels ET des guildes.
-5. **Administration.** À réduire avant d'être reprise — la zone d'ATEM-old est jugée
-   trop complexe ; on repartira des besoins réels d'un hébergeur.
+- Account: email, UUID, creation date, status
+- Password change
+- FR/EN language and card inspection mode
+- CSV export: ATEM, ScanFlip, Cardmarket formats
+- CSV import: same formats, merge / replace modes
+- Import history with a report of failed rows
+- Danger zone: collection reset, full account deletion
+
+**Targeted archaeology.** Exact specifications of the ScanFlip and Cardmarket columns
+— format knowledge, not code: to be recovered as is.
+
+**Done when.** A user exports, erases everything, re-imports, and finds their
+collection identical.
 
 ---
 
-## Ce qui reste à trancher
+## M4 — Duellists
 
-| Question | Nécessaire pour |
+- Player directory, search by username, friends / online filters
+- Preview card: username, icon, badges, link to the profile
+- Friend request (send, pending, accept, remove), block
+- Viewable public profile
+- **Viewing another player's collection and decks**, through the single access
+  checkpoint described in “Module boundaries” (02-architecture.md)
+
+The “start a duel” button is present but inactive until the mechanics are scoped.
+
+**Done when.** Two accounts see each other, become friends, and view each other's
+collections while respecting their visibility settings.
+
+---
+
+## After M4 — to scope, in this order
+
+1. **Duel mechanics.** Prior decision: shared screen or two synchronised devices.
+   Decides whether real time is needed (ADR-006).
+2. **Guilds.** Roles, applications, invitations, activity log.
+3. **Inbox.** Makes sense once guilds are in place.
+4. **Tournaments.** Depends on duels AND guilds.
+5. **Administration.** To be reduced before being taken back — ATEM-old's area is
+   judged too complex; we will start again from a host's real needs.
+
+---
+
+## Still to settle
+
+| Question | Needed for |
 |---|---|
-| Framework front / serveur / ORM / base (par défaut : ceux d'ATEM-old) | M0 |
-| Favori au niveau de la carte ou de l'impression ? | M1 |
-| Mode d'usage de l'assistant de duel | Après M4 |
+| Front / server framework / ORM / database (default: ATEM-old's) | M0 |
+| Favourite at the card or the printing level? | M1 |
+| Mode of use of the duel assistant | After M4 |
 
 ---
 
-## Socle avant M2 — posé le 2026-09-11
+## Foundation before M2 — laid on 2026-09-11
 
-Décomposition demandée par Ange : « quels besoins sont au-dessus des autres ? »
+Breakdown asked for by Ange: “which needs come before the others?”
 
-**Le socle qui manquait n'était pas le compte, c'était la distinction entre
-*possesseur* et *regardeur*.** Voir ADR-009. C'est le seul point dont le coût
-augmente avec chaque fonctionnalité écrite avant lui : écrire M2 avec la
-confusion aurait donné deux modules à reprendre au lieu d'un.
+**The missing foundation was not the account, it was the distinction between *owner*
+and *viewer*.** See ADR-009. It is the only point whose cost grows with every feature
+written before it: writing M2 with the confusion would have meant two modules to take
+back instead of one.
 
-Fait :
+Done:
 
-- `ownerId` / `viewerId` séparés dans toutes les signatures de `collection` ;
-  `scanlist` ne connaît que `viewerId` — un lot non tranché est privé par nature ;
-- la règle d'accès de cette itération, décidée par Ange : pas de RBAC, toute
-  session **lit** n'importe quel inventaire, seul le propriétaire **écrit** ;
-- suppression de compte, avec l'inventaire de ce qui part — dont
-  `auth_attempts`, qui ne cascade pas mais dont la clé porte l'adresse.
+- `ownerId` / `viewerId` separated in every `collection` signature; `scanlist` only
+  knows `viewerId` — an undecided batch is private by nature;
+- this iteration's access rule, decided by Ange: no RBAC, any session **reads** any
+  inventory, only the owner **writes**;
+- account deletion, with the inventory of what goes — including `auth_attempts`,
+  which does not cascade but whose key carries the address.
 
-**Écarté du socle, et pourquoi.** L'avatar et son menu sont le contenant des
-réglages, pas une fondation. L'import/export CSV est parallèle. L'écran de
-profil est un *consommateur* du modèle de visibilité, pas son prérequis. Le
-changement de mot de passe et de pseudo sont des manques réels mais ne bloquent
-rien — sauf le pseudo, qui doit précéder l'annuaire des duellistes, pas les decks.
+**Left out of the foundation, and why.** The avatar and its menu are the container of
+the settings, not a foundation. CSV import/export runs in parallel. The profile screen
+is a *consumer* of the visibility model, not its prerequisite. Changing the password
+and the username are real gaps but block nothing — except the username, which must
+come before the duellist directory, not before decks.
 
-**Reste ouvert** : le bouton de suppression de compte (l'API est là, l'écran de
-réglages viendra en M3), et la barrière qui rendra les lectures d'autrui
-structurellement inécrivables — elle naîtra avec sa première route plutôt que
-d'être posée à vide.
+**Still open**: the account deletion button (the API is there, the settings screen
+will come in M3), and the gate that will make reads of others' data structurally
+unwritable — it will be born with its first route rather than set up empty.

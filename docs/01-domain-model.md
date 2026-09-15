@@ -1,161 +1,159 @@
-# ATEM — Modèle de domaine (noyau invariant)
+# ATEM — Domain model (invariant core)
 
-> **Statut : validé le 2026-09-09.** Ce document est figé. Les écrans, filtres et formats d'export restent ouverts ;
-> les entités et relations ci-dessous ne changent que par décision explicite et tracée.
-> C'est la garantie qu'on ne reproduira pas la dérive d'ATEM-old.
+> **Status: validated on 2026-09-09.** This document is frozen. Screens, filters and export formats stay open;
+> the entities and relations below only change through an explicit, recorded decision.
+> That is the guarantee we will not reproduce ATEM-old's drift.
 
 ---
 
-## Faits mesurés sur l'API YGOPRODeck (2026-09-09)
+## Facts measured on the YGOPRODeck API (2026-09-09)
 
-Ces chiffres viennent d'appels réels, pas d'estimations. Ils justifient les décisions.
+These figures come from real calls, not estimates. They justify the decisions.
 
-| Mesure | Valeur |
+| Measurement | Value |
 |---|---|
-| Cartes (dump EN complet, 1 requête, 22 s) | **14 524** — 21 Mo JSON |
-| Cartes (dump FR complet) | **11 661** — 18 Mo JSON |
-| Cartes sans version FR (→ fallback EN obligatoire) | **2 863** |
-| Impressions (`set_code`) au total | **44 517** |
-| Artworks (variantes d'illustration) | **14 688** |
-| Raretés distinctes | 48 |
-| Limite API | 20 req/s — dépassement = blocage IP 1 h |
+| Cards (full EN dump, 1 request, 22 s) | **14,524** — 21 MB JSON |
+| Cards (full FR dump) | **11,661** — 18 MB JSON |
+| Cards with no FR version (→ EN fallback required) | **2,863** |
+| Printings (`set_code`) in total | **44,517** |
+| Artworks (illustration variants) | **14,688** |
+| Distinct rarities | 48 |
+| API limit | 20 req/s — exceeding it = 1 h IP ban |
 
-### Deux contraintes réelles
+### Real constraints
 
-**C1 — La recherche par set code se fait via `cardsetsinfo.php`.**
-`cardsetsinfo.php?setcode=LOB-EN001` renvoie directement `{id, name, set_name,
-set_code, set_rarity, set_price}`. C'est l'endpoint de résolution d'un code imprimé.
-(`cardinfo.php` n'a pas de paramètre de set code — il ne sert qu'à récupérer la fiche
-complète ensuite, par `id`.)
+**C1 — Search by set code goes through `cardsetsinfo.php`.**
+`cardsetsinfo.php?setcode=LOB-EN001` directly returns `{id, name, set_name,
+set_code, set_rarity, set_price}`. It is the endpoint that resolves a printed code.
+(`cardinfo.php` has no set code parameter — it only serves to fetch the full record
+afterwards, by `id`.)
 
-**C2 — Les set codes non anglais ne sont pas indexés.**
-Mesuré : `LOB-EN001` et `PSV-E088` répondent ; `LOB-FR001` et `SDK-FR001` renvoient
-« No card matching your query ». Le dump `language=fr` ne corrige rien — vérifié sur
-« Magicien Sombre » : `name` et `desc` sont traduits, mais `card_sets` contient
-`CT13-EN003`, `DB1-EN102`… jamais `-FR`.
+**C2 — Non-English set codes are not indexed.**
+Measured: `LOB-EN001` and `PSV-E088` answer; `LOB-FR001` and `SDK-FR001` return
+“No card matching your query”. The `language=fr` dump fixes nothing — checked on
+“Magicien Sombre”: `name` and `desc` are translated, but `card_sets` contains
+`CT13-EN003`, `DB1-EN102`… never `-FR`.
 
-→ Un code français se résout en **basculant la région vers EN** pour l'interrogation
-(`LTGY-FR008` → `LTGY-EN008`), puis en **conservant le code français** comme identité
-de l'impression côté utilisateur. C'est exactement ce que fait ATEM-old
-(`toEnglishLookupSetCode`), et c'est validé par l'usage.
+→ A French code is resolved by **switching the region to EN** for the query
+(`LTGY-FR008` → `LTGY-EN008`), then **keeping the French code** as the printing's
+identity on the user's side. That is exactly what ATEM-old does
+(`toEnglishLookupSetCode`), and it is validated by use.
 
-**C3 — La traduction FR est partielle.**
-Seuls `name` et `desc` sont localisés. `type`, `race`, `attribute`, `frameType`
-restent en anglais (`Spellcaster`, `DARK`, `Equip`). Et **2 863 cartes sur 14 524**
-n'ont aucune version française.
-→ Les libellés d'énumération et le repli EN sont **notre** responsabilité.
+**C3 — The FR translation is partial.**
+Only `name` and `desc` are localised. `type`, `race`, `attribute`, `frameType` stay
+in English (`Spellcaster`, `DARK`, `Equip`). And **2,863 cards out of 14,524** have
+no French version at all.
+→ Enumeration labels and the EN fallback are **our** responsibility.
 
-## Décisions structurantes
+## Structural decisions
 
-### D1 — `Card` et `CardPrint` sont deux entités distinctes
+### D1 — `Card` and `CardPrint` are two distinct entities
 
-C'est **la** décision qui conditionne tout le reste.
+It is **the** decision everything else depends on.
 
-- **`Card`** = la carte au sens des règles, identifiée par son **passcode** (8 chiffres).
-  Immuable, vient du référentiel. « Magicien Sombre » est UNE carte.
-- **`CardPrint`** = une **impression** de cette carte dans un set donné, identifiée par
-  son **set code** (`LOB-FR001`) + sa rareté. Le Magicien Sombre a **59 impressions**.
+- **`Card`** = the card in the rules' sense, identified by its **passcode** (8 digits).
+  Immutable, comes from the reference data. “Dark Magician” is ONE card.
+- **`CardPrint`** = a **printing** of that card in a given set, identified by its
+  **set code** (`LOB-FR001`) + its rarity. Dark Magician has **59 printings**.
 
-Confondre les deux rend impossibles à la fois la valorisation d'une collection
-(rareté et édition changent tout) et la règle des 3 exemplaires (qui s'applique à la
-carte, pas à l'impression). C'est l'erreur classique à ne pas refaire.
+Confusing the two makes impossible both valuing a collection (rarity and edition
+change everything) and the 3-copy rule (which applies to the card, not the
+printing). It is the classic mistake not to make again.
 
-### D2 — Une collection contient des `CardPrint`, pas des `Card`
+### D2 — A collection holds `CardPrint`s, not `Card`s
 
-L'utilisateur scanne un set code : il déclare posséder **une impression précise**.
-Le « +1 / -1 à côté d'une carte » opère sur `CollectionItem`, donc sur l'impression.
+The user scans a set code: they declare owning **one precise printing**. The
+“+1 / -1 next to a card” operates on `CollectionItem`, so on the printing.
 
-### D3 — Un deck référence des `Card`, pas des `CardPrint`
+### D3 — A deck references `Card`s, not `CardPrint`s
 
-La limite de 3 exemplaires s'applique par carte, toutes impressions confondues. Un
-deck est une liste de cartes ; l'exemplaire physique utilisé est indifférent aux règles.
+The 3-copy limit applies per card, all printings taken together. A deck is a list
+of cards; the physical copy used does not matter to the rules.
 
-La question « est-ce que je possède les cartes de ce deck ? » se calcule en sommant
-les quantités de **toutes** les impressions de cette carte dans la collection.
+The question “do I own the cards of this deck?” is computed by summing the
+quantities of **all** printings of that card in the collection.
 
-> Évolution prévue sans casse : si un jour on veut épingler une impression précise à
-> une entrée de deck (pour l'esthétique du deck physique), on ajoute une table
-> d'allocation optionnelle. Le schéma actuel ne l'interdit pas.
+> Planned evolution without breakage: if one day we want to pin a precise printing
+> to a deck entry (for the physical deck's looks), we add an optional allocation
+> table. The current schema does not prevent it.
 
-### D4 — Résolution d'un set code : bascule EN pour l'interrogation, code imprimé pour l'identité
+### D4 — Resolving a set code: switch to EN for the query, printed code for identity
 
-**Contexte.** C2 : seuls les codes anglais sont indexés côté YGOPRODeck.
+**Context.** C2: only English codes are indexed by YGOPRODeck.
 
-**Procédure** (reprise d'ATEM-old, éprouvée) :
+**Procedure** (taken from ATEM-old, proven):
 
 ```
-1. Normaliser        "ltgy fr008"  → "LTGY-FR008"   (majuscules, espaces → tiret)
-2. Déduire la langue "LTGY-FR008"  → fr             (segment du milieu ; défaut en)
-3. Chercher en local par le code imprimé, puis par son équivalent EN
-4. Si absent : interroger cardsetsinfo.php avec "LTGY-EN008"
-5. Persister DEUX impressions : celle du joueur (LTGY-FR008, fr)
-                                et sa contrepartie EN (LTGY-EN008, en)
+1. Normalise         "ltgy fr008"  → "LTGY-FR008"   (uppercase, spaces → dash)
+2. Infer the language "LTGY-FR008" → fr             (middle segment; default en)
+3. Look up locally by the printed code, then by its EN equivalent
+4. If absent: query cardsetsinfo.php with "LTGY-EN008"
+5. Persist TWO printings: the player's (LTGY-FR008, fr)
+                          and its EN counterpart (LTGY-EN008, en)
 ```
 
-L'étape 5 est ce qui fait que la collection garde **le code réellement imprimé sur la
-carte** — celui que le joueur voit, scanne et retrouve à l'export — tout en restant
-raccordée au référentiel anglais.
+Step 5 is what lets the collection keep **the code really printed on the card** —
+the one the player sees, scans and finds again at export — while staying connected
+to the English reference data.
 
-**Identité d'une impression** : `(set_code, rarity, language)`. La rareté en fait
-partie parce qu'un même set code existe en plusieurs raretés.
+**Identity of a printing**: `(set_code, rarity, language)`. Rarity is part of it
+because the same set code exists in several rarities.
 
-La rareté **n'est pas saisie à l'ajout** : elle vient du catalogue. Un menu à cinq
-valeurs ne tranchait rien — 10,1 % des impressions portent plusieurs raretés pour
-un même code, et 91 % d'entre elles en ont au moins une hors de ces cinq. Le choix
-se posera quand on saura enregistrer ses éditions, avec les raretés réelles du code.
+Rarity **is not entered when adding**: it comes from the catalogue. A five-value
+menu settled nothing — 10.1% of printings carry several rarities for the same code,
+and 91% of those have at least one outside those five. The choice will come up when
+editions can be recorded, with the code's real rarities.
 
-### Limite connue — les codes suffixés du wiki français ne résolvent pas
+### Known limit — the French wiki's suffixed codes do not resolve
 
-Le wiki français distingue les raretés d'une même édition par un **suffixe de
-lettres** : `RA03-FR004` (Secret Rare), `RA03-FR004u` (Ultra), `RA03-FR004q`
+The French wiki distinguishes the rarities of the same edition with a **letter
+suffix**: `RA03-FR004` (Secret Rare), `RA03-FR004u` (Ultra), `RA03-FR004q`
 (Quarter Century Secret), `RA03-FR004ul`, `RA03-FR004c`…
 
-**Ce suffixe n'est pas imprimé sur la carte.** Le carton porte `RA03-FR004`, et
-c'est ce que le joueur scanne ou saisit. La convention appartient au wiki.
+**That suffix is not printed on the card.** The card carries `RA03-FR004`, and that
+is what the player scans or types. The convention belongs to the wiki.
 
-Un code suffixé saisi tel quel **ne plante pas, mais ne se résout jamais** : sa
-forme canonique (`RA03-004UL`) ne correspond à aucune impression connue,
-`cardsetsinfo.php` ne le connaît pas non plus, et la file de résolution
-abandonne — une absence n'est pas une erreur, elle n'est pas réessayée. La ligne
-entre dans la collection avec la bonne quantité et y reste **« en attente
-d'identification » indéfiniment**, sans nom ni illustration.
+A suffixed code entered as is **does not crash, but never resolves**: its canonical
+form (`RA03-004UL`) matches no known printing, `cardsetsinfo.php` does not know it
+either, and the resolution queue gives up — an absence is not an error, it is not
+retried. The row enters the collection with the right quantity and stays there
+**“awaiting identification” indefinitely**, with no name or artwork.
 
-Un rattrapage serait sans risque, et c'est mesuré : sur **38 435 codes
-distincts**, un seul se termine par des lettres après ses chiffres —
-`BLAR-EN10K`, dont la base `BLAR-EN10` n'existe pas. Réessayer sans le suffixe
-uniquement après l'échec du code exact ne toucherait donc jamais un code
-légitime.
+A fallback would be risk-free, and that is measured: out of **38,435 distinct
+codes**, a single one ends with letters after its digits — `BLAR-EN10K`, whose base
+`BLAR-EN10` does not exist. Retrying without the suffix only after the exact code
+fails would therefore never touch a legitimate code.
 
-**Décision d'Ange le 2026-09-10 : on ne le fait pas.** Le cas ne se présente que
-si l'on recopie un code depuis le wiki au lieu de le lire sur la carte, ce qui
-n'est pas le geste que l'application sert. La limite est notée ici pour qu'elle
-soit reconnue si elle se présente, plutôt que rediagnostiquée.
+**Ange's decision on 2026-09-10: we do not do it.** The case only comes up when
+copying a code from the wiki instead of reading it on the card, which is not the
+gesture the application serves. The limit is noted here so it is recognised if it
+comes up, rather than diagnosed again.
 
-### D5 — Le référentiel est en lecture seule et versionné
+### D5 — The reference data is read-only and versioned
 
-Les tables du référentiel (`Card`, `CardPrint`, `CardSet`, `CardImage`,
-`CardLocalization`) ne sont **jamais** écrites par une action utilisateur. Elles sont
-remplies par un job d'import identifié (`ReferentialImport`), ce qui rend un
-rafraîchissement rejouable et diagnosticable.
+The reference tables (`Card`, `CardPrint`, `CardSet`, `CardImage`,
+`CardLocalization`) are **never** written by a user action. They are filled by an
+identified import job (`ReferentialImport`), which makes a refresh replayable and
+diagnosable.
 
 ---
 
-## Entités
+## Entities
 
-### Référentiel (immuable, source : YGOPRODeck)
+### Reference data (immutable, source: YGOPRODeck)
 
 ```
 Card
-  passcode          PK, 8 chiffres          -- identité au sens des règles
+  passcode          PK, 8 digits            -- identity in the rules' sense
   konami_id         nullable
-  name_en           -- toujours présent, sert de fallback
+  name_en           -- always present, serves as fallback
   desc_en
-  type, frame_type, race, attribute   -- valeurs brutes EN, traduites côté UI (C3)
-  atk, def, level, scale, link_value, link_markers   -- nullable selon le type
+  type, frame_type, race, attribute   -- raw EN values, translated in the UI (C3)
+  atk, def, level, scale, link_value, link_markers   -- nullable depending on type
   archetype         nullable
   banlist_tcg, banlist_ocg           nullable
 
-CardLocalization                       -- 11 661 lignes en FR (C3)
+CardLocalization                       -- 11,661 rows in FR (C3)
   (card_passcode, lang)  PK
   name, desc
 
@@ -164,23 +162,23 @@ CardSet
   set_name                  -- "Legend of Blue Eyes White Dragon"
   release_date, num_of_cards
 
-CardPrint                              -- 44 517 lignes
+CardPrint                              -- 44,517 rows
   id                PK
   card_passcode     FK -> Card
-  set_code                  -- "LOB-EN001", tel qu'imprimé
-  set_code_normalized       -- "LOB-001", INDEX UNIQUE-ISH, voir D4
+  set_code                  -- "LOB-EN001", as printed
+  set_code_normalized       -- "LOB-001", UNIQUE-ISH INDEX, see D4
   set_prefix        FK -> CardSet
   rarity, rarity_code
   price_indicative  nullable
 
-CardImage                              -- 14 688 lignes
-  image_id          PK      -- != passcode pour les artworks alternatifs
+CardImage                              -- 14,688 rows
+  image_id          PK      -- != passcode for alternative artworks
   card_passcode     FK -> Card
   variant                   -- full | small | cropped
-  local_path                -- fichier servi par ATEM, jamais une URL distante
+  local_path                -- file served by ATEM, never a remote URL
 ```
 
-### Utilisateur
+### User
 
 ```
 User
@@ -192,31 +190,31 @@ User
 
 UserProfile
   user_id           PK, FK -> User
-  display_name, tag         -- pseudo + discriminant
+  display_name, tag         -- username + discriminator
   avatar, banner, bio
   visibility_profile        -- public | friends | private
-  visibility_collection     -- idem
-  visibility_decks          -- idem
+  visibility_collection     -- same
+  visibility_decks          -- same
 ```
 
-> La visibilité est dans le noyau **dès maintenant**, alors que le social est en P0
-> mais léger. Rajouter des règles de confidentialité après coup sur des endpoints déjà
-> écrits est une source classique de fuite de données.
+> Visibility is in the core **right now**, while social is P0 but light. Adding
+> privacy rules afterwards on already written endpoints is a classic source of data
+> leaks.
 
 ### Collection
 
 ```
 CollectionItem
-  (user_id, card_print_id)  PK          -- D2 : l'unité est l'impression
+  (user_id, card_print_id)  PK          -- D2: the unit is the printing
   quantity                  > 0
   is_favorite
   added_at, updated_at
 
-ScanList                                -- P1, lot de scans hors collection
+ScanList                                -- P1, batch of scans outside the collection
   id, user_id, name, created_at
 ScanListEntry
   scan_list_id, raw_set_code
-  card_print_id             nullable    -- null = non résolu, à corriger à la main
+  card_print_id             nullable    -- null = unresolved, to fix by hand
   quantity
 ```
 
@@ -224,7 +222,7 @@ ScanListEntry
 
 ```
 DeckFolder
-  id, user_id, parent_id  nullable      -- arborescence
+  id, user_id, parent_id  nullable      -- tree
   name
 
 Deck
@@ -235,13 +233,13 @@ Deck
   created_at, updated_at
 
 DeckEntry
-  (deck_id, section, card_passcode)  PK -- D3 : référence la carte
+  (deck_id, section, card_passcode)  PK -- D3: references the card
   section                               -- MAIN | EXTRA | SIDE
   quantity                  1..3
-  position                              -- ordre d'affichage
+  position                              -- display order
 ```
 
-### Social (P0 léger)
+### Social (light P0)
 
 ```
 Friendship
@@ -253,28 +251,28 @@ Block
   (blocker_id, blocked_id)  PK
 ```
 
-### Données & conformité
+### Data & compliance
 
 ```
 ImportJob
   id, user_id, source                   -- atem | scanflip | cardmarket
   mode                                  -- merge | replace
   status, rows_total, rows_ok, rows_failed
-  report            -- lignes en échec, consultable (« Historique d'Importation »)
+  report            -- failed rows, viewable (“Import history”)
   created_at
 ```
 
 ---
 
-## Différé — à ne PAS implémenter, mais à ne pas rendre impossible
+## Deferred — NOT to be implemented, but not to be made impossible
 
 `Guild`, `GuildMember`, `GuildApplication`, `GuildActivityLog`, `Message`,
 `Duel`, `DuelTurn`, `DamageEvent`, `Tournament`, `Trophy`.
 
-**Contraintes de compatibilité à respecter dès maintenant :**
+**Compatibility constraints to respect right now:**
 
-- `UserProfile` prévoit un rattachement futur à une guilde → ne pas dénormaliser le
-  pseudo ou l'appartenance dans d'autres tables.
-- Un duel référencera **deux `Deck`** → un deck ne doit jamais être supprimé
-  physiquement une fois utilisé ; prévoir une suppression logique.
-- Les trophées seront attachés au profil → `UserProfile` reste extensible.
+- `UserProfile` plans a future attachment to a guild → do not denormalise the
+  username or membership into other tables.
+- A duel will reference **two `Deck`s** → a deck must never be physically deleted
+  once used; plan a soft delete.
+- Trophies will be attached to the profile → `UserProfile` stays extensible.

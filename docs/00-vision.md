@@ -1,55 +1,58 @@
-# ATEM — Vision & périmètre
+# ATEM — Vision & scope
 
-## En une phrase
+## In one sentence
 
-ATEM est un service web auto-hébergeable qui donne aux joueurs de Yu-Gi-Oh! papier
-un inventaire numérique de leur collection, un atelier de construction de decks, et
-un assistant de duel en présentiel — sans jamais simuler les règles du jeu.
+ATEM is a self-hostable web service that gives paper Yu-Gi-Oh! players a digital
+inventory of their collection, a deck-building workshop, and an in-person duel
+assistant — without ever simulating the game's rules.
 
-## Ce que ce n'est PAS (non-goals)
+## What it is NOT (non-goals)
 
-Ces exclusions sont structurantes. Toute demande future qui les contredit est un
-changement de périmètre, pas une évolution.
+These exclusions are structural. Any future request contradicting them is a change
+of scope, not an evolution.
 
-1. **Pas un simulateur de jeu.** Aucune résolution d'effet, de chaîne, de timing ou
-   de légalité de coup. Des reproductions fidèles existent déjà (EDOPro, Master Duel).
-2. **Pas de suivi des cartes jouées en duel.** L'assistant consigne des métadonnées
-   de partie (tours, phases, dommages, vainqueur), jamais le déroulé carte par carte.
-3. **Pas une place de marché.** Pas de transaction, pas de vente, pas d'échange.
-   Les prix éventuellement affichés sont indicatifs et proviennent du référentiel.
-4. **Pas de scan d'image de carte.** L'OCR lit le **set code imprimé**, pas l'artwork.
-5. **Pas de source de vérité sur les cartes.** Le référentiel appartient à YGOPRODeck.
-   ATEM en héberge un miroir, ne le corrige pas et ne le complète pas à la main.
+1. **Not a game simulator.** No resolution of effects, chains, timing or move
+   legality. Faithful reproductions already exist (EDOPro, Master Duel).
+2. **No tracking of cards played in a duel.** The assistant records game metadata
+   (turns, phases, damage, winner), never the card-by-card course of play.
+3. **Not a marketplace.** No transaction, no sale, no trade. Any prices displayed
+   are indicative and come from the reference data.
+4. **No card image recognition.** The OCR reads the **printed set code**, not the
+   artwork.
+5. **Not a source of truth about cards.** The reference data belongs to
+   YGOPRODeck. ATEM hosts a mirror of it, does not correct it and does not
+   complete it by hand.
 
-## Positionnement
+## Positioning
 
-Le service améliore l'**ambiance du jeu en présentiel**. Il ne remplace pas la partie,
-il l'accompagne : on joue avec ses vraies cartes sur une vraie table, ATEM tient les
-comptes et garde la mémoire.
+The service improves the **atmosphere of in-person play**. It does not replace the
+game, it accompanies it: you play with your real cards on a real table, ATEM keeps
+the score and the memory.
 
 ## Personas
 
-| Persona | Besoin principal | Priorité |
+| Persona | Main need | Priority |
 |---|---|---|
-| **Le collectionneur** | Inventorier vite un gros volume de cartes physiques, retrouver ce qu'il possède | P0 |
-| **Le deckbuilder** | Construire des decks à partir de ce qu'il possède réellement | P0 |
-| **Le duelliste** | Consulter les profils/decks des autres, lancer un duel | P0 |
-| **L'organisateur** | Animer une communauté, guildes, tournois | Différé |
-| **L'hébergeur** | Déployer et administrer l'instance | Différé |
+| **The collector** | Inventory a large volume of physical cards quickly, find what they own | P0 |
+| **The deckbuilder** | Build decks from what they really own | P0 |
+| **The duellist** | Look at other players' profiles/decks, start a duel | P0 |
+| **The organiser** | Run a community, guilds, tournaments | Deferred |
+| **The host** | Deploy and administer the instance | Deferred |
 
-## Ordre de priorité retenu
+## Chosen priority order
 
-**Maintenant** — Collection · Decks · Paramètres utilisateur · Duellistes (annuaire
-social) · Consultation des profils/decks/collections d'autrui.
+**Now** — Collection · Decks · User settings · Duellists (social directory) ·
+Viewing other players' profiles/decks/collections.
 
-**Différé, cadré plus tard** — Mécanique de duel · Tournois · Guildes · Boîte de
-réception · Zone d'administration · Personnalisation avancée du profil.
+**Deferred, scoped later** — Duel mechanics · Tournaments · Guilds · Inbox ·
+Administration area · Advanced profile customisation.
 
-Le noyau technique (voir `01-domain-model.md` et `02-architecture.md`) doit rendre ces
-éléments différés *possibles sans réécriture*, sans les implémenter aujourd'hui.
+The technical core (see `01-domain-model.md` and `02-architecture.md`) must make
+these deferred elements *possible without a rewrite*, without implementing them
+today.
 
-## Modèle de déploiement
+## Deployment model
 
-Une instance = **une communauté**. Pas de multi-tenant. Le premier usage visé est
-personnel ou en petit groupe ; le volet communautaire s'ajoute au même modèle de
-données sans cloisonnement supplémentaire.
+One instance = **one community**. No multi-tenancy. The first intended use is
+personal or small-group; the community side is added to the same data model with
+no extra partitioning.

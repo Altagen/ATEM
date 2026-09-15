@@ -1,120 +1,125 @@
-# Référence — reconnaissance du set code (OCR)
+# Reference — set code recognition (OCR)
 
-**L'actif le plus précieux d'ATEM-old.** Ces réglages sont le produit de mesures
-répétées, pas d'un choix théorique. Les reproduire de mémoire coûterait des jours.
+**ATEM-old's most valuable asset.** These settings are the product of repeated
+measurements, not a theoretical choice. Reproducing them from memory would cost
+days.
 
-## Moteur
+## Engine
 
-**tesseract.js 5.1.1**, variante LSTM **non-SIMD** — la variante SIMD plante sur
-certains processeurs mobiles. Langue `eng`, pack `@tesseract.js-data/eng` en
-`4.0.0_best_int` (~2,9 Mo compressé).
+**tesseract.js 5.1.1**, **non-SIMD** LSTM variant — the SIMD variant crashes on some
+mobile processors. Language `eng`, pack `@tesseract.js-data/eng` in
+`4.0.0_best_int` (~2.9 MB compressed).
 
-**Ce n'est pas une dépendance npm.** Le moteur est vendorisé : téléchargé une fois depuis
-jsDelivr, **vérifié par empreinte SHA-256**, puis servi depuis le domaine propre sous
+**It is not an npm dependency.** The engine is vendored: downloaded once from
+jsDelivr, **checked by SHA-256 fingerprint**, then served from our own domain under
 `/tesseract/*`.
 
-Raison, et elle n'est pas cosmétique : le cookie de session est `httpOnly`, mais un
-script tiers chargé dans la page pourrait appeler l'API au nom de l'utilisateur.
-Épingler une version ne protège de rien — seule l'empreinte du contenu compte.
+The reason is not cosmetic: the session cookie is `httpOnly`, but a third-party
+script loaded in the page could call the API on the user's behalf. Pinning a version
+protects nothing — only the content's fingerprint counts.
 
 ```
-tessedit_pageseg_mode  = "7"        // ligne unique
+tessedit_pageseg_mode  = "7"        // single line
 tessedit_char_whitelist = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
-load_system_dawg       = "0"        // pas de dictionnaire anglais
-load_freq_dawg         = "0"        // un set code n'est pas un mot
+load_system_dawg       = "0"        // no English dictionary
+load_freq_dawg         = "0"        // a set code is not a word
 ```
 
-Délais : 20 s pour le chargement du script, 45 s pour la création du worker et de la
-langue.
+Timeouts: 20 s to load the script, 45 s to create the worker and the language.
 
-## Zone de capture
+## Capture area
 
-Bande horizontale fixe, en fraction du cadre caméra :
+A fixed horizontal band, as a fraction of the camera frame:
 
 ```
 SCAN_ZOOM_BAND = { x: 0.05, y: 0.34, w: 0.90, h: 0.30 }
 ```
 
-**Ces coordonnées sont synchronisées avec la règle CSS `.scan-zoom-band`.** Un
-désalignement entre les deux **casse le scan en silence** : la caméra montre au joueur
-une zone que l'OCR ne lit pas. → Doit être couvert par un test, ce qui n'était pas le cas.
+**These coordinates are kept in sync with the CSS rule `.scan-zoom-band`.** A
+mismatch between the two **breaks scanning silently**: the camera shows the player an
+area the OCR does not read. `scripts/check-scan-band.mjs` compares them on every
+`pnpm check` — ATEM-old had nothing checking it.
 
-## Prétraitement — six variantes, essayées dans l'ordre
+## Preprocessing — six treatments, tried in order
 
-Chaque bande est mise à l'échelle vers une hauteur cible de **88 px**, plafonnée à 140 px
-de haut et 1100 px de large — au-delà, le traitement passe à 10-15 s sur mobile.
+Each band is scaled to a target height of **88 px**, capped at 140 px high and
+1100 px wide — beyond that, processing climbs to 10-15 s on mobile.
 
-1. **`gray`** — niveaux de gris + étirement de contraste par percentile, **sans
-   seuillage**. Mesuré : le noir et blanc pur fait confondre `8`↔`S` et `0`↔`U`. Le LSTM
-   lit mieux le gris.
-2. **`soft`** — seuillage partiel (biais −12, zone morte ±18/22), conserve les demi-tons.
-3. **`hard`** — Otsu, amincissement des traits par dilatation 3×3, dépoussiérage.
-4. **`ink`** — seuil au 22ᵉ percentile : ne garde que l'encre la plus sombre, ce qui
-   **préserve les trous des `0` et des `8`**.
-5. **Inversion du gris** — cas de polarité inversée (texte clair sur fond sombre).
-6. **Redressement à ±6° et ±12°.** Mesuré le 3 septembre 2026 : à 5° d'inclinaison la
-   lecture échoue totalement, à 3° elle passe encore. D'où ces deux paliers.
+1. **`gray`** — greyscale + percentile contrast stretch, **no thresholding**.
+   Measured: pure black and white makes `8`↔`S` and `0`↔`U` look alike. The LSTM
+   reads grey better.
+2. **`soft`** — partial thresholding (bias −12, dead zone ±18/22), keeps half-tones.
+3. **`hard`** — Otsu, stroke thinning by 3×3 dilation, despeckling.
+4. **`ink`** — threshold at the 22nd percentile: keeps only the darkest ink, which
+   **preserves the holes of `0` and `8`**.
+5. **Grey inversion** — the inverted-polarity case (light text on a dark background).
+6. **Straightening at ±6° and ±12°** (four images). Measured on 3 September 2026: at
+   5° of tilt reading fails completely, at 3° it still goes through. Hence those two
+   steps.
 
-## Boucle de reconnaissance
+## Recognition loop
 
-Modes de segmentation essayés : `7` (ligne simple), `8` (mot simple), `13` (ligne brute).
-En capture standard, seuls `7` et `8` sont tentés sur les deux premières variantes —
-budget rapide. En mode approfondi (l'écran de scan dédié), toutes les variantes × tous
-les modes.
+Segmentation modes tried: `7` (single line), `8` (single word), `13` (raw line). In
+standard capture, only `7` and `8` are tried on the first two variants — a fast
+budget. In thorough mode (the dedicated scan screen), every variant × every mode.
 
-**Sortie anticipée dès que deux lectures indépendantes s'accordent** sur un même code
-fort. Empêche de verrouiller un faux positif sur une seule image bruitée.
+**Early exit as soon as two independent readings agree** on the same strong code.
+It prevents locking a false positive on a single noisy image.
 
-## Correction des erreurs de lecture
+## Correcting misreadings
 
-**Normalisation** : `|` → `I`, filtrage sur la liste blanche de caractères.
+**Normalisation**: `|` → `I`, filtering on the character whitelist.
 
-**Confusions lettre → chiffre, appliquées uniquement au numéro d'impression, jamais au
-préfixe de set** :
+**Letter → digit confusions, applied only to the card number, never to the set
+prefix**:
 
 ```
 O U D Q → 0     I L → 1     Z → 2     S → 5     G → 6     B → 8
 ```
 
-Correspondance stricte 1 pour 1 : pas de `S → 5 ou 8`, qui rouvrirait l'ambiguïté.
+Strict one-to-one mapping: no `S → 5 or 8`, which would reopen the ambiguity.
 
-**Catalogue de préfixes** chargé depuis `/ocr/set-prefixes.json`, généré depuis
-YGOPRODeck, avec un repli d'environ 120 sets si l'application est hors ligne.
+**Prefix catalogue** loaded from `/ocr/set-prefixes.json`, generated from the local
+catalogue (`pnpm --filter @atem/api ocr:build-dict`), with a fallback of about 120
+sets when it cannot be loaded.
 
-**Pas de distance de Levenshtein libre sur les préfixes** — refusé explicitement, ça
-produisait des verrouillages sur un mauvais set. Levenshtein ≤ 1 est autorisé uniquement
-sur le **numéro d'impression**, et seulement contre un ensemble fermé de numéros connus.
+**No free Levenshtein distance on prefixes** — explicitly refused, it produced locks
+on the wrong set. Levenshtein ≤ 1 is only allowed on the **card number**, and only
+against a closed set of known numbers.
 
-## Score de confiance
+## Confidence score
 
-| Critère | Points |
+| Criterion | Points |
 |---|---|
-| Préfixe de set connu | **+100** |
-| Préfixe inconnu | **−80** |
-| Numéro d'impression présent au catalogue | **+80** |
-| Numéro connu mais faux | **−50** |
-| Région `FR` | +20 |
-| Région `EN` | +8 |
-| Région `IT` | −12 |
-| Numéro à 3 chiffres | +15 |
-| Numéro à 4 chiffres | −8 |
-| Numéro à 2 chiffres | −15 |
-| Bégaiement de caractères (`LTGGY`) | pénalité — mais `DOOD` est épargné, il est au catalogue |
+| Known set prefix | **+100** |
+| Unknown prefix | **−80** |
+| Card number present in the catalogue | **+80** |
+| Known number but wrong | **−50** |
+| `FR` region | +20 |
+| `EN` region | +8 |
+| `IT` region | −12 |
+| 3-digit number | +15 |
+| 4-digit number | −8 |
+| 2-digit number | −15 |
+| Character stutter (`LTGGY`) | penalty — but `DOOD` is spared, it is in the catalogue |
 
-**Seuil de verrouillage automatique : 140.**
+**Automatic lock threshold: 140** (`STRONG_SCORE_THRESHOLD`).
 
-**Suggestions proposées au joueur** : uniquement des quasi-doublons soutenus par le
-catalogue (`SDS1` ↔ `5DS1`). **Jamais** une alternative FR ↔ EN inventée.
+**Suggestions offered to the player**: only near-duplicates backed by the catalogue
+(`SDS1` ↔ `5DS1`). **Never** an invented FR ↔ EN alternative.
 
-## Contrat d'usage — non négociable
+## Usage contract — non-negotiable
 
-**L'OCR n'est jamais autoritaire.** Il propose, l'utilisateur confirme par « +1 » ou
-corrige le champ. Aucun ajout automatique silencieux à la collection.
+**The OCR is never authoritative.** It proposes, the user confirms with “+1” or
+corrects the field. No silent automatic addition to the collection.
 
-## À porter ensemble, sous peine de casse silencieuse
+## To be moved together, or it breaks silently
 
-- `collection/ocr.ts` (logique) et `collection/OCR.md` (sa documentation)
-- `collection/scanner.ts` — **un seul scanner** sert la Collection et la Scanliste
+- `apps/web/src/screens/collection/ocr/engine.ts` (logic) and `ocr/README.md` (its
+  documentation)
+- `apps/web/src/screens/collection/scanner.ts` — **a single scanner** serves the
+  Collection and the Scanlist
 - `scripts/vendor-tesseract.sh` + `scripts/tesseract.sha256`
-- `public/ocr/set-prefixes.json` et le script qui le génère
-- `design/styles/components/scanner.css` — **la géométrie du recadrage en dépend**
+- `apps/web/public/ocr/set-prefixes.json` and the script generating it,
+  `apps/api/scripts/build-set-dict.mts`
+- `apps/web/src/design/components/scanner.css` — **the crop geometry depends on it**

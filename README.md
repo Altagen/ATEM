@@ -1,105 +1,110 @@
 # ATEM
 
-Un service web auto-hébergeable qui donne aux joueurs de Yu-Gi-Oh! papier un
-inventaire numérique de leur collection, un atelier de construction de decks, et
-à terme un assistant de duel en présentiel.
+A self-hostable web service that gives paper Yu-Gi-Oh! players a digital
+inventory of their collection, a deck-building workshop, and eventually an
+in-person duel assistant.
 
-**Il ne simule jamais les règles du jeu.** Des reproductions fidèles existent
-déjà ; ATEM accompagne une partie jouée avec de vraies cartes, sur une vraie
-table. Le périmètre exact, et surtout ce qui en est exclu, sont dans
+**It never simulates the game's rules.** Faithful reproductions already exist;
+ATEM accompanies a game played with real cards, on a real table. The exact scope,
+and above all what is excluded from it, are in
 [`docs/00-vision.md`](docs/00-vision.md).
 
-## Démarrer
+## Getting started
 
 ```sh
 cp .env.example .env
-# JWT_SECRET n'a aucune valeur de repli : sans elle, le serveur refuse de démarrer.
+# JWT_SECRET has no fallback value: without it, the server refuses to start.
 echo "JWT_SECRET=$(openssl rand -base64 32)" >> .env
 
-docker compose up          # ou podman compose up
+docker compose up          # or podman compose up
 ```
 
-L'application écoute sur http://localhost:8080.
+The application listens on http://localhost:8080.
 
-Le catalogue de cartes se remplit ensuite en une commande — deux requêtes vers
-YGOPRODeck, une douzaine de secondes pour 14 524 cartes et 44 496 impressions :
+The card catalogue is then filled in one command — two requests to YGOPRODeck,
+a dozen seconds for 14,524 cards and 44,496 printings:
 
 ```sh
 pnpm --filter @atem/api catalogue:sync
-pnpm --filter @atem/api ocr:build-dict   # le dictionnaire de préfixes du scanner
+pnpm --filter @atem/api ocr:build-dict   # the scanner's prefix dictionary
 ```
 
-## Développer
+## Development
 
 ```sh
-./scripts/dev-db.sh up                   # PostgreSQL sur le port 55432
+./scripts/dev-db.sh up                   # PostgreSQL on port 55432
 pnpm install
 pnpm --filter @atem/api db:migrate
-pnpm dev                                 # API sur :3000, front sur :5173
+pnpm dev                                 # API on :3000, front on :5173
 ```
 
-`ATEM_API_ORIGIN` change la cible du proxy du front, si une autre instance
-occupe déjà le port de l'API.
+`ATEM_API_ORIGIN` changes the front proxy's target, if another instance already
+uses the API's port. `pnpm dev:cert` makes a development certificate, so the
+scanner's camera also works from a phone on the local network.
 
 ```sh
+pnpm check        # every gate, then typecheck and tests — see scripts/check-all.sh
 pnpm typecheck
 pnpm test
 ```
 
-Les tests d'API montent une base PostgreSQL jetable, y rejouent les migrations,
-et la détruisent en sortie — y compris en cas d'échec.
+The API tests create a throwaway PostgreSQL database, replay the migrations in
+it, and destroy it on exit — including on failure. **Without a reachable
+database they fail**, rather than reporting green on tests that did not run; skip
+them deliberately with `ATEM_SKIP_DB_TESTS=1`.
 
-### Épreuves de bout en bout
+### End-to-end tests
 
 ```sh
-pnpm e2e          # bureau ET mobile, sur les deux profils systématiquement
-pnpm e2e:ui       # l'explorateur pas à pas
-pnpm e2e:shots    # captures de revue dans e2e/shots/
+ATEM_E2E_URL=https://localhost:5173 pnpm e2e   # desktop AND mobile, every time
+pnpm e2e:ui                                    # the step-by-step explorer
+pnpm e2e:shots                                 # review screenshots in e2e/shots/
 ```
 
-**Chaque écran se valide sur les deux profils au moment où on l'écrit**, jamais
-à l'intégration. Une grille qui déborde, une cible tactile trop petite ou une
-modale qui sort de l'écran ne se voient pas à 1440 px de large, et coûtent bien
-plus cher une fois l'écran considéré comme terminé.
+The tests run against a running instance: `ATEM_E2E_URL` points them at it
+(`https://localhost:5174` by default). They share it, so they run one at a time.
 
-`pnpm e2e:shots` ne teste rien : il photographie les écrans principaux sur les
-deux profils, pour les regarder — et pour voir ce qui a bougé après un
-changement.
+**Every screen is validated on both profiles when it is written**, never at
+integration. An overflowing grid, a touch target too small or a modal running off
+the screen are invisible at 1440 px wide, and cost far more once the screen is
+considered finished.
+
+`pnpm e2e:shots` tests nothing: it photographs the main screens on both profiles,
+to look at them — and to see what moved after a change.
 
 ## Structure
 
 ```
-apps/api      modules referential · identity · collection (decks, social, data à venir)
-apps/web      TypeScript sans framework, Vite, CSS pur
-packages/shared   contrats et bornes partagés
-docs/         vision, modèle de domaine, décisions d'architecture, feuille de route
+apps/api          modules referential · identity · collection · scanlist · deck
+apps/web          framework-free TypeScript, Vite, plain CSS
+packages/shared   shared contracts, rules and limits
+docs/             vision, domain model, architecture decisions, roadmap
+scripts/          executable gates and development tooling
 ```
 
-Chaque module possède ses tables et n'accède jamais à celles d'un autre. Les
-frontières et leur raison d'être sont dans
-[`docs/05-structure.md`](docs/05-structure.md).
+Each module owns its tables and never touches another module's. The boundaries
+and their reasons are in [`docs/05-structure.md`](docs/05-structure.md).
 
 ## Documentation
 
-| Document | Contenu |
+| Document | Content |
 |---|---|
-| [`00-vision.md`](docs/00-vision.md) | Périmètre, personas, et surtout les non-goals |
-| [`01-domain-model.md`](docs/01-domain-model.md) | Le noyau invariant — le seul document figé |
-| [`02-architecture.md`](docs/02-architecture.md) | Les décisions, avec leurs alternatives et leurs conséquences |
-| [`03-roadmap.md`](docs/03-roadmap.md) | Les jalons, et ce qui a été mesuré à chacun |
-| [`04-triage-atem-old.md`](docs/04-triage-atem-old.md) | Ce qui a été repris du projet précédent, et pourquoi |
-| [`05-structure.md`](docs/05-structure.md) | Frontières de modules et conventions |
-| [`ref-csv-formats.md`](docs/ref-csv-formats.md) | Formats d'import/export, colonne par colonne |
-| [`ref-ocr.md`](docs/ref-ocr.md) | Les réglages du scanner, et les mesures qui les justifient |
+| [`00-vision.md`](docs/00-vision.md) | Scope, personas, and above all the non-goals |
+| [`01-domain-model.md`](docs/01-domain-model.md) | The invariant core — the only frozen document |
+| [`02-architecture.md`](docs/02-architecture.md) | The decisions, with their alternatives and consequences |
+| [`03-roadmap.md`](docs/03-roadmap.md) | The milestones, and what was measured at each |
+| [`04-triage-atem-old.md`](docs/04-triage-atem-old.md) | What was taken from the previous project, and why |
+| [`05-structure.md`](docs/05-structure.md) | Module boundaries and conventions |
+| [`ref-csv-formats.md`](docs/ref-csv-formats.md) | Import/export formats, column by column |
+| [`ref-ocr.md`](docs/ref-ocr.md) | The scanner's settings, and the measurements behind them |
 
-## Deux règles
+## Two rules
 
-Héritées du projet précédent, qui les avait apprises à ses dépens :
+Inherited from the previous project, which learned them the hard way:
 
-**Ne jamais fabriquer de donnée.** Pas de valeur de repli inventée, pas de
-contenu de démonstration affiché quand une requête échoue. Un écran vide est une
-information ; un écran plausible et faux n'en est pas une.
+**Never fabricate data.** No invented fallback value, no demo content displayed
+when a request fails. An empty screen is information; a plausible and wrong
+screen is not.
 
-**Ne jamais écrire de fichier de statut de projet en prose.** Un état se mesure
-par une barrière exécutable. Les auto-évaluations d'agent s'étaient révélées
-fausses sur des points vérifiables.
+**Never write a prose project status file.** A state is measured by an executable
+gate. Agents' self-assessments had turned out wrong on verifiable points.

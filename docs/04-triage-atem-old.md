@@ -1,642 +1,628 @@
-# Étape 2 — Tri d'ATEM-old, module par module
+# Triage of ATEM-old, module by module
 
-Verdicts : **REPRENDRE** (tel quel, au détail d'imports près) · **ADAPTER** (le fond est
-bon, la forme change) · **REFAIRE** · **IGNORER** (hors périmètre prioritaire).
+Verdicts: **TAKE** (as is, give or take imports) · **ADAPT** (the substance is good,
+the form changes) · **REDO** · **IGNORE** (outside the priority scope).
 
-Règle : aucun fichier n'est repris sans justification écrite ici.
+Rule: no file is taken without a justification written here. ATEM-old's file names
+are quoted as they are in that repository — several are French.
 
 ---
 
-## Module `referential` (ex-`catalogue` + `media`)
+## Module `referential` (formerly `catalogue` + `media`)
 
-**Verdict d'ensemble : c'est la zone la mieux tenue d'ATEM-old.** Commentaires qui
-expliquent des bugs vécus, tests qui rejouent l'incident plutôt que la fonction,
-séparation pur/IO propre. Le module ne viole aucune frontière — ce sont les autres qui
-écrivent chez lui.
+**Overall verdict: it is ATEM-old's best-kept area.** Comments explaining bugs lived
+through, tests replaying the incident rather than the function, clean pure/IO
+separation. The module violates no boundary — it is the others that write into it.
 
-| Fichier | L. | Verdict | Motif |
+| File | Lines | Verdict | Reason |
 |---|---|---|---|
-| `catalogue/set-code.ts` (+test) | 58 | **REPRENDRE** | Fonctions pures testées. La bascule FR→EN, socle de D4. |
-| `catalogue/debit-sortant.ts` (+test) | 151 | **REPRENDRE** | Seau à jetons. Voir « leçons » ci-dessous — non négociable. |
-| `catalogue/ygoprodeck.ts` | 202 | **REPRENDRE** | Client Zod strict, gère le `400 + {error}` de l'API. Essaie le code EN en premier pour éviter un aller-retour perdu. |
-| `catalogue/card-mapper.ts` | 44 | **REPRENDRE** | Mapping DB→DTO, trois replis d'image documentés. |
-| `media/cache.ts` | 193 | **REPRENDRE** | Liste blanche anti-SSRF, écriture atomique, contrôle de place disque. |
-| `media/espace.ts` | 80 | **REPRENDRE** | Distingue « mesure impossible » de « disque plein ». |
-| `media/paths.ts` | 36 | **REPRENDRE** | Construction de chemins pure. |
-| `media/*.test.ts` | 204 | **REPRENDRE** | Provoquent de vraies pannes au lieu de les simuler. |
-| `routes/catalogue.ts`, `routes/media.ts` | 109 | **REPRENDRE** | Routes minimales, regex ancrées, traversée de chemin testée. |
-| `collection/resolve-queue.ts` (+test) | 522 | **REPRENDRE** | File de résolution différée, dédoublonnage par *(utilisateur, code)*. Déménage dans `referential`. |
-| `catalogue/resolve.ts` | 150 | **ADAPTER** | Cœur métier à préserver quasi mot pour mot. Retirer sa connaissance des stubs (concept qui ne lui appartient pas). |
-| `catalogue/upsert.ts` | 184 | **ADAPTER** | `upsertPrint` fait `.limit(20)` puis filtre en mémoire, alors qu'un index unique `(set_code, rarity, language)` existe. Remplacer par un `WHERE` exact. |
-| `catalogue/queries.ts` | 86 | **ADAPTER** | Télécharge une image **dans le chemin de requête**, ce que le reste du code s'interdit explicitement. À rendre asynchrone. |
-| `catalogue/sync.ts` | 54 | **ADAPTER** | Import de dump en boucle `await` séquentielle sur des dizaines de milliers de lignes. À passer en insertion par lots. |
-| `collection/seed-playset.ts` | 226 | **REFAIRE** | Script de développement. Réinvente la regex de langue et son propre `setTimeout(120ms)` au lieu du seau à jetons partagé. |
+| `catalogue/set-code.ts` (+test) | 58 | **TAKE** | Tested pure functions. The FR→EN switch, D4's foundation. |
+| `catalogue/debit-sortant.ts` (+test) | 151 | **TAKE** | Token bucket. See “lessons” below — non-negotiable. |
+| `catalogue/ygoprodeck.ts` | 202 | **TAKE** | Strict Zod client, handles the API's `400 + {error}`. Tries the EN code first to avoid a wasted round trip. |
+| `catalogue/card-mapper.ts` | 44 | **TAKE** | DB→DTO mapping, three documented image fallbacks. |
+| `media/cache.ts` | 193 | **TAKE** | Anti-SSRF allowlist, atomic write, disk space check. |
+| `media/espace.ts` | 80 | **TAKE** | Tells “cannot measure” apart from “disk full”. |
+| `media/paths.ts` | 36 | **TAKE** | Pure path building. |
+| `media/*.test.ts` | 204 | **TAKE** | Cause real failures instead of simulating them. |
+| `routes/catalogue.ts`, `routes/media.ts` | 109 | **TAKE** | Minimal routes, anchored regexes, path traversal tested. |
+| `collection/resolve-queue.ts` (+test) | 522 | **TAKE** | Deferred resolution queue, deduplicated by *(user, code)*. Moves into `referential`. |
+| `catalogue/resolve.ts` | 150 | **ADAPT** | Business core to preserve almost word for word. Remove its knowledge of stubs (a concept that does not belong to it). |
+| `catalogue/upsert.ts` | 184 | **ADAPT** | `upsertPrint` does `.limit(20)` then filters in memory, while a unique index `(set_code, rarity, language)` exists. Replace with an exact `WHERE`. |
+| `catalogue/queries.ts` | 86 | **ADAPT** | Downloads an image **in the request path**, which the rest of the code explicitly forbids itself. To be made asynchronous. |
+| `catalogue/sync.ts` | 54 | **ADAPT** | Dump import as a sequential `await` loop over tens of thousands of rows. To be moved to batch inserts. |
+| `collection/seed-playset.ts` | 226 | **REDO** | Development script. Reinvents the language regex and its own `setTimeout(120ms)` instead of the shared token bucket. |
 
-### Leçons à ne pas redécouvrir
+### Lessons not to rediscover
 
-**Le débit sortant compte l'API *et* les images ensemble.** Un limiteur par type d'appel
-avait laissé les téléchargements d'images hors comptage → liste noire YGOPRODeck. Un
-seul seau à jetons pour tout ce qui sort.
+**The outbound rate counts the API *and* images together.** A limiter per kind of
+call had left image downloads uncounted → YGOPRODeck blacklist. A single token bucket
+for everything that goes out.
 
-**Zod retire silencieusement les champs absents du schéma.** `linkval` et `linkmarkers`
-manquaient : toutes les cartes Lien affichaient « Lien — ». Pire, le premier test écrit
-pour couvrir le bug fabriquait l'objet à la main et ne testait donc rien.
-→ **Règle** : tout schéma sur une réponse d'API externe se teste avec la charge utile
-réelle, jamais avec un objet reconstruit.
+**Zod silently strips fields absent from the schema.** `linkval` and `linkmarkers`
+were missing: every Link card displayed “Link —”. Worse, the first test written to
+cover the bug built the object by hand and so tested nothing.
+→ **Rule**: any schema over an external API response is tested with the real
+payload, never with a rebuilt object.
 
-**Le nom affiché suit la langue de l'impression possédée, pas celle de l'interface.**
-Un anglophone voyait des noms français parce que le code faisait `nameFr ?? nameEn`.
-C'est une règle produit, indépendante de son implémentation.
+**The displayed name follows the language of the owned printing, not the
+interface's.** An English speaker saw French names because the code did
+`nameFr ?? nameEn`. It is a product rule, independent of its implementation.
 
-**La liste blanche d'hôtes d'images est une défense anti-SSRF, pas un détail.** L'URL
-vient d'un tiers. Filtrer les IP privées ne suffit pas — un nom peut résoudre vers une
-IP privée *après* le contrôle. Liste blanche stricte de noms d'hôtes + HTTPS obligatoire.
+**The image host allowlist is an anti-SSRF defence, not a detail.** The URL comes
+from a third party. Filtering private IPs is not enough — a name can resolve to a
+private IP *after* the check. Strict hostname allowlist + mandatory HTTPS.
 
-**La réserve d'espace disque protège PostgreSQL, pas l'affichage.** Le scénario redouté
-est la base qui cesse d'écrire ses journaux de transaction sur le même disque.
+**The disk space reserve protects PostgreSQL, not the display.** The feared scenario
+is the database no longer writing its transaction logs on the same disk.
 
-**Le minuteur du limiteur n'est délibérément pas `unref()`.** Ça paraît sale, ça ne
-l'est pas : sans ça, le script de synchronisation se termine avant la fin de la
-limitation. À ne pas « corriger » par réflexe.
+**The limiter's timer is deliberately not `unref()`.** It looks dirty, it is not:
+without it, the sync script ends before the throttling does. Not to be “fixed” by
+reflex.
 
-### Le piège n°1 : les stubs à passcode négatif
+### Trap no. 1: negative-passcode stubs
 
-**Le besoin est légitime.** `POST /collection` doit répondre immédiatement : on ne peut
-pas attendre YGOPRODeck dans le chemin de requête. Une carte inconnue est donc créée
-tout de suite en ligne provisoire, et résolue en tâche de fond.
+**The need is legitimate.** `POST /collection` must answer immediately: we cannot
+wait for YGOPRODeck in the request path. An unknown card is therefore created right
+away as a provisional row, and resolved in the background.
 
-**L'encodage est fragile.** Le provisoire est signalé par un `passcode` **négatif**,
-dérivé d'un hash du set code. Cette convention implicite est réécrite à la main dans
-**quatre modules** (`if (cardId > 0)`), sans garde-fou de type : rien ne distingue un
-vrai passcode d'un stub dans la signature `cardId: number`. Et une collision de hash
-entre deux set codes donnerait le même stub à deux cartes différentes — non prouvé
-impossible, non testé.
+**The encoding is fragile.** The provisional state is flagged by a **negative**
+`passcode`, derived from a hash of the set code. That implicit convention is
+rewritten by hand in **four modules** (`if (cardId > 0)`), with no type guard:
+nothing distinguishes a real passcode from a stub in the `cardId: number` signature.
+And a hash collision between two set codes would give the same stub to two different
+cards — not proven impossible, not tested.
 
-**Pire : il existe trois implémentations différentes du même concept.**
-`collection/service.ts` (`createStubPrint`), `decks/service.ts` (insertion directe dans
-`cards` avec un nom différent, `Card ${pc}`), et le contrôle `> 0` disséminé côté
-catalogue. Aucune ne connaît les deux autres.
+**Worse: there are three different implementations of the same concept.**
+`collection/service.ts` (`createStubPrint`), `decks/service.ts` (direct insert into
+`cards` with a different name, `Card ${pc}`), and the `> 0` check scattered across
+the catalogue. None knows the other two.
 
-→ **Décision pour ATEM** : garder le principe (réponse immédiate, résolution différée),
-remplacer le passcode négatif par un **état explicite porté par la ligne**
-(`resolve_status`), et n'avoir **qu'une seule fonction propriétaire** de la création
-d'une ligne provisoire, exposée par le module `referential`.
+→ **Decision for ATEM**: keep the principle (immediate answer, deferred resolution),
+replace the negative passcode with an **explicit state carried by the row**
+(`resolve_status`), and have **a single owning function** for creating a provisional
+row, exposed by the `referential` module.
 
-### La violation de frontière à corriger
+### The boundary violation to fix
 
-`collection/service.ts` et `decks/service.ts` **écrivent directement** dans les tables
-`cards` et `card_prints`, en contournant le module catalogue. C'est la cause racine des
-trois logiques de stub.
+`collection/service.ts` and `decks/service.ts` **write directly** into the `cards`
+and `card_prints` tables, going around the catalogue module. It is the root cause of
+the three stub logics.
 
-→ Le module `referential` doit exposer une **API d'écriture** (`upsertCard`,
-`upsertPrint`, `ensurePlaceholderPrint`) que `collection` et `decks` appellent. Aucun
-accès direct aux tables du référentiel depuis un autre module. C'est le seul changement
-structurel à faire sur cette zone.
+→ The `referential` module must expose a **write API** (`upsertCard`, `upsertPrint`,
+`ensurePlaceholderPrint`) that `collection` and `decks` call. No direct access to the
+reference tables from another module. It is the only structural change to make in
+this area.
 
-### Dette de test à combler avant de porter
+### Test debt to pay before porting
 
-`resolve.ts`, `upsert.ts` et `queries.ts` — les fichiers qui portent la logique la plus
-subtile — **n'ont aucun test unitaire dédié**. Ils ne sont couverts qu'indirectement.
-→ Écrire ces tests **avant** de porter le code, en particulier le cas « code FR déjà
-connu en EN localement → matérialise le code FR sans appel réseau ».
+`resolve.ts`, `upsert.ts` and `queries.ts` — the files carrying the subtlest logic —
+**have no dedicated unit test**. They are only covered indirectly.
+→ Write those tests **before** porting the code, in particular the case “FR code
+already known in EN locally → materialise the FR code without a network call”.
 
 ---
 
-## Infrastructure et outillage
+## Infrastructure and tooling
 
-### La stack réelle d'ATEM-old (mesurée, pas déclarée)
+### ATEM-old's real stack (measured, not declared)
 
-| Couche | Choix | Verdict |
+| Layer | Choice | Verdict |
 |---|---|---|
-| Runtime | Node ≥ 22, pnpm 9.15.0 (corepack), workspaces `apps/*` + `packages/*` | **REPRENDRE** |
-| Langage | TypeScript 5.7, `strict` + `noUncheckedIndexedAccess` + `noUnused*` | **REPRENDRE** — configuration saine |
-| Serveur | Hono 4 + `@hono/node-server` | **REPRENDRE** |
-| Base | PostgreSQL 16, Drizzle ORM 0.45 + drizzle-kit 0.31, driver `postgres` 3.4 | **REPRENDRE** |
-| Contrats | Zod, partagés via `packages/shared` | **REPRENDRE** |
-| Front | TypeScript vanilla + Vite 6, **aucun framework UI** (choix délibéré et documenté) | **REPRENDRE** |
-| OCR | tesseract.js 5.1.1 — *pas une dépendance npm*, vendorisé depuis jsDelivr avec vérification SHA-256 | **REPRENDRE** |
+| Runtime | Node ≥ 22, pnpm 9.15.0 (corepack), workspaces `apps/*` + `packages/*` | **TAKE** |
+| Language | TypeScript 5.7, `strict` + `noUncheckedIndexedAccess` + `noUnused*` | **TAKE** — sound configuration |
+| Server | Hono 4 + `@hono/node-server` | **TAKE** |
+| Database | PostgreSQL 16, Drizzle ORM 0.45 + drizzle-kit 0.31, `postgres` driver 3.4 | **TAKE** |
+| Contracts | Zod, shared through `packages/shared` | **TAKE** |
+| Front | Vanilla TypeScript + Vite 6, **no UI framework** (a deliberate, documented choice) | **TAKE** |
+| OCR | tesseract.js 5.1.1 — *not an npm dependency*, vendored from jsDelivr with SHA-256 check | **TAKE** |
 
-Dépendances de production, exhaustives : `hono`, `@hono/node-server`, `drizzle-orm`,
-`postgres`, `zod` côté API ; **zéro dépendance tierce** côté web. C'est remarquablement
-sobre — aucun surdimensionnement à purger.
+Production dependencies, exhaustive: `hono`, `@hono/node-server`, `drizzle-orm`,
+`postgres`, `zod` on the API side; **zero third-party dependencies** on the web side.
+Remarkably sober — no oversizing to purge.
 
-À corriger en reprenant : zod est en `^3.24` côté API et `^3.25` côté shared
-(désaccord de version à unifier), et **aucun linter ni formateur n'est configuré** —
-lacune, pas choix documenté.
+To fix while taking it: zod is `^3.24` on the API side and `^3.25` on the shared side
+(a version mismatch to unify), and **no linter or formatter is configured** — a gap,
+not a documented choice.
 
-### L'écart majeur : `docker compose up` n'existe pas
+### The major gap: `docker compose up` does not exist
 
-`compose.yaml` porte son propre avertissement : *« Dev-only infrastructure. Not the
-application ship stack. »* Un seul service, `db`. Aucune image applicative.
-`Containerfile.build` est une image de **build** CI, pas d'exécution.
+`compose.yaml` carries its own warning: *“Dev-only infrastructure. Not the application
+ship stack.”* A single service, `db`. No application image. `Containerfile.build` is a
+CI **build** image, not a runtime one.
 
-Le déploiement réellement pratiqué est **bare-metal, systemd + nginx**, en **neuf
-étapes manuelles** documentées dans `deploy/README.md`.
+The deployment actually practised is **bare-metal, systemd + nginx**, in **nine manual
+steps** documented in `deploy/README.md`.
 
-→ **Conséquence pour M0 : rien à adapter, tout à écrire.** C'est l'objectif du jalon et
-il est plus lourd que je ne l'avais estimé. Le `deploy/README.md` reste la meilleure
-spécification disponible : il énumère exactement ce que le compose devra automatiser.
+→ **Consequence for M0: nothing to adapt, everything to write.** It is the milestone's
+goal and it is heavier than I had estimated. `deploy/README.md` remains the best
+available specification: it lists exactly what compose will have to automate.
 
-| Élément | Verdict |
+| Element | Verdict |
 |---|---|
-| `compose.yaml` | **REFAIRE** — dev-only, ne livre pas l'application |
-| `Containerfile.build` | **ADAPTER** — bon squelette, à décliner en images d'exécution |
-| `deploy/nginx/*.conf` | **REPRENDRE** — CSP justifiée directive par directive, tampon SSE, cache des médias |
-| `deploy/systemd/*` | **ADAPTER** — arrêt propre et sauvegarde vérifiée, à traduire en entrypoint et healthcheck |
-| `.env.example` | **REPRENDRE** — chaque variable justifiée en une phrase, modèle à copier |
-| `packages/shared` | **REPRENDRE** — contrats Zod purs, découpés par domaine, testés |
-| `apps/web/vite.config.ts` | **REPRENDRE** — proxy `/api` et `/media`, HTTPS auto-signé en dev (nécessaire à `getUserMedia`, donc au scan) |
-| `scripts/epreuves-api.sh` | **REPRENDRE** — base Postgres jetable horodatée + dossier média jetable, nettoyage garanti, détection des bases orphelines |
-| `scripts/vendor-tesseract.sh` + `.sha256` | **REPRENDRE** — vendorisation vérifiée par empreinte, motivée par un vrai incident CSP |
-| `scripts/check-*.sh` (~35 barrières) | **REPRENDRE le mécanisme**, trier le contenu — beaucoup sont spécifiques à des écrans différés |
-| `scripts/lib/navigateur.mjs`, `banc-*.mjs` | **REFAIRE en Playwright** — voir ci-dessous |
-| `scripts/ocr-lab/`, `__pycache__/*.pyc`, `avant-communaute.txt` | **IGNORER / ne pas reprendre** — artefacts commités par accident |
+| `compose.yaml` | **REDO** — dev-only, does not ship the application |
+| `Containerfile.build` | **ADAPT** — a good skeleton, to derive runtime images from |
+| `deploy/nginx/*.conf` | **TAKE** — CSP justified directive by directive, SSE buffering, media cache |
+| `deploy/systemd/*` | **ADAPT** — graceful shutdown and verified backup, to translate into entrypoint and healthcheck |
+| `.env.example` | **TAKE** — each variable justified in one sentence, a model to copy |
+| `packages/shared` | **TAKE** — pure Zod contracts, split by domain, tested |
+| `apps/web/vite.config.ts` | **TAKE** — `/api` and `/media` proxy, self-signed HTTPS in dev (needed by `getUserMedia`, hence by scanning) |
+| `scripts/epreuves-api.sh` | **TAKE** — timestamped throwaway Postgres database + throwaway media folder, guaranteed clean-up, orphan database detection |
+| `scripts/vendor-tesseract.sh` + `.sha256` | **TAKE** — fingerprint-checked vendoring, motivated by a real CSP incident |
+| `scripts/check-*.sh` (~35 gates) | **TAKE the mechanism**, sort the content — many are specific to deferred screens |
+| `scripts/lib/navigateur.mjs`, `banc-*.mjs` | **REDO with Playwright** — see below |
+| `scripts/ocr-lab/`, `__pycache__/*.pyc`, `avant-communaute.txt` | **IGNORE / do not take** — artefacts committed by accident |
 
-### Tests : bon socle, pas d'end-to-end réel
+### Tests: a good base, no real end-to-end
 
-Lanceur natif `node --test` avec `tsx`, 87 fichiers de test co-localisés. La base de
-test jetable de `epreuves-api.sh` est un pattern solide, à reprendre tel quel.
+Native `node --test` runner with `tsx`, 87 co-located test files. The throwaway test
+database of `epreuves-api.sh` is a solid pattern, to take as is.
 
-**Il n'y a pas de Playwright.** Les bancs d'essai pilotent Chromium en CDP écrit à la
-main, en réutilisant opportunément un binaire téléchargé par un plugin tiers — cassé
-une fois par une mise à jour de ce plugin, impossible à faire tourner en CI.
+**There is no Playwright.** The test benches drive Chromium over hand-written CDP,
+opportunistically reusing a binary downloaded by a third-party plugin — broken once by
+an update of that plugin, impossible to run in CI.
 
-→ La mise en place de Playwright prévue à M1 part donc d'une page blanche. En revanche
-le **scénario** de ces bancs mérite d'être repris : instance jetable complète montée
-avant chaque campagne, mesure de la couverture réelle des routes atteintes par un
-navigateur, et test à plusieurs navigateurs simultanés pour les flux sociaux — qu'on ne
-peut pas valider en testant une route isolée.
+→ The Playwright set-up planned for M1 therefore starts from a blank page. The benches'
+**scenario**, though, deserves to be taken: a full throwaway instance mounted before
+each campaign, measurement of the real coverage of routes reached by a browser, and
+testing with several simultaneous browsers for social flows — which cannot be
+validated by testing an isolated route.
 
-**Aucune CI n'existe** (`.github/` absent). Les quatre barrières listées dans
-`AGENTS.md` sont lancées à la main.
+**No CI exists** (`.github/` absent). The four gates listed in `AGENTS.md` are run by
+hand.
 
-### Connaissance opérationnelle à transférer
+### Operational knowledge to transfer
 
-`docs/CHANTIER-HEBERGEMENT.md` est le document le plus dense du dépôt : chaque point de
-durcissement y est décrit avec **la cause réelle trouvée en production** — limitation de
-débit contournable via un `X-Forwarded-For` non filtré, flux SSE jamais fermés côté
-serveur, écoute sur toutes les interfaces malgré un message annonçant le contraire,
-absence d'arrêt propre, absence de CSP, sauvegardes jamais vérifiées par restauration.
-→ À transposer en **check-list de durcissement** pour ATEM, indépendamment du mode de
-déploiement.
+`docs/CHANTIER-HEBERGEMENT.md` is the densest document of the repository: each
+hardening point is described with **the real cause found in production** — rate
+limiting bypassable through an unfiltered `X-Forwarded-For`, SSE streams never closed
+server-side, listening on all interfaces despite a message announcing the opposite,
+no graceful shutdown, no CSP, backups never verified by a restore.
+→ To be turned into a **hardening checklist** for ATEM, independently of the
+deployment mode.
 
-`antipatterns.md` (dans le backbone `all/ATEM/`) recense des défauts génériques
-constatés : données fabriquées en repli (`d.winrate || "65%"`), contenu de démonstration
-affiché en repli inconditionnel, migration écrite à la main désynchronisant le snapshot
-Drizzle, table déclarée sans migration → 500 en production. → À porter tel quel dans le
-contrat du nouveau projet.
+`antipatterns.md` (in the `all/ATEM/` backbone) lists generic defects observed:
+fabricated fallback data (`d.winrate || "65%"`), demo content displayed as an
+unconditional fallback, a hand-written migration desynchronising the Drizzle snapshot,
+a table declared without a migration → 500 in production. → To carry as is into the
+new project's contract.
 
-**À ne pas reprendre comme feuille de route** : `BACKLOG.md` est périmé — plusieurs
-items qu'il liste comme ouverts sont déjà faits. Le backbone `all/ATEM/` l'est aussi
-partiellement (il affirme « Deployment: none yet » alors qu'un déploiement systemd
-fonctionne depuis le 8 septembre 2026).
+**Not to be taken as a roadmap**: `BACKLOG.md` is outdated — several items it lists as
+open are already done. The `all/ATEM/` backbone partly is too (it claims “Deployment:
+none yet” while a systemd deployment has been running since 8 September 2026).
 
-### Deux réflexes de rigueur à conserver
+### Two rigour reflexes to keep
 
-`MEMORY.md` d'ATEM-old a été **délibérément vidé**, avec la raison écrite : les
-auto-évaluations d'agent s'étaient révélées fausses sur des points vérifiables.
-`AGENTS.md` en tire deux règles cardinales — **ne jamais fabriquer de donnée**, et
-**ne jamais écrire de fichier de statut de projet en prose**. Un état de projet se
-mesure par une barrière exécutable, pas par un bulletin rédigé par celui qu'on évalue.
+ATEM-old's `MEMORY.md` was **deliberately emptied**, with the reason written down:
+agents' self-assessments had turned out wrong on verifiable points. `AGENTS.md` draws
+two cardinal rules from it — **never fabricate data**, and **never write a prose
+project status file**. A project's state is measured by an executable gate, not by a
+report written by the one being assessed.
 
-Ces deux règles s'appliquent à moi. Je les reprends dans le contrat d'ATEM.
+Those two rules apply to me. I carry them into ATEM's contract.
 
 ---
 
 ## Module `identity` (auth)
 
-**Verdict d'ensemble : REPRENDRE presque intégralement.** C'est une implémentation mûre,
-sans reproche notable.
+**Overall verdict: TAKE almost entirely.** A mature implementation, with nothing
+notable to fault.
 
-| Fichier | Verdict | Motif |
+| File | Verdict | Reason |
 |---|---|---|
-| `auth/crypto.ts` | **REPRENDRE** | scrypt asynchrone, paramètres **versionnés dans le hash** (on peut relever le coût sans invalider l'existant), `needsRehash` + rehachage opportuniste à la connexion, comparaison à temps constant. |
-| `auth/secret.ts` | **REPRENDRE** | Refuse de démarrer sans `JWT_SECRET` valide, et rejette explicitement par égalité de chaîne l'ancien secret par défaut codé en dur. |
-| `auth/token.ts` + `revocation.ts` | **REPRENDRE** | Le jeton porte une **version** relue en base à chaque requête → déconnexion, changement de mot de passe et suspension invalident réellement les jetons émis. |
-| `auth/cookie.ts` | **REPRENDRE** | `httpOnly` + `Secure` conditionnel + `SameSite=Strict`, avec un cookie témoin non sensible pour que le front connaisse l'état de connexion sans lire le jeton. |
-| `auth/csrf.ts` | **REPRENDRE** | Contrôle d'origine en complément de `SameSite`, appliqué aux seules écritures et à la seule authentification par cookie. |
-| `auth/rate-limit.ts` + `magasin-debit.ts` | **REPRENDRE** | Double compteur IP **et** compte visé, fenêtre glissante, stocké en base donc survit au redémarrage. |
-| `auth/middleware.ts` | **REPRENDRE** | Relit rôle, suspension et version de jeton en base à chaque requête — aucune confiance aveugle au contenu du JWT. |
-| `auth/adresse-appelante.ts` | **ADAPTER** | Dépend de `X-Forwarded-For`. À revalider contre le reverse-proxy réel du nouveau déploiement — c'est exactement le vecteur de contournement du rate-limit décrit dans le chantier d'hébergement. |
-| `db/verifier-migrations.ts` | **REPRENDRE** | Refuse de démarrer si la base n'a pas toutes les migrations attendues, en distinguant « manquantes » et « inconnues ». |
-| `db/client.ts`, `user-tag.ts`, `bootstrap-admin.ts` | **REPRENDRE** | Pool borné, `prepare:false` justifié pour PgBouncer, échec net sans `DATABASE_URL`. |
-| `db/delete-account.ts` | **ADAPTER** | Bonne politique, mais une seule fonction connaît `users` **et** les tables de guilde. À découper : chaque module nettoie ses propres données. |
-| `db/seed.ts` | **REFAIRE** | 483 lignes de données de démonstration mêlant tous les domaines. |
+| `auth/crypto.ts` | **TAKE** | Asynchronous scrypt, parameters **versioned in the hash** (the cost can be raised without invalidating existing hashes), `needsRehash` + opportunistic rehash at sign-in, constant-time comparison. |
+| `auth/secret.ts` | **TAKE** | Refuses to start without a valid `JWT_SECRET`, and explicitly rejects, by string equality, the old hard-coded default secret. |
+| `auth/token.ts` + `revocation.ts` | **TAKE** | The token carries a **version** re-read from the database at every request → sign-out, password change and suspension really invalidate issued tokens. |
+| `auth/cookie.ts` | **TAKE** | `httpOnly` + conditional `Secure` + `SameSite=Strict`, with a non-sensitive indicator cookie so the front knows the sign-in state without reading the token. |
+| `auth/csrf.ts` | **TAKE** | Origin check on top of `SameSite`, applied only to writes and only to cookie authentication. |
+| `auth/rate-limit.ts` + `magasin-debit.ts` | **TAKE** | Double counter, IP **and** targeted account, sliding window, stored in the database so it survives a restart. |
+| `auth/middleware.ts` | **TAKE** | Re-reads role, suspension and token version from the database at every request — no blind trust in the JWT's content. |
+| `auth/adresse-appelante.ts` | **ADAPT** | Depends on `X-Forwarded-For`. To re-validate against the new deployment's real reverse proxy — it is exactly the rate-limit bypass vector described in the hosting worksite document. |
+| `db/verifier-migrations.ts` | **TAKE** | Refuses to start if the database does not have all expected migrations, telling “missing” apart from “unknown”. |
+| `db/client.ts`, `user-tag.ts`, `bootstrap-admin.ts` | **TAKE** | Bounded pool, `prepare:false` justified for PgBouncer, clean failure without `DATABASE_URL`. |
+| `db/delete-account.ts` | **ADAPT** | A good policy, but a single function knows `users` **and** the guild tables. To split: each module cleans its own data. |
+| `db/seed.ts` | **REDO** | 483 lines of demo data mixing every domain. |
 
 ## Module `decks`
 
-| Fichier | Verdict | Motif |
+| File | Verdict | Reason |
 |---|---|---|
-| `decks/folders.ts` | **REPRENDRE** | Profondeur max, détection de cycle, calcul de profondeur du sous-arbre avant déplacement, et **ré-attachement** des enfants à la suppression plutôt qu'une cascade destructrice. |
-| `shared/engine/banlist.ts`, `card-math.ts` | **REPRENDRE** | Logique pure : statut banlist, classification extra deck. Briques utiles. |
-| `decks/service.ts` | **ADAPTER** | CRUD sain, mais voir les deux lacunes ci-dessous. |
-| `routes/decks.ts` | **ADAPTER** | Bon découpage, mais gestion d'erreurs par **égalité de chaînes** (`msg === "folder_max_depth"`) — fragile. |
-| `shared/deck.ts` | **ADAPTER** | Contrats Zod propres ; purger `category`. |
-| `decks/engine-mirror.test.ts` | **NE PAS PORTER** | Vérifie la parité avec une copie manuelle du moteur dans la maquette. Sans objet une fois la maquette partie. |
+| `decks/folders.ts` | **TAKE** | Maximum depth, cycle detection, subtree depth computed before moving, and **re-attaching** children on deletion rather than a destructive cascade. |
+| `shared/engine/banlist.ts`, `card-math.ts` | **TAKE** | Pure logic: banlist status, Extra Deck classification. Useful building blocks. |
+| `decks/service.ts` | **ADAPT** | Sound CRUD, but see the two gaps below. |
+| `routes/decks.ts` | **ADAPT** | Good split, but error handling by **string equality** (`msg === "folder_max_depth"`) — fragile. |
+| `shared/deck.ts` | **ADAPT** | Clean Zod contracts; purge `category`. |
+| `decks/engine-mirror.test.ts` | **DO NOT PORT** | Checks parity with a manual copy of the engine in the mock-up. Pointless once the mock-up is gone. |
 
-### Lacune 1 — la règle des 3 exemplaires n'est pas garantie
+### Gap 1 — the 3-copy rule is not guaranteed
 
-`quantity` est borné à 3 **par ligne**, en Zod et dans le service. Mais l'unicité en base
-est `(deck_id, zone, passcode, set_code)` : la même carte peut donc exister sur
-**plusieurs lignes** — zones différentes, ou impression épinglée différente — et
-totaliser plus de 3 exemplaires. Aucune contrainte n'agrège.
+`quantity` is capped at 3 **per row**, in Zod and in the service. But database
+uniqueness is `(deck_id, zone, passcode, set_code)`: the same card can therefore exist
+on **several rows** — different zones, or a different pinned printing — and total more
+than 3 copies. No constraint aggregates.
 
-Un moteur de légalité agrégé existe pourtant (`engine/banlist.ts`, `checkDeckAdd`), mais
-il reçoit le total déjà calculé et **n'est jamais appelé côté serveur** pour valider une
-écriture. C'est un utilitaire d'affichage, pas une garde.
+An aggregated legality engine does exist (`engine/banlist.ts`, `checkDeckAdd`), but it
+receives the already computed total and **is never called server-side** to validate a
+write. It is a display utility, not a guard.
 
-→ La validation agrégée est **à écrire**, côté serveur, au M2.
+→ Aggregated validation is **to be written**, server-side, at M2.
 
-### Lacune 2 — le calcul « possédé / manquant » n'existe pas
+### Gap 2 — the “owned / missing” computation does not exist
 
-Il n'a jamais été implémenté pour les decks. Le générateur qui portait ce type de calcul
-a été retiré. Le seul « possédé/manquant » restant concerne l'identification des cartes
-scannées, ce qui est un tout autre sujet.
+It was never implemented for decks. The generator that carried that kind of
+computation was removed. The only “owned/missing” left concerns identifying scanned
+cards, which is a completely different subject.
 
-→ **À concevoir depuis zéro** au M2. `card-math.ts` et `banlist.ts` fournissent des
-briques, pas le calcul.
+→ **To be designed from scratch** at M2. `card-math.ts` and `banlist.ts` provide
+building blocks, not the computation.
 
-### Lacune 3 — aucun test sur les decks
+### Gap 3 — no tests on decks
 
-Ni le service, ni les dossiers, ni les routes n'ont de test. C'est la zone la moins
-couverte du projet, et celle où je viens de trouver deux lacunes fonctionnelles.
+Neither the service, nor folders, nor routes have tests. It is the project's least
+covered area, and the one where I just found two functional gaps.
 
-## Le point de contrôle d'accès manquant
+## The missing access checkpoint
 
-`app.ts` empile les middlewares dans un ordre correct et documenté, et l'autorisation
-« admin » est bien centralisée. L'autorisation « propriétaire de la ressource » est un
-`eq(x.userId, userId)` répété mais homogène — acceptable.
+`app.ts` stacks middlewares in a correct, documented order, and “admin” authorisation
+is properly centralised. “Resource owner” authorisation is a repeated but homogeneous
+`eq(x.userId, userId)` — acceptable.
 
-**En revanche, la consultation des données d'autrui n'a aucun point de contrôle unique.**
-Deux endroits recalculent indépendamment l'amitié et le blocage :
-`routes/users.ts` (profil public) et `routes/community/duellistes.ts`. Aucune fonction
-commune. Le jour où les decks et la collection d'autrui doivent aussi respecter le
-blocage, ce serait une troisième copie.
+**However, viewing other people's data has no single checkpoint.** Two places compute
+friendship and blocking independently: `routes/users.ts` (public profile) and
+`routes/community/duellistes.ts`. No shared function. The day other players' decks and
+collections must also respect blocking, it would be a third copy.
 
-→ Confirme la règle déjà posée en `02-architecture.md` : **une seule fonction
-`canView(viewerId, targetId)`**, propriété du module `social`, appelée par `decks` et
-`collection` avant de servir la moindre donnée d'un tiers. À écrire au M4, mais la
-frontière est posée dès M0.
+→ Confirms the rule already set in `02-architecture.md`: **a single function
+`canView(viewerId, targetId)`**, owned by the `social` module, called by `decks` and
+`collection` before serving the slightest piece of a third party's data. To write at
+M4, but the boundary is set from M0.
 
-## Décisions de reprise annexes
+## Secondary take-over decisions
 
-- `decks.category` est marqué `@deprecated` mais reste **activement recalculé à chaque
-  écriture**. Dette vivante : la colonne ne sera pas reconduite.
-- `instanceSettings` est un clé-valeur `text` sans schéma, relu par des `find()`
-  dispersés. À typer et à centraliser.
-- **Nommage mixte français/anglais** (`erreurs.ts` à côté de `service.ts`). À trancher
-  pour ATEM : identifiants et noms de fichiers en anglais, commentaires en français.
-- Aucune dérive entre `schema.ts` et les migrations — rien à éponger de ce côté.
-- **Pratique à conserver** : les commentaires d'ATEM-old expliquent presque toujours le
-  *pourquoi* et l'incident qui a motivé le choix, pas seulement le *quoi*. C'est la
-  meilleure chose du dépôt et ça se garde indépendamment du code.
+- `decks.category` is marked `@deprecated` but is still **actively recomputed at every
+  write**. Living debt: the column will not be carried over.
+- `instanceSettings` is an untyped `text` key-value store, read by scattered `find()`
+  calls. To type and centralise.
+- **Mixed French/English naming** (`erreurs.ts` next to `service.ts`). To settle for
+  ATEM: identifiers and file names in English, comments in French.
+  *Superseded on 2026-09-14: everything in the repository is in English, comments and
+  documentation included — see `05-structure.md`.*
+- No drift between `schema.ts` and the migrations — nothing to mop up on that side.
+- **Practice to keep**: ATEM-old's comments almost always explain the *why* and the
+  incident behind the choice, not just the *what*. It is the best thing in the
+  repository, and it is kept independently of the code.
 
 ---
 
-## Module `collection` (+ scanlistes, import/export)
+## Module `collection` (+ scanlists, import/export)
 
-**Verdict d'ensemble : la zone la plus dense en logique métier acquise.** Le problème
-n'est presque jamais la logique — c'est son emplacement.
+**Overall verdict: the area densest in acquired business logic.** The problem is
+almost never the logic — it is where it lives.
 
-| Fichier | Verdict | Motif |
+| File | Verdict | Reason |
 |---|---|---|
-| `scanlists/service.ts` | **REPRENDRE** | **Module exemplaire.** Ne touche aucune table étrangère : il appelle `addToCollection`, la fonction exposée. C'est le patron à généraliser partout. |
-| `routes/collection.ts` | **REPRENDRE** | Taille d'upload vérifiée **deux fois** — sur `Content-Length` puis sur le texte réellement lu, contre un en-tête mensonger ou du `chunked`. |
-| `routes/scanlists.ts` (+ test) | **REPRENDRE** | Isolation par compte renvoyant **404 et non 403** — ne révèle pas l'existence de la ressource d'autrui. |
-| `shared/scanlist.ts`, `limits.ts` (+test) | **REPRENDRE** | Source unique des bornes. Le test vérifie que le compteur d'interface et le schéma serveur décident **exactement pareil**, emoji multi-unités UTF-16 compris. |
-| `collection/service.test.ts` | **REPRENDRE** | Test pur de `nomImprime`, tous les replis couverts. |
-| `collection/consolidation.test.ts` | **REPRENDRE** | Injecte une vraie panne par `Proxy` sur la transaction pour prouver qu'aucun exemplaire n'est perdu. Rare et précieux. |
-| `collection/csv.ts` | **ADAPTER** | Parsing solide. Mais `ALIAS_MAP` et la normalisation de langue sont **dupliqués** en JS dans la maquette. Doit vivre une seule fois, dans `packages/shared`. |
-| `collection/service.ts` | **ADAPTER** | Voir les violations ci-dessous. |
-| `shared/collection.ts` | **ADAPTER** | Schémas à reprendre, mais il **manque une borne haute de quantité** (voir lacunes). |
-| `shared/card.ts` | **ADAPTER** | Mélange le schéma de carte (référentiel) et celui d'impression (identité). À scinder. |
-| `*-mirror.test.ts`, `scanlist-roundtrip.test.ts` | **REFAIRE, garder les jeux d'essai** | Chargent du JS de maquette dans un faux `window`. Le mécanisme disparaît avec le monorepo ; les vecteurs de test sont excellents et se rapatrient tels quels. |
-| `collection/seed-playset.ts` | **REFAIRE** | Contourne l'API du catalogue par un `fetch` direct vers YGOPRODeck. |
+| `scanlists/service.ts` | **TAKE** | **An exemplary module.** Touches no foreign table: it calls `addToCollection`, the exposed function. It is the pattern to generalise everywhere. |
+| `routes/collection.ts` | **TAKE** | Upload size checked **twice** — on `Content-Length` then on the text actually read, against a lying header or `chunked`. |
+| `routes/scanlists.ts` (+ test) | **TAKE** | Per-account isolation returning **404, not 403** — does not reveal that someone else's resource exists. |
+| `shared/scanlist.ts`, `limits.ts` (+test) | **TAKE** | Single source of limits. The test checks that the interface counter and the server schema decide **exactly the same**, multi-unit UTF-16 emoji included. |
+| `collection/service.test.ts` | **TAKE** | Pure test of `nomImprime`, every fallback covered. |
+| `collection/consolidation.test.ts` | **TAKE** | Injects a real failure through a `Proxy` on the transaction to prove no copy is lost. Rare and precious. |
+| `collection/csv.ts` | **ADAPT** | Solid parsing. But `ALIAS_MAP` and language normalisation are **duplicated** in JS in the mock-up. Must live once, in `packages/shared`. |
+| `collection/service.ts` | **ADAPT** | See the violations below. |
+| `shared/collection.ts` | **ADAPT** | Schemas to take, but an **upper quantity bound is missing** (see gaps). |
+| `shared/card.ts` | **ADAPT** | Mixes the card schema (reference data) and the printing schema (identity). To split. |
+| `*-mirror.test.ts`, `scanlist-roundtrip.test.ts` | **REDO, keep the fixtures** | Load mock-up JS into a fake `window`. The mechanism disappears with the monorepo; the test vectors are excellent and come back as they are. |
+| `collection/seed-playset.ts` | **REDO** | Goes around the catalogue API with a direct `fetch` to YGOPRODeck. |
 
-### Violations de frontière à corriger
+### Boundary violations to fix
 
-`collection/service.ts` importe et joint directement `cardPrints`, `cards`, `deckCards`,
-`instanceSettings` et `users`. Trois corrections :
+`collection/service.ts` imports and directly joins `cardPrints`, `cards`, `deckCards`,
+`instanceSettings` and `users`. Three fixes:
 
-- `createStubPrint` **écrit** dans `cards` et `card_prints` → doit devenir une fonction
-  exposée par `referential`.
-- `cleanUnusedCatalogueCache` **lit `deck_cards`** pour savoir si une carte sert encore
-  → doit appeler `isCardUsedInAnyDeck()` exposé par `decks`.
-- `normalizeSetCode` / `languageFromSetCode` définissent l'identité `(set_code, rarity,
-  language)` que `collection` stocke — ce n'est pas une donnée de carte. Elles
-  descendent dans `packages/shared`.
+- `createStubPrint` **writes** into `cards` and `card_prints` → must become a function
+  exposed by `referential`.
+- `cleanUnusedCatalogueCache` **reads `deck_cards`** to know whether a card is still
+  used → must call `isCardUsedInAnyDeck()` exposed by `decks`.
+- `normalizeSetCode` / `languageFromSetCode` define the `(set_code, rarity, language)`
+  identity that `collection` stores — it is not card data. They move down into
+  `packages/shared`.
 
-### Logique à préserver mot pour mot
+### Logic to preserve word for word
 
-**La consolidation provisoire → réelle doit tenir en une seule transaction.** Sans ça,
-une interruption entre la suppression des lignes provisoires et l'écriture de la ligne
-consolidée perd des exemplaires — « sur un import de huit cents cartes, la fenêtre
-s'ouvre huit cents fois ».
+**Provisional → real consolidation must fit in a single transaction.** Without it, an
+interruption between deleting the provisional rows and writing the consolidated row
+loses copies — “on an eight-hundred-card import, the window opens eight hundred
+times”.
 
-**`addToCollection` n'appelle jamais un service distant dans le chemin de requête.** La
-ligne est écrite immédiatement en `pending`, et la résolution ne part qu'**après** la
-validation de la transaction — sinon la résolution course une écriture non encore
-committée.
+**`addToCollection` never calls a remote service in the request path.** The row is
+written immediately as `pending`, and resolution only starts **after** the transaction
+commits — otherwise resolution races a write not yet committed.
 
-**Le versement d'une scanliste est une addition pure, jamais une réconciliation**, et
-emprunte exactement le même chemin que l'ajout manuel.
+**Pouring a scanlist is a pure addition, never a reconciliation**, and takes exactly
+the same path as a manual addition.
 
-**À la création d'une scanliste, les doublons sont fusionnés** en conservant le premier
-nom identifié : « une seconde lecture qui n'a rien reconnu ne doit pas effacer ce que la
-première avait identifié ».
+**When creating a scanlist, duplicates are merged**, keeping the first identified
+name: “a second reading that recognised nothing must not erase what the first had
+identified”.
 
-### Lacunes réelles à combler
+### Real gaps to fill
 
-1. **Aucune borne haute de quantité côté collection.** `quantity_delta` et `quantity`
-   n'ont pas de plafond, là où les scanlistes plafonnent à 1000. Un CSV avec
-   `quantity=999999999` passe.
-2. **Nettoyage de cache incohérent.** `updateOwnedLine` purge le cache catalogue quand
-   la quantité tombe à zéro ; `addToCollection` avec un delta négatif (le bouton « −1 »)
-   ne le fait pas. Des impressions orphelines s'accumulent.
-3. **Doublons de `set_code` dans un même CSV** : comportement « dernière ligne gagne »,
-   non spécifié et non testé, incohérent avec la fusion pratiquée par les scanlistes.
-   → On tranche : **fusionner**, comme les scanlistes.
-4. **Le BOM UTF-8 est ajouté côté client**, pas côté serveur. Un lien direct vers
-   `/export.csv` produirait donc un fichier qu'Excel en locale française abîme.
-   → On tranche : **BOM côté serveur**.
-5. **Cardmarket ne traduit que `fr` et `en`** en toutes lettres ; les autres langues
-   sortent en code ISO.
+1. **No upper quantity bound on the collection side.** `quantity_delta` and `quantity`
+   have no ceiling, where scanlists cap at 1000. A CSV with `quantity=999999999` goes
+   through.
+2. **Inconsistent cache clean-up.** `updateOwnedLine` purges the catalogue cache when
+   the quantity drops to zero; `addToCollection` with a negative delta (the “−1”
+   button) does not. Orphan printings pile up.
+3. **Duplicate `set_code` in the same CSV**: “last line wins” behaviour, unspecified
+   and untested, inconsistent with the merging scanlists do.
+   → Settled: **merge**, like scanlists.
+4. **The UTF-8 BOM is added client-side**, not server-side. A direct link to
+   `/export.csv` would therefore produce a file that Excel in a French locale mangles.
+   → Settled: **BOM server-side**.
+5. **Cardmarket only spells out `fr` and `en`**; other languages come out as ISO codes.
 
 ---
 
-## Front web
+## Web front
 
-### Le système de design : REPRENDRE, c'est la meilleure partie du dépôt
+### The design system: TAKE, it is the best part of the repository
 
-`tokens.css` (174 l.) et `base.css` (1323 l.) sont sains : **zéro `!important`**, aucun
-sélecteur mort, et chaque règle commentée avec le problème réel qu'elle a résolu. Les
-jetons ont été extraits *après* mesure (`#f5c542` apparaissait 104 fois en TS et 85 fois
-en CSS avant de devenir `--gold`). Une échelle de `z-index` nommée existe, ajoutée après
-un bug où un `--z-modal` non défini retombait à `auto`.
+`tokens.css` (174 lines) and `base.css` (1,323 lines) are sound: **zero
+`!important`**, no dead selector, and every rule commented with the real problem it
+solved. The tokens were extracted *after* measuring (`#f5c542` appeared 104 times in
+TS and 85 times in CSS before becoming `--gold`). A named `z-index` scale exists,
+added after a bug where an undefined `--z-modal` fell back to `auto`.
 
-**Point à décider : il n'y a pas de thème clair.** `color-scheme: dark` en dur, aucun
-`prefers-color-scheme` nulle part. C'est un parti pris assumé.
+**A point to decide: there is no light theme.** `color-scheme: dark` hard-coded, no
+`prefers-color-scheme` anywhere. A deliberate stance.
 
-| Fichier | Verdict |
+| File | Verdict |
 |---|---|
-| `styles/tokens.css`, `styles/base.css` | **REPRENDRE** |
-| `styles/settings.css` | **ADAPTER** — dans le périmètre, propre |
-| `styles/shared-nav.css` | **ADAPTER** — retirer les entrées guilde et admin |
-| `styles/collection.css` (2254 l.) | **ADAPTER** — moitié structurelle propre ; convertir 19 sélecteurs d'ID en classes |
-| `styles/decks.css` | **ADAPTER** — deux `!important` sur des couleurs littérales à repasser au jeton |
-| `styles/community.css` (1548 l.) | **REFAIRE en triant** — mélange annuaire (dans le périmètre) et guildes (différées), et porte deux générations de style visibles |
-| `style.css` (agrégateur) | **REFAIRE** — contient le seul vrai foyer de dette : 8 `!important` bruts non commentés |
-| `styles/admin.css` | **IGNORER** |
+| `styles/tokens.css`, `styles/base.css` | **TAKE** |
+| `styles/settings.css` | **ADAPT** — in scope, clean |
+| `styles/shared-nav.css` | **ADAPT** — remove the guild and admin entries |
+| `styles/collection.css` (2,254 lines) | **ADAPT** — a clean structural half; convert 19 ID selectors into classes |
+| `styles/decks.css` | **ADAPT** — two `!important` on literal colours to move to tokens |
+| `styles/community.css` (1,548 lines) | **REDO while sorting** — mixes the directory (in scope) and guilds (deferred), and carries two visible generations of style |
+| `style.css` (aggregator) | **REDO** — holds the only real debt hotspot: 8 raw, uncommented `!important` |
+| `styles/admin.css` | **IGNORE** |
 
-**Piège majeur de périmètre** : `style.css` importe **hors de `apps/web`**. Les feuilles
-de `profile` (255 l.) et `scanlist` (107 l.), et surtout `components/scanner.css`
-(348 l.), vivent dans `design/styles/pages/`. Porter uniquement `apps/web/src/` ferait
-perdre silencieusement le CSS du profil **et celui du scanner**.
+**A major scope trap**: `style.css` imports **from outside `apps/web`**. The `profile`
+(255 lines) and `scanlist` (107 lines) sheets, and above all `components/scanner.css`
+(348 lines), live in `design/styles/pages/`. Porting only `apps/web/src/` would
+silently lose the profile's CSS **and the scanner's**.
 
-**Dette mesurée** : 330 attributs `style="..."` en ligne subsistent dans le TS, dont
-46 dans `settings/vue.ts` et 25 dans `profile/vue.ts` — deux écrans du périmètre
-prioritaire. Le nettoyage était en cours et inachevé ; ne pas présumer une qualité
-uniforme d'un fichier à l'autre.
+**Measured debt**: 330 inline `style="..."` attributes remain in the TS, 46 of them in
+`settings/vue.ts` and 25 in `profile/vue.ts` — two screens in the priority scope. The
+clean-up was under way and unfinished; do not assume uniform quality from one file to
+the next.
 
-### Composants : REPRENDRE la plupart
+### Components: TAKE most of them
 
-`toast.ts`, `confirm-modal.ts` (avec l'option « recopier le mot » pour les actions
-destructrices), `pager.ts`, `avatar.ts`, `counted-textarea.ts` (borne sans `maxlength`,
-donc le texte tapé n'est jamais tronqué en silence), `selecteur-langue.ts`,
-`service-banner.ts`. Chacun a fusionné plusieurs implémentations redondantes.
-`header-nav.ts` et les composants de boîte de réception sont à **adapter fortement** ou
-à écarter (hors périmètre).
+`toast.ts`, `confirm-modal.ts` (with the “retype the word” option for destructive
+actions), `pager.ts`, `avatar.ts`, `counted-textarea.ts` (a limit without
+`maxlength`, so typed text is never silently truncated), `selecteur-langue.ts`,
+`service-banner.ts`. Each merged several redundant implementations. `header-nav.ts`
+and the inbox components are to be **heavily adapted** or set aside (out of scope).
 
-### Routeur : REPRENDRE le principe, pas le dispatch
+### Router: TAKE the principle, not the dispatch
 
-`router.ts` fait 35 lignes ; tout le dispatch réel est un grand `if/else` de 250 lignes
-dans `main.ts`. Lisible pour dix routes, ne passera pas l'échelle. → Table de routes.
+`router.ts` is 35 lines; the whole real dispatch is a 250-line `if/else` in
+`main.ts`. Readable for ten routes, it will not scale. → Route table.
 
-Deux mécanismes à garder absolument : **`racineNeuve()` remplace le nœud racine** à
-chaque navigation au lieu de le vider — sans ça un écran quitté continue d'écrire dans
-le DOM au retour d'une requête tardive (bug réel) ; et `retirerEcoutes()` désabonne les
-écouteurs globaux à chaque changement de route.
+Two mechanisms to keep at all costs: **`racineNeuve()` replaces the root node** at
+every navigation instead of emptying it — without that, a screen left behind keeps
+writing into the DOM when a late request returns (a real bug); and `retirerEcoutes()`
+unsubscribes global listeners at every route change.
 
-### Internationalisation : REPRENDRE intégralement
+### Internationalisation: TAKE entirely
 
-Deux couches. La clé de traduction **est le français**, résolue vers l'anglais par un
-dictionnaire généré, avec repli sur la clé et un avertissement émis une seule fois.
-Et surtout `ygo-i18n.ts`, qui traduit les **énumérations que l'API ne localise pas** :
-7 attributs, 25 races de monstres, 7 propriétés Magie/Piège, 23 familles de cartes — avec
-une désambiguïsation monstre / magie-piège, le champ `race` de l'API servant aux deux.
+Two layers. The translation key **is French**, resolved to English by a generated
+dictionary, with a fallback on the key and a warning emitted once. And above all
+`ygo-i18n.ts`, which translates the **enumerations the API does not localise**: 7
+attributes, 25 monster races, 7 Spell/Trap properties, 23 card families — with
+monster / spell-trap disambiguation, the API's `race` field serving both.
 
-C'est exactement la dette annoncée en ADR-005, déjà payée. On la reprend telle quelle.
+It is exactly the debt announced in ADR-005, already paid. We take it as is.
+*(Since 2026-09-14, English is the key — see the roadmap.)*
 
-### La suite de barrières `check-*`
+### The `check-*` gate suite
 
-Une quarantaine de scripts maison (`check-design-dead-css.js`, `check-web-colors.sh`,
-`check-styles-en-ligne.mjs`, `check-i18n.sh`…) sont **ce qui a maintenu le CSS honnête**.
-Certains portent un plafond chiffré qui ne peut que descendre.
+About forty home-made scripts (`check-design-dead-css.js`, `check-web-colors.sh`,
+`check-styles-en-ligne.mjs`, `check-i18n.sh`…) are **what kept the CSS honest**. Some
+carry a numeric ceiling that can only go down.
 
-→ Reprendre le mécanisme et trier le contenu. Porter le CSS sans porter ses garde-fous
-ferait revenir la dette qu'ils empêchaient.
+→ Take the mechanism and sort the content. Porting the CSS without its safeguards
+would bring back the debt they prevented.
 
 ---
 
-## Ce qui a effectivement été repris — bilan au 2026-09-09
+## What was actually taken — status as of 2026-09-09
 
-| Élément | Décision | Ce qui a été fait |
+| Element | Decision | What was done |
 |---|---|---|
-| `catalogue/set-code.ts` | REPRENDRE → **réécrit** | Le découpage d'ATEM-old ne couvrait que 88,2 % des set codes réels. Le nouveau en couvre 100 %, et sépare la clé de jointure du code d'interrogation (ADR-007). |
-| `auth/*` | **REPRIS** | scrypt à format versionné, version de session en base, cookie témoin, garde CSRF, double compteur de débit. Traduit en anglais pour les identifiants, raisonnement conservé. |
-| `catalogue/ygoprodeck.ts` | **REPRIS**, durci | Schéma Zod passé en `nullish` après qu'une carte sur 14 524 se soit révélée porter `attribute: null`. |
-| `debit-sortant.ts` | **REPRIS** | Un seul seau à jetons pour l'API et les images. |
-| `collection/resolve-queue.ts` | **REPRIS** | Dédoublonnage par *(utilisateur, code)*, attente croissante avec part d'aléa. |
-| Consolidation transactionnelle | **REPRISE** | Avec son test de non-perte d'exemplaires. |
-| Règle du nom imprimé | **REPRISE** | Avec son test. |
-| `collection/ocr.ts` (2 319 l.) | **REPRIS TEL QUEL** | Aucun import, donc aucune adaptation. Ses 46 tests aussi. |
-| `scripts/vendor-tesseract.sh` | **REPRIS** | Vendorisation vérifiée par empreinte. |
-| `styles/tokens.css` | **REPRIS, consolidé** | 103 lignes au lieu de 174 : une seule palette, la seconde étant une dette qu'ATEM-old ne pouvait plus résorber. |
-| `styles/base.css` (1 323 l.) | **RÉÉCRIT** | 250 lignes au strict nécessaire. Trois règles reprises avec leur justification. |
-| `ygo-i18n.ts` | **REPRIS** | Les quatre tables d'énumération, avec la désambiguïsation monstre / magie-piège. |
-| `router.ts` + dispatch | **RÉÉCRIT** | Table de routes au lieu d'un `if/else` de 250 lignes. Les deux mécanismes qui comptaient — racine renouvelée, désabonnement — sont conservés. |
-| `scanner.ts` (UI) | **RÉÉCRIT** | Couplé à l'ancienne application. Le contrat, lui, est repris mot pour mot : l'OCR propose, l'utilisateur confirme. |
-| `db/schema.ts` (780 l.) | **ÉCLATÉ** | Un fichier de tables par module, un agrégateur de six lignes. |
-| Passcodes négatifs | **REMPLACÉS** | `card_passcode` nullable et `resolve_status`, avec deux contraintes en base (ADR-008). |
-| `compose.yaml` | **REFAIT** | Celui d'ATEM-old ne livrait que PostgreSQL. |
-| `set-prefixes.json` | **RÉGÉNÉRÉ** | Depuis le catalogue local, pas recopié : le fichier d'ATEM-old datait d'août. |
-| Guildes, boîte de réception, admin, landing | **NON REPRIS** | Hors périmètre prioritaire. |
-| `banc-*.mjs` (CDP maison) | **NON REPRIS** | Playwright partira d'une page blanche. |
+| `catalogue/set-code.ts` | TAKE → **rewritten** | ATEM-old's split only covered 88.2% of real set codes. The new one covers 100%, and separates the join key from the query code (ADR-007). |
+| `auth/*` | **TAKEN** | Versioned-format scrypt, session version in the database, indicator cookie, CSRF guard, double rate counter. Identifiers translated into English, reasoning kept. |
+| `catalogue/ygoprodeck.ts` | **TAKEN**, hardened | Zod schema moved to `nullish` after one card in 14,524 turned out to carry `attribute: null`. |
+| `debit-sortant.ts` | **TAKEN** | A single token bucket for the API and images. |
+| `collection/resolve-queue.ts` | **TAKEN** | Deduplication by *(user, code)*, growing backoff with jitter. |
+| Transactional consolidation | **TAKEN** | With its no-lost-copy test. |
+| Printed name rule | **TAKEN** | With its test. |
+| `collection/ocr.ts` (2,319 lines) | **TAKEN AS IS** | No imports, so no adaptation. Its 46 tests too. |
+| `scripts/vendor-tesseract.sh` | **TAKEN** | Fingerprint-checked vendoring. |
+| `styles/tokens.css` | **TAKEN, consolidated** | 103 lines instead of 174: a single palette, the second being debt ATEM-old could no longer absorb. |
+| `styles/base.css` (1,323 lines) | **REWRITTEN** | 250 lines, strictly what is needed. Three rules taken with their justification. |
+| `ygo-i18n.ts` | **TAKEN** | The four enumeration tables, with monster / spell-trap disambiguation. |
+| `router.ts` + dispatch | **REWRITTEN** | A route table instead of a 250-line `if/else`. The two mechanisms that mattered — renewed root, unsubscribing — are kept. |
+| `scanner.ts` (UI) | **REWRITTEN** | Coupled to the old application. The contract, though, is taken word for word: the OCR proposes, the user confirms. |
+| `db/schema.ts` (780 lines) | **SPLIT** | One table file per module, a six-line aggregator. |
+| Negative passcodes | **REPLACED** | Nullable `card_passcode` and `resolve_status`, with two database constraints (ADR-008). |
+| `compose.yaml` | **REDONE** | ATEM-old's only shipped PostgreSQL. |
+| `set-prefixes.json` | **REGENERATED** | From the local catalogue, not copied: ATEM-old's file dated from August. |
+| Guilds, inbox, admin, landing | **NOT TAKEN** | Outside the priority scope. |
+| `banc-*.mjs` (home-made CDP) | **NOT TAKEN** | Playwright will start from a blank page. |
 
 ---
 
-## Reprise du front — 2026-09-09
+## Taking over the front — 2026-09-09
 
-Première tentative écartée : j'avais écrit un front « inspiré de » plutôt que
-repris. Le front d'ATEM-old avait été validé ; le réécrire perdait ce travail et
-recréait ses défauts autrement.
+First attempt discarded: I had written a front “inspired by” rather than taken. ATEM-old's
+front had been validated; rewriting it lost that work and recreated its defects
+differently.
 
-### Qui fait autorité, et où
+### Who is authoritative, and where
 
-| Zone | Source retenue | Pourquoi |
+| Area | Source chosen | Why |
 |---|---|---|
-| Collection | `apps/web/src/collection/vue.ts` | La maquette `design/pages/collection.html` est une version antérieure, autre jeu de classes. |
-| Authentification | `design/scripts/pages/*.js` (maquette) | Elle est une **transcription corrigée** du front porté : `h1` au lieu de `h2`, vrai lien au lieu d'un `div` cliquable, zéro style en ligne là où le porté en comptait dix-huit. |
-| Scanner | `design/styles/components/scanner.css` | `apps/web` l'importait sans en avoir de copie. |
-| Force du mot de passe | `packages/shared/src/auth.ts` | Voir ci-dessous. |
+| Collection | `apps/web/src/collection/vue.ts` | The `design/pages/collection.html` mock-up is an earlier version, with another set of classes. |
+| Authentication | `design/scripts/pages/*.js` (mock-up) | It is a **corrected transcription** of the ported front: `h1` instead of `h2`, a real link instead of a clickable `div`, zero inline styles where the ported one had eighteen. |
+| Scanner | `design/styles/components/scanner.css` | `apps/web` imported it without having a copy. |
+| Password strength | `packages/shared/src/auth.ts` | See below. |
 
-### Ce qui a été chargé, et ce qui attend
+### What was loaded, and what waits
 
-Reprises et livrées : `tokens.css`, `base.css`, `collection.css`,
-`pages/auth.css`, `components/scanner.css`, `utilities.css`, et les onze règles
-`.pwd-*` extraites de `components.css`.
+Taken and shipped: `tokens.css`, `base.css`, `collection.css`, `pages/auth.css`,
+`components/scanner.css`, `utilities.css`, and the eleven `.pwd-*` rules extracted from
+`components.css`.
 
-Mises en attente dans `design/staged/`, **non chargées donc sans poids** :
-`decks.css` (M2), `settings.css` (M3), `pages/profile.css` (M4),
-`pages/scanlist.css` (M1 P1), `shared-nav.css` (boîte de réception et panneau de
-compte, M3–M4), et `components.css` (bibliothèque de la maquette, dont on n'a
-tiré que la jauge).
+Staged in `design/staged/`, **not loaded and so weightless**: `decks.css` (M2),
+`settings.css` (M3), `pages/profile.css` (M4), `pages/scanlist.css` (M1 P1),
+`shared-nav.css` (inbox and account panel, M3–M4), and `components.css` (the mock-up's
+library, from which only the meter was taken).
 
-### Le CSS mort, mesuré et retiré
+### Dead CSS, measured and removed
 
-Le contrôle d'ATEM-old est repris (`scripts/check-dead-css.mjs`). Il avait trouvé
-chez lui 362 classes mortes, 2 763 lignes — un tiers des feuilles.
+ATEM-old's check is taken (`scripts/check-dead-css.mjs`). It had found 362 dead classes
+there, 2,763 lines — a third of the sheets.
 
-| Étape | Règles mortes |
+| Step | Dead rules |
 |---|---|
-| Import brut des 10 564 lignes | **1 207** (~6 500 lignes) |
-| Après mise en attente des feuilles sans écran | 851 |
-| Après reprise du balisage validé | 582 |
-| Après extraction de la jauge hors de `components.css` | 211 |
-| Après purge | **0** |
+| Raw import of the 10,564 lines | **1,207** (~6,500 lines) |
+| After staging the sheets with no screen | 851 |
+| After taking the validated markup | 582 |
+| After extracting the meter out of `components.css` | 211 |
+| After the purge | **0** |
 
-Livré aujourd'hui : **3 001 lignes de CSS**, 41 ko (9,4 ko compressés). Les
-règles retirées sont conservées dans `design/staged/pruned/`, avec leur feuille
-d'origine — non livrées, non perdues.
+Shipped today: **3,001 lines of CSS**, 41 kB (9.4 kB compressed). Removed rules are kept
+in `design/staged/pruned/`, with their original sheet — not shipped, not lost.
 
-### Une règle qui mentait
+### A rule that lied
 
-La maquette affichait sa propre appréciation de la force d'un mot de passe, et
-ATEM-old en avait **quatre implémentations divergentes** — une au serveur, deux
-dans le front, une dans la maquette — tenues ensemble par des tests « miroir ».
-Elles ne racontaient pas la même chose : une phrase de vingt-huit lettres sans
-chiffre s'affichait « Solide » et se faisait refuser à l'envoi.
+The mock-up displayed its own assessment of a password's strength, and ATEM-old had
+**four diverging implementations** of it — one on the server, two in the front, one in
+the mock-up — held together by “mirror” tests. They did not tell the same story: a
+twenty-eight-letter sentence with no digit displayed as “Strong” and was refused on
+submit.
 
-`checkPasswordStrength` vit désormais dans `@atem/shared`, **une seule fois**.
-Le serveur l'applique, la jauge la dessine. Les tests miroir n'ont plus d'objet.
+`checkPasswordStrength` now lives in `@atem/shared`, **once**. The server applies it,
+the meter draws it. The mirror tests no longer have a purpose.
 
-Au passage, notre règle serveur était trop faible : elle ne vérifiait que la
-longueur, là où ATEM-old exigeait seize caractères **et** les quatre familles.
+Along the way, our server rule was too weak: it only checked the length, where ATEM-old
+required sixteen characters **and** the four families.
 
-### Nos écarts assumés
+### Our deliberate departures
 
-Dans `design/adjustments.css`, à part et commentés un par un — pour qu'on
-sache plus tard ce qui vient d'ATEM-old et ce qui vient de nous :
+In `design/adjustments.css`, set apart and commented one by one — so we know later what
+comes from ATEM-old and what comes from us:
 
-- **Obturateur du scanner collant** : la modale d'origine défile, et sur
-  téléphone le déclencheur passait sous la ligne de flottaison. C'est le geste
-  répété à chaque carte.
-- **Boutons de quantité à 44 px au doigt** : ils font 32 px dans la feuille
-  d'origine, alors que `base.css` note lui-même que le seuil est à 44. Seulement
-  sur pointeur grossier — à la souris, la densité vaut mieux.
-- **En-tête sur deux rangées en dessous de 46 rem**, avec `--app-bar-height`
-  qui suit : `collection.css` fixait `top: 3.25rem` « under app-bar », juste
-  tant que l'en-tête tient sur une rangée.
-- **Titre de page lu mais non vu** : l'écran d'origine n'a aucun titre de
-  niveau 1. La maquette avait corrigé exactement ce défaut côté authentification.
+- **Sticky scanner shutter**: the original modal scrolls, and on a phone the shutter
+  went below the fold. It is the gesture repeated for every card.
+- **Quantity buttons at 44 px by finger**: they are 32 px in the original sheet, while
+  `base.css` itself notes the threshold is 44. Coarse pointers only — with a mouse,
+  density matters more.
+- **Header on two rows below 46 rem**, with `--app-bar-height` following:
+  `collection.css` set `top: 3.25rem` “under app-bar”, correct only while the header
+  fits on one row.
+- **A page title read but not seen**: the original screen has no level-1 heading. The
+  mock-up had fixed exactly that defect on the authentication side.
 
-### Une barrière de plus
+### One more gate
 
-`scripts/check-scan-band.mjs` compare les pourcentages de `SCAN_ZOOM_BAND` à
-ceux de `.scan-zoom-band`. Chez ATEM-old, les avoir écrits aux deux endroits
-sans rien qui les relie avait produit un viseur qui montrait une zone que l'OCR
-ne lisait pas — « quand je scanne en OCR j'ai *rien de fiable* ».
+`scripts/check-scan-band.mjs` compares the percentages of `SCAN_ZOOM_BAND` with those of
+`.scan-zoom-band`. In ATEM-old, writing them in both places with nothing linking them
+had produced a viewfinder showing an area the OCR did not read — “when I scan with OCR
+I get *nothing reliable*”.
 
 ---
 
-## Mise d'équerre de M1 — 2026-09-09
+## Squaring up M1 — 2026-09-09
 
-Avant d'ouvrir M2, la collection a été reprise jusqu'à ce que plus rien n'y
-traîne. Quatre barrières nouvelles, et ce qu'elles ont trouvé.
+Before opening M2, the collection was reworked until nothing was left lying around.
+Four new gates, and what they found.
 
-### Les barrières
+### The gates
 
-| Barrière | Ce qu'elle interdit |
+| Gate | What it forbids |
 |---|---|
-| `check-dead-css.mjs` | Une règle qui habille une classe que rien ne pose |
-| `check-dead-exports.mjs` | Un export que rien n'appelle, nulle part |
-| `check-routes.mjs` | Une route que ni le front ni un test n'atteint |
-| `check-module-boundaries.mjs` | Un module qui entre chez un autre autrement que par son `index.ts` |
-| `check-scan-band.mjs` | Une bande de visée dessinée ailleurs que là où l'OCR lit |
+| `check-dead-css.mjs` | A rule styling a class nothing sets |
+| `check-dead-exports.mjs` | An export nothing calls, anywhere |
+| `check-routes.mjs` | A route neither the front nor a test reaches |
+| `check-module-boundaries.mjs` | A module entering another otherwise than through its `index.ts` |
+| `check-scan-band.mjs` | An aiming band drawn somewhere other than where the OCR reads |
 
-Toutes tournent dans `pnpm check`.
+All run in `pnpm check`.
 
-### Ce qu'elles ont trouvé — dans notre propre code
+### What they found — in our own code
 
-**Trois franchissements de frontière.** `collection/service.ts` joignait
-directement `cards` et `card_prints` : exactement le défaut que je reprochais à
-ATEM-old, reproduit sans m'en apercevoir.
+**Three boundary crossings.** `collection/service.ts` joined `cards` and `card_prints`
+directly: exactly the defect I reproached ATEM-old for, reproduced without noticing.
 
-Le remède n'est pas de renoncer aux jointures — filtrer, trier et paginer sur le
-nom d'une carte l'exige. `referential` expose désormais **`printIndex`**, une
-sous-requête nommée aux colonnes stables. Les autres modules la joignent comme
-une table, sans jamais savoir comment `cards` et `card_prints` sont faites, ni
-pouvoir y écrire.
+The cure is not to give up joins — filtering, sorting and paginating on a card's name
+requires them. `referential` now exposes **`printIndex`**, a named subquery with stable
+columns. Other modules join it like a table, without ever knowing how `cards` and
+`card_prints` are built, or being able to write into them.
 
-Deux franchissements subsistent et sont autorisés nommément : un *schéma* peut
-référencer le schéma d'un autre module, parce qu'une clé étrangère est une
-relation déclarée que la base fait respecter. Un *service* qui lit le schéma d'un
-autre dit « je sais comment ses tables sont faites » — c'est ça qui produit des
-logiques concurrentes.
+Two crossings remain and are allowed by name: a *schema* may reference another module's
+schema, because a foreign key is a declared relation the database enforces. A *service*
+reading another's schema says “I know how its tables are built” — that is what produces
+competing logics.
 
-**Six exports morts.** Quatre venaient du moteur OCR repris tel quel : un
-indicateur de disponibilité, un libellé de chargement, un aperçu de recadrage et
-sa fonction de découpe, qui servaient l'interface d'ATEM-old et pas la nôtre. Le
-retrait du troisième a rendu le quatrième mort à son tour, puis une variable —
-la cascade a été suivie jusqu'au bout.
+**Six dead exports.** Four came from the OCR engine taken as is: an availability flag, a
+loading label, a crop preview and its cutting function, which served ATEM-old's
+interface and not ours. Removing the third made the fourth dead in turn, then a
+variable — the cascade was followed to the end.
 
-Les deux autres étaient des **crochets de test sans test**. Le défaut n'était pas
-la fonction mais le test manquant : `secret.test.ts` et `outbound-rate.test.ts`
-couvrent maintenant le refus de démarrer sans clé valide et l'étalement du débit
-sortant.
+The other two were **test hooks without a test**. The defect was not the function but
+the missing test: `secret.test.ts` and `outbound-rate.test.ts` now cover refusing to
+start without a valid key and spreading the outbound rate.
 
-**Trois routes que rien n'atteignait :**
-- `GET /health` — utilisée par le healthcheck du compose, donc invisible au
-  contrôle. Un test la couvre : preuve qu'elle marche, pas seulement qu'elle
-  existe.
-- `PATCH /auth/me/locale` — **retirée**. Aucun écran ne l'appelait : elle
-  appartient aux paramètres du compte (M3) et arrivait en avance. Elle reviendra
-  avec son écran.
-- `GET /catalogue/cards/:passcode` — **utilisée**, en complétant la fiche avec
-  le bloc « Autres éditions » d'ATEM-old. « Est-ce que je l'ai déjà, et dans
-  quelle édition ? » se pose devant chaque carte qu'on trie.
+**Three routes nothing reached:**
+- `GET /health` — used by the compose healthcheck, so invisible to the check. A test
+  covers it: proof it works, not only that it exists.
+- `PATCH /auth/me/locale` — **removed**. No screen called it: it belongs to account
+  settings (M3) and arrived early. It will come back with its screen. *(It came back on
+  2026-09-11 with the language switch.)*
+- `GET /catalogue/cards/:passcode` — **used**, by completing the sheet with ATEM-old's
+  “Other printings” block. “Do I already have it, and in which printing?” comes up in
+  front of every card being sorted.
 
-### Ce que la collection avait de moins qu'ATEM-old, et qui est comblé
+### What the collection had less than ATEM-old, now filled
 
-Les icônes d'attribut, de type de monstre, de propriété Magie/Piège et de niveau
-n'avaient pas été copiées : les puces étaient en texte là où les leurs portaient
-une image. 504 ko de ressources, et deux blocs de filtre ajoutés — **type
-d'invocation** et **propriété magie/piège**.
+The attribute, monster type, Spell/Trap property and level icons had not been copied:
+the chips were text where theirs carried an image. 504 kB of assets, and two filter
+blocks added — **summon type** and **spell/trap property**.
 
-Cette seconde distinction demandait une correction côté serveur : l'API met le
-type d'un monstre et la propriété d'une Magie dans **le même champ** `race`. Un
-Piège « Normal » n'est pas un monstre Normal ; les facettes les séparent
-désormais, comme ATEM-old le faisait dans son interface.
+That second distinction required a server-side fix: the API puts a monster's type and a
+Spell's property in **the same field** `race`. A “Normal” Trap is not a Normal monster;
+the facets now separate them, as ATEM-old did in its interface.
 
-### Ce qui reste signalé sans bloquer
+### What stays reported without blocking
 
-31 exports sont utilisés seulement à l'intérieur de leur fichier. Ce n'est pas du
-code mort : c'est une frontière percée pour rien. La plupart sont dans le moteur
-OCR repris tel quel, où les réduire ferait diverger un fichier qu'on veut garder
-comparable à sa source. Le contrôle les signale sans faire échouer.
+31 exports are only used inside their own file. It is not dead code: it is a boundary
+pierced for nothing. Most are in the OCR engine taken as is, where reducing them would
+make a file we want to keep comparable to its source diverge. The check reports them
+without failing.
 
 ---
 
-## Coquille de navigation — 2026-09-10
+## Navigation shell — 2026-09-10
 
-Structurant avant tout : c'est la surface sur laquelle Decks, Paramètres, Profil
-et Duellistes viendront s'accrocher. La faire maintenant évite que chaque écran
-réinvente sa navigation — et que la barre finisse par mentir sur la page
-courante.
+Structural above all: it is the surface Decks, Settings, Profile and Duellists will hook
+onto. Doing it now keeps each screen from reinventing its navigation — and the bar from
+ending up lying about the current page.
 
-### Le routeur est la source unique des destinations
+### The router is the single source of destinations
 
-Une route et sa place dans la navigation se déclarent **d'un seul geste** :
+A route and its place in the navigation are declared **in a single gesture**:
 
 ```ts
 register("/collection", collectionScreen, {
@@ -645,320 +631,300 @@ register("/collection", collectionScreen, {
 });
 ```
 
-Aucune liste n'est tenue à part. Un onglet qui mène nulle part devient
-impossible à écrire — le défaut classique d'une barre entretenue séparément, où
-l'on ajoute l'entrée avant l'écran et où l'on oublie de la retirer après.
+No list is kept separately. A tab leading nowhere becomes impossible to write — the
+classic defect of a bar maintained separately, where the entry is added before the
+screen and forgotten after it.
 
-### Trois surfaces, un seul état
+### Three surfaces, one state
 
-| Surface | Quand |
+| Surface | When |
 |---|---|
-| Barre du haut | au-dessus de 46 rem |
-| Barre du bas | en dessous — elle **remplace** la première |
-| Feuille de compte | ouverte par la barre du bas |
+| Top bar | above 46 rem |
+| Bottom bar | below — it **replaces** the first |
+| Account sheet | opened by the bottom bar |
 
-Remplacer plutôt qu'adapter est le choix d'ATEM-old, et il tient : sur
-téléphone, la barre du haut ne gardait que la marque, l'état du service et
-l'avatar — cinq cibles dans une bande de 62 px, pour des réglages qu'on ne
-visite pas en boucle. Le pouce, lui, est en bas de l'écran.
+Replacing rather than adapting is ATEM-old's choice, and it holds: on a phone, the top
+bar only kept the brand, the service status and the avatar — five targets in a 62 px
+band, for settings nobody visits over and over. The thumb is at the bottom of the
+screen.
 
-Garder les deux aurait voulu dire deux navigations à tenir d'accord, dont l'une
-finit par mentir. Une épreuve le vérifie : **une seule barre visible à la fois**.
+Keeping both would have meant two navigations to keep in agreement, one of which ends
+up lying. A test checks it: **only one bar visible at a time**.
 
-### L'état du service, visible en permanence
+### The service status, always visible
 
-Une pastille relève `/health` au démarrage puis chaque minute. Quand le serveur
-ne répond plus, chaque geste échoue avec un message différent et l'on cherche la
-panne dans l'application ; la pastille répond avant qu'on pose la question.
+A pill polls `/health` at startup then every minute. When the server stops answering,
+every gesture fails with a different message and you look for the failure in the
+application; the pill answers before the question is asked.
 
-### Le CSS
+### The CSS
 
-Les règles de la pastille et de la feuille de compte viennent de
-`shared-nav.css`. Celles de la barre du bas vivaient dans une balise `<style>`
-injectée par le composant, **chaque déclaration marquée `!important`** — non par
-choix, mais parce qu'une feuille injectée doit l'emporter sur celles déjà
-chargées. Écrites dans une feuille ordinaire, elles n'en ont plus besoin.
+The rules for the pill and the account sheet come from `shared-nav.css`. The bottom
+bar's lived in a `<style>` tag injected by the component, **every declaration marked
+`!important`** — not by choice, but because an injected sheet has to win over those
+already loaded. Written in an ordinary sheet, they no longer need it.
 
-### Le mode tiroir est supprimé
+### The drawer mode is deleted
 
-Décision d'Ange, et elle est juste : deux façons d'ouvrir la même fiche, dont
-l'une n'apportait rien. Retiré du livré **et** de ce qui était mis de côté —
-36 règles, un jeton d'empilement, et la classe que la fiche lui empruntait
-encore. Il ne reviendra pas par mégarde.
+Ange's decision, and a sound one: two ways to open the same sheet, one of which brought
+nothing. Removed from the shipped sheets **and** from what was set aside — 36 rules, a
+stacking token, and the class the sheet still borrowed from it. It will not come back by
+accident.
 
-### Deux défauts trouvés en regardant, encore
+### Two defects found by looking, again
 
-**Cent pixels de vide en tête d'écran mobile.** `--app-bar-height` réservait
-encore 6,25 rem — la hauteur de la barre du haut sur deux rangées, du temps où
-elle survivait sur téléphone. Elle vaut zéro là où la barre n'existe plus.
+**A hundred pixels of empty space at the top of the mobile screen.** `--app-bar-height`
+still reserved 6.25 rem — the top bar's height on two rows, back when it survived on a
+phone. It is zero where the bar no longer exists.
 
-**Deux règles qui se contredisaient.** L'ajustement de la veille remettait la
-barre du haut en grille sous 46 rem, pendant que la nouvelle feuille la cachait.
-Chargée après, la première l'emportait : la barre restait visible. Le
-raccommodage est parti avec sa raison d'être.
+**Two rules contradicting each other.** The previous day's adjustment put the top bar
+back into a grid below 46 rem, while the new sheet hid it. Loaded after, the first won:
+the bar stayed visible. The patch went away along with its reason to exist.
 
-Et une fausse piste écartée par la mesure : la barre du bas paraissait dessinée
-deux fois sur les captures. Le DOM n'en contient qu'une, et couper le
-`backdrop-filter` fait disparaître la seconde — c'est le flou qui se compose mal
-sans affichage réel.
+And a false lead ruled out by measurement: the bottom bar looked drawn twice on the
+screenshots. The DOM holds only one, and turning off `backdrop-filter` makes the second
+disappear — it is the blur compositing badly without a real display.
 
 ---
 
-## Parité avec la collection d'ATEM-old — 2026-09-10
+## Parity with ATEM-old's collection — 2026-09-10
 
-Ange a signalé que j'avais mal étudié sa collection et sa barre de recherche.
-Vérification faite, il avait raison sur trois points que je n'avais pas vus.
+Ange pointed out that I had studied the collection and its search bar badly. Checked,
+and rightly, on three points I had not seen.
 
-### Ce que j'avais manqué
+### What I had missed
 
-**ATEM-old n'a pas d'écran Catalogue.** Dix écrans, aucun catalogue. Celui que
-j'avais construit était un artefact du jalon M0 — la preuve que la recherche
-fonctionnait — que j'avais ensuite promu au premier rang de la navigation. Il
-doublait une fonction que la collection assure déjà, sans permettre d'agir sur
-ce qu'on y trouvait : on cherchait une carte, on la trouvait, et puis rien.
+**ATEM-old has no Catalogue screen.** Ten screens, no catalogue. The one I had built was
+an artefact of milestone M0 — the proof search worked — that I had then promoted to the
+top of the navigation. It duplicated a function the collection already provides, without
+letting you act on what you found: you searched for a card, you found it, and then
+nothing.
 
-**La barre de recherche cherche dans la collection**, et compare **trois**
-champs : le nom, le set code **et le passcode**. La mienne en comparait deux.
+**The search bar searches the collection**, and compares **three** fields: the name, the
+set code **and the passcode**. Mine compared two.
 
-**Le chemin d'ajout sans set code existait déjà, et je l'avais supprimé.** La
-barre avancée porte un champ `passcode`, et `POST /collection` accepte
-`passcode` et `name` en plus du code. Je l'avais écarté en écrivant « notre API
-d'ajout ne le prend pas » — vrai, et raison à l'envers : c'est l'API qu'il
-fallait compléter.
+**The add path without a set code already existed, and I had removed it.** The advanced
+bar carries a `passcode` field, and `POST /collection` accepts `passcode` and `name` on
+top of the code. I had set it aside writing “our add API does not take it” — true, and
+backwards reasoning: it was the API that needed completing.
 
-C'est le recours quand le set code est illisible : carte abîmée, pochette,
-mauvaise lumière. Les huit chiffres en bas à gauche, eux, restent lisibles.
+It is the fallback when the set code cannot be read: a damaged card, a sleeve, bad
+light. The eight digits at the bottom left stay readable.
 
-### L'inventaire complet, puis comblé
+### The full inventory, then filled
 
-Sept écarts, pas trois — l'inventaire ligne à ligne de l'état d'ATEM-old l'a
-montré :
+Seven gaps, not three — the line-by-line inventory of ATEM-old's state showed it:
 
 | | |
 |---|---|
-| Passcode à l'ajout et à la recherche | ajouté |
-| Sens du tri | ajouté |
-| Densité confortable / compacte | ajoutée |
-| Regroupement des monstres par type | ajouté |
-| Filtre de rang Xyz | ajouté |
-| Filtre de valeur de Lien | ajouté |
-| Note d'exemplaire | ajoutée, avec sa route |
+| Passcode when adding and searching | added |
+| Sort direction | added |
+| Comfortable / compact density | added |
+| Grouping monsters by type | added |
+| Xyz rank filter | added |
+| Link rating filter | added |
+| Copy note | added, with its route |
 
-Niveau, rang et Lien sont désormais **trois listes exactes** et non un
-intervalle : l'API range les trois dans le même champ, mais un Xyz de rang 4
-n'est pas un monstre de niveau 4, et les mélanger produit un filtre qui ne veut
-rien dire.
+Level, rank and Link are now **three exact lists** and not a range: the API stores all
+three in the same field, but a rank-4 Xyz is not a level-4 monster, and mixing them
+produces a meaningless filter.
 
-Les règles de densité avaient été purgées faute d'usage, comme les icônes avant
-elles : elles sont revenues avec la fonction qu'elles habillent.
+The density rules had been purged for lack of use, like the icons before them: they came
+back with the function they style.
 
-### Une divergence que j'avais introduite sans le dire
+### A divergence I had introduced without saying so
 
-ATEM-old ne pagine pas : `GET /collection` rend tout, et le front filtre, trie
-et regroupe en mémoire. J'ai construit une pagination serveur avec défilement
-infini.
+ATEM-old does not paginate: `GET /collection` returns everything, and the front filters,
+sorts and groups in memory. I built server-side pagination with infinite scroll.
 
-**Les deux défauts que la revue a trouvés là-dessus** — pagination
-inatteignable, filtre « Monstre » appliqué après la pagination — étaient des
-conséquences de cette divergence, pas des problèmes hérités. Je les avais
-présentés comme des corrections ; c'était réparer ce que j'avais cassé.
+**The two defects the review found there** — unreachable pagination, the “Monster”
+filter applied after paginating — were consequences of that divergence, not inherited
+problems. I had presented them as fixes; it was repairing what I had broken.
 
-La pagination est conservée, et c'est un choix : au-delà de quelques milliers de
-lignes, tout charger devient coûteux pour un téléphone. Mais elle est désormais
-notée comme un écart assumé, avec sa raison — pas comme un état de fait.
+Pagination is kept, and it is a choice: beyond a few thousand rows, loading everything
+becomes costly for a phone. But it is now recorded as a deliberate departure, with its
+reason — not as a given.
 
-### Ce qui reste hors périmètre
+### What stays out of scope
 
-Le lien vers les scanlistes attend son écran (M1, P1). Le mode tiroir est
-supprimé à la demande d'Ange.
+The link to the scanlists waits for its screen (M1, P1). The drawer mode is deleted at
+Ange's request.
 
 ---
 
-## Retours du premier essai réel — 2026-09-10
+## Feedback from the first real trial — 2026-09-10
 
-Quatre observations d'Ange après avoir saisi des cartes par set code. Trois
-défauts, une explication.
+Four observations from Ange after entering cards by set code. Three defects, one
+explanation.
 
-### Quatre valeurs par défaut fausses
+### Four wrong defaults
 
-J'avais choisi les miennes sans le dire. ATEM-old ouvre :
+I had chosen mine without saying so. ATEM-old opens with:
 
-| | ATEM-old | ce que j'avais mis |
+| | ATEM-old | what I had set |
 |---|---|---|
-| Vue | **liste** | galerie |
-| Tri | **nom** | ajout récent |
-| Sens | **croissant** | décroissant |
-| Regroupement par type | **coupé** | activé |
+| View | **list** | gallery |
+| Sort | **name** | recently added |
+| Direction | **ascending** | descending |
+| Grouping by type | **off** | on |
 
-Et surtout : **regroupement coupé veut dire aucun en-tête**, pas un en-tête
-« Monstre » unique. La liste sort d'un bloc, dans l'ordre du tri et rien
-d'autre. Découper par famille impose une seconde clé d'ordre par-dessus celle
-qu'on a choisie, et l'on ne retrouve plus ce qu'on cherche.
+And above all: **grouping off means no heading at all**, not a single “Monster” heading.
+The list comes out in one block, in the sort order and nothing else. Cutting by family
+imposes a second ordering key on top of the chosen one, and you no longer find what you
+are looking for.
 
-### Le compteur d'attente restait figé
+### The pending counter stayed frozen
 
-Retirer la dernière carte d'une ligne non identifiée laissait « 1 en attente
-d'identification » jusqu'au rechargement complet. `applyDelta` ne relevait pas
-le compteur ; il le fait désormais, et une épreuve le vérifie.
+Removing the last card of an unidentified row left “1 awaiting identification” until a
+full reload. `applyDelta` did not refresh the counter; it now does, and a test checks
+it.
 
-### Le texte anglais n'était pas un défaut, son silence si
+### The English text was not a defect, its silence was
 
-Vérification faite sur les cartes réelles d'Ange : `ALIN-FR010`, `BLZD-FR021` et
-`BLZD-FR022` **n'ont aucune version française chez YGOPRODeck**. Elles font
-partie des 2 863 sans traduction, et l'anglais est le repli correct.
+Checked on Ange's real cards: `ALIN-FR010`, `BLZD-FR021` and `BLZD-FR022` **have no
+French version at YGOPRODeck**. They are among the 2,863 without a translation, and
+English is the correct fallback.
 
-Mais rien ne le disait. Un texte anglais sur une carte française est
-incompréhensible tant qu'on ne l'explique pas — on cherche le défaut dans
-l'application. Le référentiel expose maintenant `descFrMissing`, et la fiche
-l'annonce : « Cette carte n'a pas de version française chez YGOPRODeck ».
+But nothing said so. English text on a French card is incomprehensible until explained —
+you look for the defect in the application. The reference data now exposes
+`descFrMissing`, and the sheet announces it: “This card has no French version at
+YGOPRODeck”.
 
-C'est le référentiel qui porte ce drapeau, pas l'écran : lui seul sait si la
-traduction manque ou si personne ne l'a demandée.
+It is the reference data that carries this flag, not the screen: only it knows whether
+the translation is missing or whether nobody asked for it.
 
-### Ce qui va bien
+### What works well
 
-L'ajout par set code dans la barre est jugé « très fluide ». C'est le geste
-central de l'écran — celui qu'on répète des centaines de fois.
-
----
-
-## Verrou de défilement — 2026-09-10
-
-Deux barres de défilement cohabitaient dès qu'une carte était ouverte en grand :
-celle de la fiche, et celle de la collection derrière elle. On croyait descendre
-dans la carte et c'est la page qui bougeait — et en refermant, on ne se
-retrouvait plus où l'on était.
-
-### La méthode compte
-
-Poser `overflow: hidden` sur `<body>` suffit sur un bureau et **ne fait rien sur
-iOS Safari**, qui continue de faire défiler la page. On fixe donc le corps à sa
-position courante et on restaure le défilement à la fermeture. C'est la seule
-technique qui tient sur les deux, et le scan se fera au téléphone.
-
-La largeur de la barre est rendue en rembourrage : sans quoi la page gagne cette
-largeur au moment où la barre disparaît, et tout sursaute vers la droite.
-
-### Le compteur aussi
-
-Le panneau de filtres et la fiche peuvent être ouverts l'un par-dessus l'autre.
-Un simple drapeau libérerait la page en fermant le second alors que le premier
-est encore là — d'où un compteur, et deux garde-fous :
-
-- `setFilterPanel(true)` est rappelé **à chaque puce cliquée** ; le verrou suit
-  l'état réel, pas l'appel, sans quoi le compte grimperait sans jamais
-  redescendre ;
-- un changement de route emporte les modales sans passer par leur fermeture ;
-  `releaseScroll()` remet le compte à zéro, faute de quoi la page suivante ne
-  défilerait plus du tout.
-
-Quatre surfaces l'utilisent : la fiche, le panneau de filtres, le scanner et la
-feuille de compte.
-
-### Une épreuve qui mesurait son propre effet de bord
-
-La première version vérifiait `window.scrollY` pendant le verrou. Il vaut **zéro
-par construction** : le corps est fixé, il n'est plus défilé. Ce qu'on voit est
-visuel, et c'est la position à l'écran d'une ligne qu'il faut mesurer.
-
-Puis l'épreuve échouait quand même, d'exactement la valeur du défilement.
-`click()` de Playwright fait défiler l'élément dans la vue **avant** de cliquer,
-et remettait la page à zéro juste avant le verrou : l'épreuve mesurait son
-propre effet de bord. `dispatchEvent("click")` déclenche l'événement sans
-toucher au défilement.
-
-Deux fausses pistes, écartées par la mesure plutôt que par le raisonnement — le
-défaut n'a jamais été dans le verrou.
+Adding by set code in the bar is judged “very smooth”. It is the screen's central
+gesture — the one repeated hundreds of times.
 
 ---
 
-## Le français manquant est un retard, pas une lacune — 2026-09-10
+## Scroll lock — 2026-09-10
 
-Ange a mis en doute ma conclusion de la veille : « tu es certain que les cartes
-sans version française n'ont pas les noms non plus ? Aspischool, c'est *Banc
-d'aspis*. » Il avait raison, et sur le point qui compte.
+Two scrollbars lived side by side as soon as a card was opened full size: the sheet's,
+and the collection's behind it. You thought you were scrolling down the card and it was
+the page moving — and on closing, you were no longer where you had been.
 
-### Ce que la mesure dit
+### The method matters
 
-`Aspischool` (passcode 12888461) n'existe pas dans le jeu de données français de
-YGOPRODeck — ni par identifiant, ni par nom. Le dump français est un
-**sous-ensemble strict** de l'anglais : 2 863 cartes absentes, zéro identifiant
-alternatif.
+Setting `overflow: hidden` on `<body>` is enough on a desktop and **does nothing on iOS
+Safari**, which keeps scrolling the page. So the body is fixed at its current position
+and the scroll is restored on closing. It is the only technique that holds on both, and
+scanning will happen on a phone.
 
-Mais la couverture par extension est sans ambiguïté :
+The scrollbar's width is given back as padding: otherwise the page gains that width the
+moment the bar disappears, and everything jumps to the right.
 
-| Extensions anciennes | | Extensions récentes | |
+### The counter too
+
+The filter panel and the sheet can be open one on top of the other. A simple flag would
+release the page when closing the second while the first is still there — hence a
+counter, and two safeguards:
+
+- `setFilterPanel(true)` is called again **at every chip clicked**; the lock follows the
+  real state, not the call, otherwise the count would climb without ever coming down;
+- a route change takes the modals away without going through their closing;
+  `releaseScroll()` resets the count, failing which the next page would not scroll at
+  all.
+
+Four surfaces use it: the sheet, the filter panel, the scanner and the account sheet.
+
+### A test that measured its own side effect
+
+The first version checked `window.scrollY` during the lock. It is **zero by
+construction**: the body is fixed, it is no longer scrolled. What you see is visual, and
+it is a row's on-screen position that must be measured.
+
+Then the test still failed, by exactly the scroll value. Playwright's `click()` scrolls
+the element into view **before** clicking, and reset the page to zero right before the
+lock: the test measured its own side effect. `dispatchEvent("click")` fires the event
+without touching the scroll.
+
+Two false leads, ruled out by measurement rather than reasoning — the defect was never
+in the lock.
+
+---
+
+## Missing French is a delay, not a gap — 2026-09-10
+
+Ange questioned the previous day's conclusion: “are you sure the cards without a French
+version don't have the names either? Aspischool is *Banc d'aspis*.” Rightly, and on the
+point that matters.
+
+### What the measurement says
+
+`Aspischool` (passcode 12888461) does not exist in YGOPRODeck's French dataset — neither
+by identifier nor by name. The French dump is a **strict subset** of the English one:
+2,863 cards missing, zero alternative identifiers.
+
+But coverage per set is unambiguous:
+
+| Older sets | | Recent sets | |
 |---|---|---|---|
-| LOB, MRD, PSV, LON, LTGY, SDK | **100 %** | RA05 | 60 % |
-| | | MP25 | 17 % |
-| | | MAMO | 22 % |
-| | | ALIN, CORI, SUDA | **0 %** |
+| LOB, MRD, PSV, LON, LTGY, SDK | **100%** | RA05 | 60% |
+| | | MP25 | 17% |
+| | | MAMO | 22% |
+| | | ALIN, CORI, SUDA | **0%** |
 
-**La source accuse un retard, elle ne renonce pas.** Et `ALIN` — *Alliance
-Insight* — est précisément l'extension de la carte qu'Ange avait saisie.
+**The source is running late, it is not giving up.** And `ALIN` — *Alliance Insight* —
+is precisely the set of the card Ange had entered.
 
-### Ce que ça change
+### What that changes
 
-Mon message disait « Cette carte n'a pas de version française chez
-YGOPRODeck ». Techniquement vrai sur la source, et **faux** pour qui le lit :
-la carte a bel et bien un nom français officiel.
+My message said “This card has no French version at YGOPRODeck”. Technically true about
+the source, and **false** for whoever reads it: the card does have an official French
+name.
 
-Il dit désormais qu'elle n'est **pas encore** traduite dans le catalogue, et
-qu'une prochaine synchronisation la remplira — ce qui est exact, puisque
-`upsertCard` fusionne les champs localisés au lieu de les écraser.
+It now says the card is **not yet** translated in the catalogue, and that a future sync
+will fill it in — which is accurate, since `upsertCard` merges localised fields instead
+of overwriting them.
 
-Le drapeau porte aussi sur le **nom**, pas seulement sur le texte : c'est ce
-qu'on lit en premier, et aucune carte n'a l'un sans l'autre — vérifié sur les
-11 661 traduites.
+The flag also covers the **name**, not only the text: it is what you read first, and no
+card has one without the other — checked over the 11,661 translated ones.
 
-### La leçon
+### The lesson
 
-J'avais conclu « ces cartes n'ont pas de version française » à partir de trois
-requêtes qui répondaient « absente ». La question n'était pas *si* la donnée
-manque, mais *pourquoi* — et la réponse changeait ce qu'il fallait écrire à
-l'écran. Une absence n'est pas une négation.
+I had concluded “these cards have no French version” from three requests answering
+“absent”. The question was not *whether* the data is missing, but *why* — and the answer
+changed what had to be written on screen. An absence is not a negation.
 
 ---
 
-## Fiche de carte : note et éditions — 2026-09-10
+## Card sheet: note and printings — 2026-09-10
 
-### Le message de traduction, raccourci
+### The translation message, shortened
 
-« Pas encore traduite dans le catalogue : YGOPRODeck accuse un retard sur les
-extensions récentes. Le nom et le texte ci-dessous sont les originaux anglais,
-et une prochaine synchronisation les remplacera. »
+“Not yet translated in the catalogue: YGOPRODeck is running late on recent sets. The
+name and text below are the English originals, and a future sync will replace them.”
 
-devient
+becomes
 
-« Traduction pas encore disponible — nom et texte en anglais. »
+“Translation not available yet — name and text in English.”
 
-« Pas encore » porte tout le sens ; le reste tenait de l'explication de texte, et
-sa place est dans ce document, pas dans une fiche qu'on parcourt.
+“Not yet” carries all the meaning; the rest was textual commentary, and it belongs in
+this document, not in a sheet you skim.
 
-### L'étiquette de la note
+### The note's label
 
-`.inspect-notes` est un rang souple dont les enfants s'étirent par défaut :
-l'étiquette occupait toute la hauteur et son texte se posait en haut, à côté
-d'un champ et d'un bouton centrés. Trois éléments sur une ligne, trois
-alignements. `align-items: center` suffisait.
+`.inspect-notes` is a flex row whose children stretch by default: the label took the
+full height and its text sat at the top, next to a centred field and button. Three
+elements on one line, three alignments. `align-items: center` was enough.
 
-### « Autres éditions » se détache
+### “Other printings” stands apart
 
-Le bloc arrivait juste sous la note, sans marge ni trait. Il a désormais son
-espacement et son filet, et une épreuve vérifie l'écart.
+The block came right under the note, with no margin or rule. It now has its spacing and
+its rule, and a test checks the gap.
 
-### Ce que la mesure a révélé au passage
+### What the measurement revealed along the way
 
-Le bloc fait **2 246 pixels de haut** pour un Dragon Blanc : soixante-dix-huit
-éditions. C'est davantage que tout le reste de la fiche réuni, et l'espacement
-n'y change rien.
+The block is **2,246 pixels high** for a Blue-Eyes: seventy-eight printings. That is
+more than the rest of the sheet put together, and spacing changes nothing about it.
 
-On n'y met **pas** de défilement propre : une troisième barre dans une fiche qui
-en a déjà une serait exactement ce que le verrou vient de corriger. Le titre
-annonce donc le compte et le nombre d'éditions possédées — « 78 · 1 possédée » —
-pour que la longueur ne surprenne pas.
+It gets **no** scrolling of its own: a third scrollbar in a sheet that already has one
+would be exactly what the lock just fixed. So the title announces the count and the
+number of owned printings — “78 · 1 owned” — so the length does not surprise.
 
-Le vrai remède demande un design : trier les éditions possédées en tête, replier
-le reste, permettre d'en cocher une. Ange l'a explicitement remis à plus tard —
-« pour l'instant on fait juste propre l'UX importante en priorité ». La mesure
-est notée ici pour que la conversation reparte de là.
+The real cure needs a design: sort owned printings first, collapse the rest, allow
+ticking one. Ange explicitly postponed it — “for now we just make the important UX clean
+first”. The measurement is recorded here so the conversation can pick up from there.
