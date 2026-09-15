@@ -79,14 +79,16 @@ test("le vocabulaire Yu-Gi-Oh! reprend sa forme d'origine", async ({ page }) => 
 
 test("les messages du serveur sont traduits eux aussi", async ({ page }) => {
   /**
-   * L'API répond en français. Traduire le front sans elle laisserait un écran
-   * anglais dont les erreurs parlent français — et ce sont justement les
-   * moments où l'on a besoin de comprendre.
+   * L'API répond **en anglais** — sa phrase est la clé du dictionnaire, et le
+   * front la traduit avant de l'afficher. Un écran français dont les erreurs
+   * parlent anglais serait le pire moment pour ne pas comprendre.
+   *
+   * L'inverse était vrai jusqu'au 2026-09-14 : la clé était française.
    */
   await signUp(page);
   await basculer(page, "EN");
 
-  // Une adresse déjà prise : le serveur refuse, en français, et l'écran traduit.
+  // Le serveur refuse, en anglais ; l'écran rendra sa version française.
   const compte = await page.evaluate(async () => {
     const réponse = await fetch("/api/auth/register", {
       method: "POST",
@@ -101,8 +103,8 @@ test("les messages du serveur sont traduits eux aussi", async ({ page }) => {
     });
     return (await réponse.json()) as { message?: string };
   });
-  // Le serveur parle bien français : c'est le front qui traduit.
-  expect(compte.message).toContain("mot de passe");
+  // Le serveur parle bien anglais : c'est le front qui traduit.
+  expect(compte.message).toContain("password");
 
   await page.locator(".tools-bar .scanlist-link").click();
   await page.getByRole("button", { name: "New batch" }).click();

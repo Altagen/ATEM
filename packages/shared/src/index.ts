@@ -41,5 +41,6 @@ export {
 export {
   checkPasswordStrength,
   PASSWORD_CRITERIA,
+  type PasswordLevel,
   type PasswordStrengthResult,
 } from "./password.js";

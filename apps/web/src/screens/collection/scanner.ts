@@ -66,10 +66,10 @@ export type ScannerOptions = {
  * Cette table est évaluée à l'import, avant que la langue du compte soit connue.
  */
 const STATUS_LABELS: Record<string, string> = {
-  crop: "Cadrage",
-  loading: "Chargement du moteur",
-  recognizing: "Lecture",
-  done: "Terminé",
+  crop: "Framing",
+  loading: "Loading the engine",
+  recognizing: "Reading",
+  done: "Done",
 };
 
 export async function openScanner(options: ScannerOptions): Promise<void> {
@@ -79,12 +79,12 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
   const lockedCode = el("span", { class: "scan-zoom-locked-code" });
   const band = el("div", { class: "scan-zoom-band" }, [lockedCode]);
   const placeholder = el("div", { class: "scan-zoom-placeholder", hidden: "" }, [
-    t("Aucune caméra — saisissez le set code ci-dessous."),
+    t("No camera — type the set code below."),
   ]);
   const viewport = el("div", { class: "scan-zoom-viewport" }, [video, band, placeholder]);
 
   const status = el("p", { class: "scan-status", role: "status" }, [
-    t("Alignez le set code dans la bande."),
+    t("Line the set code up inside the band."),
   ]);
   const errorLine = el("p", { class: "scan-err", role: "alert" });
 
@@ -95,7 +95,7 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     autocomplete: "off",
     spellcheck: "false",
     placeholder: "LTGY-FR008",
-    "aria-label": t("Set code reconnu, corrigeable"),
+    "aria-label": t("Recognised set code, editable"),
   });
   const codeRow = el("div", { class: "scan-code-row" }, [
     el("span", { class: "scan-code-row-label" }, [t("Code")]),
@@ -106,7 +106,7 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
 
   const shutter = el(
     "button",
-    { type: "button", class: "btn-scan-shutter", "aria-label": t("Lire la carte") },
+    { type: "button", class: "btn-scan-shutter", "aria-label": t("Read the card") },
     [
       el("span", { class: "btn-scan-shutter-ring", "aria-hidden": "true" }),
       el("span", { class: "btn-scan-shutter-core", "aria-hidden": "true" }),
@@ -122,17 +122,17 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
    */
   const restart = el(
     "button",
-    { type: "button", class: "btn-scan-shutter-side", "aria-label": t("Recommencer") },
+    { type: "button", class: "btn-scan-shutter-side", "aria-label": t("Start over") },
     [el("span", { class: "i-restart", "aria-hidden": "true" }, ["↺"])],
   );
   const minus = el(
     "button",
-    { type: "button", class: "btn-scan-shutter-side", "aria-label": t("Retirer un exemplaire") },
+    { type: "button", class: "btn-scan-shutter-side", "aria-label": t("Remove a copy") },
     ["−1"],
   );
   const plus = el(
     "button",
-    { type: "button", class: "btn-scan-add-lg", "aria-label": t("Ajouter un exemplaire") },
+    { type: "button", class: "btn-scan-add-lg", "aria-label": t("Add a copy") },
     ["+1"],
   );
   // L'obturateur reste au centre : c'est la convention de tout appareil photo,
@@ -144,10 +144,10 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     plus,
   ]);
 
-  const close = el("button", { type: "button", class: "icon-btn", "aria-label": t("Fermer") }, ["✕"]);
+  const close = el("button", { type: "button", class: "icon-btn", "aria-label": t("Close") }, ["✕"]);
 
   const modal = el("div", { class: "scan-modal", role: "dialog", "aria-modal": "true" }, [
-    el("div", { class: "scan-modal-head" }, [el("h2", {}, [t("Scanner une carte")]), close]),
+    el("div", { class: "scan-modal-head" }, [el("h2", {}, [t("Scan a card")]), close]),
     el("div", { class: "scan-modal-body" }, [
       viewport,
       status,
@@ -229,8 +229,8 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     video.hidden = true;
     errorLine.textContent =
       err instanceof DOMException && err.name === "NotAllowedError"
-        ? t("L'accès à la caméra a été refusé. Vous pouvez saisir le set code à la main.")
-        : t("Aucune caméra disponible. Vous pouvez saisir le set code à la main.");
+        ? t("Camera access was denied. You can type the set code by hand.")
+        : t("No camera available. You can type the set code by hand.");
     shutter.disabled = true;
   }
 
@@ -273,7 +273,10 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
       const result = await ocrSetCodeFromImage(
         source,
         (stage: OcrProgressStatus, progress: number) => {
-          status.textContent = t("{étape} — {pourcent} %", { étape: t(STATUS_LABELS[stage] ?? stage), pourcent: Math.round(progress * 100) });
+          status.textContent = t("{step} — {percent}%", {
+            step: t(STATUS_LABELS[stage] ?? stage),
+            percent: Math.round(progress * 100),
+          });
         },
         "zoom-band",
         /**
@@ -301,8 +304,8 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
         codeInput.value = result.code;
         setLocked(result.code, strong);
         status.textContent = strong
-          ? t("Code reconnu — vérifiez puis validez.")
-          : t("Lecture incertaine — corrigez si besoin.");
+          ? t("Code recognised — check it, then confirm.")
+          : t("Uncertain reading — correct it if needed.");
         /**
          * Les suggestions passent par le filtre du moteur.
          *
@@ -318,13 +321,13 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
         );
       } else {
         setLocked(null, false);
-        status.textContent = t("Rien de lisible. Rapprochez la carte, ou saisissez le code.");
+        status.textContent = t("Nothing readable. Move the card closer, or type the code.");
       }
     } catch (err) {
       errorLine.textContent =
         err instanceof Error && err.message === "camera_not_ready"
-          ? t("La caméra n'est pas prête.")
-          : t("La lecture a échoué.");
+          ? t("The camera is not ready.")
+          : t("Reading failed.");
     } finally {
       busy = false;
       shutter.disabled = !stream;
@@ -335,7 +338,7 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
   async function apply(delta: number): Promise<void> {
     const setCode = codeInput.value.trim().toUpperCase();
     if (!setCode) {
-      errorLine.textContent = t("Aucun set code à enregistrer.");
+      errorLine.textContent = t("No set code to record.");
       return;
     }
     minus.disabled = true;
@@ -350,7 +353,7 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
           : `${nom} — ${outcome.quantity} ex.`,
         "success",
       );
-      status.textContent = t("{code} : {n} {où}.", { code: outcome.setCode, n: outcome.quantity, où: options.tallyLabel });
+      status.textContent = t("{code}: {n} {where}.", { code: outcome.setCode, n: outcome.quantity, where: options.tallyLabel });
       // On enchaîne : c'est une pile qu'on inventorie, pas une carte. La caméra
       // reste ouverte et le champ se vide, prêt pour la suivante.
       codeInput.value = "";
@@ -358,7 +361,7 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
       setCandidates([]);
     } catch (err) {
       errorLine.textContent =
-        err instanceof Error ? err.message : t("L'enregistrement a échoué.");
+        err instanceof Error ? err.message : t("Saving failed.");
     } finally {
       minus.disabled = false;
       plus.disabled = false;
@@ -373,7 +376,7 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     setLocked(null, false);
     setCandidates([]);
     errorLine.textContent = "";
-    status.textContent = t("Alignez le set code dans la bande.");
+    status.textContent = t("Line the set code up inside the band.");
   });
   codeInput.addEventListener("input", () => setLocked(codeInput.value.trim(), false));
 }

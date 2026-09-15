@@ -50,7 +50,7 @@ export function deckRoutes(db: Database) {
 
   const viewerId = (c: { get: (key: "viewer") => { id: string } | null }): string => {
     const viewer = c.get("viewer");
-    if (!viewer) throw invalidInput("Session absente.");
+    if (!viewer) throw invalidInput("No session.");
     return viewer.id;
   };
 
@@ -58,7 +58,7 @@ export function deckRoutes(db: Database) {
     try {
       return await c.req.json();
     } catch {
-      throw invalidInput("Corps de requête illisible.");
+      throw invalidInput("Unreadable request body.");
     }
   };
 
@@ -66,7 +66,7 @@ export function deckRoutes(db: Database) {
 
   app.post("/", async (c) => {
     const parsed = CreateBody.safeParse(await jsonBody(c));
-    if (!parsed.success) throw invalidInput("Nom de deck invalide.");
+    if (!parsed.success) throw invalidInput("Invalid deck name.");
     return c.json(
       await createDeck(db, viewerId(c), parsed.data.name, parsed.data.folderId ?? null),
       201,
@@ -85,13 +85,13 @@ export function deckRoutes(db: Database) {
 
   app.post("/dossiers", async (c) => {
     const parsed = FolderBody.safeParse(await jsonBody(c));
-    if (!parsed.success) throw invalidInput("Nom de dossier invalide.");
+    if (!parsed.success) throw invalidInput("Invalid folder name.");
     return c.json(await createFolder(db, viewerId(c), parsed.data), 201);
   });
 
   app.patch("/dossiers/:id", async (c) => {
     const parsed = FolderPatchBody.safeParse(await jsonBody(c));
-    if (!parsed.success) throw invalidInput("Données invalides.");
+    if (!parsed.success) throw invalidInput("Invalid data.");
     return c.json(await updateFolder(db, viewerId(c), c.req.param("id"), parsed.data));
   });
 
@@ -104,7 +104,7 @@ export function deckRoutes(db: Database) {
 
   app.patch("/:id", async (c) => {
     const parsed = PatchBody.safeParse(await jsonBody(c));
-    if (!parsed.success) throw invalidInput("Données invalides.");
+    if (!parsed.success) throw invalidInput("Invalid data.");
     await updateDeck(db, viewerId(c), c.req.param("id"), parsed.data);
     return c.json({ ok: true });
   });
@@ -123,7 +123,7 @@ export function deckRoutes(db: Database) {
    */
   app.put("/:id/cartes", async (c) => {
     const parsed = CardBody.safeParse(await jsonBody(c));
-    if (!parsed.success) throw invalidInput("Données invalides.", { issues: parsed.error.issues });
+    if (!parsed.success) throw invalidInput("Invalid data.", { issues: parsed.error.issues });
     return c.json(await setDeckCard(db, viewerId(c), c.req.param("id"), parsed.data));
   });
 

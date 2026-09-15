@@ -33,7 +33,7 @@ export function scanlistRoutes(db: Database) {
 
   const viewerId = (c: { get: (key: "viewer") => { id: string } | null }): string => {
     const viewer = c.get("viewer");
-    if (!viewer) throw invalidInput("Session absente.");
+    if (!viewer) throw invalidInput("No session.");
     return viewer.id;
   };
 
@@ -41,7 +41,7 @@ export function scanlistRoutes(db: Database) {
     try {
       return await c.req.json();
     } catch {
-      throw invalidInput("Corps de requête illisible.");
+      throw invalidInput("Unreadable request body.");
     }
   };
 
@@ -50,7 +50,7 @@ export function scanlistRoutes(db: Database) {
   app.post("/", async (c) => {
     const parsed = CreateBody.safeParse(await jsonBody(c));
     if (!parsed.success) {
-      throw invalidInput("Lot invalide.", { issues: parsed.error.issues });
+      throw invalidInput("Invalid batch.", { issues: parsed.error.issues });
     }
     return c.json(
       await createScanlist(db, viewerId(c), {

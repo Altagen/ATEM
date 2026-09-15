@@ -36,14 +36,14 @@ function brouillonHtml(draft: Draft): SafeHtml {
 
   return html`
     <section class="scan-draft-panel">
-      <h2 class="titre-section">${t("Lot en cours")}</h2>
+      <h2 class="titre-section">${t("Batch in progress")}</h2>
       <p class="scan-note muted"/p>
 
       <div class="scan-actions">
         <div class="add-field">
           <input type="text" id="draft-name" class="add-input" maxlength="60"
-                 placeholder="${t("Nom du lot (ex. Commande du 3 mars)")}"
-                 aria-label="${t("Nom du lot")}" value="${draft.name}" />
+                 placeholder="${t("Batch name (e.g. Order of 3 March)")}"
+                 aria-label="${t("Batch name")}" value="${draft.name}" />
         </div>
       </div>
 
@@ -51,23 +51,23 @@ function brouillonHtml(draft: Draft): SafeHtml {
         <div class="add-field">
           <input type="text" id="draft-code" class="add-input"
                  autocapitalize="characters" autocomplete="off" spellcheck="false"
-                 placeholder="${t("LTGY-FR008")}" aria-label="${t("Ajouter par set code")}" />
+                 placeholder="${t("LTGY-FR008")}" aria-label="${t("Add by set code")}" />
         </div>
-        <button type="button" class="btn-add" id="draft-add" title="${t("Ajouter")}"
-                aria-label="${t("Ajouter au lot")}"><span aria-hidden="true">+</span></button>
-        <button type="button" class="btn-scan" id="draft-scan" title="${t("Scanner une carte")}"
-                aria-label="${t("Scanner")}"><span class="i-scan" aria-hidden="true"></span></button>
+        <button type="button" class="btn-add" id="draft-add" title="${t("Add")}"
+                aria-label="${t("Add to batch")}"><span aria-hidden="true">+</span></button>
+        <button type="button" class="btn-scan" id="draft-scan" title="${t("Scan a card")}"
+                aria-label="${t("Scan")}"><span class="i-scan" aria-hidden="true"></span></button>
       </div>
 
-      <p class="scan-count muted">${t("{réf} référence(s) · {ex} ex.", { réf: références, ex: exemplaires })}</p>
+      <p class="scan-count muted">${t("{ref} reference(s) · ×{copies}", { ref: références, copies: exemplaires })}</p>
 
       ${draft.lines.length === 0
-        ? raw(`<p class="scan-draft-empty muted">${t("Rien encore. Scannez une carte, ou saisissez son code.")}</p>`)
+        ? raw(`<p class="scan-draft-empty muted">${t("Nothing yet. Scan a card, or type its code.")}</p>`)
         : html`<ul class="scan-draft">${draft.lines.map(ligneBrouillon)}</ul>`}
 
       <div class="scan-actions">
-        <button type="button" class="btn btn-hero" id="draft-save">${t("Enregistrer le lot")}</button>
-        <button type="button" class="btn scan-trash" id="draft-discard">${t("Abandonner")}</button>
+        <button type="button" class="btn btn-hero" id="draft-save">${t("Save the batch")}</button>
+        <button type="button" class="btn scan-trash" id="draft-discard">${t("Discard")}</button>
       </div>
     </section>
   `;
@@ -80,11 +80,11 @@ function ligneListe(item: ScanlistSummary): SafeHtml {
       <span class="scan-row-ico" aria-hidden="true">🗂️</span>
       <span class="scan-row-text">
         <strong>${item.name}</strong>
-        <span class="muted"> · ${t("{réf} réf. · {ex} ex.", { réf: item.lineCount, ex: item.copyCount })}</span>
+        <span class="muted"> · ${t("{ref} ref. · ×{copies}", { ref: item.lineCount, copies: item.copyCount })}</span>
       </span>
       <span class="muted">${dateCourte(item.createdAt)}</span>
       <span class="scan-state ${versée ? "is-poured" : "is-pending"}">
-        ${versée ? t("Versée") : t("En attente")}
+        ${versée ? t("Poured") : t("Pending")}
       </span>
     </a>
   </li>`;
@@ -97,29 +97,29 @@ function detailHtml(lot: ScanlistDetail, échecs: ScanlistState["pourErrors"]): 
       <div>
         <h1 class="page-title">${lot.name}</h1>
         <p class="muted">
-          ${t("{réf} référence(s) · {ex} ex. · créé le {date}", { réf: lot.lineCount, ex: lot.copyCount, date: dateCourte(lot.createdAt) })}
+          ${t("{ref} reference(s) · ×{copies} · created on {date}", { ref: lot.lineCount, copies: lot.copyCount, date: dateCourte(lot.createdAt) })}
         </p>
       </div>
-      <a class="btn scan-new" href="/scanlistes">${t("Tous les lots")}</a>
+      <a class="btn scan-new" href="/scanlistes">${t("All batches")}</a>
     </div>
 
     <p class="scan-state scan-state-big ${versée ? "is-poured" : "is-pending"}">
-      ${versée ? t("Versée le {date}", { date: dateCourte(lot.pouredAt!) }) : t("En attente de versement")}
+      ${versée ? t("Poured on {date}", { date: dateCourte(lot.pouredAt!) }) : t("Waiting to be poured")}
     </p>
 
     <div class="scan-actions">
       <button type="button" class="btn btn-hero" id="lot-pour" ${versée ? raw("disabled") : raw("")}>
-        ${t("Verser dans la collection")}
+        ${t("Pour into collection")}
       </button>
-      <button type="button" class="btn" id="lot-export">${t("Exporter en JSON")}</button>
-      <button type="button" class="btn scan-trash" id="lot-delete">${t("Jeter ce lot")}</button>
+      <button type="button" class="btn" id="lot-export">${t("Export as JSON")}</button>
+      <button type="button" class="btn scan-trash" id="lot-delete">${t("Discard this batch")}</button>
     </div>
 
     ${when(
       échecs.length > 0,
       html`<div class="scan-errors">
         <p class="scan-note warn">
-          ${t("{n} ligne(s) n'ont pas pu être versées. Les autres sont entrées.", { n: échecs.length })}
+          ${t("{n} line(s) could not be poured. The rest went in.", { n: échecs.length })}
         </p>
         <ul class="scan-draft">
           ${échecs.map(
@@ -159,13 +159,13 @@ export function scanlistHtml(state: ScanlistState): SafeHtml {
     <div class="scan-page">
       <div class="scan-head">
         <div>
-          <h1 class="page-title">${t("Scanlistes")}</h1>
+          <h1 class="page-title">${t("Scanlists")}</h1>
           <p class="muted"/p>
         </div>
         ${when(
           !state.draft,
           html`<button type="button" class="btn btn-hero scan-new" id="draft-start">
-            ${t("Nouveau lot")}
+            ${t("New batch")}
           </button>`,
         )}
       </div>
@@ -173,11 +173,11 @@ export function scanlistHtml(state: ScanlistState): SafeHtml {
       ${when(state.error, html`<p class="scan-note warn">${state.error}</p>`)}
       ${state.draft ? brouillonHtml(state.draft) : raw("")}
 
-      <p class="scan-count muted">${t("{n} lot(s) enregistré(s)", { n: state.items.length })}</p>
+      <p class="scan-count muted">${t("{n} saved batch(es)", { n: state.items.length })}</p>
       ${state.loading
-        ? raw(`<p class="web-loading muted">${t("Chargement…")}</p>`)
+        ? raw(`<p class="web-loading muted">${t("Loading…")}</p>`)
         : state.items.length === 0
-          ? raw(`<p class="scan-draft-empty muted">${t("Aucun lot enregistré pour l'instant.")}</p>`)
+          ? raw(`<p class="scan-draft-empty muted">${t("No saved batches yet.")}</p>`)
           : html`<ul class="scan-list">${state.items.map(ligneListe)}</ul>`}
     </div>
   `;

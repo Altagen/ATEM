@@ -18,18 +18,42 @@
  */
 import { t } from "../../platform/i18n/index.js";
 import {
-  checkPasswordStrength, PASSWORD_CRITERIA, type PasswordStrengthResult,
+  checkPasswordStrength, PASSWORD_CRITERIA,
+  type PasswordLevel, type PasswordStrengthResult,
 } from "@atem/shared";
 import { el } from "../../platform/ui.js";
+
+/**
+ * Les libellés, ici et non dans `@atem/shared`.
+ *
+ * Le paquet partagé rend un code — `weak`, `hasUpper` — parce que le serveur
+ * l'importe aussi et n'a que faire de la langue de qui lit. Les tables sont
+ * lues à l'affichage : déclarées au niveau du module, elles figeraient la
+ * langue du premier rendu.
+ */
+const STRENGTH_LABELS: Record<PasswordLevel, string> = {
+  weak: "Weak",
+  fair: "Fair",
+  strong: "Strong",
+  excellent: "Excellent",
+};
+
+const CRITERION_LABELS: Record<(typeof PASSWORD_CRITERIA)[number], string> = {
+  hasMinLength: "At least 16 characters",
+  hasUpper: "An uppercase letter (A-Z)",
+  hasLower: "A lowercase letter (a-z)",
+  hasDigit: "A digit (0-9)",
+  hasSpecial: "A special character (!@#$…)",
+};
 
 export function mountPasswordMeter(host: HTMLElement, input: HTMLInputElement): void {
   const bar = el("span", { class: "pwd-meter-bar" });
   const meter = el("div", { class: "pwd-meter", "data-level": "0" }, [bar]);
-  const label = el("p", { class: "pwd-meter-label muted" }, [t("Choisissez un mot de passe.")]);
+  const label = el("p", { class: "pwd-meter-label muted" }, [t("Choose a password.")]);
 
   const items = PASSWORD_CRITERIA.map((criterion) => {
     const mark = el("span", { "aria-hidden": "true" }, ["○"]);
-    const item = el("li", { class: "pwd-criterion" }, [mark, " ", criterion.label]);
+    const item = el("li", { class: "pwd-criterion" }, [mark, " ", t(CRITERION_LABELS[criterion])]);
     return { criterion, item, mark };
   });
 
@@ -48,11 +72,11 @@ export function mountPasswordMeter(host: HTMLElement, input: HTMLInputElement): 
     meter.setAttribute("data-level", String(strength.score));
     bar.style.width = `${strength.score * 25}%`;
     label.textContent = value.length === 0
-      ? t("Choisissez un mot de passe.")
-      : `Force : ${strength.label}`;
+      ? t("Choose a password.")
+      : t("Strength: {level}", { level: t(STRENGTH_LABELS[strength.level]) });
 
     for (const { criterion, item, mark } of items) {
-      const met = strength[criterion.id] === true;
+      const met = strength[criterion] === true;
       item.classList.toggle("is-met", met);
       mark.textContent = met ? "✓" : "○";
     }

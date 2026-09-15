@@ -59,7 +59,7 @@ async function start(): Promise<void> {
   try {
     setUser(await loadUser());
   } catch {
-    toast(t("Le serveur est injoignable."), "error");
+    toast(t("The server is unreachable."), "error");
   }
 
   // La racine mène là où l'on peut aller, selon qu'il y a une session ou non.

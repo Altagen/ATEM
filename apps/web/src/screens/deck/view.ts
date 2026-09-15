@@ -37,17 +37,17 @@ const ATTRS = ["DARK", "LIGHT", "EARTH", "WATER", "FIRE", "WIND", "DIVINE"];
  * Cette table est évaluée à l'import, avant que la langue du compte soit connue.
  */
 const BAN_LABELS: Record<BanlistStatus, string> = {
-  forbidden: "Interdite",
-  limited: "Limitée à 1",
-  semi_limited: "Limitée à 2",
+  forbidden: "Forbidden",
+  limited: "Limited to 1",
+  semi_limited: "Limited to 2",
   unlimited: "",
 };
 
 const KIND_LABELS: Record<string, string> = {
-  "": "Tout",
-  monster: "Monstre",
-  spell: "Magie",
-  trap: "Piège",
+  "": "All",
+  monster: "Monster",
+  spell: "Spell",
+  trap: "Trap",
   extra: "Extra",
   fav: "★",
 };
@@ -111,7 +111,7 @@ function countsBar(deck: DeckDetail, state: DeckState): SafeHtml {
     })}
     ${when(
       state.savedAt !== null,
-      html`<span class="deck-saved">${t("Enregistré")}</span>`,
+      html`<span class="deck-saved">${t("Saved")}</span>`,
     )}
   </p>`;
 }
@@ -136,7 +136,7 @@ function deckStatusHtml(deck: DeckDetail): SafeHtml {
     case "over":
       return html`<p class="deck-status deck-status-over">
         ⚠
-        ${t("Trop de cartes : {n} à retirer du {zone}.", {
+        ${t("Too many cards: remove {n} from the {zone}.", {
           n: statut.excess,
           zone: ZONE_LABELS[statut.zone],
         })}
@@ -145,23 +145,23 @@ function deckStatusHtml(deck: DeckDetail): SafeHtml {
       // Ça n'arrive pas en construisant — le « + » s'y refuse — mais ça arrive
       // quand on retire ensuite une carte de sa collection.
       return html`<p class="deck-status deck-status-over">
-        ⚠ ${t("{n} à retrouver : le deck en compte plus que votre collection.", {
+        ⚠ ${t("{n} to find: the deck holds more than your collection.", {
           n: statut.missing,
         })}
       </p>`;
     case "empty":
       return html`<p class="deck-status deck-status-short">
-        ${t("Deck vide — posez vos premières cartes depuis la collection.")}
+        ${t("Empty deck — add your first cards from your collection.")}
       </p>`;
     case "short":
       return html`<p class="deck-status deck-status-short">
-        ${t("Deck incomplet : encore {n} au Main (minimum {min}).", {
+        ${t("Deck incomplete: {n} more in the Main (minimum {min}).", {
           n: statut.missing,
           min: statut.min,
         })}
       </p>`;
     case "ready":
-      return html`<p class="deck-status deck-status-ready">✓ ${t("Deck jouable.")}</p>`;
+      return html`<p class="deck-status deck-status-ready">✓ ${t("Deck ready to play.")}</p>`;
   }
 }
 
@@ -182,14 +182,14 @@ function stepper(row: CollectionRow, state: DeckState, compact = false): SafeHtm
   const refus = issue.blockedBy ? REFUS_LABELS[issue.blockedBy] : null;
 
   return html`<div class="${compact ? "deck-stepper deck-stepper-overlay" : "deck-stepper item-actions"}"
-    role="group" aria-label="${t("Quantité dans le deck")}">
+    role="group" aria-label="${t("Quantity in the deck")}">
     <button type="button" class="btn-qty js-coll" data-pc="${String(passcode)}" data-d="-1"
-            aria-label="${t("Retirer un exemplaire")}"
+            aria-label="${t("Remove a copy")}"
             ${déjà > 0 ? raw("") : raw("disabled")}>${compact ? "−" : "−1"}</button>
     <span class="deck-stepper-qty${déjà > 0 ? " is-in-deck" : ""}">×${déjà}</span>
     <button type="button" class="btn-qty js-coll" data-pc="${String(passcode)}" data-d="1"
-            aria-label="${t("Ajouter un exemplaire")}"
-            title="${refus ? t(refus) : t("Ajouter au deck")}"
+            aria-label="${t("Add a copy")}"
+            title="${refus ? t(refus) : t("Add to deck")}"
             ${issue.canAdd ? raw("") : raw("disabled")}>${compact ? "+" : "+1"}</button>
   </div>`;
 }
@@ -207,15 +207,15 @@ function collRow(row: CollectionRow, state: DeckState): SafeHtml {
       <button type="button" class="item-main js-open-card" data-pc="${String(passcode)}">
         ${vignette(carte?.imageUrlSmall ?? carte?.imageUrl)}
         <div class="item-text">
-          <strong>${carte?.name ?? t("Carte non identifiée")}</strong>
+          <strong>${carte?.name ?? t("Unidentified card")}</strong>
           <code>${row.setCode}</code>
           <div class="item-meta">
-            <span>${t("×{n} poss.", { n: state.owned.get(passcode) ?? 0 })}</span>
+            <span>${t("×{n} owned", { n: state.owned.get(passcode) ?? 0 })}</span>
             ${when(row.isFavorite, raw(`<span class="ok-tag fav-tag">★</span>`))}
             ${banBadge(carte?.banlistTcg)}
           </div>
         </div>
-        ${when(déjà > 0, html`<span class="in-deck-qty" aria-label="${t("Dans le deck")}">×${déjà}</span>`)}
+        ${when(déjà > 0, html`<span class="in-deck-qty" aria-label="${t("In the deck")}">×${déjà}</span>`)}
       </button>
       ${stepper(row, state)}
     </div>
@@ -242,7 +242,7 @@ function collTile(row: CollectionRow, state: DeckState): SafeHtml {
       ${stepper(row, state, true)}
     </div>
     <button type="button" class="tile-body tile-open js-open-card" data-pc="${String(passcode)}">
-      <strong class="tile-name">${carte?.name ?? t("Carte non identifiée")}</strong>
+      <strong class="tile-name">${carte?.name ?? t("Unidentified card")}</strong>
       <code>${row.setCode}</code>${banBadge(carte?.banlistTcg)}
     </button>
   </div>`;
@@ -256,15 +256,15 @@ function collectionPanel(state: DeckState): SafeHtml {
       <label class="search">
         <span class="search-icon" aria-hidden="true">⌕</span>
         <input type="search" id="coll-search" value="${state.query}"
-               placeholder="${t("Nom, set code ou #passcode…")}"
-               aria-label="${t("Rechercher dans la collection")}" />
+               placeholder="${t("Name, set code or #passcode…")}"
+               aria-label="${t("Search your collection")}" />
       </label>
-      <div class="view-toggle" role="group" aria-label="${t("Affichage")}">
+      <div class="view-toggle" role="group" aria-label="${t("Display")}">
         <button type="button" class="icon-btn${state.collView === "list" ? " is-active" : ""}"
-                data-coll-view="list" title="${t("Liste")}" aria-label="${t("Vue liste")}"
+                data-coll-view="list" title="${t("List")}" aria-label="${t("List view")}"
                 aria-pressed="${String(state.collView === "list")}"><span class="i-list" aria-hidden="true"></span></button>
         <button type="button" class="icon-btn${state.collView === "gallery" ? " is-active" : ""}"
-                data-coll-view="gallery" title="${t("Galerie")}" aria-label="${t("Vue galerie")}"
+                data-coll-view="gallery" title="${t("Gallery")}" aria-label="${t("Gallery view")}"
                 aria-pressed="${String(state.collView === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
       </div>
     </div>
@@ -290,7 +290,7 @@ function collectionPanel(state: DeckState): SafeHtml {
     </div>
 
     ${lignes.length === 0
-      ? html`<p class="muted">${t("Aucune carte (collection ou filtres).")}</p>`
+      ? html`<p class="muted">${t("No cards (collection or filters).")}</p>`
       : state.collView === "gallery"
         ? html`<div class="gallery deck-edit-gallery" data-cols="6">
             ${lignes.map((row) => collTile(row, state))}
@@ -312,7 +312,7 @@ function zoneRow(entry: DeckDetail["cards"][number], zone: DeckZone): SafeHtml {
         ${when(
           entry.missing > 0,
           html`<code class="muted"
-            >${t("{n} à retrouver — {owned} en collection", {
+            >${t("{n} to find — {owned} in collection", {
               n: entry.missing, owned: entry.owned,
             })}</code
           >`,
@@ -322,10 +322,10 @@ function zoneRow(entry: DeckDetail["cards"][number], zone: DeckZone): SafeHtml {
     </span>
     <div class="deck-stepper zone-qty" role="group" aria-label="${entry.name}">
       <button type="button" class="btn-qty js-zone" data-pc="${String(entry.passcode)}" data-d="-1"
-              aria-label="${t("Retirer un exemplaire")}">−</button>
+              aria-label="${t("Remove a copy")}">−</button>
       <span class="deck-stepper-qty is-in-deck">×${entry[zone]}</span>
       <button type="button" class="btn-qty js-zone" data-pc="${String(entry.passcode)}" data-d="1"
-              aria-label="${t("Ajouter un exemplaire")}">+</button>
+              aria-label="${t("Add a copy")}">+</button>
     </div>
   </li>`;
 }
@@ -344,10 +344,10 @@ function zonesPanel(state: DeckState, deck: DeckDetail): SafeHtml {
       )}
     </div>
     <p class="muted zone-hint">
-      ${t("L'onglet dit où vont les « + ». Les monstres d'Extra Deck y vont toujours.")}
+      ${t("The tab decides where “+” goes. Extra Deck monsters always go there.")}
     </p>
     ${dansLaZone.length === 0
-      ? html`<p class="muted zone-edit-empty">${t("Zone vide")}</p>`
+      ? html`<p class="muted zone-edit-empty">${t("Empty zone")}</p>`
       : html`<ul class="zone-edit-list">${dansLaZone.map((entry) => zoneRow(entry, state.zone))}</ul>`}
   </section>`;
 }
@@ -364,12 +364,12 @@ function deckPill(deck: DeckSummary): SafeHtml {
   const statut = deckStatus(deck.counts, deck.missing);
   return html`<span class="zone-pill ${statut.kind === "ready" ? "deck-ready" : "deck-unready"}"
     >${statut.kind === "ready"
-      ? t("Prêt")
+      ? t("Ready")
       : statut.kind === "over"
-        ? t("Trop de cartes")
+        ? t("Too many cards")
         : statut.kind === "missing"
-          ? t("{n} à retrouver", { n: statut.missing })
-          : t("Incomplet")}</span
+          ? t("{n} to find", { n: statut.missing })
+          : t("Incomplete")}</span
   >`;
 }
 
@@ -451,8 +451,8 @@ function contenuHtml(state: DeckState): SafeHtml {
     const trouvés = searchDecks(state, query);
     if (trouvés.length === 0) {
       return html`<div class="empty-state">
-        <p class="empty-title">${t("Rien ici")}</p>
-        <p class="muted">${t("Aucun deck ne porte ce nom.")}</p>
+        <p class="empty-title">${t("Nothing here")}</p>
+        <p class="muted">${t("No deck goes by that name.")}</p>
       </div>`;
     }
     return galerie
@@ -480,11 +480,11 @@ function contenuHtml(state: DeckState): SafeHtml {
         : html`<ul class="drive-list">${parentRow(state)}</ul>`,
     )}
     <div class="empty-state">
-      <p class="empty-title">${state.folderId === null ? t("Rien ici") : t("Dossier vide")}</p>
+      <p class="empty-title">${state.folderId === null ? t("Nothing here") : t("Empty folder")}</p>
       <p class="muted">
         ${state.folderId === null
-          ? t("Construisez un deck pour commencer.")
-          : t("Déplacez un deck ici, ou remontez d'un étage.")}
+          ? t("Build a deck to get started.")
+          : t("Move a deck here, or go up one level.")}
       </p>
     </div>`;
   }
@@ -503,9 +503,9 @@ function contenuHtml(state: DeckState): SafeHtml {
 function listHtml(state: DeckState): SafeHtml {
   return html`<main class="decks-page">
     <div class="decks-manage-head">
-      <h1>${t("Mes decks")}</h1>
+      <h1>${t("My decks")}</h1>
       <p class="muted">
-        ${t("Un deck se construit depuis votre collection : on n'y met que ce qu'on possède.")}
+        ${t("A deck is built from your collection: you only put in what you own.")}
       </p>
     </div>
 
@@ -515,25 +515,25 @@ function listHtml(state: DeckState): SafeHtml {
       <label class="search">
         <span class="search-icon" aria-hidden="true">⌕</span>
         <input type="search" id="deck-search" value="${state.query}"
-               placeholder="${t("Rechercher un deck…")}"
-               aria-label="${t("Rechercher un deck")}" />
+               placeholder="${t("Search for a deck…")}"
+               aria-label="${t("Search for a deck")}" />
       </label>
-      <div class="view-toggle" role="group" aria-label="${t("Affichage")}">
+      <div class="view-toggle" role="group" aria-label="${t("Display")}">
         <button type="button" class="icon-btn${state.listView === "list" ? " is-active" : ""}"
-                data-list-view="list" title="${t("Liste")}" aria-label="${t("Vue liste")}"
+                data-list-view="list" title="${t("List")}" aria-label="${t("List view")}"
                 aria-pressed="${String(state.listView === "list")}"><span class="i-list" aria-hidden="true"></span></button>
         <button type="button" class="icon-btn${state.listView === "gallery" ? " is-active" : ""}"
-                data-list-view="gallery" title="${t("Galerie")}" aria-label="${t("Vue galerie")}"
+                data-list-view="gallery" title="${t("Gallery")}" aria-label="${t("Gallery view")}"
                 aria-pressed="${String(state.listView === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
       </div>
-      <button type="button" class="btn" id="btn-new-folder">${t("Nouveau dossier")}</button>
+      <button type="button" class="btn" id="btn-new-folder">${t("New folder")}</button>
       <button type="button" class="btn btn-primary decks-toolbar-build" id="btn-build">
-        ${t("Construire un deck")}
+        ${t("Build a deck")}
       </button>
     </div>
 
     ${when(state.error, html`<p class="banner banner-err">${state.error}</p>`)}
-    ${state.loading ? html`<p class="muted">${t("Chargement…")}</p>` : contenuHtml(state)}
+    ${state.loading ? html`<p class="muted">${t("Loading…")}</p>` : contenuHtml(state)}
     ${modalHtml(state)}
   </main>`;
 }
@@ -543,9 +543,9 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
     <div class="deck-edit-head">
       <div class="deck-edit-fields">
         <label class="menu-field grow">
-          ${t("Nom du deck")}
+          ${t("Deck name")}
           <input type="text" id="edit-name" maxlength="60" value="${deck.name}"
-                 placeholder="${t("Nom unique…")}" />
+                 placeholder="${t("Unique name…")}" />
         </label>
       </div>
       <div class="deck-edit-actions">
@@ -560,8 +560,8 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
           construction, et il vit sur la fiche. Deux endroits pour supprimer,
           c'est un de trop.
         -->
-        <a class="btn" href="/decks?deck=${deck.id}">${t("← Fiche")}</a>
-        <a class="btn" href="/decks">${t("Tous les decks")}</a>
+        <a class="btn" href="/decks?deck=${deck.id}">${t("← Sheet")}</a>
+        <a class="btn" href="/decks">${t("All decks")}</a>
       </div>
     </div>
 
@@ -575,13 +575,13 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
       son deck — c'est-à-dire à chaque carte ajoutée. La bascule n'existe pas
       sur grand écran, où les deux tiennent côte à côte.
     -->
-    <div class="deck-panel-switch" role="tablist" aria-label="${t("Panneau affiché")}">
+    <div class="deck-panel-switch" role="tablist" aria-label="${t("Visible panel")}">
       <button type="button" class="chip${state.panel === "collection" ? " is-active" : ""}"
               role="tab" aria-selected="${String(state.panel === "collection")}"
-              data-panel="collection">📚 ${t("Ma collection")}</button>
+              data-panel="collection">📚 ${t("My collection")}</button>
       <button type="button" class="chip${state.panel === "zones" ? " is-active" : ""}"
               role="tab" aria-selected="${String(state.panel === "zones")}"
-              data-panel="zones">🃏 ${t("Mon deck")}
+              data-panel="zones">🃏 ${t("My deck")}
         <span class="muted">${deck.counts[state.zone]}</span></button>
     </div>
 
@@ -594,10 +594,10 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
 
 /** Les raisons de refus, dans les mots de l'écran. Mêmes clés que le serveur. */
 const REFUS_LABELS: Record<string, string> = {
-  forbidden: "Cette carte est interdite par la banlist.",
-  banlist: "La banlist n'en autorise pas autant.",
-  not_owned: "Vous ne possédez pas assez d'exemplaires de cette carte.",
-  max_copies: "Un deck ne porte pas plus de 3 exemplaires d'une carte.",
+  forbidden: "This card is forbidden by the banlist.",
+  banlist: "The banlist does not allow that many.",
+  not_owned: "You do not own enough copies of this card.",
+  max_copies: "A deck may hold no more than 3 copies of a card.",
 };
 
 /**
@@ -661,12 +661,12 @@ function cardSheet(state: DeckState): SafeHtml {
     card: carte,
     extra: html`<div class="deck-open-actions">
       <p class="muted">
-        ${t("Dans le deck")} : <strong class="in-deck-qty-label">×${déjà}</strong> ·
-        ${t("Zone active")} : ${ZONE_LABELS[state.zone]}
+        ${t("In the deck")} : <strong class="in-deck-qty-label">×${déjà}</strong> ·
+        ${t("Active zone")} : ${ZONE_LABELS[state.zone]}
       </p>
       <div class="deck-open-btns">
         <button type="button" class="btn btn-primary js-coll" data-pc="${String(carte.passcode)}"
-                data-d="1" title="${refus ? t(refus) : t("Ajouter au deck")}"
+                data-d="1" title="${refus ? t(refus) : t("Add to deck")}"
                 ${issue.canAdd ? raw("") : raw("disabled")}>+1</button>
         <button type="button" class="btn js-coll" data-pc="${String(carte.passcode)}" data-d="-1"
                 ${déjà > 0 ? raw("") : raw("disabled")}>−1</button>
@@ -751,16 +751,16 @@ function sheetHtml(state: DeckState, deck: DeckDetail): SafeHtml {
           <h1>${deck.name}</h1>
           <p class="muted deck-sheet-place">
             ${when(dossier !== undefined, html`📁 ${dossier?.path.join(" / ") ?? ""}`)}
-            ${when(dossier === undefined, html`📁 ${t("Racine")}`)}
+            ${when(dossier === undefined, html`📁 ${t("Root")}`)}
           </p>
         </div>
       </div>
       <div class="deck-sheet-actions">
-        <a class="btn" href="/decks">${t("Tous les decks")}</a>
+        <a class="btn" href="/decks">${t("All decks")}</a>
         <a class="icon-btn" id="btn-edit-deck" href="/decks?deck=${deck.id}&atelier=1"
-           title="${t("Modifier")}" aria-label="${t("Modifier")}">✏️</a>
+           title="${t("Edit")}" aria-label="${t("Edit")}">✏️</a>
         <button type="button" class="icon-btn btn-icon-danger" id="btn-delete"
-                title="${t("Jeter ce deck")}" aria-label="${t("Jeter ce deck")}">🗑</button>
+                title="${t("Discard this deck")}" aria-label="${t("Discard this deck")}">🗑</button>
       </div>
     </div>
 
@@ -771,15 +771,15 @@ function sheetHtml(state: DeckState, deck: DeckDetail): SafeHtml {
       <label class="search">
         <span class="search-icon" aria-hidden="true">⌕</span>
         <input type="search" id="deck-search" value="${state.query}"
-               placeholder="${t("Rechercher une carte…")}"
-               aria-label="${t("Rechercher une carte")}" />
+               placeholder="${t("Search for a card…")}"
+               aria-label="${t("Search for a card")}" />
       </label>
-      <div class="view-toggle" role="group" aria-label="${t("Affichage")}">
+      <div class="view-toggle" role="group" aria-label="${t("Display")}">
         <button type="button" class="icon-btn${state.sheetView === "list" ? " is-active" : ""}"
-                data-sheet-view="list" title="${t("Liste")}" aria-label="${t("Vue liste")}"
+                data-sheet-view="list" title="${t("List")}" aria-label="${t("List view")}"
                 aria-pressed="${String(state.sheetView === "list")}"><span class="i-list" aria-hidden="true"></span></button>
         <button type="button" class="icon-btn${state.sheetView === "gallery" ? " is-active" : ""}"
-                data-sheet-view="gallery" title="${t("Galerie")}" aria-label="${t("Vue galerie")}"
+                data-sheet-view="gallery" title="${t("Gallery")}" aria-label="${t("Gallery view")}"
                 aria-pressed="${String(state.sheetView === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
       </div>
     </div>
@@ -787,7 +787,7 @@ function sheetHtml(state: DeckState, deck: DeckDetail): SafeHtml {
     <div class="zone-tabs" role="tablist">
       <button type="button" class="chip chip-zone${state.sheetZone === "all" ? " is-active" : ""}"
               data-sheet-zone="all" role="tab" aria-selected="${String(state.sheetZone === "all")}"
-        >${t("Tout")} <span class="muted">${total}</span></button
+        >${t("All zones")} <span class="muted">${total}</span></button
       >
       ${DECK_ZONES.map(
         (zone) => html`<button type="button"
@@ -800,8 +800,8 @@ function sheetHtml(state: DeckState, deck: DeckDetail): SafeHtml {
 
     ${lignes.length === 0
       ? html`<div class="empty-state">
-          <p class="empty-title">${t("Aucune carte")}</p>
-          <p class="muted">${t("Ouvrez l'atelier pour en poser.")}</p>
+          <p class="empty-title">${t("No cards")}</p>
+          <p class="muted">${t("Open the workshop to add some.")}</p>
         </div>`
       : state.sheetView === "gallery"
         ? html`<div class="gallery" data-cols="6">${lignes.map(sheetTile)}</div>`

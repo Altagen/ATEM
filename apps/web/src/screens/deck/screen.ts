@@ -85,7 +85,7 @@ export async function deckScreen(
       await chargerRangement();
       state.error = "";
     } catch (err) {
-      dire(err, "Serveur injoignable.");
+      dire(err, "Server unreachable.");
       return;
     } finally {
       state.loading = false;
@@ -99,7 +99,7 @@ export async function deckScreen(
       await chargerRangement();
       state.error = "";
     } catch (err) {
-      dire(err, "Serveur injoignable.");
+      dire(err, "Server unreachable.");
       return;
     }
     paint();
@@ -122,7 +122,7 @@ export async function deckScreen(
       state.collection = items;
       state.owned = countByCard(items);
     } catch (err) {
-      dire(err, "Serveur injoignable.");
+      dire(err, "Server unreachable.");
     }
   }
 
@@ -144,7 +144,7 @@ export async function deckScreen(
       state.folders = dossiers.items;
       state.error = "";
     } catch (err) {
-      dire(err, "Deck introuvable.");
+      dire(err, "Deck not found.");
       return;
     } finally {
       state.loading = false;
@@ -191,7 +191,7 @@ export async function deckScreen(
     } catch (err) {
       // Le refus du serveur porte sa raison : on la montre telle quelle plutôt
       // que d'en inventer une.
-      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+      toast(err instanceof ApiError ? err.message : t("Saving failed."), "error");
     }
   }
 
@@ -230,7 +230,7 @@ export async function deckScreen(
 
     const nom = root.querySelector<HTMLInputElement>("#modal-name")?.value.trim() ?? "";
     if (nom === "") {
-      toast(modal.kind === "new-deck" ? t("Donnez un nom au deck.") : t("Donnez un nom au dossier."), "error");
+      toast(modal.kind === "new-deck" ? t("Give the deck a name.") : t("Give the folder a name."), "error");
       root.querySelector<HTMLInputElement>("#modal-name")?.focus();
       return;
     }
@@ -243,7 +243,7 @@ export async function deckScreen(
             body: { name: nom, folderId: state.folderId },
           });
           state.modal = null;
-          toast(t("« {nom} » créé.", { nom: deck.name }), "success");
+          toast(t("“{name}” created.", { name: deck.name }), "success");
           window.history.pushState({}, "", `/decks?deck=${deck.id}&atelier=1`);
           state.editing = true;
           state.loading = true;
@@ -266,7 +266,7 @@ export async function deckScreen(
     } catch (err) {
       // Le refus du serveur porte sa raison — la profondeur, le cycle, le nom
       // déjà pris : on la montre telle quelle plutôt que d'en inventer une.
-      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+      toast(err instanceof ApiError ? err.message : t("Saving failed."), "error");
       return;
     }
 
@@ -321,7 +321,7 @@ export async function deckScreen(
         });
       }
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+      toast(err instanceof ApiError ? err.message : t("Saving failed."), "error");
       return;
     }
 
@@ -342,7 +342,7 @@ export async function deckScreen(
       const { card } = await api<{ card: CardDetail }>(`/catalogue/cards/${passcode}`);
       state.cardDetails.set(passcode, card);
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("Serveur injoignable."), "error");
+      toast(err instanceof ApiError ? err.message : t("Server unreachable."), "error");
       return;
     }
     // On a pu refermer entre-temps : repeindre rouvrirait la fiche.
@@ -354,14 +354,14 @@ export async function deckScreen(
     const dossier = state.folders.find((f) => f.id === id);
     if (!dossier) return;
     state.menu = null;
-    if (!window.confirm(t("Jeter « {nom} » ? Son contenu remonte d'un étage.", { nom: dossier.name }))) {
+    if (!window.confirm(t("Discard “{name}”? Its contents move up one level.", { name: dossier.name }))) {
       paint();
       return;
     }
     try {
       await api(`/decks/dossiers/${encodeURIComponent(id)}`, { method: "DELETE" });
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("La suppression a échoué."), "error");
+      toast(err instanceof ApiError ? err.message : t("Deletion failed."), "error");
       return;
     }
     await relireRangement();
@@ -370,16 +370,16 @@ export async function deckScreen(
   async function deleteDeck(): Promise<void> {
     const deck = state.opened;
     if (!deck) return;
-    if (!window.confirm(t("Jeter « {nom} » ? Le deck sera perdu.", { nom: deck.name }))) return;
+    if (!window.confirm(t("Discard “{name}”? The deck will be lost.", { name: deck.name }))) return;
     try {
       await api(`/decks/${encodeURIComponent(deck.id)}`, { method: "DELETE" });
-      toast(t("« {nom} » jeté.", { nom: deck.name }), "success");
+      toast(t("“{name}” discarded.", { name: deck.name }), "success");
       window.history.pushState({}, "", "/decks");
       state.opened = null;
       state.loading = true;
       await loadList();
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("La suppression a échoué."), "error");
+      toast(err instanceof ApiError ? err.message : t("Deletion failed."), "error");
     }
   }
 
@@ -480,7 +480,7 @@ export async function deckScreen(
     if (!nom) {
       const champ = root.querySelector<HTMLInputElement>("#edit-name");
       if (champ) champ.value = deck.name;
-      toast(t("Donnez un nom au deck."), "error");
+      toast(t("Give the deck a name."), "error");
       return;
     }
     if (nom === deck.name) return;
@@ -488,7 +488,7 @@ export async function deckScreen(
     try {
       await api(`/decks/${encodeURIComponent(deck.id)}`, { method: "PATCH", body: { name: nom } });
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+      toast(err instanceof ApiError ? err.message : t("Saving failed."), "error");
       return;
     }
 

@@ -29,11 +29,11 @@ async function readBody<T>(c: { req: { json: () => Promise<unknown> } }, schema:
   try {
     raw = await c.req.json();
   } catch {
-    throw invalidInput("Corps de requête illisible.");
+    throw invalidInput("Unreadable request body.");
   }
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
-    throw invalidInput("Données invalides.", { issues: parsed.error.issues });
+    throw invalidInput("Invalid data.", { issues: parsed.error.issues });
   }
   return parsed.data;
 }
@@ -75,7 +75,7 @@ export function identityRoutes(db: Database) {
 
   app.get("/me", requireViewer, async (c) => {
     const viewer = c.get("viewer");
-    if (!viewer) throw invalidInput("Session absente.");
+    if (!viewer) throw invalidInput("No session.");
     return c.json({ user: await getPublicUser(db, viewer.id) });
   });
 
@@ -88,16 +88,16 @@ export function identityRoutes(db: Database) {
    */
   app.delete("/me", requireViewer, async (c) => {
     const viewer = c.get("viewer");
-    if (!viewer) throw invalidInput("Session absente.");
+    if (!viewer) throw invalidInput("No session.");
 
     let raw: unknown;
     try {
       raw = await c.req.json();
     } catch {
-      throw invalidInput("Corps de requête illisible.");
+      throw invalidInput("Unreadable request body.");
     }
     const parsed = z.object({ password: z.string().min(1).max(LIMITS.password.max) }).safeParse(raw);
-    if (!parsed.success) throw invalidInput("Mot de passe requis.");
+    if (!parsed.success) throw invalidInput("Password required.");
 
     await deleteAccount(db, viewer.id, parsed.data.password);
     clearSessionCookie(c);
@@ -107,16 +107,16 @@ export function identityRoutes(db: Database) {
   /** La langue de l'interface, portée par le compte. */
   app.patch("/me/langue", requireViewer, async (c) => {
     const viewer = c.get("viewer");
-    if (!viewer) throw invalidInput("Session absente.");
+    if (!viewer) throw invalidInput("No session.");
 
     let raw: unknown;
     try {
       raw = await c.req.json();
     } catch {
-      throw invalidInput("Corps de requête illisible.");
+      throw invalidInput("Unreadable request body.");
     }
     const parsed = z.object({ locale: z.enum(["fr", "en"]) }).safeParse(raw);
-    if (!parsed.success) throw invalidInput("Langue inconnue.");
+    if (!parsed.success) throw invalidInput("Unknown language.");
 
     return c.json({ user: await setLocale(db, viewer.id, parsed.data.locale) });
   });

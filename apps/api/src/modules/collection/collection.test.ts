@@ -112,7 +112,7 @@ test("la quantité ne descend pas sous zéro", async () => {
   await adjustQuantity(db, user.id, { setCode: "BBBB-FR001", delta: 1 });
   await assert.rejects(
     () => adjustQuantity(db, user.id, { setCode: "BBBB-FR001", delta: -5 }),
-    /moins de zéro/,
+    /fewer than zero/,
   );
 });
 
@@ -140,7 +140,7 @@ test("la ligne d'autrui est introuvable, pas interdite", async () => {
   const stranger = await newUser();
   const item = await adjustQuantity(db, owner.id, { setCode: "EEEE-FR001", delta: 1 });
 
-  await assert.rejects(() => setFavorite(db, stranger.id, item.id, true), /introuvable/);
+  await assert.rejects(() => setFavorite(db, stranger.id, item.id, true), /not found/);
   await setFavorite(db, owner.id, item.id, true);
 });
 
@@ -440,7 +440,7 @@ test("la note d'autrui est introuvable", async () => {
   const owner = await newUser();
   const stranger = await newUser();
   const item = await adjustQuantity(db, owner.id, { setCode: "YZZZ-FR001", delta: 1 });
-  await assert.rejects(() => setNotes(db, stranger.id, item.id, "vol"), /introuvable/);
+  await assert.rejects(() => setNotes(db, stranger.id, item.id, "vol"), /not found/);
 });
 
 test("une carte pas encore traduite est signalée", async () => {

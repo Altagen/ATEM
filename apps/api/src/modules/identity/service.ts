@@ -45,7 +45,7 @@ export async function registerUser(
     throw invalidInput(
       // Une seule chaîne, et non deux concaténées : c'est elle que le front
       // cherche au dictionnaire pour la rendre en anglais.
-      "Le mot de passe doit faire au moins 16 caractères et contenir une majuscule, une minuscule, un chiffre et un caractère spécial.",
+      "The password must be at least 16 characters long and contain an uppercase letter, a lowercase letter, a digit and a special character.",
       {
         hasMinLength: strength.hasMinLength,
         hasUpper: strength.hasUpper,
@@ -58,15 +58,15 @@ export async function registerUser(
 
   const email = input.email.trim();
   const displayName = input.displayName.trim();
-  if (!email.includes("@")) throw invalidInput("Adresse email invalide.");
-  if (displayName.length < 2) throw invalidInput("Le pseudo doit faire au moins 2 caractères.");
+  if (!email.includes("@")) throw invalidInput("Invalid email address.");
+  if (displayName.length < 2) throw invalidInput("The display name must be at least 2 characters long.");
 
   const [existing] = await db
     .select({ id: users.id })
     .from(users)
     .where(sql`lower(${users.email}) = lower(${email})`)
     .limit(1);
-  if (existing) throw conflict("Cette adresse email est déjà utilisée.");
+  if (existing) throw conflict("That email address is already in use.");
 
   const passwordHash = await hashPassword(input.password);
 
@@ -85,7 +85,7 @@ export async function registerUser(
       if (!message.includes("users_name_tag_uidx")) throw err;
     }
   }
-  throw conflict("Ce pseudo est trop demandé, essayez-en un autre.");
+  throw conflict("That display name is too popular, try another.");
 }
 
 export async function authenticate(
@@ -100,14 +100,14 @@ export async function authenticate(
 
   // Message identique dans les deux cas : distinguer « compte inconnu » de
   // « mot de passe faux » révélerait quelles adresses ont un compte ici.
-  const invalid = unauthorized("Adresse email ou mot de passe incorrect.");
+  const invalid = unauthorized("Incorrect email address or password.");
   if (!row) {
     // On hache quand même, pour que la réponse prenne le même temps.
     await hashPassword(input.password);
     throw invalid;
   }
   if (!(await verifyPassword(input.password, row.passwordHash))) throw invalid;
-  if (row.suspendedAt) throw unauthorized("Ce compte est suspendu.");
+  if (row.suspendedAt) throw unauthorized("This account is suspended.");
 
   // Le mot de passe en clair n'est disponible qu'ici : c'est le seul moment où
   // un hachage produit sous un coût dépassé peut être refait.
@@ -141,14 +141,14 @@ export async function setLocale(
   userId: string,
   locale: string,
 ): Promise<PublicUser> {
-  if (locale !== "fr" && locale !== "en") throw invalidInput("Langue inconnue.");
+  if (locale !== "fr" && locale !== "en") throw invalidInput("Unknown language.");
 
   const [row] = await db
     .update(users)
     .set({ locale })
     .where(eq(users.id, userId))
     .returning();
-  if (!row) throw notFound("Utilisateur introuvable.");
+  if (!row) throw notFound("User not found.");
   return toPublic(row);
 }
 
@@ -177,9 +177,9 @@ export async function deleteAccount(
   password: string,
 ): Promise<void> {
   const [row] = await db.select().from(users).where(eq(users.id, viewerId)).limit(1);
-  if (!row) throw notFound("Utilisateur introuvable.");
+  if (!row) throw notFound("User not found.");
   if (!(await verifyPassword(password, row.passwordHash))) {
-    throw unauthorized("Mot de passe incorrect.");
+    throw unauthorized("Incorrect password.");
   }
 
   await db.transaction(async (tx) => {
@@ -190,6 +190,6 @@ export async function deleteAccount(
 
 export async function getPublicUser(db: Database, userId: string): Promise<PublicUser> {
   const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!row) throw notFound("Utilisateur introuvable.");
+  if (!row) throw notFound("User not found.");
   return toPublic(row);
 }

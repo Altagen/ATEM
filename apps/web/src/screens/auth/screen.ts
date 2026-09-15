@@ -21,7 +21,7 @@ type Mode = "login" | "register";
 
 function authHeader(): HTMLElement {
   return el("header", { class: "landing-header" }, [
-    el("a", { class: "landing-brand", href: "/", "aria-label": "Accueil ATEM" }, [
+    el("a", { class: "landing-brand", href: "/", "aria-label": t("ATEM home") }, [
       el("span", { class: "landing-logo" }, ["ATEM"]),
     ]),
   ]);
@@ -72,17 +72,17 @@ export function authScreen(mode: Mode) {
     const password = el("input", {
       type: "password",
       autocomplete: isRegister ? "new-password" : "current-password",
-      placeholder: isRegister ? t("Min. 16 caractères…") : "••••••••",
+      placeholder: isRegister ? t("Min. 16 characters…") : "••••••••",
     });
     const confirm = el("input", {
       type: "password",
       autocomplete: "new-password",
-      placeholder: t("Retapez le mot de passe"),
+      placeholder: t("Type the password again"),
     });
     const displayName = el("input", {
       type: "text",
       autocomplete: "nickname",
-      placeholder: t("Votre pseudo de duelliste"),
+      placeholder: t("Your duellist name"),
     });
 
     /**
@@ -97,30 +97,30 @@ export function authScreen(mode: Mode) {
     });
 
     const submit = el("button", { type: "submit", class: "auth-submit-btn" }, [
-      isRegister ? t("Créer mon compte") : t("Se connecter"),
+      isRegister ? t("Create my account") : t("Sign in"),
     ]);
 
     const form = el("form", { class: "auth-form", novalidate: "" });
 
     const passwordGroup = fieldGroup(
       isRegister ? "reg-password" : "login-password",
-      t("Mot de passe"),
+      t("Password"),
       password,
-      isRegister ? t("16 caractères au minimum") : undefined,
+      isRegister ? t("16 characters minimum") : undefined,
     );
 
     if (isRegister) {
       form.append(
-        fieldGroup("reg-name", t("Pseudo"), displayName),
-        fieldGroup("reg-email", t("Adresse e-mail"), email),
+        fieldGroup("reg-name", t("Display name"), displayName),
+        fieldGroup("reg-email", t("Email address"), email),
         passwordGroup,
-        fieldGroup("reg-confirm", t("Confirmation du mot de passe"), confirm),
+        fieldGroup("reg-confirm", t("Confirm password"), confirm),
         submit,
       );
       mountPasswordMeter(passwordGroup, password);
     } else {
       form.append(
-        fieldGroup("login-email", t("Adresse e-mail"), email),
+        fieldGroup("login-email", t("Email address"), email),
         passwordGroup,
         submit,
       );
@@ -128,19 +128,19 @@ export function authScreen(mode: Mode) {
 
     const card = el("section", { class: isRegister ? "auth-card is-wide" : "auth-card" }, [
       el("h1", { class: "auth-card-title" }, [
-        isRegister ? t("Créer un compte") : t("Se connecter"),
+        isRegister ? t("Create an account") : t("Sign in"),
       ]),
       el("p", { class: "auth-subtitle muted" }, [
         isRegister
-          ? t("Création de compte duelliste")
-          : "Advanced Tactical Engine for MatchMaking",
+          ? t("Create a duellist account")
+          : t("Advanced Tactical Engine for MatchMaking"),
       ]),
       errorBanner,
       form,
       el("p", { class: "auth-toggle muted" }, [
-        isRegister ? `${t("Déjà un compte ?")} ` : `${t("Nouveau sur ATEM ?")} `,
+        isRegister ? `${t("Already have an account?")} ` : `${t("New to ATEM?")} `,
         el("a", { class: "auth-link-btn", href: isRegister ? "/connexion" : "/inscription" }, [
-          isRegister ? t("Se connecter") : t("Créer un compte"),
+          isRegister ? t("Sign in") : t("Create an account"),
         ]),
       ]),
     ]);
@@ -162,10 +162,10 @@ export function authScreen(mode: Mode) {
         (control as HTMLInputElement).disabled = busy;
       }
       submit.textContent = busy
-        ? "Un instant…"
+        ? t("One moment…")
         : isRegister
-          ? t("Créer mon compte")
-          : t("Se connecter");
+          ? t("Create my account")
+          : t("Sign in");
     }
 
     form.addEventListener("submit", async (event) => {
@@ -173,7 +173,7 @@ export function authScreen(mode: Mode) {
       errorBanner.textContent = "";
 
       if (isRegister && password.value !== confirm.value) {
-        errorBanner.textContent = t("Les deux mots de passe ne correspondent pas.");
+        errorBanner.textContent = t("The two passwords do not match.");
         confirm.focus();
         return;
       }
@@ -191,11 +191,11 @@ export function authScreen(mode: Mode) {
         // Un accueil n'est pas un succès : le vert est réservé à ce qui vient
         // d'être enregistré — une carte ajoutée, une note gardée. L'arrivée sur
         // sa collection porte le doré de la maison.
-        toast(`Bienvenue, ${user.displayName}.`);
+        toast(t("Welcome, {name}.", { name: user.displayName }));
         navigate(next, { replace: true });
       } catch (err) {
         errorBanner.textContent =
-          err instanceof ApiError ? err.message : t("Le serveur est injoignable.");
+          err instanceof ApiError ? err.message : t("The server is unreachable.");
         setBusy(false);
       }
     });

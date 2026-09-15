@@ -72,7 +72,7 @@ export async function getScanlist(
     .from(scanlists)
     .where(and(eq(scanlists.id, id), eq(scanlists.userId, viewerId)))
     .limit(1);
-  if (!row) throw notFound("Scanliste introuvable.");
+  if (!row) throw notFound("Scanlist not found.");
 
   const lines = await db
     .select()
@@ -110,7 +110,7 @@ export async function createScanlist(
   input: { name: string; lines: ScanlistLine[] },
 ): Promise<ScanlistDetail> {
   const name = input.name.trim();
-  if (!name) throw invalidInput("Donnez un nom au lot.");
+  if (!name) throw invalidInput("Give the batch a name.");
 
   /**
    * Les codes sont normalisés **et regroupés** ici.
@@ -142,7 +142,7 @@ export async function createScanlist(
   }
 
   const lines = [...merged.values()];
-  if (lines.length === 0) throw invalidInput("Aucune carte à enregistrer.");
+  if (lines.length === 0) throw invalidInput("No cards to save.");
   if (lines.length > LIMITS.scanlist.maxLines) {
     throw invalidInput(`Un lot ne porte pas plus de ${LIMITS.scanlist.maxLines} références.`);
   }
@@ -205,8 +205,8 @@ export async function pourScanlist(
       .from(scanlists)
       .where(and(eq(scanlists.id, id), eq(scanlists.userId, viewerId)))
       .limit(1);
-    if (!exists) throw notFound("Scanliste introuvable.");
-    throw conflict("Ce lot a déjà été versé.");
+    if (!exists) throw notFound("Scanlist not found.");
+    throw conflict("This batch has already been poured.");
   }
 
   const lines = await db
@@ -251,5 +251,5 @@ export async function deleteScanlist(db: Database, viewerId: string, id: string)
     .delete(scanlists)
     .where(and(eq(scanlists.id, id), eq(scanlists.userId, viewerId)))
     .returning({ id: scanlists.id });
-  if (deleted.length === 0) throw notFound("Scanliste introuvable.");
+  if (deleted.length === 0) throw notFound("Scanlist not found.");
 }

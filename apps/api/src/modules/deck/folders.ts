@@ -91,7 +91,7 @@ const topologie = (byId: Map<string, DeckFolderRow>): FolderNode[] =>
 
 const nomPropre = (brut: string): string => {
   const propre = brut.trim();
-  if (!propre) throw invalidInput("Donnez un nom au dossier.");
+  if (!propre) throw invalidInput("Give the folder a name.");
   return propre;
 };
 
@@ -105,7 +105,7 @@ const nomPropre = (brut: string): string => {
 function traduireConflit(err: unknown): never {
   const cause = (err as { cause?: { constraint_name?: string } }).cause;
   if (cause?.constraint_name === "deck_folders_sibling_name_uidx") {
-    throw conflict("Un dossier de ce nom est déjà rangé au même endroit.");
+    throw conflict("A folder by that name is already filed in the same place.");
   }
   throw err;
 }
@@ -135,7 +135,7 @@ export async function assertFolderOwned(
     .from(deckFolders)
     .where(and(eq(deckFolders.id, folderId), eq(deckFolders.userId, viewerId)))
     .limit(1);
-  if (!row) throw notFound("Dossier introuvable.");
+  if (!row) throw notFound("Folder not found.");
 }
 
 export async function createFolder(
@@ -150,9 +150,9 @@ export async function createFolder(
     requireUuid(parentId);
     const byId = await charger(db, viewerId);
     const parent = byId.get(parentId);
-    if (!parent) throw notFound("Dossier introuvable.");
+    if (!parent) throw notFound("Folder not found.");
     if (folderDepth(topologie(byId), parent.id) >= DECK_FOLDER_MAX_DEPTH) {
-      throw invalidInput("Ce dossier est déjà au dernier étage.");
+      throw invalidInput("That folder is already on the last level.");
     }
   }
 
@@ -189,7 +189,7 @@ export async function updateFolder(
   requireUuid(folderId);
   const byId = await charger(db, viewerId);
   const existant = byId.get(folderId);
-  if (!existant) throw notFound("Dossier introuvable.");
+  if (!existant) throw notFound("Folder not found.");
 
   const valeurs: { name?: string; parentId?: string | null; updatedAt: Date } = {
     updatedAt: new Date(),
@@ -198,11 +198,11 @@ export async function updateFolder(
 
   if (input.parentId !== undefined) {
     const parentId = input.parentId;
-    if (parentId === folderId) throw invalidInput("Un dossier ne se range pas dans lui-même.");
+    if (parentId === folderId) throw invalidInput("A folder cannot be filed inside itself.");
 
     if (parentId !== null) {
       requireUuid(parentId);
-      if (!byId.has(parentId)) throw notFound("Dossier introuvable.");
+      if (!byId.has(parentId)) throw notFound("Folder not found.");
 
       /**
        * Les trois refus sont séparés parce que chacun a sa phrase. La question
@@ -211,12 +211,12 @@ export async function updateFolder(
        */
       const arbre = topologie(byId);
       if (folderIsInside(arbre, parentId, folderId)) {
-        throw invalidInput("Un dossier ne se range pas dans l'un des siens.");
+        throw invalidInput("A folder cannot be filed inside one of its own.");
       }
       if (
         folderDepth(arbre, parentId) + folderSubtreeHeight(arbre, folderId) > DECK_FOLDER_MAX_DEPTH
       ) {
-        throw invalidInput("Ce dossier et ce qu'il contient dépasseraient le dernier étage.");
+        throw invalidInput("That folder and its contents would go past the last level.");
       }
     }
     valeurs.parentId = parentId;
@@ -228,7 +228,7 @@ export async function updateFolder(
       .set(valeurs)
       .where(and(eq(deckFolders.id, folderId), eq(deckFolders.userId, viewerId)))
       .returning();
-    if (!row) throw notFound("Dossier introuvable.");
+    if (!row) throw notFound("Folder not found.");
     return toFolder(row, await charger(db, viewerId));
   } catch (err) {
     traduireConflit(err);
@@ -258,7 +258,7 @@ export async function deleteFolder(
     .from(deckFolders)
     .where(and(eq(deckFolders.id, folderId), eq(deckFolders.userId, viewerId)))
     .limit(1);
-  if (!existant) throw notFound("Dossier introuvable.");
+  if (!existant) throw notFound("Folder not found.");
 
   const parentId = existant.parentId;
   const maintenant = new Date();
@@ -289,7 +289,7 @@ export async function deleteFolder(
      */
     const cause = (err as { cause?: { constraint_name?: string } }).cause;
     if (cause?.constraint_name === "deck_folders_sibling_name_uidx") {
-      throw conflict("Un dossier qu'il contient porte le nom d'un dossier de l'étage du dessus.");
+      throw conflict("A folder inside it has the same name as a folder on the level above.");
     }
     throw err;
   }

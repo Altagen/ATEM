@@ -52,13 +52,13 @@ export const csrfGuard: MiddlewareHandler = async (c, next) => {
   try {
     originHost = new URL(origin).host;
   } catch {
-    throw forbidden("Origine illisible.");
+    throw forbidden("Unreadable origin.");
   }
 
   // `Host` tel que le mandataire l'a transmis ; à défaut, celui de la requête.
   const expectedHost = c.req.header("Host") ?? new URL(c.req.url).host;
   if (originHost !== expectedHost) {
-    throw forbidden("Origine non autorisée.");
+    throw forbidden("Origin not allowed.");
   }
   await next();
 };

@@ -102,8 +102,8 @@ const CARD_TYPES: Labels = {
   "Spirit Monster": "Monstre Spirit",
   "Toon Monster": "Monstre Toon",
   Token: "Jeton",
-  "Spell Card": "Magie",
-  "Trap Card": "Piège",
+  "Spell Card": "Spell",
+  "Trap Card": "Trap",
   "Skill Card": "Compétence",
 };
 
@@ -171,9 +171,9 @@ const FRAME_TYPES: Labels = {
   fusion: "Fusion",
   synchro: "Synchro",
   xyz: "Xyz",
-  link: "Lien",
-  spell: "Magie",
-  trap: "Piège",
+  link: "Link",
+  spell: "Spell",
+  trap: "Trap",
   token: "Jeton",
   normal_pendulum: "Pendule Normal",
   effect_pendulum: "Pendule à effet",
@@ -207,3 +207,16 @@ export function translateFrameType(value: string | null | undefined): string {
   const table = locale() === "en" ? FRAME_TYPES_EN : FRAME_TYPES;
   return table[value] ?? value;
 }
+
+/**
+ * Le vocabulaire du catalogue, tel qu'YGOPRODeck l'écrit.
+ *
+ * Ce sont des **données**, pas des libellés : on les compare, on ne les affiche
+ * pas. Écrites en clair dans trois écrans, elles ressemblaient à du texte
+ * affiché oublié par la traduction — et une faute de frappe y serait passée
+ * inaperçue.
+ */
+export const CATALOGUE = {
+  spellCard: "Spell Card",
+  trapCard: "Trap Card",
+} as const;

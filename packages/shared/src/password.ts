@@ -16,9 +16,18 @@
  * Exigence : **seize caractères et les quatre familles** — majuscule,
  * minuscule, chiffre, caractère spécial.
  */
+/**
+ * Le niveau porte un **code**, pas un libellé.
+ *
+ * Il en portait un — « Faible », « Moyen » — et l'écran l'affichait tel quel :
+ * la jauge disait donc « Force : Faible » à un compte anglais. Un paquet de
+ * règles n'a pas à connaître la langue de qui le lit ; l'écran traduit le code.
+ */
+export type PasswordLevel = "weak" | "fair" | "strong" | "excellent";
+
 export type PasswordStrengthResult = {
   score: 0 | 1 | 2 | 3 | 4;
-  label: "Faible" | "Moyen" | "Fort" | "Excellent";
+  level: PasswordLevel;
   hasMinLength: boolean; // >= 16
   hasUpper: boolean;
   hasLower: boolean;
@@ -39,31 +48,31 @@ export function checkPasswordStrength(password: string): PasswordStrengthResult 
   const isValid = hasMinLength && categoriesCount === 4;
 
   let score: 0 | 1 | 2 | 3 | 4 = 0;
-  let label: "Faible" | "Moyen" | "Fort" | "Excellent" = "Faible";
+  let level: PasswordLevel = "weak";
 
   if (p.length === 0) {
     score = 0;
-    label = "Faible";
+    level = "weak";
   } else if (p.length < 12 || categoriesCount < 2) {
     score = 1;
-    label = "Faible";
+    level = "weak";
   } else if (!isValid) {
     if (p.length >= 14 && categoriesCount >= 3) {
       score = 3;
-      label = "Fort";
+      level = "strong";
     } else {
       score = 2;
-      label = "Moyen";
+      level = "fair";
     }
   } else {
     // Length >= 16 and all 4 ANSSI categories present
     score = 4;
-    label = "Excellent";
+    level = "excellent";
   }
 
   return {
     score,
-    label,
+    level,
     hasMinLength,
     hasUpper,
     hasLower,
@@ -73,11 +82,16 @@ export function checkPasswordStrength(password: string): PasswordStrengthResult 
   };
 }
 
-/** Les critères, dans l'ordre où l'écran les montre. */
+/**
+ * Les critères, dans l'ordre où l'écran les montre — **par identifiant**.
+ *
+ * Leur libellé vivait ici, en français, dans un paquet que le serveur importe
+ * aussi. L'écran le traduit maintenant depuis cet identifiant.
+ */
 export const PASSWORD_CRITERIA = [
-  { id: "hasMinLength", label: "Au moins 16 caractères" },
-  { id: "hasUpper", label: "Une majuscule (A-Z)" },
-  { id: "hasLower", label: "Une minuscule (a-z)" },
-  { id: "hasDigit", label: "Un chiffre (0-9)" },
-  { id: "hasSpecial", label: "Un caractère spécial (!@#$…)" },
-] as const satisfies readonly { id: keyof PasswordStrengthResult; label: string }[];
+  "hasMinLength",
+  "hasUpper",
+  "hasLower",
+  "hasDigit",
+  "hasSpecial",
+] as const satisfies readonly (keyof PasswordStrengthResult)[];

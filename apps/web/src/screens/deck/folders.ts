@@ -70,10 +70,10 @@ export function breadcrumbHtml(state: DeckState): SafeHtml {
     curseur = folderById(state, curseur.parentId);
   }
 
-  return html`<nav class="folder-path" aria-label="${t("Emplacement")}">
+  return html`<nav class="folder-path" aria-label="${t("Location")}">
     <button type="button" class="folder-path-step" data-goto-folder="" data-drop=""
             ${state.folderId === null ? raw(' aria-current="page"') : raw("")}>
-      ${t("Racine")}
+      ${t("Root")}
     </button>
     ${étapes.map(
       (étape, rang) => html`<span class="folder-path-sep" aria-hidden="true">/</span>
@@ -98,13 +98,13 @@ function menuHtml(state: DeckState, id: string, actions: SafeHtml): SafeHtml {
 
 const folderActions = (id: string): SafeHtml => html`
   <button type="button" class="menu-item" role="menuitem" data-folder-rename="${id}">
-    ${t("Renommer")}
+    ${t("Rename")}
   </button>
   <button type="button" class="menu-item" role="menuitem" data-folder-move="${id}">
-    ${t("Déplacer…")}
+    ${t("Move…")}
   </button>
   <button type="button" class="menu-item menu-item-danger" role="menuitem" data-folder-delete="${id}">
-    ${t("Supprimer")}
+    ${t("Delete")}
   </button>`;
 
 /** Le menu d'un deck : il ne propose que le rangement, le reste est dans l'atelier. */
@@ -113,7 +113,7 @@ export const deckMenu = (state: DeckState, id: string): SafeHtml =>
     state,
     id,
     html`<button type="button" class="menu-item" role="menuitem" data-deck-move="${id}">
-      ${t("Déplacer…")}
+      ${t("Move…")}
     </button>`,
   );
 
@@ -127,11 +127,11 @@ export const deckMenu = (state: DeckState, id: string): SafeHtml =>
 function folderMeta(state: DeckState, folder: DeckFolder): string {
   const dossiers = childFolders(state, folder.id).length;
   const decks = decksIn(state, folder.id).length;
-  if (dossiers === 0 && decks === 0) return t("Vide");
+  if (dossiers === 0 && decks === 0) return t("Empty");
 
   const morceaux: string[] = [];
   if (dossiers > 0) {
-    morceaux.push(dossiers === 1 ? t("1 dossier") : t("{n} dossiers", { n: dossiers }));
+    morceaux.push(dossiers === 1 ? t("1 folder") : t("{n} folders", { n: dossiers }));
   }
   if (decks > 0) {
     morceaux.push(decks === 1 ? t("1 deck") : t("{n} decks", { n: decks }));
@@ -180,7 +180,7 @@ export function parentTile(state: DeckState): SafeHtml {
       <button type="button" class="folder-open" data-goto-folder="${parent?.id ?? ""}">
         <span class="folder-ico" aria-hidden="true">📁</span>
         <strong class="folder-name">..</strong>
-        <span class="muted folder-meta">${parent?.name ?? t("Racine")}</span>
+        <span class="muted folder-meta">${parent?.name ?? t("Root")}</span>
       </button>
     </div>
   </li>`;
@@ -195,7 +195,7 @@ export function parentRow(state: DeckState): SafeHtml {
     <button type="button" class="drive-main drive-folder" data-goto-folder="${parent?.id ?? ""}">
       <span class="drive-ico" aria-hidden="true">📁</span>
       <span class="drive-text"><strong class="drive-name">..</strong></span>
-      <span class="muted drive-meta">${parent?.name ?? t("Racine")}</span>
+      <span class="muted drive-meta">${parent?.name ?? t("Root")}</span>
     </button>
   </li>`;
 }
@@ -224,14 +224,14 @@ export function moveBannerHtml(state: DeckState): SafeHtml {
 
   return html`<div class="move-banner" role="status">
     <span class="move-banner-what">
-      ${t("Déplacement de « {nom} »", { nom: quoi })}
-      <span class="muted">${t("vers {où}", { où: ici?.path.join(" / ") ?? t("Racine") })}</span>
+      ${t("Moving “{name}”", { name: quoi })}
+      <span class="muted">${t("to {where}", { where: ici?.path.join(" / ") ?? t("Root") })}</span>
     </span>
     ${when(refus !== null, html`<span class="move-banner-why">${refus ?? ""}</span>`)}
     <span class="move-banner-actions">
-      <button type="button" class="btn" id="move-cancel">${t("Annuler")}</button>
+      <button type="button" class="btn" id="move-cancel">${t("Cancel")}</button>
       <button type="button" class="btn btn-primary" id="move-here"
-              ${refus === null ? raw("") : raw("disabled")}>${t("Déplacer ici")}</button>
+              ${refus === null ? raw("") : raw("disabled")}>${t("Move here")}</button>
     </span>
   </div>`;
 }
@@ -250,21 +250,21 @@ export function refusDeDeposer(
 ): string | null {
   if (moving.kind === "deck") {
     const deck = state.decks.find((d) => d.id === moving.id);
-    return deck && deck.folderId === destination ? t("Déjà ici") : null;
+    return deck && deck.folderId === destination ? t("Already here") : null;
   }
 
   const dossier = folderById(state, moving.id);
   if (!dossier) return null;
-  if (dossier.parentId === destination) return t("Déjà ici");
+  if (dossier.parentId === destination) return t("Already here");
   if (destination === null) return null;
-  if (destination === moving.id) return t("Un dossier ne se range pas dans lui-même.");
+  if (destination === moving.id) return t("A folder cannot be filed inside itself.");
 
   const arbre = topologie(state.folders);
   if (folderIsInside(arbre, destination, moving.id)) {
-    return t("Un dossier ne se range pas dans l'un des siens.");
+    return t("A folder cannot be filed inside one of its own.");
   }
   if (!folderCanHost(arbre, moving.id, destination)) {
-    return t("Ce dossier et ce qu'il contient dépasseraient le dernier étage.");
+    return t("That folder and its contents would go past the last level.");
   }
   return null;
 }
@@ -277,30 +277,30 @@ function modalBody(state: DeckState): { titre: string; corps: SafeHtml; valider:
   switch (modal.kind) {
     case "new-deck":
       return {
-        titre: t("Nouveau deck"),
-        valider: t("Créer"),
+        titre: t("New deck"),
+        valider: t("Create"),
         // Pas de destination à choisir : le deck naît là où l'on regarde, et
         // se déplace ensuite comme tout le reste.
         corps: html`<label class="menu-field">
-          <span>${t("Nom du deck")}</span>
-          <input type="text" id="modal-name" maxlength="60" placeholder="${t("Nom unique…")}" />
+          <span>${t("Deck name")}</span>
+          <input type="text" id="modal-name" maxlength="60" placeholder="${t("Unique name…")}" />
         </label>`,
       };
     case "new-folder":
       return {
-        titre: t("Nouveau dossier"),
-        valider: t("Créer"),
+        titre: t("New folder"),
+        valider: t("Create"),
         corps: html`<label class="menu-field">
-          <span>${t("Nom du dossier")}</span>
-          <input type="text" id="modal-name" maxlength="60" placeholder="${t("Meta, Essais…")}" />
+          <span>${t("Folder name")}</span>
+          <input type="text" id="modal-name" maxlength="60" placeholder="${t("Meta, Tryouts…")}" />
         </label>`,
       };
     case "rename-folder":
       return {
-        titre: t("Renommer le dossier"),
-        valider: t("Renommer"),
+        titre: t("Rename the folder"),
+        valider: t("Rename"),
         corps: html`<label class="menu-field">
-          <span>${t("Nom du dossier")}</span>
+          <span>${t("Folder name")}</span>
           <input type="text" id="modal-name" maxlength="60"
                  value="${folderById(state, modal.id)?.name ?? ""}" />
         </label>`,
@@ -323,11 +323,11 @@ export function modalHtml(state: DeckState): SafeHtml {
   <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="deck-modal-head">
       <h2 id="modal-title">${titre}</h2>
-      <button type="button" class="icon-btn" id="modal-close" aria-label="${t("Fermer")}">✕</button>
+      <button type="button" class="icon-btn" id="modal-close" aria-label="${t("Close")}">✕</button>
     </div>
     <div class="deck-modal-body">${corps}</div>
     <div class="deck-modal-foot">
-      <button type="button" class="btn" id="modal-cancel">${t("Annuler")}</button>
+      <button type="button" class="btn" id="modal-cancel">${t("Cancel")}</button>
       <button type="button" class="btn btn-primary" id="modal-ok">${valider}</button>
     </div>
   </div>`;

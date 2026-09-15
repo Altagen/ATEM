@@ -97,7 +97,7 @@ test("on n'écrit pas dans le deck d'un autre, même en connaissant son identifi
   ] as const) {
     const response = await req(method, path, body, intrus.cookie);
     assert.equal(response.status, 403, `${method} ${path}`);
-    assert.match(((await response.json()) as { message: string }).message, /pas le vôtre/);
+    assert.match(((await response.json()) as { message: string }).message, /not yours/);
   }
 
   const lecture = await req("GET", `/decks/${deck.id}`, undefined, intrus.cookie);

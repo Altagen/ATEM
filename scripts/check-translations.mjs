@@ -3,8 +3,8 @@
  *
  * Trois défauts, trois refus :
  *
- * — **Une chaîne française hors de `t()`.** Elle s'affichera en français à un
- *   compte anglais, sans que rien ne le signale. C'est le défaut qui ne se voit
+ * — **Une chaîne affichée hors de `t()`.** Elle restera en anglais pour un
+ *   compte français, sans que rien ne le signale. C'est le défaut qui ne se voit
  *   qu'en basculant la langue, donc jamais.
  *
  * — **Une chaîne traduite qui n'a pas d'anglais.** `t()` rend alors le français
@@ -26,7 +26,7 @@ import path from "node:path";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const WEB = path.join(ROOT, "apps/web/src");
 const API = path.join(ROOT, "apps/api/src");
-const DICO = path.join(WEB, "platform/i18n/en.ts");
+const DICO = path.join(WEB, "platform/i18n/fr.ts");
 
 /**
  * Ce que le contrôle ne regarde pas.
@@ -88,9 +88,16 @@ const stripComments = (src) =>
  *   `Error` — sont majoritairement techniques. Là, l'heuristique reste : un
  *   accent, ou deux mots français courants.
  */
-const ACCENT = /[àâäéèêëîïôöùûüçœÀÂÄÉÈÊËÎÏÔÖÙÛÜÇŒ]/;
-const MOTS = /\b(le|la|les|un|une|des|du|de|et|ou|dans|pour|par|sur|avec|sans|votre|vous|ne|pas|est|sont|aucun|aucune|cette|ce|qui|que|plus|tout|toutes|au|aux)\b/gi;
 const LETTRE = /\p{L}{2}/u;
+/**
+ * Une phrase affichée commence par une majuscule et contient une espace.
+ *
+ * La règle précédente cherchait des accents ou des mots-outils français — elle
+ * n'a plus d'objet depuis que la source est anglaise (2026-09-14). Celle-ci ne
+ * dépend d'aucune langue : « Deck not found. » est une phrase, `text/plain`,
+ * `POST` et `deck-tile` n'en sont pas.
+ */
+const PHRASE = /^\p{Lu}[^]*\s/u;
 /**
  * Ce qui ressemble à du code n'est pas une phrase.
  *
@@ -102,6 +109,15 @@ const LETTRE = /\p{L}{2}/u;
  * texte.
  */
 const CODE = /[;`"=]|\$\{/;
+
+/**
+ * Un tracé SVG n'est pas une phrase.
+ *
+ * `M12 2l4 8 8 1-6 5 2 8-8-4-8 4 2-8-6-5 8-1z` commence par une majuscule et
+ * contient des espaces : la règle « majuscule puis espace » le prenait pour du
+ * texte. Un tracé n'a que des commandes et des nombres.
+ */
+const TRACE_SVG = /^[MmLlHhVvCcSsQqTtAaZz][\d\s.,-]*[MmLlHhVvCcSsQqTtAaZz\d\s.,-]*$/;
 
 /**
  * Le balisage : toute suite de lettres compte.
@@ -141,7 +157,16 @@ const estBalisage = (texte) =>
 const estVisible = (texte) =>
   texte.trim().length >= 4 &&
   !CODE.test(texte) &&
-  (ACCENT.test(texte) || (texte.match(MOTS) ?? []).length >= 2);
+  !TRACE_SVG.test(texte.trim()) &&
+  PHRASE.test(texte.trim());
+
+/** Le dictionnaire, lu comme un texte : on ne l'exécute pas pour l'inspecter. */
+const dico = new Set();
+for (const match of stripComments(readFileSync(DICO, "utf8")).matchAll(
+  /"((?:[^"\\]|\\.)*)"\s*:/g,
+)) {
+  dico.add(match[1].replace(/\\"/g, '"'));
+}
 
 /** Les clés employées, et les endroits qui n'ont pas traduit. */
 const employees = new Set();
@@ -300,7 +325,7 @@ for (const file of [...files(WEB), ...files(API)]) {
   for (const match of source.matchAll(/"((?:[^"\\\n]|\\.){4,})"/g)) {
     const texte = match[1];
     if (!estVisible(texte)) continue;
-    if (employees.has(texte)) continue;
+    if (employees.has(texte) || dico.has(texte)) continue;
     const avant = source.slice(Math.max(0, match.index - 40), match.index);
     if (/\bt\(\s*$/.test(avant)) continue;
     nonTraduites.push({
@@ -309,14 +334,6 @@ for (const file of [...files(WEB), ...files(API)]) {
       texte: texte.slice(0, 70),
     });
   }
-}
-
-/** Le dictionnaire, lu comme un texte : on ne l'exécute pas pour l'inspecter. */
-const dico = new Set();
-for (const match of stripComments(readFileSync(DICO, "utf8")).matchAll(
-  /"((?:[^"\\]|\\.)*)"\s*:/g,
-)) {
-  dico.add(match[1].replace(/\\"/g, '"'));
 }
 
 const sansAnglais = [...employees].filter((clé) => !dico.has(clé)).sort();
@@ -343,7 +360,7 @@ const bloc = (titre, entrées, rendre) => {
 bloc("chaînes visibles hors du dictionnaire", nonTraduites, (e) =>
   `${e.file}:${e.line}  « ${e.texte} »`,
 );
-bloc("chaînes traduites sans version anglaise", sansAnglais, (c) => `« ${c} »`);
+bloc("chaînes affichées absentes du dictionnaire", sansAnglais, (c) => `« ${c} »`);
 bloc("entrées du dictionnaire que plus rien n'emploie", orphelines, (c) => `« ${c} »`);
 
 if (!listOnly) console.log("\n  node scripts/check-translations.mjs --list   pour tout voir");

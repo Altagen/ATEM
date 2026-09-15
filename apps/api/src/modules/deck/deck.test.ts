@@ -93,7 +93,7 @@ test("le quatrième exemplaire est refusé par la base elle-même", async () => 
   await setDeckCard(db, user.id, deck.id, { passcode: 70000002, zone: "main", quantity: 3 });
   await assert.rejects(
     () => setDeckCard(db, user.id, deck.id, { passcode: 70000002, zone: "side", quantity: 1 }),
-    /pas plus de 3/,
+    /no more than 3/,
   );
 
   const relu = await getDeck(db, user.id, deck.id);
@@ -110,7 +110,7 @@ test("le total porte sur toutes les zones à la fois", async () => {
 
   await assert.rejects(
     () => setDeckCard(db, user.id, deck.id, { passcode: 70000003, zone: "side", quantity: 2 }),
-    /pas plus de 3|autant/,
+    /no more than 3|that many/,
   );
 });
 
@@ -122,7 +122,7 @@ test("on ne met pas dans un deck une carte qu'on ne possède pas", async () => {
 
   await assert.rejects(
     () => setDeckCard(db, user.id, deck.id, { passcode: 70000004, zone: "main", quantity: 1 }),
-    /ne possédez pas/,
+    /do not own enough/,
   );
 });
 
@@ -134,7 +134,7 @@ test("on n'en met pas plus qu'on n'en possède", async () => {
   await setDeckCard(db, user.id, deck.id, { passcode: 70000005, zone: "main", quantity: 2 });
   await assert.rejects(
     () => setDeckCard(db, user.id, deck.id, { passcode: 70000005, zone: "main", quantity: 3 }),
-    /ne possédez pas/,
+    /do not own enough/,
   );
 });
 
@@ -162,7 +162,7 @@ test("une carte interdite ne rentre pas, même possédée", async () => {
 
   await assert.rejects(
     () => setDeckCard(db, user.id, deck.id, { passcode: 70000007, zone: "main", quantity: 1 }),
-    /interdite/,
+    /forbidden/,
   );
 });
 
@@ -180,7 +180,7 @@ test("l'Extra Deck n'accepte que ce qui lui revient", async () => {
   // Un monstre à effet dans l'Extra est illégal.
   await assert.rejects(
     () => setDeckCard(db, user.id, deck.id, { passcode: 70000009, zone: "extra", quantity: 1 }),
-    /ne va pas à l'Extra/,
+    /not belong in the Extra/,
   );
 
   // Chacune à sa place, en revanche.
@@ -259,7 +259,7 @@ test("deux decks du même nom sont refusés", async () => {
   // confirmation de suppression se tape au nom.
   const user = await newUser();
   await createDeck(db, user.id, "Même nom");
-  await assert.rejects(() => createDeck(db, user.id, "Même nom"), /déjà un deck de ce nom/);
+  await assert.rejects(() => createDeck(db, user.id, "Même nom"), /already have a deck with that name/);
 });
 
 test("deux personnes peuvent nommer leur deck pareil", async () => {
@@ -290,14 +290,14 @@ test("écrire dans le deck d'autrui est interdit, et le dit", async () => {
   });
 
   // La lecture ne confirme rien.
-  await assert.rejects(() => getDeck(db, autre.id, deck.id), /introuvable/);
+  await assert.rejects(() => getDeck(db, autre.id, deck.id), /not found/);
 
   // Les trois écritures refusent, et nomment la raison.
-  await assert.rejects(() => updateDeck(db, autre.id, deck.id, { name: "Volé" }), /pas le vôtre/);
-  await assert.rejects(() => deleteDeck(db, autre.id, deck.id), /pas le vôtre/);
+  await assert.rejects(() => updateDeck(db, autre.id, deck.id, { name: "Volé" }), /not yours/);
+  await assert.rejects(() => deleteDeck(db, autre.id, deck.id), /not yours/);
   await assert.rejects(
     () => setDeckCard(db, autre.id, deck.id, { passcode: 72000500, zone: "main", quantity: 3 }),
-    /pas le vôtre/,
+    /not yours/,
   );
 
   // Et rien n'a bougé.
@@ -311,8 +311,8 @@ test("un deck qui n'existe pas reste introuvable, même en écriture", async () 
   // d'un identifiant qui ne désigne rien.
   const user = await newUser();
   const fantôme = "00000000-0000-4000-8000-000000000000";
-  await assert.rejects(() => updateDeck(db, user.id, fantôme, { name: "x" }), /introuvable/);
-  await assert.rejects(() => deleteDeck(db, user.id, fantôme), /introuvable/);
+  await assert.rejects(() => updateDeck(db, user.id, fantôme, { name: "x" }), /not found/);
+  await assert.rejects(() => deleteDeck(db, user.id, fantôme), /not found/);
 });
 
 test("jeter un deck emporte ses cartes", async () => {
@@ -322,7 +322,7 @@ test("jeter un deck emporte ses cartes", async () => {
   await setDeckCard(db, user.id, deck.id, { passcode: 70000015, zone: "main", quantity: 1 });
 
   await deleteDeck(db, user.id, deck.id);
-  await assert.rejects(() => getDeck(db, user.id, deck.id), /introuvable/);
+  await assert.rejects(() => getDeck(db, user.id, deck.id), /not found/);
 });
 
 test("jeter un deck ne touche pas à la collection", async () => {
@@ -343,9 +343,9 @@ test("un identifiant de deck mal formé est refusé, pas planté", async () => {
   // une colonne `uuid` comparée à n'importe quoi fait tomber la requête.
   const user = await newUser();
   for (const bancal of ["pas-un-uuid", "", "12345"]) {
-    await assert.rejects(() => getDeck(db, user.id, bancal), /Identifiant invalide/, `« ${bancal} »`);
-    await assert.rejects(() => deleteDeck(db, user.id, bancal), /Identifiant invalide/);
-    await assert.rejects(() => updateDeck(db, user.id, bancal, { name: "x" }), /Identifiant invalide/);
+    await assert.rejects(() => getDeck(db, user.id, bancal), /Invalid identifier/, `« ${bancal} »`);
+    await assert.rejects(() => deleteDeck(db, user.id, bancal), /Invalid identifier/);
+    await assert.rejects(() => updateDeck(db, user.id, bancal, { name: "x" }), /Invalid identifier/);
   }
 });
 
@@ -369,7 +369,7 @@ test("une zone pleine refuse la carte de trop", async () => {
   await seed(72000200, "DKEX-FR200", { owner: user.id, copies: 1, extra: true });
   await assert.rejects(
     () => setDeckCard(db, user.id, deck.id, { passcode: 72000200, zone: "extra", quantity: 1 }),
-    /Extra Deck est plein/,
+    /Extra Deck is full/,
   );
 });
 

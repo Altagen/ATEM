@@ -60,13 +60,13 @@ export function collectionRoutes(db: Database) {
 
   const viewerId = (c: { get: (key: "viewer") => { id: string } | null }): string => {
     const viewer = c.get("viewer");
-    if (!viewer) throw invalidInput("Session absente.");
+    if (!viewer) throw invalidInput("No session.");
     return viewer.id;
   };
 
   app.get("/", async (c) => {
     const parsed = ListQuery.safeParse(c.req.query());
-    if (!parsed.success) throw invalidInput("Filtres invalides.", { issues: parsed.error.issues });
+    if (!parsed.success) throw invalidInput("Invalid filters.", { issues: parsed.error.issues });
     const q = parsed.data;
 
     return c.json(
@@ -104,28 +104,28 @@ export function collectionRoutes(db: Database) {
     try {
       raw = await c.req.json();
     } catch {
-      throw invalidInput("Corps de requête illisible.");
+      throw invalidInput("Unreadable request body.");
     }
     const parsed = AdjustBody.safeParse(raw);
-    if (!parsed.success) throw invalidInput("Données invalides.", { issues: parsed.error.issues });
+    if (!parsed.success) throw invalidInput("Invalid data.", { issues: parsed.error.issues });
 
     return c.json({ item: await adjustQuantity(db, viewerId(c), parsed.data) });
   });
 
   app.patch("/:id/notes", async (c) => {
     const id = Number(c.req.param("id"));
-    if (!Number.isInteger(id)) throw invalidInput("Identifiant invalide.");
+    if (!Number.isInteger(id)) throw invalidInput("Invalid identifier.");
 
     let raw: unknown;
     try {
       raw = await c.req.json();
     } catch {
-      throw invalidInput("Corps de requête illisible.");
+      throw invalidInput("Unreadable request body.");
     }
     const parsed = z
       .object({ notes: z.string().max(LIMITS.note.max).nullable() })
       .safeParse(raw);
-    if (!parsed.success) throw invalidInput("Données invalides.");
+    if (!parsed.success) throw invalidInput("Invalid data.");
 
     await setNotes(db, viewerId(c), id, parsed.data.notes);
     return c.json({ ok: true });
@@ -133,16 +133,16 @@ export function collectionRoutes(db: Database) {
 
   app.patch("/:id/favorite", async (c) => {
     const id = Number(c.req.param("id"));
-    if (!Number.isInteger(id)) throw invalidInput("Identifiant invalide.");
+    if (!Number.isInteger(id)) throw invalidInput("Invalid identifier.");
 
     let raw: unknown;
     try {
       raw = await c.req.json();
     } catch {
-      throw invalidInput("Corps de requête illisible.");
+      throw invalidInput("Unreadable request body.");
     }
     const parsed = z.object({ isFavorite: z.boolean() }).safeParse(raw);
-    if (!parsed.success) throw invalidInput("Données invalides.");
+    if (!parsed.success) throw invalidInput("Invalid data.");
 
     await setFavorite(db, viewerId(c), id, parsed.data.isFavorite);
     return c.json({ ok: true });

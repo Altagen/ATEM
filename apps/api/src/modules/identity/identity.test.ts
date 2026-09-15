@@ -172,7 +172,7 @@ test("une langue inconnue est refusée avant la base", async () => {
     password: "Un-Mot-De-Passe-1!",
     displayName: "Bilingue",
   });
-  await assert.rejects(() => setLocale(db, user.id, "kr"), /Langue inconnue/);
+  await assert.rejects(() => setLocale(db, user.id, "kr"), /Unknown language/);
   assert.equal((await getPublicUser(db, user.id)).locale, "fr", "rien n'a bougé");
 });
 
@@ -202,7 +202,7 @@ test("effacer son compte emporte la collection et les lots", async () => {
 
   await deleteAccount(db, user.id, "Un-Mot-De-Passe-1!");
 
-  await assert.rejects(() => getPublicUser(db, user.id), /introuvable/);
+  await assert.rejects(() => getPublicUser(db, user.id), /not found/);
   assert.equal((await listCollection(db, user.id, {})).total, 0);
   assert.equal((await listScanlists(db, user.id)).length, 0);
 });
@@ -235,7 +235,7 @@ test("un mot de passe faux n'efface rien", async () => {
   // Une session suffit pour tout le reste ; pas pour un geste irréversible.
   const { user } = await compteGarni();
 
-  await assert.rejects(() => deleteAccount(db, user.id, "Pas-Le-Bon-Mot-1!"), /incorrect/);
+  await assert.rejects(() => deleteAccount(db, user.id, "Pas-Le-Bon-Mot-1!"), /Incorrect password/);
 
   assert.ok(await getPublicUser(db, user.id), "le compte est toujours là");
   assert.equal((await listCollection(db, user.id, {})).total, 1, "la collection aussi");

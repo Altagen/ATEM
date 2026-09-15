@@ -55,7 +55,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
       body.error ?? "unknown",
       body.message
         ? tServer(body.message)
-        : t("Le serveur a répondu {statut}.", { statut: response.status }),
+        : t("The server replied {status}.", { status: response.status }),
     );
   }
   return payload as T;

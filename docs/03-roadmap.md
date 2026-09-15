@@ -174,17 +174,21 @@ d'une ligne portait le style du compteur de page, marge basse comprise.
 
 ### Les traductions — livrées le 2026-09-11
 
-**Le français est la clé.** `t("Ma collection")` rend la phrase telle quelle en
-français, sa traduction en anglais. Les gabarits restent lisibles : on y lit la
+**La phrase est la clé.** `t("My collection")` rend la phrase telle quelle en
+anglais, sa traduction en français. Les gabarits restent lisibles : on y lit la
 phrase, pas un identifiant à résoudre ailleurs. L'objection habituelle — changer
-le français orpheline silencieusement l'anglais — ne tient pas :
+la phrase source orpheline silencieusement sa traduction — ne tient pas :
 `scripts/check-translations.mjs` refuse toute chaîne sans traduction **et** toute
 traduction que plus rien n'emploie.
 
-**Le dictionnaire couvre aussi le serveur.** L'API répond en français ; le front
-cherche la phrase avant de l'afficher. Cela évite d'inventer un code d'erreur
-distinct pour chacune de ses trente phrases — et referme le vrai piège : un
-écran anglais dont les erreurs parlent français.
+*Le français était la clé jusqu'au 2026-09-14* ; le dépôt part sur GitHub, et on
+ne demande pas de parler français pour lire la source. La langue affichée, elle,
+reste le français par défaut : c'est un choix de produit, pas de code.
+
+**Le dictionnaire couvre aussi le serveur.** L'API répond en anglais — sa phrase
+est la clé ; le front la traduit avant de l'afficher. Cela évite d'inventer un
+code d'erreur distinct pour chacune de ses trente phrases — et referme le vrai
+piège : un écran français dont les erreurs parlent anglais.
 
 **Le vocabulaire Yu-Gi-Oh! n'y est pas.** `Fish`, `WATER`, `Effect Monster` : en
 anglais, la valeur brute de l'API **est** l'anglais. `ygo-labels.ts` ne

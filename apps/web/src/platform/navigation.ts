@@ -34,8 +34,8 @@ let serviceState: ServiceState = "unknown";
  * connue : y appeler `t()` figerait le français pour toute la session.
  */
 const SERVICE_LABELS: Record<ServiceState, { text: string; className: string }> = {
-  ok: { text: "En ligne", className: "api-ok" },
-  unreachable: { text: "Injoignable", className: "api-err" },
+  ok: { text: "Online", className: "api-ok" },
+  unreachable: { text: "Unreachable", className: "api-err" },
   unknown: { text: "…", className: "api-warn" },
 };
 
@@ -66,7 +66,7 @@ export async function refreshServiceState(): Promise<void> {
  */
 function languageSwitch(): HTMLElement {
   const user = knownUser()!;
-  const group = el("div", { class: "lang-switch", role: "group", "aria-label": t("Langue") });
+  const group = el("div", { class: "lang-switch", role: "group", "aria-label": t("Language") });
 
   for (const code of ["fr", "en"] as const) {
     const button = el("button", {
@@ -96,7 +96,7 @@ async function switchLanguage(locale: "fr" | "en"): Promise<void> {
     renderNavigation();
     void render();
   } catch (err) {
-    toast(err instanceof ApiError ? err.message : t("L'enregistrement a échoué."), "error");
+    toast(err instanceof ApiError ? err.message : t("Saving failed."), "error");
   }
 }
 
@@ -128,7 +128,7 @@ function appBar(): HTMLElement {
   }
 
   const service = SERVICE_LABELS[serviceState];
-  const signOut = el("button", { type: "button", class: "btn" }, [t("Déconnexion")]);
+  const signOut = el("button", { type: "button", class: "btn" }, [t("Sign out")]);
   signOut.addEventListener("click", () => void signOutNow());
 
   return el("header", { class: "app-bar" }, [
@@ -154,11 +154,11 @@ function bottomNav(): HTMLElement {
   const account = el("button", {
     type: "button",
     class: "global-mobile-nav-item",
-    "aria-label": t("Mon compte"),
+    "aria-label": t("My account"),
     "aria-haspopup": "dialog",
   }, [
     el("span", { "aria-hidden": "true" }, ["👤"]),
-    el("span", {}, [t("Compte")]),
+    el("span", {}, [t("Account")]),
   ]);
   account.addEventListener("click", () => openAccountSheet());
   nav.append(account);
@@ -176,7 +176,7 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
   const user = knownUser()!;
   const service = SERVICE_LABELS[serviceState];
 
-  const close = el("button", { type: "button", class: "icon-btn", "aria-label": t("Fermer") }, ["✕"]);
+  const close = el("button", { type: "button", class: "icon-btn", "aria-label": t("Close") }, ["✕"]);
   close.addEventListener("click", closeAccountSheet);
 
   const list = el("nav", { class: "account-sheet-list" });
@@ -194,7 +194,7 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
   if (list.childElementCount === 0) list.remove();
 
   const signOut = el("button", { type: "button", class: "account-sheet-logout" }, [
-    t("Se déconnecter"),
+    t("Sign out"),
   ]);
   signOut.addEventListener("click", () => void signOutNow());
 
@@ -203,7 +203,7 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
     id: "account-sheet",
     role: "dialog",
     "aria-modal": "true",
-    "aria-label": t("Mon compte"),
+    "aria-label": t("My account"),
     hidden: "",
   }, [
     el("span", { class: "account-sheet-grip", "aria-hidden": "true" }),

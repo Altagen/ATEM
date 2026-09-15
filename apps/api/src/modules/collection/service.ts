@@ -328,9 +328,9 @@ export async function adjustQuantity(
   },
 ): Promise<CollectionItem> {
   const setCode = normalizeSetCode(input.setCode);
-  if (!setCode) throw invalidInput("Set code vide.");
+  if (!setCode) throw invalidInput("Empty set code.");
   if (!Number.isInteger(input.delta) || input.delta === 0) {
-    throw invalidInput("La variation doit être un entier non nul.");
+    throw invalidInput("The change must be a non-zero whole number.");
   }
 
   const print = await ensurePlaceholderPrint(db, setCode, {
@@ -367,9 +367,9 @@ export async function adjustQuantity(
       })
       .returning();
 
-    if (!written) throw invalidInput("L'ajustement n'a rien écrit.");
+    if (!written) throw invalidInput("The adjustment wrote nothing.");
     if (written.quantity < 0) {
-      throw invalidInput("On ne peut pas posséder moins de zéro exemplaire.");
+      throw invalidInput("You cannot own fewer than zero copies.");
     }
     if (written.quantity > LIMITS.quantity.max) {
       throw invalidInput(`Au plus ${LIMITS.quantity.max} exemplaires d'une même édition.`);
@@ -381,7 +381,7 @@ export async function adjustQuantity(
 
   const idx = printIndex(db);
   const [row] = await rowsQuery(db, idx).where(eq(ownedCards.id, item.id)).limit(1);
-  if (!row) throw notFound("Ligne de collection introuvable après écriture.");
+  if (!row) throw notFound("Collection entry not found after writing.");
   return toItem(row);
 }
 
@@ -404,7 +404,7 @@ export async function setNotes(
     .where(and(eq(ownedCards.id, ownedId), eq(ownedCards.userId, viewerId)))
     .returning({ id: ownedCards.id });
 
-  if (result.length === 0) throw notFound("Ligne de collection introuvable.");
+  if (result.length === 0) throw notFound("Collection entry not found.");
 }
 
 export async function setFavorite(
@@ -422,7 +422,7 @@ export async function setFavorite(
   // Le filtre sur `viewerId` est **dans** la requête, pas après : une ligne qui
   // n'appartient pas à l'appelant est introuvable, et non interdite. Un 403
   // révélerait qu'elle existe.
-  if (result.length === 0) throw notFound("Ligne de collection introuvable.");
+  if (result.length === 0) throw notFound("Collection entry not found.");
 }
 
 /** Combien de lignes attendent encore d'être identifiées. */

@@ -73,7 +73,7 @@ test("un lot entièrement à zéro est refusé", async () => {
   const user = await newUser();
   await assert.rejects(
     () => createScanlist(db, user.id, { name: "Vide", lines: [ligne("SCAN-FR004", 0)] }),
-    /Aucune carte/,
+    /No cards to save/,
   );
 });
 
@@ -118,7 +118,7 @@ test("verser deux fois est refusé", async () => {
   const lot = await createScanlist(db, user.id, { name: "Double", lines: [ligne("SCAN-FR007", 2)] });
 
   await pourScanlist(db, user.id, lot.id);
-  await assert.rejects(() => pourScanlist(db, user.id, lot.id), /déjà été versé/);
+  await assert.rejects(() => pourScanlist(db, user.id, lot.id), /already been poured/);
 
   const collection = await listCollection(db, user.id, {});
   assert.equal(collection.items[0]?.quantity, 2, "la quantité n'a pas doublé");
@@ -162,9 +162,9 @@ test("le lot d'autrui est introuvable, pas interdit", async () => {
   });
 
   // Un 403 dirait qu'il existe. Il ne doit rien dire du tout.
-  await assert.rejects(() => getScanlist(db, autre.id, lot.id), /introuvable/);
-  await assert.rejects(() => pourScanlist(db, autre.id, lot.id), /introuvable/);
-  await assert.rejects(() => deleteScanlist(db, autre.id, lot.id), /introuvable/);
+  await assert.rejects(() => getScanlist(db, autre.id, lot.id), /not found/);
+  await assert.rejects(() => pourScanlist(db, autre.id, lot.id), /not found/);
+  await assert.rejects(() => deleteScanlist(db, autre.id, lot.id), /not found/);
 });
 
 test("la liste ne montre que ses propres lots", async () => {
@@ -191,7 +191,7 @@ test("jeter un lot emporte ses lignes", async () => {
     .from(scanlistLines)
     .where(eq(scanlistLines.scanlistId, lot.id));
   assert.equal(restantes.length, 0);
-  await assert.rejects(() => getScanlist(db, user.id, lot.id), /introuvable/);
+  await assert.rejects(() => getScanlist(db, user.id, lot.id), /not found/);
 });
 
 test("une ligne que le catalogue ne place pas est comptée, sans bloquer les autres", async () => {
@@ -231,7 +231,7 @@ test("un identifiant qui n'est pas un UUID est refusé, pas planté", async () =
   for (const bancal of ["pas-un-uuid", "", "12345", "00000000-0000-0000-0000-00000000000"]) {
     await assert.rejects(
       () => getScanlist(db, user.id, bancal),
-      /Identifiant invalide/,
+      /Invalid identifier/,
       `« ${bancal} »`,
     );
   }

@@ -82,10 +82,10 @@ export async function collectionScreen(
     if (meta) {
       // La même phrase que dans `view.ts`, et la même clé : deux écritures
       // divergentes se traduiraient l'une sans l'autre.
-      meta.textContent = t("{montrées}/{total} édition(s) · {ex} ex.", {
-        montrées: state.items.length,
+      meta.textContent = t("{shown}/{total} printing(s) · ×{copies}", {
+        shown: state.items.length,
         total: state.total,
-        ex: state.totalCopies,
+        copies: state.totalCopies,
       });
     }
   }
@@ -116,7 +116,7 @@ export async function collectionScreen(
       state.totalCopies = state.items.reduce((sum, item) => sum + item.quantity, 0);
       offset += page.items.length;
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("Serveur injoignable."), "error");
+      toast(err instanceof ApiError ? err.message : t("Server unreachable."), "error");
     } finally {
       state.loading = false;
       repaintContent();
@@ -157,7 +157,7 @@ export async function collectionScreen(
       });
       return item;
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("L'ajustement a échoué."), "error");
+      toast(err instanceof ApiError ? err.message : t("The adjustment failed."), "error");
       return null;
     }
   }
@@ -218,9 +218,9 @@ export async function collectionScreen(
       await api(`/collection/${id}/notes`, { method: "PATCH", body: { notes } });
       const item = state.items.find((candidate) => candidate.id === id);
       if (item) item.notes = notes;
-      toast(t("Note enregistrée."), "success");
+      toast(t("Note saved."), "success");
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : t("La note n'a pas pu être enregistrée."), "error");
+      toast(err instanceof ApiError ? err.message : t("The note could not be saved."), "error");
     } finally {
       button.disabled = false;
     }
@@ -323,8 +323,8 @@ export async function collectionScreen(
         });
         toast(
           item.card
-            ? t("{nom} — {n} ex.", { nom: item.card.name, n: item.quantity })
-            : t("{code} ajouté, identification en cours.", { code: item.setCode }),
+            ? t("{name} — ×{n}", { name: item.card.name, n: item.quantity })
+            : t("{code} added, identifying now.", { code: item.setCode }),
           "success",
         );
         if (addInput) {
@@ -333,7 +333,7 @@ export async function collectionScreen(
         }
         await Promise.all([load(true), refreshPending(), loadFacets()]);
       } catch (err) {
-        toast(err instanceof ApiError ? err.message : t("L'ajout a échoué."), "error");
+        toast(err instanceof ApiError ? err.message : t("Adding failed."), "error");
       }
     }
 
@@ -353,7 +353,7 @@ export async function collectionScreen(
         tallyLabel: "en collection",
         onConfirm: async (setCode, delta) => {
           const item = await adjust(setCode, delta);
-          if (!item) throw new Error(t("L'enregistrement a échoué."));
+          if (!item) throw new Error(t("Saving failed."));
           return {
             setCode: item.setCode,
             quantity: item.quantity,
@@ -447,7 +447,7 @@ export async function collectionScreen(
     } catch {
       item.isFavorite = !next;
       repaintContent();
-      toast(t("Le favori n'a pas pu être enregistré."), "error");
+      toast(t("The favourite could not be saved."), "error");
     }
   }
 

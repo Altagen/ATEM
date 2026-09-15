@@ -135,7 +135,7 @@ async function loadDeck(db: Database, ownerId: string, deckId: string) {
     .limit(1);
   // Le filtre est **dans** la requête : le deck d'un inconnu est introuvable, et
   // non interdit. Un 403 dirait qu'il existe.
-  if (!row) throw notFound("Deck introuvable.");
+  if (!row) throw notFound("Deck not found.");
 
   const lignes = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
   return { row, lignes };
@@ -157,8 +157,8 @@ async function loadDeck(db: Database, ownerId: string, deckId: string) {
 async function deckPourEcriture(db: Database, viewerId: string, deckId: string) {
   requireUuid(deckId);
   const [row] = await db.select().from(decks).where(eq(decks.id, deckId)).limit(1);
-  if (!row) throw notFound("Deck introuvable.");
-  if (row.userId !== viewerId) throw forbidden("Ce deck n'est pas le vôtre.");
+  if (!row) throw notFound("Deck not found.");
+  if (row.userId !== viewerId) throw forbidden("This deck is not yours.");
   return row;
 }
 
@@ -275,7 +275,7 @@ export async function createDeck(
   folderId: string | null = null,
 ): Promise<DeckSummary> {
   const propre = name.trim();
-  if (!propre) throw invalidInput("Donnez un nom au deck.");
+  if (!propre) throw invalidInput("Give the deck a name.");
   // Créer puis déplacer ferait deux écritures et un clignotement : on naît là
   // où l'on regarde.
   await assertFolderOwned(db, viewerId, folderId);
@@ -300,7 +300,7 @@ export async function createDeck(
      */
     const cause = (err as { cause?: { constraint_name?: string } }).cause;
     if (cause?.constraint_name === "decks_user_name_uidx") {
-      throw conflict("Vous avez déjà un deck de ce nom.");
+      throw conflict("You already have a deck with that name.");
     }
     throw err;
   }
@@ -325,7 +325,7 @@ export async function updateDeck(
 
   if (input.name !== undefined) {
     const propre = input.name.trim();
-    if (!propre) throw invalidInput("Donnez un nom au deck.");
+    if (!propre) throw invalidInput("Give the deck a name.");
     valeurs.name = propre;
   }
   if (input.folderId !== undefined) {
@@ -366,14 +366,14 @@ export async function setDeckCard(
   if (!Number.isFinite(quantity) || quantity < 0 || quantity > DECK_MAX_COPIES) {
     // Écrit en toutes lettres : une phrase construite n'a pas de clé de
     // traduction, et le contrôle ne la verrait pas.
-    throw invalidInput("Une zone ne porte pas plus de 3 exemplaires.");
+    throw invalidInput("A zone holds no more than 3 copies.");
   }
 
   await deckPourEcriture(db, viewerId, deckId);
   const lignes = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
 
   const fiche = (await cardsByPasscode(db, [input.passcode])).get(input.passcode);
-  if (!fiche) throw notFound("Carte inconnue.");
+  if (!fiche) throw notFound("Unknown card.");
 
   /**
    * L'Extra Deck n'accepte que ce qui lui revient, et réciproquement.
@@ -383,10 +383,10 @@ export async function setDeckCard(
    */
   const extra = isExtraDeckCard({ type: fiche.type, frameType: fiche.frameType });
   if (input.zone === "extra" && !extra) {
-    throw invalidInput("Cette carte ne va pas à l'Extra Deck.");
+    throw invalidInput("This card does not belong in the Extra Deck.");
   }
   if (input.zone === "main" && extra) {
-    throw invalidInput("Cette carte va à l'Extra Deck, pas au Main Deck.");
+    throw invalidInput("This card belongs in the Extra Deck, not the Main Deck.");
   }
 
   const existante = lignes.find((ligne) => ligne.passcode === input.passcode);
@@ -475,15 +475,15 @@ export async function setDeckCard(
  * coup, ce que `wanted` permet.
  */
 const REFUS_LABELS: Record<DeckBlockReason, string> = {
-  forbidden: "Cette carte est interdite par la banlist.",
-  banlist: "La banlist n'en autorise pas autant.",
-  not_owned: "Vous ne possédez pas assez d'exemplaires de cette carte.",
-  max_copies: "Un deck ne porte pas plus de 3 exemplaires d'une carte.",
+  forbidden: "This card is forbidden by the banlist.",
+  banlist: "The banlist does not allow that many.",
+  not_owned: "You do not own enough copies of this card.",
+  max_copies: "A deck may hold no more than 3 copies of a card.",
 };
 
 /** Une zone pleine se dit par son nom : « le Main Deck » parle, « main » non. */
 const ZONE_PLEINE_LABELS: Record<DeckZone, string> = {
-  main: "Le Main Deck est plein — 60 cartes au maximum.",
-  extra: "L'Extra Deck est plein — 15 cartes au maximum.",
-  side: "Le Side Deck est plein — 15 cartes au maximum.",
+  main: "The Main Deck is full — 60 cards maximum.",
+  extra: "The Extra Deck is full — 15 cards maximum.",
+  side: "The Side Deck is full — 15 cards maximum.",
 };

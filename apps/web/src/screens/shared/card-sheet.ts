@@ -13,6 +13,7 @@
 import { t } from "../../platform/i18n/index.js";
 import {
   translateAttribute, translateLinkMarker, translateRace, translateType,
+  CATALOGUE,
 } from "../../platform/ygo-labels.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import type { CardDetail } from "../../platform/api.js";
@@ -31,21 +32,21 @@ export const detailGrid = (entries: [string, string][]): SafeHtml =>
  * incomplète.
  */
 export function cardDetailRows(card: CardDetail): [string, string][] {
-  const isSpellTrap = card.type === "Spell Card" || card.type === "Trap Card";
+  const isSpellTrap = card.type === CATALOGUE.spellCard || card.type === CATALOGUE.trapCard;
   return [
     [t("Type"), translateType(card.type)],
-    [isSpellTrap ? t("Propriété") : t("Type monstre"), translateRace(card.race, card.type) || "—"],
-    [t("Attribut"), translateAttribute(card.attribute) || "—"],
+    [isSpellTrap ? t("Property") : t("Monster type"), translateRace(card.race, card.type) || "—"],
+    [t("Attribute"), translateAttribute(card.attribute) || "—"],
     card.linkValue !== null
-      ? [t("Lien"), String(card.linkValue)]
-      : [t("Niveau"), card.level === null ? "—" : String(card.level)],
+      ? [t("Link"), String(card.linkValue)]
+      : [t("Level"), card.level === null ? "—" : String(card.level)],
     [
       card.linkValue !== null ? t("ATK") : t("ATK / DEF"),
       card.linkValue !== null
         ? String(card.atk ?? "—")
         : `${card.atk ?? "—"} / ${card.def ?? "—"}`,
     ],
-    [t("Archétype"), card.archetype ?? "—"],
+    [t("Archetype"), card.archetype ?? "—"],
     [t("Passcode"), `#${card.passcode}`],
   ];
 }
@@ -70,7 +71,7 @@ export function linkCompassHtml(markers: string[] | null, linkValue: number | nu
     "Bottom-Left": "↙", Bottom: "↓", "Bottom-Right": "↘",
   };
   return html`<div class="link-compass-block">
-    <h3>${t("Marqueurs de Lien")}</h3>
+    <h3>${t("Link markers")}</h3>
     <div class="link-compass" role="img"
          aria-label="${markers.map(translateLinkMarker).join(", ")}">
       ${cells.map((cell) =>
@@ -102,7 +103,7 @@ export function cardSheetHtml(options: CardSheetOptions): SafeHtml {
   return html`<div class="inspect-backdrop" id="inspect-backdrop"></div>
   <div class="inspect-panel" id="inspect-panel" role="dialog" aria-modal="true">
     <button type="button" class="inspect-close icon-btn" id="inspect-close"
-            aria-label="${t("Fermer")}">✕</button>
+            aria-label="${t("Close")}">✕</button>
     <div class="inspect-layout">
       <div class="inspect-art-col">
         ${art
@@ -120,7 +121,7 @@ export function cardSheetHtml(options: CardSheetOptions): SafeHtml {
           ${when(Boolean(card), card ? detailGrid(cardDetailRows(card)) : raw(""))}
           ${when(
             Boolean(card?.desc),
-            html`<div class="effect"><h3>${t("Effet")}</h3><p>${card?.desc}</p></div>`,
+            html`<div class="effect"><h3>${t("Effect")}</h3><p>${card?.desc}</p></div>`,
           )}
           ${linkCompassHtml(card?.linkMarkers ?? null, card?.linkValue ?? null)}
           ${when(options.extra, options.extra ?? raw(""))}

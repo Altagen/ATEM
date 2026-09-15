@@ -34,7 +34,7 @@ export function referentialRoutes(db: Database) {
    */
   app.get("/impressions/:setCode", async (c) => {
     const setCode = c.req.param("setCode");
-    if (!setCode) throw invalidInput("Set code vide.");
+    if (!setCode) throw invalidInput("Empty set code.");
 
     const print = await resolvePrintBySetCode(db, setCode);
     if (!print?.cardPasscode) return c.json({ setCode, card: null });
@@ -54,9 +54,9 @@ export function referentialRoutes(db: Database) {
   /** La carte et toutes ses éditions — ce qu'affiche le bloc « Autres éditions ». */
   app.get("/cards/:passcode", async (c) => {
     const passcode = Number(c.req.param("passcode"));
-    if (!Number.isInteger(passcode)) throw invalidInput("Passcode invalide.");
+    if (!Number.isInteger(passcode)) throw invalidInput("Invalid passcode.");
     const card = await getCard(db, passcode, c.get("viewer")?.locale ?? "fr");
-    if (!card) throw notFound("Carte inconnue.");
+    if (!card) throw notFound("Unknown card.");
     return c.json({ card, prints: await listPrintsForCard(db, passcode) });
   });
 

@@ -51,7 +51,7 @@ test("deux dossiers du même nom ne se rangent pas côte à côte", async () => 
   await createFolder(db, user.id, { name: "Doublon" });
   await assert.rejects(
     () => createFolder(db, user.id, { name: "Doublon" }),
-    /déjà rangé au même endroit/,
+    /already filed in the same place/,
   );
 
   // Le même nom ailleurs reste permis : c'est un chemin différent.
@@ -69,7 +69,7 @@ test("on ne s'emboîte pas au-delà du dernier étage", async () => {
 
   await assert.rejects(
     () => createFolder(db, user.id, { name: "Quatre", parentId: trois.id }),
-    /dernier étage/,
+    /last level/,
   );
 });
 
@@ -85,11 +85,11 @@ test("un dossier ne se range ni dans lui-même, ni dans l'un des siens", async (
 
   await assert.rejects(
     () => updateFolder(db, user.id, parent.id, { parentId: parent.id }),
-    /dans lui-même/,
+    /inside itself/,
   );
   await assert.rejects(
     () => updateFolder(db, user.id, parent.id, { parentId: enfant.id }),
-    /dans l'un des siens/,
+    /inside one of its own/,
   );
 });
 
@@ -109,7 +109,7 @@ test("un dossier déplacé emmène ses étages avec lui", async () => {
   // Deux étages posés sur un dossier au deuxième : ça ferait quatre.
   await assert.rejects(
     () => updateFolder(db, user.id, porteur.id, { parentId: sousAccueil.id }),
-    /dépasseraient/,
+    /go past the last level/,
   );
 
   // Un étage plus haut, ça tient tout juste.
@@ -173,7 +173,7 @@ test("un enfant qui remonte sur un homonyme fait refuser la suppression", async 
 
   await assert.rejects(
     () => deleteFolder(db, user.id, intermédiaire.id),
-    /l'étage du dessus/,
+    /on the level above/,
   );
   // Et rien n'a bougé : la transaction est repartie en arrière.
   assert.equal((await listFolders(db, user.id)).length, 4);
@@ -185,13 +185,13 @@ test("le dossier d'un autre est introuvable, pas interdit", async () => {
   const autre = await newUser();
   const sien = await createFolder(db, autre.id, { name: "Le sien" });
 
-  await assert.rejects(() => updateFolder(db, moi.id, sien.id, { name: "Volé" }), /introuvable/);
-  await assert.rejects(() => deleteFolder(db, moi.id, sien.id), /introuvable/);
+  await assert.rejects(() => updateFolder(db, moi.id, sien.id, { name: "Volé" }), /not found/);
+  await assert.rejects(() => deleteFolder(db, moi.id, sien.id), /not found/);
 
   const deck = await createDeck(db, moi.id, "Mon deck");
   await assert.rejects(
     () => updateDeck(db, moi.id, deck.id, { folderId: sien.id }),
-    /introuvable/,
+    /not found/,
     "on ne dépose pas son deck chez un inconnu en devinant un UUID",
   );
 });
@@ -200,9 +200,9 @@ test("un identifiant qui n'est pas un UUID est refusé, pas planté", async () =
   const user = await newUser();
   await assert.rejects(
     () => updateFolder(db, user.id, "pas-un-uuid", { name: "x" }),
-    /Identifiant invalide/,
+    /Invalid identifier/,
   );
-  await assert.rejects(() => deleteFolder(db, user.id, "../../etc"), /Identifiant invalide/);
+  await assert.rejects(() => deleteFolder(db, user.id, "../../etc"), /Invalid identifier/);
 });
 
 test("effacer son compte emporte ses dossiers", async () => {

@@ -18,6 +18,6 @@ const UUID =
 
 /** Rend l'identifiant, ou refuse la demande — jamais une erreur de base. */
 export function requireUuid(value: string): string {
-  if (!UUID.test(value)) throw invalidInput("Identifiant invalide.");
+  if (!UUID.test(value)) throw invalidInput("Invalid identifier.");
   return value;
 }
