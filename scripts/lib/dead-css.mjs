@@ -127,3 +127,21 @@ export function rules(css) {
 }
 
 export const lineOf = (css, index) => css.slice(0, index).split("\n").length;
+
+/**
+ * The body of a conditional group rule — `@media`, `@supports`, `@container` —
+ * or `null` for any other rule.
+ *
+ * A rule's `selector` runs from the end of the previous rule, so it carries the
+ * comment written above it. Testing `selector.startsWith("@")` therefore missed
+ * every block preceded by a comment, and slicing from `from` instead of the
+ * opening brace handed back a body that started inside the header: in both
+ * cases the nested rules were never judged. Nothing inside a `@media` block had
+ * been checked — nine dead rules and three empty blocks slept there.
+ */
+export function groupBody(css, rule) {
+  const header = rule.selector.replace(/\/\*[\s\S]*?\*\//g, " ").trim();
+  if (!/^@(media|supports|container)\b/.test(header)) return null;
+  const open = css.indexOf("{", rule.from + rule.selector.length);
+  return { body: css.slice(open + 1, rule.to - 1), offset: open + 1, header };
+}

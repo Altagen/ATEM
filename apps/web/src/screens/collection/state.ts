@@ -19,11 +19,11 @@ export type CollectionItem = {
 
 export type Facets = {
   types: string[];
-  /** Le type d'invocation : `normal`, `effect`, `fusion`, `synchro`, `xyz`, `link`… */
+  /** The summon type: `normal`, `effect`, `fusion`, `synchro`, `xyz`, `link`… */
   frameTypes: string[];
-  /** Les types de monstre — Dragon, Guerrier. */
+  /** The monster types — Dragon, Warrior. */
   races: string[];
-  /** Les propriétés Magie et Piège — Continue, Équipement. Même champ d'API. */
+  /** Spell and Trap properties — Continuous, Equip. Same API field. */
   properties: string[];
   attributes: string[];
   rarities: string[];
@@ -58,12 +58,12 @@ export type ViewState = {
   sort: "recent" | "name" | "quantity" | "setCode";
   sortDir: "asc" | "desc";
 
-  /** Préférences d'affichage, retenues d'une visite à l'autre. */
+  /** Display preferences, remembered from one visit to the next. */
   view: "list" | "gallery";
   cols: string;
-  /** `comfort` ou `compact` — la densité de la liste, posée sur `<body>`. */
+  /** `comfort` or `compact` — the list's density, set on `<body>`. */
   density: string;
-  /** Regrouper les monstres par type plutôt que de tout mêler. */
+  /** Group monsters by type rather than mixing everything. */
   groupByMonster: boolean;
   pinned: boolean;
 };
@@ -76,15 +76,15 @@ type Prefs = Pick<
 >;
 
 /**
- * Les valeurs par défaut d'ATEM-old, reprises telles quelles.
+ * ATEM-old's default values, taken as they are.
  *
- * J'en avais choisi quatre autres sans le dire : vue galerie, tri par ajout
- * récent, ordre décroissant, et regroupement par type activé. Une collection
- * s'ouvrait donc en tuiles, dans l'ordre inverse de l'ajout, découpée par
- * famille de monstre — trois écarts qui rendaient l'écran méconnaissable.
+ * I had picked four others without saying so: gallery view, sort by recent
+ * addition, descending order, and grouping by type enabled. A collection
+ * therefore opened as tiles, in reverse order of addition, cut up by monster
+ * family — three departures that made the screen unrecognisable.
  *
- * Le tri par nom croissant est le bon réflexe : c'est ainsi qu'on cherche une
- * carte dans une liste qu'on ne connaît pas par cœur.
+ * Sorting by name ascending is the right reflex: that is how one looks for a
+ * card in a list one does not know by heart.
  */
 const DEFAULT_PREFS: Prefs = {
   view: "list",
@@ -97,11 +97,11 @@ const DEFAULT_PREFS: Prefs = {
 };
 
 /**
- * Les préférences d'affichage vivent dans le navigateur.
+ * Display preferences live in the browser.
  *
- * `localStorage` peut lever — navigation privée, stockage bloqué — et une
- * préférence d'affichage ne vaut pas de faire tomber l'écran. On retombe
- * silencieusement sur les valeurs par défaut.
+ * `localStorage` can throw — private browsing, blocked storage — and a display
+ * preference is not worth bringing the screen down. We fall back silently to
+ * the default values.
  */
 function readPrefs(): Prefs {
   try {
@@ -126,8 +126,8 @@ export function writePrefs(state: ViewState): void {
     };
     window.localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch {
-    // Sans stockage, les préférences ne survivent pas au rechargement. Rien de
-    // plus : l'écran fonctionne à l'identique.
+    // Without storage, preferences do not survive a reload. Nothing more: the
+    // screen works identically.
   }
 }
 
@@ -143,25 +143,25 @@ export function createState(): ViewState {
 }
 
 /**
- * Construit la requête envoyée au serveur.
+ * Builds the query sent to the server.
  *
- * La catégorie « à identifier » n'est pas un type de carte : c'est l'absence de
- * carte. Elle passe donc par `unresolved`, pas par un filtre de type.
+ * The “to identify” category is not a card type: it is the absence of a card.
+ * So it goes through `unresolved`, not through a type filter.
  */
 export function buildQuery(state: ViewState, offset: number, limit: number): string {
   const params = new URLSearchParams();
   if (state.query.trim()) params.set("q", state.query.trim());
 
-  // La catégorie part au serveur. La filtrer au retour, comme on le faisait,
-  // retirait des lignes que le serveur avait comptées : la grille se vidait
-  // pendant que le total en annonçait des centaines, et la suite était
-  // inatteignable puisque la pagination portait sur le compte non filtré.
+  // The category goes to the server. Filtering it on the way back, as we used
+  // to, removed rows the server had counted: the grid emptied while the total
+  // announced hundreds, and the rest was unreachable since pagination was based
+  // on the unfiltered count.
   if (state.kind === "unresolved") params.set("unresolved", "1");
   else if (state.kind) params.set("kind", state.kind);
 
   for (const value of state.attributes) params.append("attribute", value);
-  // Les types de monstre et les propriétés Magie/Piège partagent le champ
-  // `race` côté API : on les sépare à l'affichage, pas à l'envoi.
+  // Monster types and Spell/Trap properties share the `race` field on the API
+  // side: we split them for display, not when sending.
   for (const value of state.races) params.append("race", value);
   for (const value of state.properties) params.append("race", value);
   for (const value of state.frameTypes) params.append("frameType", value);
@@ -170,8 +170,8 @@ export function buildQuery(state: ViewState, offset: number, limit: number): str
   if (state.favoritesOnly) params.set("favorites", "1");
   if (state.unresolvedOnly) params.set("unresolved", "1");
 
-  // Niveau, rang et Lien sont trois listes exactes : un Xyz de rang 4 n'est pas
-  // un monstre de niveau 4, et le serveur les distingue.
+  // Level, rank and Link are three exact lists: a rank-4 Xyz is not a level-4
+  // monster, and the server tells them apart.
   for (const value of state.levels) params.append("level", value);
   for (const value of state.ranks) params.append("rank", value);
   for (const value of state.links) params.append("link", value);

@@ -1,21 +1,21 @@
 /**
- * L'état de l'atelier de decks.
+ * The deck workshop's state.
  *
- * Comme pour les scanlistes : un seul objet, muté sur place, **jamais
- * remplacé**. L'écran en garde une référence ; la réaffecter ferait écrire ses
- * gestes dans un objet orphelin, et plus aucun bouton ne répondrait. Le défaut
- * a coûté une heure sur l'écran précédent.
+ * As for the scanlists: a single object, mutated in place, **never replaced**.
+ * The screen keeps a reference to it; reassigning it would write its gestures
+ * into an orphaned object, and no button would answer any more. That defect
+ * cost an hour on the previous screen.
  */
 import type { DeckZone } from "@atem/shared";
 import type { CardDetail } from "../../platform/api.js";
 
 /**
- * Une ligne de la collection, telle que l'API la rend — **par impression**.
+ * A collection row, as the API returns it — **per printing**.
  *
- * C'est ce qu'ATEM-old affichait aussi : on voit le code d'extension qu'on
- * possède. Le **compte**, lui, est par carte — trois Dragons Blancs en trois
- * codes font trois Dragons Blancs. Les deux cohabitent sans se contredire :
- * la ligne montre une impression, le plafond regarde la carte.
+ * That is what ATEM-old displayed too: you see the set code you own. The
+ * **count**, though, is per card — three Blue-Eyes across three codes make
+ * three Blue-Eyes. The two live together without contradicting each other: the
+ * row shows a printing, the ceiling looks at the card.
  */
 export type CollectionRow = {
   id: number;
@@ -23,12 +23,12 @@ export type CollectionRow = {
   quantity: number;
   isFavorite: boolean;
   /**
-   * La fiche complète, telle que l'API la rend.
+   * The full card record, as the API returns it.
    *
-   * Un sous-ensemble taillé sur les besoins de l'atelier a d'abord vécu ici —
-   * et il a fallu l'élargir dès que la fiche en grand est arrivée. `CardDetail`
-   * est le contrat du serveur ; le redéclarer en plus petit ne fait qu'ajouter
-   * un endroit où il peut mentir.
+   * A subset cut to the workshop's needs lived here first — and it had to be
+   * widened as soon as the full-size sheet arrived. `CardDetail` is the
+   * server's contract; redeclaring it smaller only adds one more place where it
+   * can lie.
    */
   card: CardDetail | null;
 };
@@ -46,29 +46,30 @@ export type DeckCardEntry = {
 };
 
 /**
- * Un deck, tel que l'API le rend.
+ * A deck, as the API returns it.
  *
- * Les horodatages n'y sont pas : le serveur les envoie, l'écran ne les montre
- * nulle part, et déclarer ce qu'on n'affiche pas invite à l'afficher — la même
- * règle que pour les dossiers.
+ * The timestamps are not here: the server sends them, the screen shows them
+ * nowhere, and declaring what you do not display invites displaying it — the
+ * same rule as for folders.
  */
 export type DeckSummary = {
   id: string;
   name: string;
   counts: Record<DeckZone, number>;
   missing: number;
-  /** L'illustration du deck — celle de la carte la plus jouée, choisie par le serveur. */
+  /** The deck's artwork — that of the most played card, chosen by the server. */
   coverImage: string | null;
-  /** Le dossier qui le range, ou `null` à la racine. */
+  /** The folder it is filed in, or `null` at the root. */
   folderId: string | null;
 };
 
 /**
- * Un dossier, tel que l'API le rend.
+ * A folder, as the API returns it.
  *
- * `path` et `depth` viennent du serveur : les recalculer ici serait une seconde
- * réponse à la même question. Ses horodatages ne sont pas déclarés — l'écran ne
- * les montre nulle part, et déclarer ce qu'on n'affiche pas invite à l'afficher.
+ * `path` and `depth` come from the server: recomputing them here would be a
+ * second answer to the same question. Its timestamps are not declared — the
+ * screen shows them nowhere, and declaring what you do not display invites
+ * displaying it.
  */
 export type DeckFolder = {
   id: string;
@@ -79,11 +80,11 @@ export type DeckFolder = {
 };
 
 /**
- * La fenêtre ouverte par-dessus l'écran, s'il y en a une.
+ * The window opened over the screen, if there is one.
  *
- * Une seule à la fois, et son genre dit ce qu'elle demande. Le nom saisi n'est
- * pas ici : il vit dans le champ, comme partout ailleurs dans l'application, et
- * la repeinture le préserve.
+ * One at a time, and its kind says what it asks for. The typed name is not
+ * here: it lives in the field, as everywhere else in the application, and the
+ * repaint preserves it.
  */
 export type DeckModal =
   | { kind: "new-deck" }
@@ -91,14 +92,14 @@ export type DeckModal =
   | { kind: "rename-folder"; id: string };
 
 /**
- * Ce qu'on est en train de déplacer, et rien d'autre.
+ * What is being moved, and nothing else.
  *
- * **Le déplacement n'est pas une fenêtre, c'est un mode.** Un menu déroulant
- * d'arborescence grandit avec le nombre de dossiers et oblige à se représenter
- * l'arbre au lieu de le regarder ; ici l'on navigue normalement, et « Déplacer
- * ici » dépose à l'endroit qu'on a sous les yeux. C'est le geste de Google
- * Drive, proposé par Ange, et c'est le seul qui garde la navigation tactile
- * comme unique façon de désigner un endroit.
+ * **Moving is not a window, it is a mode.** A tree drop-down grows with the
+ * number of folders and forces you to picture the tree instead of looking at
+ * it; here you navigate normally, and “Move here” drops at the place you have
+ * in front of you. That is Google Drive's gesture, proposed by Ange, and it is
+ * the only one that keeps touch navigation as the single way to designate a
+ * place.
  */
 export type DeckMoving = { kind: "deck" | "folder"; id: string };
 
@@ -107,99 +108,98 @@ export type DeckDetail = DeckSummary & { cards: DeckCardEntry[] };
 export type DeckState = {
   loading: boolean;
   decks: DeckSummary[];
-  /** Le deck ouvert dans l'atelier, quand l'URL en désigne un. */
+  /** The deck open in the workshop, when the URL designates one. */
   opened: DeckDetail | null;
   /**
-   * La zone qui reçoit les « +1 » venus de la collection.
+   * The zone that receives the “+1” coming from the collection.
    *
-   * Sauf pour un monstre d'Extra Deck, qui y va toujours : c'est la règle du
-   * jeu, et le serveur la refuserait de toute façon. L'onglet dit où vont les
-   * autres.
+   * Except for an Extra Deck monster, which always goes there: that is the
+   * game's rule, and the server would refuse otherwise anyway. The tab says
+   * where the others go.
    */
   zone: DeckZone;
-  /** La collection, pour y puiser — une ligne par impression. */
+  /** The collection, to draw from — one row per printing. */
   collection: CollectionRow[];
-  /** Combien d'exemplaires par **carte**, toutes impressions confondues. */
+  /** How many copies per **card**, all printings taken together. */
   owned: Map<number, number>;
   query: string;
   /**
-   * La carte ouverte en grand, par son passcode.
+   * The card opened full size, by its passcode.
    *
-   * On la garde par identité plutôt que par valeur : la fiche se redessine
-   * après chaque « +1 », et une copie figée afficherait un compte périmé.
+   * We keep it by identity rather than by value: the sheet is redrawn after
+   * every “+1”, and a frozen copy would display a stale count.
    */
   openedCard: number | null;
-  /** La nature filtrée : tout, monstre, magie, piège, extra, favoris. */
+  /** The filtered nature: all, monster, spell, trap, extra, favourites. */
   kind: "" | "monster" | "spell" | "trap" | "extra" | "fav";
-  /** Les attributs retenus. Vide = tous. */
+  /** The attributes kept. Empty = all of them. */
   attributes: string[];
-  /** Liste ou galerie, pour le panneau de collection. */
+  /** List or gallery, for the collection panel. */
   collView: "list" | "gallery";
-  /** Les dossiers de la personne, à plat — l'arbre se lit dans `parentId`. */
+  /** The person's folders, flat — the tree is read from `parentId`. */
   folders: DeckFolder[];
   /**
-   * Le dossier que l'on regarde, ou la racine.
+   * The folder being looked at, or the root.
    *
-   * Un seul étage à la fois, comme un explorateur de fichiers. ATEM-old avait
-   * commencé par déplier tout l'arbre d'un coup : à trois niveaux, on lisait
-   * une carte de métro pour trouver un deck. Il a fini par revenir à l'étage
-   * courant, et c'est de là qu'on part.
+   * One level at a time, like a file explorer. ATEM-old had started by
+   * unfolding the whole tree at once: at three levels, you were reading a metro
+   * map to find a deck. It ended up going back to the current level, and that
+   * is where we start from.
    */
   folderId: string | null;
   /**
-   * L'atelier plutôt que la fiche.
+   * The workshop rather than the sheet.
    *
-   * **Ouvrir un deck le montre, il ne l'ouvre pas en écriture.** La fiche n'a
-   * aucune commande qui écrive une carte ; le crayon mène à l'atelier, et
-   * l'adresse le dit (`?atelier=1`). C'est la forme d'ATEM-old, et c'est elle
-   * qui rendra possible de montrer le deck d'un autre joueur sans écrire un
-   * second écran : il suffira de ne pas afficher le crayon.
+   * **Opening a deck shows it, it does not open it for writing.** The sheet has
+   * no control that writes a card; the pencil leads to the workshop, and the
+   * address says so (`?workshop=1`). That is ATEM-old's shape, and it is what
+   * will make showing another player's deck possible without writing a second
+   * screen: it will be enough not to display the pencil.
    */
   editing: boolean;
-  /** La zone regardée sur la fiche — « tout » en plus des trois. */
+  /** The zone being looked at on the sheet — “all” on top of the three. */
   sheetZone: "all" | DeckZone;
-  /** Liste ou galerie, pour la fiche du deck. */
+  /** List or gallery, for the deck sheet. */
   sheetView: "list" | "gallery";
   /**
-   * Les fiches de cartes déjà demandées depuis la fiche du deck.
+   * The card records already requested from the deck sheet.
    *
-   * Une ligne de deck ne porte que son nom, son illustration et sa banlist :
-   * assez pour la lire, pas pour la détailler. Le reste se demande au moment où
-   * on ouvre la carte, une fois par carte — et pas au chargement du deck, où
-   * soixante fiches complètes traverseraient le réseau pour rien.
+   * A deck row only carries its name, its artwork and its banlist status:
+   * enough to read it, not to detail it. The rest is asked for when the card is
+   * opened, once per card — and not when the deck loads, where sixty full
+   * records would cross the network for nothing.
    */
   cardDetails: Map<number, CardDetail>;
-  /** Le menu « ⋯ » ouvert : l'identifiant d'un deck ou d'un dossier. */
+  /** The open “⋯” menu: the identifier of a deck or of a folder. */
   menu: string | null;
-  /** La fenêtre par-dessus l'écran, s'il y en a une. */
+  /** The window over the screen, if there is one. */
   modal: DeckModal | null;
-  /** Le déplacement en cours, s'il y en a un. */
+  /** The move under way, if there is one. */
   moving: DeckMoving | null;
   /**
-   * Liste ou galerie, pour la page des decks.
+   * List or gallery, for the decks page.
    *
-   * La galerie par défaut : une planche d'illustrations se reconnaît d'un coup
-   * d'œil là où une liste de noms se lit. La liste reste à un clic, et sert dès
-   * qu'on en a beaucoup.
+   * Gallery by default: a board of artworks is recognised at a glance where a
+   * list of names has to be read. The list stays one click away, and serves as
+   * soon as there are many.
    */
   listView: "list" | "gallery";
   /**
-   * L'instant de la dernière écriture, ou `null`.
+   * The instant of the last write, or `null`.
    *
-   * L'atelier n'a aucun bouton d'enregistrement : les cartes partent à chaque
-   * « ± », le nom quand la frappe se calme. Rien ne le disait, et un bouton
-   * « Enregistrer » juste à côté laissait croire le contraire. ATEM-old
-   * affichait « non enregistré » parce qu'il travaillait sur un brouillon ;
-   * nous affichons l'inverse, brièvement, parce qu'il n'y en a pas.
+   * The workshop has no save button: cards leave at every “±”, the name when
+   * the typing settles. Nothing said so, and a “Save” button right next to it
+   * suggested the opposite. ATEM-old displayed “unsaved” because it worked on a
+   * draft; we display the reverse, briefly, because there is none.
    */
   savedAt: number | null;
   /**
-   * Le panneau visible, sur écran étroit.
+   * The visible panel, on a narrow screen.
    *
-   * Sur un téléphone, empiler la collection et les zones oblige à traverser
-   * quarante cartes pour atteindre son deck. ATEM-old avait tranché de la même
-   * façon : au-delà de 900 px les deux tiennent côte à côte, en dessous on
-   * bascule. La valeur ne sert à rien sur un écran large, et le CSS l'ignore.
+   * On a phone, stacking the collection and the zones forces you to cross forty
+   * cards to reach your deck. ATEM-old had decided the same way: past 900 px
+   * the two fit side by side, below that you toggle. The value is useless on a
+   * wide screen, and the CSS ignores it.
    */
   panel: "collection" | "zones";
   error: string;
@@ -253,19 +253,19 @@ export function resetView(): void {
   state.error = "";
 }
 
-/** Combien d'exemplaires de cette carte le deck ouvert porte-t-il, en tout ? */
+/** How many copies of this card does the open deck carry, all zones together? */
 export function inDeck(passcode: number): number {
   const entry = state.opened?.cards.find((card) => card.passcode === passcode);
   return entry ? entry.main + entry.extra + entry.side : 0;
 }
 
 /**
- * Compte les exemplaires **par carte**, toutes impressions confondues.
+ * Counts copies **per card**, all printings taken together.
  *
- * L'API rend des impressions : trois Dragons Blancs en trois codes d'extension
- * font trois lignes. Un deck compte des cartes — c'est la règle posée par Ange,
- * et celle qui gouverne le plafond des trois exemplaires. On additionne donc
- * sans perdre les lignes, qui gardent le code qu'on possède.
+ * The API returns printings: three Blue-Eyes across three set codes make three
+ * rows. A deck counts cards — that is the rule Ange laid down, and the one that
+ * governs the three-copy ceiling. So we add up without losing the rows, which
+ * keep the code actually owned.
  */
 export function countByCard(rows: CollectionRow[]): Map<number, number> {
   const total = new Map<number, number>();

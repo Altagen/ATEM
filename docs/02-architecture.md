@@ -268,7 +268,7 @@ n'existe pas, 403 si elle n'est pas la nôtre.
 
 La garantie vit **dans le service**, jamais dans l'écran. Cacher le crayon est
 une politesse ; ce qui protège, c'est le refus du serveur, et il est éprouvé
-route par route — `PATCH`, `DELETE`, `PUT /cartes`.
+route par route — `PATCH`, `DELETE`, `PUT /cards`.
 
 Les **dossiers** gardent le 404 dans les deux sens, et ce n'est pas un oubli :
 un dossier est le classement de son propriétaire, il ne se regarde pas. Rien ne

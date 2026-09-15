@@ -21,7 +21,7 @@
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { files, lineOf, readMarkup, rules } from "./lib/dead-css.mjs";
+import { files, groupBody, lineOf, readMarkup, rules } from "./lib/dead-css.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "apps", "web", "src");
 const STYLES = path.join(ROOT, "design");
@@ -44,18 +44,25 @@ for (const sheet of files(STYLES, ".css")) {
   const dead = [];
 
   for (const rule of rules(css)) {
-    // Une règle imbriquée (`@media`, `@supports`) est jugée sur son contenu,
-    // pas sur son en-tête : elle ne porte aucune classe elle-même.
-    if (rule.selector.startsWith("@")) {
-      const inner = css.slice(rule.from + 1, rule.to);
-      const offset = rule.from + 1;
-      for (const nested of rules(inner)) {
-        if (nested.selector.startsWith("@")) continue;
+    // A group rule (`@media`, `@supports`) is judged on its contents, not on
+    // its header: it carries no class itself. An empty one styles nothing.
+    const group = groupBody(css, rule);
+    if (group) {
+      const nestedRules = rules(group.body);
+      if (nestedRules.length === 0) {
+        dead.push({
+          selector: `${group.header} (empty)`,
+          line: lineOf(css, rule.from + rule.selector.length),
+          lines: css.slice(rule.from, rule.to).split("\n").length,
+        });
+      }
+      for (const nested of nestedRules) {
+        if (groupBody(group.body, nested)) continue;
         if (!ruleAlive(nested.selector)) {
           dead.push({
             selector: nested.selector,
-            line: lineOf(css, offset + nested.from),
-            lines: inner.slice(nested.from, nested.to).split("\n").length,
+            line: lineOf(css, group.offset + nested.from),
+            lines: group.body.slice(nested.from, nested.to).split("\n").length,
           });
         }
       }

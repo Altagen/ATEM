@@ -10,7 +10,7 @@
  */
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { files, readMarkup, rules } from "./lib/dead-css.mjs";
+import { files, groupBody, readMarkup, rules } from "./lib/dead-css.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "apps", "web", "src");
 const STYLES = path.join(ROOT, "design");
@@ -35,15 +35,16 @@ for (const sheet of files(STYLES, ".css")) {
      * s'il ne reste rien. Ne juger que le bloc entier laissait passer une règle
      * morte dès qu'une seule de ses voisines était vivante.
      */
-    if (rule.selector.startsWith("@")) {
+    const group = groupBody(css, rule);
+    if (group) {
       const inner = css.slice(rule.from, rule.to);
-      const open = inner.indexOf("{");
-      const body = inner.slice(open + 1, inner.lastIndexOf("}"));
+      const open = inner.indexOf("{", rule.selector.length);
+      const body = group.body;
       const nested = rules(body);
       const deadNested = nested.filter(
-        (n) => !n.selector.startsWith("@") && !ruleAlive(n.selector),
+        (n) => !groupBody(body, n) && !ruleAlive(n.selector),
       );
-      if (deadNested.length === 0) continue;
+      if (nested.length > 0 && deadNested.length === 0) continue;
 
       if (deadNested.length === nested.length) {
         // Plus rien de vivant : le bloc entier part.
@@ -58,7 +59,7 @@ for (const sheet of files(STYLES, ".css")) {
       let innerCursor = 0;
       for (const n of deadNested) {
         innerKeep += body.slice(innerCursor, n.from);
-        drop.push(`@media (extrait de ${rule.selector.trim()}) {\n${body.slice(n.from, n.to)}\n}`);
+        drop.push(`${group.header} {\n${body.slice(n.from, n.to)}\n}`);
         innerCursor = n.to;
       }
       innerKeep += body.slice(innerCursor);

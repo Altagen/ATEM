@@ -12,24 +12,23 @@ const state = (): ViewState => ({
   view: "gallery", cols: "auto", density: "comfort", groupByMonster: true, pinned: true,
 });
 
-test("une rareté hostile ne peut pas ouvrir d'attribut", () => {
+test("a hostile rarity cannot open an attribute", () => {
   /**
-   * La rareté vient du catalogue distant : `cardsetsinfo.php` la rend telle
-   * quelle et les facettes l'affichent. Une valeur qui ferme le guillemet pour
-   * ouvrir un gestionnaire d'événement doit ressortir échappée, pas
-   * interprétée.
+   * Rarity comes from the remote catalogue: `cardsetsinfo.php` returns it as is
+   * and the facets display it. A value that closes the quote to open an event
+   * handler must come out escaped, not interpreted.
    */
   const hostile = '" onmouseover="alert(1)';
   const html = filterPanelHtml(state(), { ...EMPTY_FACETS, rarities: [hostile] }).toString();
 
-  assert.ok(!html.includes('onmouseover="alert(1)"'), "aucun gestionnaire ne doit apparaître");
-  assert.ok(html.includes("&quot;"), "le guillemet doit être échappé");
+  assert.ok(!html.includes('onmouseover="alert(1)"'), "no handler must appear");
+  assert.ok(html.includes("&quot;"), "the quote must be escaped");
 });
 
-test("un nom d'archétype hostile ne s'échappe pas non plus", () => {
+test("a hostile archetype name does not escape either", () => {
   const hostile = "<img src=x onerror=alert(1)>";
   const html = filterPanelHtml(state(), { ...EMPTY_FACETS, races: [hostile] }).toString();
 
-  assert.ok(!html.includes("<img src=x"), "aucune balise ne doit être injectée");
-  assert.ok(html.includes("&lt;img"), "le chevron doit être échappé");
+  assert.ok(!html.includes("<img src=x"), "no tag must be injected");
+  assert.ok(html.includes("&lt;img"), "the angle bracket must be escaped");
 });

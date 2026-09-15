@@ -1,14 +1,14 @@
 /**
- * Connexion et inscription.
+ * Signing in and registering.
  *
- * Le balisage est celui de la maquette validée d'ATEM-old — pas une
- * réinterprétation. La maquette y fait autorité sur la version portée : elle
- * corrige délibérément trois choses que le front avait laissées filer (un `h1`
- * plutôt qu'un `h2`, un vrai lien plutôt qu'un `div` cliquable, et aucun style
- * en ligne là où le porté en comptait dix-huit).
+ * The markup is that of ATEM-old's approved mock-up — not a reinterpretation.
+ * The mock-up is authoritative over the ported version: it deliberately fixes
+ * three things the front had let slip (an `h1` rather than an `h2`, a real link
+ * rather than a clickable `div`, and no inline styles where the port had
+ * eighteen).
  *
- * Non repris : le bloc de comptes de démonstration. Il préremplit des
- * identifiants qui n'existent pas ici — c'est de la donnée fabriquée.
+ * Not carried over: the demo accounts block. It pre-fills credentials that do
+ * not exist here — that is fabricated data.
  */
 import { t } from "../../platform/i18n/index.js";
 import { api, ApiError, type PublicUser } from "../../platform/api.js";
@@ -43,15 +43,15 @@ function fieldGroup(
 }
 
 /**
- * La destination d'après connexion, ramenée à un chemin de chez nous.
+ * The post-sign-in destination, reduced to a path of our own.
  *
- * `?suite=` vient de l'URL : c'est une entrée, pas une donnée de confiance.
- * `history.pushState` refuse déjà une autre origine — mais en **levant**, ce qui
- * laissait la connexion à moitié faite sur un lien forgé. Un seul `/` en tête,
- * jamais deux (`//ailleurs.example` est une autre origine, `/\` aussi une fois
- * l'URL normalisée), et on retombe sinon là où l'on va de toute façon.
+ * `?next=` comes from the URL: it is input, not trusted data.
+ * `history.pushState` already refuses another origin — but by **throwing**,
+ * which left the sign-in half done on a forged link. A single leading `/`,
+ * never two (`//elsewhere.example` is another origin, and so is `/\` once the
+ * URL is normalised), and otherwise we fall back to where we go anyway.
  */
-function safeSuite(raw: string | null): string {
+function safeNext(raw: string | null): string {
   if (!raw || !raw.startsWith("/")) return "/collection";
   if (raw.startsWith("//") || raw.startsWith("/\\")) return "/collection";
   return raw;
@@ -60,14 +60,14 @@ function safeSuite(raw: string | null): string {
 export function authScreen(mode: Mode) {
   return (root: HTMLElement, params: URLSearchParams) => {
     const isRegister = mode === "register";
-    const next = safeSuite(params.get("suite"));
+    const next = safeNext(params.get("next"));
 
     root.className = "auth-page";
 
     const email = el("input", {
       type: "email",
       autocomplete: "username",
-      placeholder: "nom@exemple.com",
+      placeholder: "name@example.com",
     });
     const password = el("input", {
       type: "password",
@@ -86,9 +86,9 @@ export function authScreen(mode: Mode) {
     });
 
     /**
-     * Le bandeau d'erreur est rendu **une fois, vide**, et seul son texte
-     * change. La règle `.auth-error-banner:empty` le fait disparaître tout
-     * seul : rien n'est inséré ni retiré du DOM, donc rien ne saute.
+     * The error banner is rendered **once, empty**, and only its text changes.
+     * The `.auth-error-banner:empty` rule makes it disappear on its own:
+     * nothing is inserted into or removed from the DOM, so nothing jumps.
      */
     const errorBanner = el("p", {
       class: "auth-error-banner",
@@ -139,7 +139,7 @@ export function authScreen(mode: Mode) {
       form,
       el("p", { class: "auth-toggle muted" }, [
         isRegister ? `${t("Already have an account?")} ` : `${t("New to ATEM?")} `,
-        el("a", { class: "auth-link-btn", href: isRegister ? "/connexion" : "/inscription" }, [
+        el("a", { class: "auth-link-btn", href: isRegister ? "/login" : "/register" }, [
           isRegister ? t("Sign in") : t("Create an account"),
         ]),
       ]),
@@ -153,9 +153,9 @@ export function authScreen(mode: Mode) {
     );
 
     /**
-     * Pendant l'envoi, les champs et le bouton sont désactivés par leur
-     * propriété native, et le libellé du bouton change. Rien n'est redessiné :
-     * ce qui a été saisi survit à l'aller-retour.
+     * While submitting, the fields and the button are disabled through their
+     * native property, and the button's label changes. Nothing is redrawn: what
+     * was typed survives the round trip.
      */
     function setBusy(busy: boolean): void {
       for (const control of form.querySelectorAll("input, button")) {
@@ -188,9 +188,9 @@ export function authScreen(mode: Mode) {
           { method: "POST", body },
         );
         setUser(user);
-        // Un accueil n'est pas un succès : le vert est réservé à ce qui vient
-        // d'être enregistré — une carte ajoutée, une note gardée. L'arrivée sur
-        // sa collection porte le doré de la maison.
+        // A welcome is not a success: green is reserved for what has just been
+        // saved — a card added, a note kept. Arriving at your collection wears
+        // the house gold.
         toast(t("Welcome, {name}.", { name: user.displayName }));
         navigate(next, { replace: true });
       } catch (err) {

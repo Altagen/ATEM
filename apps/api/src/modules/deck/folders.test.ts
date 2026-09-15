@@ -220,13 +220,13 @@ test("deleting your account takes your folders with it", async () => {
 
 test("the folder list comes before a deck's", async () => {
   /**
-   * Hono tries routes in declaration order: `/decks/dossiers` declared after
+   * Hono tries routes in declaration order: `/decks/folders` declared after
    * `/decks/:id` would be swallowed, and would answer “invalid identifier” for
    * a folder list. A few lines moved are enough to undo it, without breaking
    * anything else — so we hold it here.
    */
   const { cookie } = await freshSession(app, "routes-folders");
-  const response = await jsonRequest(app, "GET", "/decks/dossiers", undefined, { cookie });
+  const response = await jsonRequest(app, "GET", "/decks/folders", undefined, { cookie });
 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { items: [] });
@@ -236,23 +236,23 @@ test("folders are created, renamed and discarded through the route", async () =>
   const { cookie } = await freshSession(app, "routes-crud");
 
   const created = await jsonRequest(
-    app, "POST", "/decks/dossiers", { name: "Through the route" }, { cookie },
+    app, "POST", "/decks/folders", { name: "Through the route" }, { cookie },
   );
   assert.equal(created.status, 201);
   const folder = (await created.json()) as { id: string; name: string };
   assert.equal(folder.name, "Through the route");
 
   const renamed = await jsonRequest(
-    app, "PATCH", `/decks/dossiers/${folder.id}`, { name: "Renamed" }, { cookie },
+    app, "PATCH", `/decks/folders/${folder.id}`, { name: "Renamed" }, { cookie },
   );
   assert.equal(renamed.status, 200);
   assert.equal(((await renamed.json()) as { name: string }).name, "Renamed");
 
   const discarded = await jsonRequest(
-    app, "DELETE", `/decks/dossiers/${folder.id}`, undefined, { cookie },
+    app, "DELETE", `/decks/folders/${folder.id}`, undefined, { cookie },
   );
   assert.equal(discarded.status, 200);
 
-  const list = await jsonRequest(app, "GET", "/decks/dossiers", undefined, { cookie });
+  const list = await jsonRequest(app, "GET", "/decks/folders", undefined, { cookie });
   assert.deepEqual(await list.json(), { items: [] });
 });

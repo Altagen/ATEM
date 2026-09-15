@@ -1,20 +1,19 @@
 /**
- * La jauge de force du mot de passe.
+ * The password strength meter.
  *
- * Balisage et classes repris de la maquette d'ATEM-old (`.pwd-*`, définies dans
- * `design/components.css`). La règle, elle, vient de `@atem/shared` — **la même
- * fonction que le serveur applique**, pas une copie.
+ * Markup and classes taken from ATEM-old's mock-up (`.pwd-*`, defined in
+ * `design/components.css`). The rule itself comes from `@atem/shared` — **the
+ * same function the server applies**, not a copy.
  *
- * C'est le point qui comptait : ATEM-old avait quatre implémentations
- * divergentes de cette règle, et la maquette jugeait qu'une phrase longue vaut
- * mieux qu'un mot court et tordu. Vrai en général, faux ici : le serveur exige
- * seize caractères **et** les quatre familles. Une phrase de vingt-huit lettres
- * sans chiffre s'affichait « Solide » et se faisait refuser à l'envoi.
+ * That was the point that mattered: ATEM-old had four diverging implementations
+ * of this rule, and the mock-up judged that a long phrase beats a short twisted
+ * word. True in general, false here: the server requires sixteen characters
+ * **and** the four families. A twenty-eight letter phrase without a digit
+ * displayed “Solid” and was refused on submit.
  *
- * La barre se remplit par quart, exactement comme le score du serveur : elle ne
- * peut donc pas annoncer « plein » sur un mot de passe qui sera refusé. Et
- * chaque critère porte son état — c'est la liste qui dit quoi corriger, la
- * barre ne fait que résumer.
+ * The bar fills by quarters, exactly like the server's score: it therefore
+ * cannot announce “full” on a password that will be refused. And each criterion
+ * carries its own state — the list says what to fix, the bar only summarises.
  */
 import { t } from "../../platform/i18n/index.js";
 import {
@@ -24,12 +23,12 @@ import {
 import { el } from "../../platform/ui.js";
 
 /**
- * Les libellés, ici et non dans `@atem/shared`.
+ * The labels, here rather than in `@atem/shared`.
  *
- * Le paquet partagé rend un code — `weak`, `hasUpper` — parce que le serveur
- * l'importe aussi et n'a que faire de la langue de qui lit. Les tables sont
- * lues à l'affichage : déclarées au niveau du module, elles figeraient la
- * langue du premier rendu.
+ * The shared package returns a code — `weak`, `hasUpper` — because the server
+ * imports it too and has no use for the reader's language. The tables are read
+ * at display time: declared at module level, they would freeze the language of
+ * the first render.
  */
 const STRENGTH_LABELS: Record<PasswordLevel, string> = {
   weak: "Weak",
@@ -61,9 +60,9 @@ export function mountPasswordMeter(host: HTMLElement, input: HTMLInputElement): 
   host.append(el("div", { class: "pwd-strength" }, [meter, label, list]));
 
   /**
-   * On modifie les nœuds existants plutôt que de redessiner : la jauge se met à
-   * jour à chaque frappe, et reconstruire la liste à chaque touche ferait
-   * clignoter les critères.
+   * We modify the existing nodes rather than redrawing: the meter updates on
+   * every keystroke, and rebuilding the list on each key would make the
+   * criteria flicker.
    */
   function refresh(): void {
     const value = input.value;

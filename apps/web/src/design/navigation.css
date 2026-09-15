@@ -1,20 +1,20 @@
 /**
- * La coquille de navigation.
+ * The navigation shell.
  *
- * Trois surfaces pour un seul état : la barre du haut sur écran large, la barre
- * du bas sur téléphone qui la remplace **entièrement**, et la feuille de compte
- * que la seconde ouvre.
+ * Three surfaces for a single state: the top bar on a wide screen, the bottom
+ * bar on a phone which replaces it **entirely**, and the account sheet the
+ * latter opens.
  *
- * Remplacer plutôt qu'adapter est le choix d'ATEM-old, et il tient : sur
- * téléphone, la barre du haut ne gardait que la marque, l'état du service et
- * l'avatar — cinq cibles dans une bande de 62 px, pour des réglages qu'on ne
- * visite pas en boucle. Le pouce, lui, est en bas de l'écran.
+ * Replacing rather than adapting is ATEM-old's choice, and it holds: on a
+ * phone, the top bar only kept the brand, the service status and the avatar —
+ * five targets in a 62 px band, for settings nobody visits over and over. The
+ * thumb is at the bottom of the screen.
  *
- * Les règles de la pastille d'état et de la feuille de compte viennent de
- * `shared-nav.css` d'ATEM-old. Celles de la barre du bas y étaient injectées
- * dans une balise `<style>`, chaque déclaration marquée `!important` — non par
- * choix, mais parce qu'une feuille injectée doit l'emporter sur celles déjà
- * chargées. Écrites ici, elles n'en ont plus besoin.
+ * The status pill and account sheet rules come from ATEM-old's
+ * `shared-nav.css`. The bottom bar's were injected there in a `<style>` tag,
+ * every declaration marked `!important` — not by choice, but because an
+ * injected sheet has to win over those already loaded. Written here, they no
+ * longer need it.
  */
 
 .api-pill {
@@ -33,18 +33,18 @@
   border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
 }
 
-/* Et le pendant rouge, qui n'existait pas : le voyant ne pouvait pas être
- * autre chose que vert, donc cette règle n'avait pas de raison d'être. */
+/* And the red counterpart, which did not exist: the indicator could not be
+ * anything but green, so this rule had no reason to be. */
 .api-pill.api-err {
   background: color-mix(in srgb, var(--err) 15%, transparent);
   color: var(--err);
   border: 1px solid color-mix(in srgb, var(--err) 40%, transparent);
 }
 
-/* ── Feuille « Compte » ────────────────────────────────────────────────────
- * Reprise de la maquette. Elle porte ce que la barre du haut portait sur
- * téléphone — marque, identité, boîte de réception, paramètres, administration
- * et langue — et monte depuis le bas, comme la barre qui l'ouvre.
+/* ── “Account” sheet ───────────────────────────────────────────────────────
+ * Taken from the mock-up. It carries what the top bar carried on a phone —
+ * brand, identity, inbox, settings, administration and language — and rises
+ * from the bottom, like the bar that opens it.
  */
 .account-backdrop {
   position: fixed;
@@ -66,17 +66,17 @@
   border-top: 1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
   border-radius: 18px 18px 0 0;
   box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.55);
-  /* La barre de gestes du système mord le bas de l'écran. */
+  /* The system gesture bar bites into the bottom of the screen. */
   padding-bottom: env(safe-area-inset-bottom, 0);
-  /* Le glissement pose un `transform` : la transition ramène le panneau en
-     place quand on relâche trop tôt, et l'emporte quand le seuil est franchi.
-     `touch-action` réserve le geste vertical au panneau. */
+  /* The swipe sets a `transform`: the transition brings the panel back into
+     place when released too early, and carries it away once the threshold is
+     crossed. `touch-action` reserves the vertical gesture for the panel. */
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   touch-action: pan-y;
 }
 
-/* La poignée : trois pixels de haut, mais c'est elle qui annonce que le
-   panneau se tire. Sans repère, le geste n'existe que pour qui l'a deviné. */
+/* The handle: three pixels high, but it is what announces that the panel can
+   be pulled. With no cue, the gesture only exists for whoever guessed it. */
 .account-sheet-grip {
   width: 2.5rem;
   height: 4px;
@@ -95,8 +95,8 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* La marque coiffe le panneau, seule sur sa ligne : c'est le seul endroit où
-   elle reste sur téléphone, et elle y ramène à l'accueil. */
+/* The brand tops the panel, alone on its line: it is the only place it
+   remains on a phone, and from there it leads back home. */
 .account-sheet-brand {
   grid-column: 1 / -1;
   font-size: 1.05rem;
@@ -125,8 +125,8 @@
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  /* 52px : au-dessus du seuil du doigt, et assez espacé pour qu'on ne vise pas
-     la ligne voisine. */
+  /* 52px: above the finger threshold, and spaced enough not to hit the
+     neighbouring row. */
   min-height: 52px;
   padding: 0 1.1rem;
   background: transparent;
@@ -149,7 +149,7 @@
 
 .account-sheet-logout { width: 100%; justify-content: center; color: var(--danger); }
 
-/* ── La barre du bas, sur téléphone ────────────────────────────────────── */
+/* ── The bottom bar, on a phone ────────────────────────────────────────── */
 
 .global-mobile-bottom-nav {
   display: none;
@@ -157,16 +157,16 @@
 
 @media (max-width: 46rem) {
   /**
-   * La barre du haut cède la place, en entier.
+   * The top bar gives way, entirely.
    *
-   * On ne garde pas une version réduite : ce serait deux navigations à tenir
-   * d'accord, et l'une des deux finirait par mentir sur la page courante.
+   * We do not keep a reduced version: that would be two navigations to keep in
+   * agreement, and one of them would end up lying about the current page.
    */
   .app-bar {
     display: none;
   }
 
-  /* De quoi ne pas cacher la dernière ligne d'une liste sous la barre. */
+  /* Enough room not to hide a list's last row under the bar. */
   body {
     padding-bottom: 74px;
   }
@@ -183,8 +183,8 @@
     backdrop-filter: blur(16px);
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 20px color-mix(in srgb, var(--ombre) 70%, transparent);
-    /* La barre est posée par-dessus la page : sans ça, le fond de l'écran
-       transparaît entre les entrées pendant un défilement. */
+    /* The bar sits over the page: without this, the screen's background shows
+       through between the entries while scrolling. */
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
@@ -215,7 +215,7 @@
     color: var(--gold);
   }
 
-  /* Le trait qui marque la page courante, accroché en haut de l'entrée. */
+  /* The stroke marking the current page, hooked to the top of the entry. */
   .global-mobile-nav-item.is-active::before {
     content: "";
     position: absolute;
@@ -228,11 +228,11 @@
   }
 }
 
-/* ── Le choix de langue ───────────────────────────────────────────────────
+/* ── The language choice ──────────────────────────────────────────────────
  *
- * Deux boutons collés, façon segment : il n'y a que deux langues, et la
- * courante se lit d'un coup d'œil. Un menu déroulant demanderait deux gestes
- * pour la même chose, et cacherait l'état courant derrière le premier.
+ * Two joined buttons, segmented-control style: there are only two languages,
+ * and the current one reads at a glance. A drop-down would take two gestures
+ * for the same thing, and hide the current state behind the first.
  */
 
 .lang-switch {
@@ -266,7 +266,7 @@
   color: var(--fg);
 }
 
-/* Dans la feuille de compte, la cible est au doigt et le bloc prend sa place. */
+/* In the account sheet, the target is finger-sized and the block takes its room. */
 .account-sheet-foot .lang-switch {
   align-self: center;
 }

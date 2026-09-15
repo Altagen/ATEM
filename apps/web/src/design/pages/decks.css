@@ -24,16 +24,16 @@
 }
 @media (max-width: 900px) {
   /**
- * La phrase qui dit où en est le deck.
+ * The sentence saying where the deck stands.
  *
- * Les compteurs donnent des chiffres ; celle-ci donne le verdict, et le reste à
- * faire. Elle ne crie pas : c'est une ligne de texte, pas une bannière, parce
- * qu'un deck en construction est l'état **normal** de l'écran — une alerte
- * permanente cesserait d'être lue.
+ * The counters give numbers; this one gives the verdict, and what is left to
+ * do. It does not shout: it is a line of text, not a banner, because a deck
+ * under construction is the screen's **normal** state — a permanent alert would
+ * stop being read.
  */
 .deck-status {
-  /* Collée aux compteurs qu'elle explique, et plus discrète qu'eux : c'est une
-     légende, pas un titre. */
+  /* Stuck to the counters it explains, and quieter than them: it is a caption,
+     not a title. */
   margin: 0 0 .85rem;
   font-size: .85rem;
 }
@@ -46,15 +46,15 @@
   }
 }
 /**
- * Les deux panneaux de l'atelier ne sont plus des cartes.
+ * The workshop's two panels are no longer cards.
  *
- * Chacune coûtait deux bords : le sien (bordure + 0.85rem de remplissage) et
- * celui de la page, qui devait rester assez large pour qu'on voie la carte se
- * détacher. Sur un téléphone de 390px, 46px partaient à gauche et autant à
- * droite avant la première vignette — un quart de l'écran pour du décor.
+ * Each cost two edges: its own (border + 0.85rem of padding) and the page's,
+ * which had to stay wide enough to see the card stand out. On a 390px phone,
+ * 46px went on the left and as much on the right before the first thumbnail — a
+ * quarter of the screen for decoration.
  *
- * La Collection ne s'encadre pas non plus : la page est le panneau. Ce qui
- * sépare les deux colonnes, c'est leur en-tête et son filet, pas une boîte.
+ * The Collection is not framed either: the page is the panel. What separates
+ * the two columns is their header and its rule, not a box.
  */
 .deck-edit-collection,
 .deck-edit-zones {
@@ -129,11 +129,11 @@
   border-radius: 50%;
 }
 
-/* ── Vue liste, façon explorateur ──────────────────────────────────────────
- * Reprise de la maquette à l'identique. L'arborescence dépliait tous les
- * dossiers d'un coup, avec leur imbrication et leurs decks : à trois niveaux,
- * on lisait une carte de métro pour trouver un deck. La liste montre un seul
- * endroit à la fois, et partage sa position avec la galerie.
+/* ── List view, explorer style ─────────────────────────────────────────────
+ * Taken from the mock-up as is. The tree unfolded every folder at once, with
+ * their nesting and their decks: at three levels, you were reading a metro map
+ * to find a deck. The list shows one place at a time, and shares its position
+ * with the gallery.
  */
 .drive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .drive-row {
@@ -154,19 +154,18 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  /* C'est un lien : sans ça, le nom, les comptes et la pastille sortent tous
-     soulignés — la rangée ressemble à un paragraphe de liens. */
+  /* It is a link: without this, the name, the counts and the pill all come out
+     underlined — the row looks like a paragraph of links. */
   text-decoration: none;
   text-align: left;
   cursor: pointer;
   display: grid;
   /**
-   * Quatre colonnes : jaquette, nom, comptes, pastille.
+   * Four columns: cover, name, counts, pill.
    *
-   * Il n'y en avait que trois pour quatre enfants, et la pastille tombait donc
-   * sur une ligne implicite, seule, contre le bord gauche. Signalé par Ange —
-   * la vue en rangées n'étant pas celle par défaut, personne ne l'avait
-   * regardée d'assez près.
+   * There were only three for four children, so the pill fell onto an implicit
+   * row, alone, against the left edge. Reported by Ange — the row view not
+   * being the default one, nobody had looked at it closely enough.
    */
   grid-template-columns: 2rem minmax(0, 1fr) auto auto;
   align-items: center;
@@ -175,8 +174,8 @@
   padding: 0.55rem 0.4rem;
 }
 .drive-ico { font-size: 1.1rem; line-height: 1; text-align: center; }
-/* La couverture d'un deck garde le rapport d'une carte, en tout petit : c'est
-   ce qui distingue une ligne de deck d'une ligne de dossier au premier regard. */
+/* A deck's cover keeps a card's ratio, very small: that is what tells a deck row
+   from a folder row at first glance. */
 .drive-ico-cover { width: 1.55rem; height: 2.25rem; display: block; border-radius: 3px; overflow: hidden; }
 .drive-ico-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .drive-text { display: flex; flex-direction: column; min-width: 0; }
@@ -190,13 +189,13 @@
 }
 .drive-main:hover .drive-name { color: var(--accent); }
 .drive-meta { font-size: 0.75rem; white-space: nowrap; }
-/* La jaquette d'un deck dans une rangée : `deckCover` rend une image ou le dos
-   de carte, les deux doivent remplir la vignette. */
+/* A deck's cover in a row: `deckCover` returns an image or the card back, and
+   both must fill the thumbnail. */
 .drive-cover, .drive-cover img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 3px; }
 
-/* ── La fiche d'un deck ────────────────────────────────────────────────────
- * Ouvrir un deck le montre : c'est une page de lecture, bâtie comme la
- * collection. Le crayon mène à l'atelier, et rien d'autre ici n'écrit.
+/* ── A deck's sheet ────────────────────────────────────────────────────────
+ * Opening a deck shows it: it is a reading page, built like the collection.
+ * The pencil leads to the workshop, and nothing else here writes.
  */
 .deck-sheet-top {
   display: flex;
@@ -206,7 +205,7 @@
   margin: 0 0 0.6rem;
 }
 .deck-sheet-identity { display: flex; gap: 0.75rem; align-items: center; min-width: 0; flex: 1; }
-/* La jaquette au format d'une carte, en petit : la même image que la planche. */
+/* The cover at a card's ratio, small: the same image as on the board. */
 .deck-sheet-cover { width: 3rem; flex-shrink: 0; display: block; }
 .deck-sheet-art {
   width: 100%;
@@ -216,15 +215,15 @@
   border-radius: 5px;
 }
 .deck-sheet-titles { min-width: 0; }
-/* `break-word` et non `anywhere` : le second coupait « Dragons » en « Drag / ons »
-   dès que la barre d'actions serrait la colonne. */
+/* `break-word` and not `anywhere`: the latter cut “Dragons” into “Drag / ons”
+   as soon as the action bar squeezed the column. */
 .deck-sheet-titles h1 { margin: 0; font-size: 1.3rem; overflow-wrap: break-word; }
 .deck-sheet-place { margin: 0.15rem 0 0; font-size: 0.8rem; }
 .deck-sheet-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
-/* Le crayon est un lien — il change d'écran — mais il se porte comme un bouton. */
+/* The pencil is a link — it changes screen — but it wears a button's look. */
 a.icon-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
-/* Sur téléphone, l'identité prend toute la largeur et les actions passent
-   dessous : côte à côte, il ne restait au nom qu'une colonne de trois lettres. */
+/* On a phone, the identity takes the full width and the actions move below:
+   side by side, the name was left a column three letters wide. */
 @media (max-width: 700px) {
   .deck-sheet-top { flex-direction: column; align-items: stretch; }
   .deck-sheet-actions { justify-content: flex-end; }
@@ -238,10 +237,10 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   filter: drop-shadow(0 1px 2px #000);
 }
 
-/* ── Les dossiers ──────────────────────────────────────────────────────────
- * On navigue un étage à la fois. Le fil d'Ariane dit où l'on est et ramène
- * d'un clic à n'importe quel étage traversé — sans lui, remonter de deux
- * dossiers demanderait deux allers-retours par la case « .. ».
+/* ── Folders ───────────────────────────────────────────────────────────────
+ * Navigation goes one level at a time. The breadcrumb says where you are and
+ * brings you back in one click to any level crossed — without it, going up two
+ * folders would take two round trips through the “..” card.
  */
 .folder-path {
   display: flex;
@@ -262,17 +261,17 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer;
 }
 .folder-path-step:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
-/* Sur téléphone, chaque étage est aussi une cible de navigation : 26 px de haut
-   se ratent, mesuré sur Pixel 5. */
+/* On a phone, each level is also a navigation target: 26 px high gets missed,
+   measured on a Pixel 5. */
 @media (max-width: 900px) {
   .folder-path-step { min-height: 44px; padding-left: 0.5rem; padding-right: 0.5rem; }
 }
-/* L'étage courant ne se clique pas pour rien : il se distingue. */
+/* The current level is not clicked for nothing: it stands out. */
 .folder-path-step[aria-current="page"] { color: var(--fg); font-weight: 600; cursor: default; }
 .folder-path-sep { color: var(--muted); }
 
-/* Un dossier prend la place d'une tuile de deck, au même format de carte : la
-   grille reste régulière quoi qu'elle contienne. */
+/* A folder takes a deck tile's place, at the same card ratio: the grid stays
+   regular whatever it holds. */
 .folder-tile-li { list-style: none; }
 .folder-tile {
   position: relative;
@@ -286,8 +285,8 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   transition: border-color 0.15s, transform 0.15s;
 }
 .folder-tile:hover { border-color: var(--accent); transform: translateY(-2px); }
-/* La case qui remonte : en pointillés, pour ne pas se confondre avec un vrai
-   dossier au premier coup d'œil. */
+/* The card that goes up: dotted, so it is not mistaken for a real folder at
+   first glance. */
 .folder-tile-parent { border-style: dashed; }
 .folder-open {
   appearance: none;
@@ -322,13 +321,14 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   text-align: left;
 }
 
-/* ── Le menu « ⋯ » ─────────────────────────────────────────────────────────
- * Il remplace le glisser-déposer d'ATEM-old, qui demandait de viser une cible
- * en maintenant le doigt — praticable à la souris, pas au pouce.
+/* ── The “⋯” menu ──────────────────────────────────────────────────────────
+ * It is the touch path for filing: drag and drop means aiming at a target
+ * while holding — workable with a mouse, not with a thumb — so it only exists
+ * on the desktop.
  */
 .folder-menu-anchor { position: relative; }
-/* Dans une tuile, le menu se pose en haut à droite ; dans une rangée, il suit
-   le flux, à la fin de la ligne. */
+/* In a tile, the menu sits top right; in a row, it follows the flow, at the end
+   of the line. */
 .deck-tile-wrap { position: relative; height: 100%; }
 .deck-tile-wrap > .folder-menu-anchor,
 .folder-tile > .folder-menu-anchor {
@@ -337,11 +337,11 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   right: 0.4rem;
 }
 /**
- * Le « ⋯ » d'une tuile se pose sur l'illustration.
+ * A tile's “⋯” sits on the artwork.
  *
- * Un bouton nu y devient invisible — c'était le cas au premier rendu. ATEM-old
- * le faisait apparaître au survol : un téléphone ne survole rien, alors il
- * reste là, sur une pastille sombre qui le détache de n'importe quelle carte.
+ * A bare button becomes invisible there — it was, at first render. ATEM-old
+ * showed it on hover: a phone hovers over nothing, so it stays there, on a dark
+ * pill that sets it apart from any card.
  */
 .deck-tile-wrap .folder-menu-btn,
 .folder-tile .folder-menu-btn {
@@ -349,9 +349,9 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: var(--fg);
 }
-/* 44 px : c'est le seul geste qui range un deck au doigt, et la mesure a montré
-   40. Les boutons ronds de l'application en font 40 partout ailleurs — celui-ci
-   ouvre un menu, pas une bascule. */
+/* 44 px: it is the only gesture that files a deck by finger, and measurement
+   showed 40. The application's round buttons are 40 everywhere else — this one
+   opens a menu, not a toggle. */
 .folder-menu-btn { min-width: 44px; min-height: 44px; }
 .folder-ctx-menu {
   position: absolute;
@@ -374,17 +374,17 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   color: inherit;
   font: inherit;
   text-align: left;
-  /* 44px de haut : cet écran se manipule au pouce comme le reste. */
+  /* 44px high: this screen is handled by thumb like the rest. */
   padding: 0.7rem 0.85rem;
   cursor: pointer;
 }
 .menu-item:hover { background: rgba(255, 255, 255, 0.06); }
 .menu-item-danger { color: var(--err); }
 
-/* ── La fenêtre de création et de rangement ────────────────────────────────
- * Elle remplace `window.prompt`, qui n'avait ni l'habillage de l'application
- * ni la place d'un second champ, et qui s'ouvre en haut de l'écran sur un
- * téléphone — loin du pouce.
+/* ── The create and file window ────────────────────────────────────────────
+ * It replaces `window.prompt`, which had neither the application's styling nor
+ * room for a second field, and which opens at the top of the screen on a phone
+ * — far from the thumb.
  */
 .deck-modal-backdrop {
   position: fixed;
@@ -430,11 +430,11 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   border-top: 1px solid var(--border);
 }
 
-/* ── Le bandeau du déplacement ─────────────────────────────────────────────
- * Le mode « Déplacer ici » de Drive, proposé par Ange : on navigue, et l'écran
- * courant désigne la destination. Il colle en haut pour rester joignable après
- * avoir descendu une longue liste — sans lui sous les yeux, on ne saurait plus
- * qu'un déplacement est en cours.
+/* ── The move banner ───────────────────────────────────────────────────────
+ * Drive's “Move here” mode, proposed by Ange: you navigate, and the current
+ * screen designates the destination. It sticks to the top to stay reachable
+ * after scrolling down a long list — without it in view, you would no longer
+ * know a move is under way.
  */
 .move-banner {
   position: sticky;
@@ -454,10 +454,10 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 .move-banner-why { color: var(--caution); font-size: 0.85rem; }
 .move-banner-actions { display: flex; gap: 0.4rem; margin-left: auto; }
 
-/* ── Le glisser-déposer, au bureau ─────────────────────────────────────────
- * Ces deux classes sont posées par le code pendant le glissement, jamais par
- * le gabarit : une repeinture par `dragover` remplacerait l'élément que le
- * navigateur suit, et interromprait le geste.
+/* ── Drag and drop, on the desktop ─────────────────────────────────────────
+ * These two classes are set by the code during the drag, never by the
+ * template: a repaint on `dragover` would replace the element the browser is
+ * following, and break off the gesture.
  */
 .is-dragging { opacity: 0.45; }
 .is-drag-over {
@@ -466,13 +466,12 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   border-radius: 10px;
 }
 
-/* ── La planche de decks ───────────────────────────────────────────────────
- * Une liste de noms se lit ; une planche d'illustrations se reconnaît. C'est la
- * vue par défaut de la page des decks, et la raison d'être de la couverture.
+/* ── The deck board ────────────────────────────────────────────────────────
+ * A list of names is read; a board of artworks is recognised. It is the decks
+ * page's default view, and the cover's reason for being.
  *
- * `auto-fill` plutôt qu'un nombre de colonnes : la même règle donne six
- * portraits sur un écran large et deux sur un téléphone, sans point de rupture
- * à maintenir.
+ * `auto-fill` rather than a column count: the same rule gives six portraits on
+ * a wide screen and two on a phone, with no breakpoint to maintain.
  */
 .deck-tiles {
   list-style: none;
@@ -499,7 +498,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   border-color: var(--accent);
   transform: translateY(-2px);
 }
-/* Le format d'une carte, pour que l'illustration ne soit ni rognée ni étirée. */
+/* A card's ratio, so the artwork is neither cropped nor stretched. */
 .deck-tile-cover {
   width: 100%;
   aspect-ratio: 59 / 86;
@@ -511,7 +510,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 .deck-tile-name {
   font-size: 0.92rem;
   line-height: 1.25;
-  /* Un nom long ne doit pas allonger une tuile plus que ses voisines. */
+  /* A long name must not make a tile taller than its neighbours. */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -519,10 +518,10 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 .deck-tile-meta { font-size: 0.75rem; }
 .deck-tile .zone-pill { align-self: flex-start; }
 
-/* ── Bascule des panneaux de l'atelier, sur téléphone ──────────────────────
- * Empilés, la collection et le deck obligent à faire défiler toute la première
- * pour atteindre le second — c'est-à-dire à chaque carte ajoutée. Au-dessus de
- * 900px les deux tiennent côte à côte : la bascule n'y a rien à faire.
+/* ── Workshop panel toggle, on a phone ─────────────────────────────────────
+ * Stacked, the collection and the deck force you to scroll through the whole
+ * first one to reach the second — that is, at every card added. Above 900px
+ * the two fit side by side: the toggle has no business there.
  */
 .deck-panel-switch { display: none; }
 
@@ -534,24 +533,22 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   }
   .deck-panel-switch .chip { flex: 1; justify-content: center; }
 
-  .deck-edit-layout.is-panneau-coll .deck-edit-zones,
-  .deck-edit-layout.is-panneau-zone .deck-edit-collection { display: none; }
+  .deck-edit-layout.is-panel-coll .deck-edit-zones,
+  .deck-edit-layout.is-panel-zone .deck-edit-collection { display: none; }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Reprise de la feuille que `decks/app.ts` injectait à chaud.
+   Taken from the sheet ATEM-old's `decks/app.ts` injected at runtime.
 
-   Deux cent cinquante-sept lignes de CSS minifié vivaient dans une chaîne de
-   gabarit, posées dans un `<style id="decks-css">` à chaque montage de la page
-   — et retirées puis reposées à chaque re-rendu. Elles ne passaient donc ni
-   par la construction, ni par les contrôles de style, ni par le cache du
-   navigateur, et neuf de leurs sélecteurs redéfinissaient des règles de ce
-   fichier-ci sans que rien ne le signale.
+   Two hundred and fifty-seven lines of minified CSS lived in a template string,
+   placed in a `<style id="decks-css">` at every mount of the page — and removed
+   then re-added at every re-render. They therefore went through neither the
+   build, nor the style gates, nor the browser cache, and nine of their
+   selectors redefined rules of this very file with nothing flagging it.
 
-   Le bloc est repris tel quel, en fin de fichier : c'est l'ordre qu'il avait
-   — injecté après la feuille, donc gagnant à spécificité égale. Le reformater
-   en même temps que le déplacer aurait mélangé deux changements dont l'un se
-   vérifie et l'autre pas.
+   The block is taken as is, at the end of the file: that is the order it had —
+   injected after the sheet, so winning at equal specificity. Reformatting it
+   while moving it would have mixed two changes, one checkable and one not.
    ────────────────────────────────────────────────────────────────────────── */.decks-page {
   max-width:1280px;
   margin:0 auto;
@@ -729,20 +726,20 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 .deck-counts .count-over{color:var(--err,#f08080);font-weight:600}
 
 /**
- * Une zone en dessous de son minimum.
+ * A zone below its minimum.
  *
- * `count-full` dit « c'est plein » et `count-over` crie ; il manquait le
- * troisième état, celui d'un deck en construction. Sans lui, un Main à douze
- * cartes s'affichait comme un Main à quarante.
+ * `count-full` says “it is full” and `count-over` shouts; the third state was
+ * missing, that of a deck under construction. Without it, a twelve-card Main
+ * looked like a forty-card Main.
  */
 .deck-counts .count-short { color: var(--caution); }
 
 /**
- * « Enregistré », le temps de le lire.
+ * “Saved”, long enough to read it.
  *
- * Les cartes s'écrivent à chaque « ± ». ATEM-old affichait « non enregistré »
- * parce qu'il travaillait sur un brouillon ; nous disons l'inverse, et
- * brièvement — une marque permanente deviendrait du décor qu'on ne lit plus.
+ * Cards are written at every “±”. ATEM-old displayed “unsaved” because it
+ * worked on a draft; we say the reverse, and briefly — a permanent mark would
+ * become decoration nobody reads any more.
  */
 .deck-counts .deck-saved {
   color: var(--success);
@@ -755,40 +752,33 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   align-items:start;
 }
 @media(max-width:900px){.deck-edit-layout{grid-template-columns:1fr}}
-/* Les panneaux de l'atelier ne sont plus des cartes — voir styles/decks.css. */
-.deck-edit-collection,.deck-edit-zones{min-width:0}
 
-/* ── Porté de la maquette ──────────────────────────────────────────────
+/* ── Ported from the mock-up ───────────────────────────────────────────
  *
- * Ces classes étaient posées par l'application et habillées nulle part :
- * l'écran avait été construit en recopiant le balisage de la maquette sans
- * ses règles. Elles ne cassaient rien de visible — elles laissaient
- * simplement des éléments sans forme, et faisaient croire qu'une règle
- * existait quelque part.
+ * These classes were set by the application and styled nowhere: the screen had
+ * been built by copying the mock-up's markup without its rules. They broke
+ * nothing visible — they simply left shapeless elements, and suggested a rule
+ * existed somewhere.
  */
 
 /* depuis design/styles/pages/decks.css */
 .zone-edit-empty { padding: 0.6rem 0.4rem; font-style: italic; font-size: 0.84rem; }
 
-/* Passe mobile portée de design/styles/pages/decks.css — voir le relevé du 3 septembre 2026. */
-@media (max-width: 1100px) {
-}
-@media (max-width: 900px) {
-}
+/* Mobile pass ported from design/styles/pages/decks.css — see the survey of 3 September 2026. */
 @media (max-width: 850px) {
   .drive-main { grid-template-columns: 1.75rem minmax(0, 1fr); row-gap: 0.1rem; }
   .drive-meta { grid-column: 2; }
-  /* La pastille suit le nom et les comptes dans la même colonne, au lieu de
-     déborder sous la jaquette. */
+  /* The pill follows the name and counts in the same column, instead of
+     overflowing under the cover. */
   .drive-main .zone-pill { grid-column: 2; justify-self: start; }
 }
 
-/* ══ Règles portées de la maquette — 3 septembre 2026 ══════════════════════
+/* ══ Rules ported from the mock-up — 3 September 2026 ══════════════════════
  *
- * Le portage de la veille ne comparait que les blocs `@media` : toute la
- * moitié « de base » était restée dehors. Trente et un sélecteurs manquaient,
- * et quatre-vingt-onze règles existantes étaient incomplètes — celles-là ont
- * été complétées sur place, une seconde déclaration les aurait fait diverger.
+ * The previous day's port only compared `@media` blocks: the whole “base” half
+ * had been left out. Thirty-one selectors were missing, and ninety-one existing
+ * rules were incomplete — those were completed in place, a second declaration
+ * would have made them drift.
  */
 
 .deck-counts .warn {
@@ -809,11 +799,12 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   background: rgba(255, 255, 255, 0.04);
 }
 
-/* ── La fiche de carte ouverte depuis l'atelier ────────────────────────────
+/* ── The card sheet opened from the workshop ───────────────────────────────
  *
- * Remontées de `staged/pruned/` avec leur balisage : la fiche en grand est
- * arrivée dans l'atelier, et ces règles l'habillent. C'est le mouvement prévu —
- * une règle descend quand son balisage disparaît, elle remonte quand il revient.
+ * Brought back up from `staged/pruned/` with their markup: the full-size sheet
+ * arrived in the workshop, and these rules style it. That is the intended
+ * movement — a rule goes down when its markup disappears, it comes back up when
+ * the markup returns.
  */
 .deck-edit-coll-list .item-main.js-open-card{
   flex:1 1 auto;min-width:0;width:auto !important;max-width:none;

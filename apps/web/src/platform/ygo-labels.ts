@@ -1,23 +1,23 @@
 /**
- * Les libellés français des énumérations Yu-Gi-Oh!
+ * The French labels of the Yu-Gi-Oh! enumerations.
  *
- * L'API ne les localise pas : même en `language=fr`, `type`, `race` et
- * `attribute` reviennent en anglais (`Spellcaster`, `DARK`, `Equip`). Seuls le
- * nom et le texte de la carte sont traduits. Ces tables sont donc à notre
- * charge — c'est la dette annoncée en ADR-005, et elle se paie une fois.
+ * The API does not localise them: even with `language=fr`, `type`, `race` and
+ * `attribute` come back in English (`Spellcaster`, `DARK`, `Equip`). Only the
+ * card's name and text are translated. These tables are therefore on us — that
+ * is the debt announced in ADR-005, and it is paid once.
  *
- * **La valeur anglaise reste la clé.** Elle est ce qui est stocké, filtré et
- * comparé ; le français n'est qu'un affichage. Un filtre posé en français reste
- * donc valide quand l'interface passe à l'anglais.
+ * **The English value stays the key.** It is what is stored, filtered and
+ * compared; French is only a display. A filter set in French therefore stays
+ * valid when the interface switches to English.
  *
- * Et c'est ce qui rend la bascule de langue triviale ici : en anglais, il n'y a
- * rien à traduire — la valeur brute de l'API **est** l'anglais. Ces tables ne
- * s'appliquent qu'en français. Ce vocabulaire n'a donc rien à faire dans le
- * dictionnaire général : « Poisson » n'est pas une phrase d'interface, c'est le
- * nom français d'une valeur du catalogue.
+ * And that is what makes the language switch trivial here: in English there is
+ * nothing to translate — the API's raw value **is** the English. These tables
+ * only apply in French. This vocabulary therefore has no business in the
+ * general dictionary: « Poisson » is not an interface sentence, it is the
+ * French name of a catalogue value.
  *
- * Table reprise d'ATEM-old, où elle avait été établie à partir des noms usuels
- * du TCG français.
+ * Table taken from ATEM-old, where it was established from the usual names of
+ * the French TCG.
  */
 
 import { locale } from "./i18n/index.js";
@@ -34,7 +34,7 @@ const ATTRIBUTES: Labels = {
   DIVINE: "Divin",
 };
 
-/** Le type d'un monstre — champ `race` de l'API quand la carte est un monstre. */
+/** A monster's type — the API's `race` field when the card is a monster. */
 const MONSTER_RACES: Labels = {
   Aqua: "Aqua",
   Beast: "Bête",
@@ -65,10 +65,10 @@ const MONSTER_RACES: Labels = {
 };
 
 /**
- * La propriété d'une Magie ou d'un Piège — **le même champ `race`**.
+ * A Spell's or Trap's property — **the same `race` field**.
  *
- * D'où l'ambiguïté à lever : un Piège « Normal » n'est pas un monstre Normal.
- * C'est le type de la carte qui dit dans quelle table chercher.
+ * Hence the ambiguity to resolve: a “Normal” Trap is not a Normal monster. It
+ * is the card's type that says which table to look in.
  */
 const SPELL_TRAP_PROPERTIES: Labels = {
   Normal: "Normale",
@@ -108,15 +108,14 @@ const CARD_TYPES: Labels = {
 };
 
 /**
- * Un libellé inconnu revient tel quel.
+ * An unknown label comes back as is.
  *
- * Konami sort de nouveaux types régulièrement, et un tableau vide en face d'un
- * type non répertorié serait pire que son nom anglais — l'utilisateur, lui,
- * saurait le lire.
+ * Konami releases new types regularly, and a blank in front of an unlisted type
+ * would be worse than its English name — the user, at least, could read that.
  */
 const label = (table: Labels, value: string | null | undefined): string => {
   if (!value) return "";
-  // En anglais, la valeur de l'API est déjà celle qu'on affiche.
+  // In English, the API's value is already the one we display.
   if (locale() === "en") return value;
   return table[value] ?? value;
 };
@@ -128,21 +127,21 @@ export const translateType = (value: string | null | undefined): string =>
   label(CARD_TYPES, value);
 
 /**
- * Traduit le champ `race`, en levant l'ambiguïté par le type de la carte.
+ * Translates the `race` field, resolving the ambiguity with the card's type.
  *
- * Sans le type, `Normal` est indécidable : « Monstre Normal » ou « Piège
- * Normal » selon la carte.
+ * Without the type, `Normal` is undecidable: “Normal Monster” or “Normal Trap”
+ * depending on the card.
  */
 export function translateRace(
   value: string | null | undefined,
   cardType?: string | null,
 ): string {
   if (!value) return "";
-  const isSpellOrTrap = cardType === "Spell Card" || cardType === "Trap Card";
+  const isSpellOrTrap = cardType === CATALOGUE.spellCard || cardType === CATALOGUE.trapCard;
   return isSpellOrTrap ? label(SPELL_TRAP_PROPERTIES, value) : label(MONSTER_RACES, value);
 }
 
-/** Les huit directions d'un monstre Lien, telles que l'API les nomme. */
+/** The eight directions of a Link monster, as the API names them. */
 const LINK_MARKERS: Labels = {
   Top: "Haut",
   "Top-Left": "Haut-Gauche",
@@ -157,12 +156,12 @@ const LINK_MARKERS: Labels = {
 export const translateLinkMarker = (value: string): string => label(LINK_MARKERS, value);
 
 /**
- * Le cadre d'une carte — `frameType` de l'API, en minuscules et sans espaces.
+ * A card's frame — the API's `frameType`, lowercase and without spaces.
  *
- * Il vivait dans la vue de la collection, où il faisait tache : c'est le même
- * vocabulaire que le reste de ce fichier, et il se traduit par la même règle —
- * en anglais, la valeur de l'API suffit, à ceci près qu'elle n'est pas écrite
- * pour être lue (`normal_pendulum`). Elle est donc reformatée.
+ * It used to live in the collection's view, where it stood out: it is the same
+ * vocabulary as the rest of this file, and it translates by the same rule — in
+ * English the API's value is enough, except that it is not written to be read
+ * (`normal_pendulum`). So it gets reformatted.
  */
 const FRAME_TYPES: Labels = {
   normal: "Normal",
@@ -209,12 +208,11 @@ export function translateFrameType(value: string | null | undefined): string {
 }
 
 /**
- * Le vocabulaire du catalogue, tel qu'YGOPRODeck l'écrit.
+ * The catalogue's vocabulary, as YGOPRODeck writes it.
  *
- * Ce sont des **données**, pas des libellés : on les compare, on ne les affiche
- * pas. Écrites en clair dans trois écrans, elles ressemblaient à du texte
- * affiché oublié par la traduction — et une faute de frappe y serait passée
- * inaperçue.
+ * These are **data**, not labels: we compare them, we do not display them.
+ * Written in the clear in three screens, they looked like displayed text
+ * forgotten by the translation — and a typo would have gone unnoticed there.
  */
 export const CATALOGUE = {
   spellCard: "Spell Card",

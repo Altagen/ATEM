@@ -1,10 +1,10 @@
 /**
- * Reconnaissance de set codes dans le navigateur.
+ * Set-code recognition in the browser.
  *
- * Repris d'ATEM-old sans changement de logique. Trois fonctions exportées ont
- * été retirées — un indicateur de disponibilité du worker, un libellé d'état de
- * chargement et un aperçu du recadrage — qui servaient son interface et que la
- * nôtre n'appelle pas. Rien d'autre n'a bougé.
+ * Taken from ATEM-old with no change of logic. Three exported functions were
+ * removed — a worker-availability flag, a loading-state label and a crop
+ * preview — which served its interface and that ours does not call. Nothing
+ * else moved.
  *
  * Browser OCR for Yu-Gi-Oh! set codes (~9 chars, e.g. LTGY-FR008).
  * Tesseract.js from CDN — no local LLM. Prefer zoom-band mode: user frames
@@ -55,20 +55,20 @@ declare global {
 }
 
 /*
- * Le moteur est servi depuis notre domaine, pas depuis un CDN.
+ * The engine is served from our own domain, not from a CDN.
  *
- * Il venait de `cdn.jsdelivr.net` : du code tiers exécuté dans notre origine, à
- * chaque ouverture de l'écran de scan. Le cookie de session est `httpOnly`,
- * donc ce code ne pouvait pas le lire — mais il pouvait appeler l'API au nom
- * de la personne connectée. Et l'épinglage par version ne protégeait de rien :
- * c'est le CDN qui décide de ce qu'il sert sous ce nom.
+ * It came from `cdn.jsdelivr.net`: third-party code running in our origin, at
+ * every opening of the scan screen. The session cookie is `httpOnly`, so that
+ * code could not read it — but it could call the API on behalf of the signed-in
+ * person. And pinning by version protected nothing: it is the CDN that decides
+ * what it serves under that name.
  *
- * `scripts/vendor-tesseract.sh` les télécharge une fois et **vérifie leur
- * empreinte**. Une version épinglée fait confiance à un nom ; une empreinte ne
- * fait confiance qu'au contenu.
+ * `scripts/vendor-tesseract.sh` downloads them once and **checks their
+ * fingerprint**. A pinned version trusts a name; a fingerprint trusts only the
+ * content.
  *
- * Conséquence directe : la politique de sécurité du contenu n'autorise plus
- * aucun hôte extérieur.
+ * Direct consequence: the content security policy no longer allows any outside
+ * host.
  */
 const TESSERACT_CDN = "/tesseract/tesseract.min.js";
 const TESSERACT_BASE = "/tesseract";
@@ -77,7 +77,7 @@ const TESSERACT_BASE = "/tesseract";
  * (~slightly slower, much more reliable on phones)
  */
 const TESSERACT_CORE = "/tesseract/tesseract-core-lstm.wasm.js";
-/** ~2.9 Mo compressé — la variante `best_int`, plus légère que la 4.0.0 complète. */
+/** ~2.9 MB compressed — the `best_int` variant, lighter than the full 4.0.0. */
 const TESSERACT_LANG = "/tesseract/lang";
 
 /** Script tag load timeout (ms). */
@@ -1632,9 +1632,9 @@ function trimInkBlob(
   out.width = tw + margin * 2;
   out.height = Math.max(th + margin * 2, 48);
   const octx = out.getContext("2d")!;
-  // Un blanc littéral, et il le reste : un contexte de canevas ignore les
-  // propriétés personnalisées sans le dire. Ce fond n'est pas du thème,
-  // c'est ce que Tesseract attend sous le texte.
+  // A literal white, and it stays one: a canvas context ignores custom
+  // properties without saying so. This background is not part of the theme, it
+  // is what Tesseract expects under the text.
   octx.fillStyle = "#fff";
   octx.fillRect(0, 0, out.width, out.height);
   octx.drawImage(
@@ -1685,14 +1685,14 @@ type CropBuildOpts = EnhanceOpts & {
    */
   targetH?: number;
   /**
-   * Redressement, en degrés, appliqué à l'échantillonnage.
+   * Straightening, in degrees, applied to the sampling.
    *
-   * Une carte tenue à la main n'est jamais tout à fait droite, et Tesseract
-   * s'écroule vite : mesuré le 3 septembre 2026, cinq degrés suffisent à ne
-   * plus rien reconnaître du tout, alors que la même image redressée se lit
-   * sans peine. On tourne à la source plutôt que la vignette déjà découpée :
-   * faire pivoter une bande de 720×88 autour de son centre en jetterait les
-   * extrémités, là où se trouve souvent le début du code.
+   * A card held in the hand is never quite straight, and Tesseract collapses
+   * fast: measured on 3 September 2026, five degrees are enough to recognise
+   * nothing at all, while the same image straightened reads without trouble. We
+   * rotate at the source rather than the already-cropped thumbnail: pivoting a
+   * 720×88 band around its centre would throw away its ends, where the start of
+   * the code often sits.
    */
   angleDeg?: number;
 };
@@ -1731,18 +1731,18 @@ function cropRegion(
   const ctx = out.getContext("2d")!;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  // Même raison qu'au-dessus : littéral, et hors du thème.
+  // Same reason as above: literal, and outside the theme.
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, out.width, out.height);
   if (opts?.angleDeg) {
     /*
-     * On compose la transformation au lieu de découper puis tourner.
+     * We compose the transform instead of cropping then rotating.
      *
-     * Le point de sortie (u, v) doit échantillonner le point source obtenu en
-     * tournant autour du centre de la bande. En posant la matrice dans cet
-     * ordre — centre de sortie, mise à l'échelle, rotation, centre source — le
-     * navigateur fait l'interpolation lui-même, et rien n'est perdu sur les
-     * bords puisqu'il puise dans l'image entière.
+     * The output point (u, v) must sample the source point obtained by rotating
+     * around the band's centre. By laying the matrix down in that order —
+     * output centre, scaling, rotation, source centre — the browser does the
+     * interpolation itself, and nothing is lost at the edges since it draws
+     * from the whole image.
      */
     const k = out.width / Math.max(1, sw);
     ctx.save();
@@ -1958,19 +1958,19 @@ export function prepareZoomBandVariants(
   variants.push(invertCanvas(primary));
 
   /*
-   * #5 à #8 — la même bande, redressée.
+   * #5 to #8 — the same band, straightened.
    *
-   * Mesuré le 3 septembre 2026 sur des images fabriquées dont on connaît le
-   * code : à trois degrés d'inclinaison la lecture passe encore, à cinq elle
-   * ne rend plus rien du tout, et à huit ou douze elle rend n'importe quoi.
-   * Les mêmes images redressées se lisent sans peine. Une carte tenue à la
-   * main n'est jamais droite à trois degrés près : c'est la cause la plus
-   * probable des scans qui « ne voient même pas qu'il y a du texte » alors
-   * que la carte d'à côté passe du premier coup.
+   * Measured on 3 September 2026 on manufactured images whose code we know: at
+   * three degrees of tilt the reading still goes through, at five it returns
+   * nothing at all, and at eight or twelve it returns anything. The same images
+   * straightened read without trouble. A card held in the hand is never within
+   * three degrees of straight: that is the most likely cause of the scans that
+   * “do not even see there is any text” while the card next to it goes through
+   * on the first try.
    *
-   * Six et douze degrés couvrent la plage utile de part et d'autre. Elles
-   * viennent en dernier parce que la boucle s'arrête dès que deux lectures
-   * indépendantes s'accordent : une carte droite ne les paie jamais.
+   * Six and twelve degrees cover the useful range on either side. They come
+   * last because the loop stops as soon as two independent readings agree: a
+   * straight card never pays for them.
    */
   for (const angle of [-6, 6, -12, 12]) {
     variants.push(
@@ -2092,16 +2092,16 @@ export async function ocrSetCodeFromImage(
   // Photo default: gray+soft × PSM 7/8. thorough: +hard-thin. full: all variants+PSM13.
   const thorough = opts?.thorough;
   /*
-   * `thorough` essaie tout, et c'est nouveau.
+   * `thorough` tries everything, and that is new.
    *
-   * Il s'arrêtait à quatre variantes sur les neuf préparées. L'écran de scan
-   * appelle toujours avec `thorough: true` : l'inversion — la variante qui
-   * rattrape un code clair sur fond sombre — n'était donc jamais tentée dans
-   * l'application, et les redressements ne l'auraient pas été davantage.
+   * It stopped at four variants out of the nine prepared. The scan screen
+   * always calls with `thorough: true`: inversion — the variant that catches a
+   * light code on a dark background — was therefore never attempted in the
+   * application, and the straightenings would not have been either.
    *
-   * Le coût est borné par la sortie anticipée : dès que deux lectures
-   * indépendantes donnent le même code fort, la boucle s'arrête. Une carte
-   * droite et nette sort après deux ou trois passes, comme avant.
+   * The cost is bounded by the early exit: as soon as two independent readings
+   * give the same strong code, the loop stops. A straight, sharp card comes out
+   * after two or three passes, as before.
    */
   const maxVariants =
     thorough === "full" || thorough

@@ -168,12 +168,12 @@
 }
 
 /**
- * Les champs d'un `.menu-field`, quel que soit leur type.
+ * A `.menu-field`'s fields, whatever their type.
  *
- * La règle ne visait que `select`. Un `input` dans le même bloc tombait donc
- * sur le gris par défaut du navigateur, qui dénote de toute l'interface —
- * ATEM-old avait le même travers, et son champ « Nom du deck » était gris lui
- * aussi. Transcrire fidèlement l'a rapporté avec.
+ * The rule only targeted `select`. An `input` in the same block therefore fell
+ * back on the browser's default grey, which clashes with the whole interface —
+ * ATEM-old had the same flaw, and its “Deck name” field was grey too.
+ * Transcribing faithfully brought it along.
  */
 .menu-field select,
 .menu-field input {
@@ -348,14 +348,14 @@
 .search input {
   flex: 1;
   /*
-   * Un `<input>` a une largeur intrinsèque d'une vingtaine de caractères, que
-   * `flex: 1` ne fait pas céder : sans `min-width: 0`, il débordait de son
-   * étiquette. Mesuré à 390 px : la bulle s'arrêtait à 188, le champ allait à
-   * 218 — trente pixels dehors, par-dessus la bascule d'affichage.
+   * An `<input>` has an intrinsic width of about twenty characters, which
+   * `flex: 1` does not make yield: without `min-width: 0`, it overflowed its
+   * label. Measured at 390 px: the bubble stopped at 188, the field went to 218
+   * — thirty pixels outside, over the display toggle.
    *
-   * La règle vient de `design/styles/components.css`, qui la porte avec le
-   * même constat. Elle n'avait jamais été portée : mon relevé de la veille ne
-   * comparait que les blocs `@media`, et celle-ci est une règle de base.
+   * The rule comes from `design/styles/components.css`, which carries it with
+   * the same finding. It had never been ported: the previous day's survey only
+   * compared `@media` blocks, and this one is a base rule.
    */
   min-width: 0;
   border: none;
@@ -799,11 +799,11 @@
 }
 
 /**
- * L'étoile de favori, sur la vignette.
+ * The favourite star, on the thumbnail.
  *
- * Même pastille que la quantité, dans le coin opposé, et l'or de `.fav-tag` :
- * c'est la même information, elle a la même couleur. Posée à nu, elle se lisait
- * par-dessus le nom imprimé sur la carte et en mangeait la première lettre.
+ * Same pill as the quantity, in the opposite corner, and the gold of
+ * `.fav-tag`: it is the same information, it has the same colour. Laid bare, it
+ * sat over the name printed on the card and ate its first letter.
  */
 
 .tile-body {
@@ -845,10 +845,10 @@
 }
 
 /*
- * L'intertitre de groupe, enfin posé.
+ * The group subheading, finally in place.
  *
- * Cette règle était habillée et jamais employée : la case « Grouper par
- * monstre » se souvenait de son état et ne changeait rien à l'écran.
+ * This rule was styled and never used: the “Group monsters by type” box
+ * remembered its state and changed nothing on screen.
  */
 .group-header {
   list-style: none;
@@ -1207,8 +1207,8 @@
   border: 1px solid var(--border);
   border-radius: 0.85rem;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
-  /* La hauteur était bornée, mais rien ne défilait : le contenu passait
-     simplement par-dessus le bord. */
+  /* The height was capped, but nothing scrolled: the content simply ran over
+     the edge. */
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -1274,24 +1274,22 @@
 
 /* —— Scan modal —— */
 /*
- * La modale de scan — et les deux raisons pour lesquelles elle ne marchait pas.
+ * The scan modal — and the two reasons it did not work.
  *
- * **Elle passait sous la barre de navigation mobile.** `z-index: 113` et
- * `112` étaient écrits en clair, hors de l'échelle nommée de `tokens.css`.
- * La barre du bas est à `--z-header` (300), avec `!important` : elle passait
- * donc devant la modale, et recouvrait exactement la rangée des boutons de
- * prise de vue. On ne pouvait plus déclencher la photo sur téléphone. C'est
- * précisément ce que l'échelle nommée existe pour empêcher, et le seul écran
- * qui ne s'en servait pas est le seul qui avait le problème.
+ * **It went under the mobile navigation bar.** `z-index: 113` and `112` were
+ * written out, outside the named scale of `tokens.css`. The bottom bar is at
+ * `--z-header` (300), with `!important`: so it went in front of the modal, and
+ * covered exactly the row of shutter buttons. The photo could no longer be
+ * taken on a phone. That is precisely what the named scale exists to prevent,
+ * and the only screen not using it was the only one with the problem.
  *
- * **Vingt et une de ses classes n'avaient aucune règle.** Le balisage les
- * posait — viseur, bande de visée, barre de déclenchement, puces de
- * suggestion — et rien ne les habillait. Un `<video>` sans règle prend sa
- * taille intrinsèque, celle du flux de la caméra : d'où le débordement et la
- * barre de défilement horizontale. `check-classes-habillees.mjs` les
- * signalait toutes ; c'est le plafond du cliquet, posé sur le nombre mesuré,
- * qui les absorbait. Une classe posée sans règle n'est pas une dette
- * cosmétique, c'est un écran qui ne fonctionne pas.
+ * **Twenty-one of its classes had no rule.** The markup set them —
+ * viewfinder, aiming band, shutter bar, suggestion chips — and nothing styled
+ * them. A `<video>` with no rule takes its intrinsic size, the camera stream's:
+ * hence the overflow and the horizontal scrollbar. The unstyled-classes gate
+ * (today `check-unstyled-classes.mjs`) reported them all; it was the ratchet's
+ * ceiling, set on the measured count, that absorbed them. A class set with no
+ * rule is not cosmetic debt, it is a screen that does not work.
  */
 .scan-backdrop {
   position: fixed;
@@ -1515,72 +1513,71 @@
 /* Hand trap — no official card-corner icon in API */
 
 @media (max-width: 850px) {
-  /* Le bandeau se resserre : 0.75rem/1.25rem de marge intérieure sur un
-     téléphone, c'est vingt pixels pris aux cartes. Valeurs de la maquette. */
+  /* The band tightens: 0.75rem/1.25rem of padding on a phone is twenty pixels
+     taken from the cards. Values from the mock-up. */
   .pin-rail {
     padding: 0.5rem 0.85rem;
     gap: 0.4rem;
   }
 
   /*
-   * Le décalage de cinquante pixels en haut de page, et d'où il venait.
+   * The fifty-pixel offset at the top of the page, and where it came from.
    *
-   * Le bandeau est `sticky` avec `top: 3.25rem` — la hauteur de la barre du
-   * haut, sous laquelle il doit se caler sur grand écran. Mais un élément
-   * collant ne descend pas seulement quand on défile : il est *contraint* de
-   * rester à cette distance du haut, y compris au repos. Premier enfant de la
-   * page, sa position naturelle est zéro, donc il est repoussé à 49,6 px et
-   * laisse un vide au-dessus de lui.
+   * The band is `sticky` with `top: 3.25rem` — the height of the top bar it
+   * must settle under on a wide screen. But a sticky element does not only
+   * move down while scrolling: it is *constrained* to stay at that distance
+   * from the top, at rest included. As the page's first child its natural
+   * position is zero, so it gets pushed to 49.6 px and leaves a gap above it.
    *
-   * Sur téléphone la barre du haut n'existe pas — `display: none` — et il n'y a
-   * donc rien sous quoi se glisser. La maquette pose `top: 0` ici depuis le
-   * début ; c'est la ligne que je n'avais pas portée avec les autres.
+   * On a phone the top bar does not exist — `display: none` — so there is
+   * nothing to slide under. The mock-up has set `top: 0` here from the start;
+   * it is the line that had not been ported with the others.
    */
   .pin-rail[data-pinned="true"] { top: 0; }
 
-  /* Le libellé « Scanlistes » cède la place à sa seule icône : le `title` du
-     lien la nomme, et la rangée gagne 90px. Le libellé est masqué dans le
-     balisage plutôt que par `font-size: 0`, qui avalait aussi l'emoji. */
+  /* The “Scanlists” label gives way to its icon alone: the link's `title`
+     names it, and the row gains 90px. The label is hidden in the markup rather
+     than with `font-size: 0`, which swallowed the emoji too. */
   .scanlist-link-label { display: none; }
   .scanlist-link { padding-inline: 0.7rem; }
 
   /*
-   * La rangée d'outils, portée de la maquette — qui l'avait déjà réglée.
+   * The toolbar row, ported from the mock-up — which had already sorted it out.
    *
-   * `apps/web` laissait `flex-wrap: wrap` et un `min-width: 12rem` sur la
-   * recherche : 389px de largeur demandée pour 363 disponibles sur un téléphone
-   * de 390. Le « ⋮ » et le lien des scanlistes passaient donc à une deuxième
-   * rangée presque vide — quarante pixels de hauteur pour deux cibles. Ange :
-   * « ça prend beaucoup de pixels en hauteur pour rien dans la barre ».
+   * `apps/web` left `flex-wrap: wrap` and a `min-width: 12rem` on the search:
+   * 389px of requested width for 363 available on a 390 phone. The “⋮” and the
+   * scanlists link therefore went to an almost empty second row — forty pixels
+   * of height for two targets. Ange: “it takes a lot of vertical pixels for
+   * nothing in the bar”.
    *
-   * `design/styles/pages/collection.css` porte ces règles depuis le début.
-   * Elles n'avaient jamais été portées ici. Le `min-width: 0` est la moitié
-   * qu'on oublie : sans elle, un élément flexible refuse de descendre sous la
-   * largeur de son contenu, et la rangée se casse quand même.
+   * `design/styles/pages/collection.css` has carried these rules from the start.
+   * They had never been ported here. The `min-width: 0` is the half people
+   * forget: without it, a flex item refuses to shrink below its content's width,
+   * and the row breaks anyway.
    */
   .pin-rail .tools-bar { flex-wrap: nowrap; gap: 0.35rem; }
   .pin-rail .search { flex: 1 1 auto; min-width: 0; }
-  /* C'est le champ qui porte la hauteur de la cible, non son étiquette :
-     mesuré, un clic sur le bord bas de l'étiquette ne donnait pas le focus. */
+  /* The field carries the target's height, not its label: measured, a click on
+     the label's bottom edge did not give focus. */
   .pin-rail .search { padding-block: 0; }
   .pin-rail .search input { font-size: 0.85rem; min-height: 40px; padding-block: 0; }
 
-  /* Épingler n'a pas de sens ici : le bandeau suit toujours le défilement, et
-     le bouton coûtait une cible de plus dans une rangée déjà pleine. Mesuré à
-     320px, les quatre autres contrôles ne laissaient que 64 pixels au champ de
-     recherche — quatre lettres. */
+  /* Pinning makes no sense here: the band always follows the scroll, and the
+     button cost one more target in an already full row. Measured at 320px, the
+     four other controls left only 64 pixels for the search field — four
+     letters. */
   [data-pin] { display: none; }
 
   .add-bar { gap: 0.35rem; }
   .add-bar .add-input { font-size: 0.85rem; min-height: 36px; }
 }
 
-/* ── Autres éditions ──────────────────────────────────────────────────────
+/* ── Other printings ──────────────────────────────────────────────────────
  *
- * Une ligne par édition connue, l'édition possédée marquée. La question à
- * laquelle ce bloc répond se pose la carte à la main : « celle-ci, je l'ai
- * déjà ? » — d'où le compte à droite, et le tiret à sa place quand la réponse
- * est non. Une case vide se lirait comme une donnée manquante.
+ * One row per known printing, the owned printing marked. The question this
+ * block answers comes up card in hand: “this one, do I already have it?” —
+ * hence the mark on the right, and the dash in its place when the answer is no.
+ * An empty cell would read as missing data.
  */
 .editions h3 {
   margin: 0 0 var(--space-1);
@@ -1588,26 +1585,18 @@
   font-weight: 800;
 }
 
-/* La rareté et la langue sont des repères, pas le sujet : elles ne prennent
- * que la place qu'il leur faut et ne s'alignent pas sur une grille. */
+/* Rarity and language are landmarks, not the subject: they take only the room
+ * they need and do not align on a grid. */
 .edition-rarity,
 .edition-lang {
   white-space: nowrap;
 }
 
-@media (max-width: 560px) {
-  /* Sur un téléphone, l'extension et la langue disparaissent : le code et la
-   * rareté suffisent à reconnaître la carte qu'on tient. */
-  .edition-row {
-    grid-template-columns: auto 1fr auto;
-  }
-}
-
-/* ── La boussole des marqueurs de Lien ────────────────────────────────────
+/* ── The Link marker compass ──────────────────────────────────────────────
  *
- * Trois par trois, comme sur la carte : les huit directions autour, le rang au
- * centre. Les flèches éteintes restent visibles — c'est leur absence qui porte
- * l'information autant que leur présence, et une grille à trous se lirait mal.
+ * Three by three, as on the card: the eight directions around, the rating in
+ * the middle. Unlit arrows stay visible — their absence carries information as
+ * much as their presence, and a grid with holes would read badly.
  */
 .link-compass-block h3 {
   margin: 0 0 var(--space-1);
@@ -1630,8 +1619,8 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--muted);
-  /* Éteinte, la flèche s'efface sans disparaître : c'est la comparaison avec
-   * les allumées qui renseigne. */
+  /* Unlit, the arrow fades without disappearing: it is the comparison with the
+   * lit ones that informs. */
   opacity: 0.35;
 }
 
@@ -1652,8 +1641,8 @@
   background: var(--input);
 }
 
-/* En galerie, l'intertitre traverse la grille entière — sans quoi il
- * occuperait une case et se lirait comme une carte. */
+/* In gallery view, the subheading spans the whole grid — otherwise it would
+ * take a cell and read as a card. */
 .group-header-gallery {
   grid-column: 1 / -1;
 }
@@ -1666,7 +1655,7 @@
   font-size: 0.85em;
 }
 
-/* ── Autres éditions d'une carte ──────────────────────────────────────── */
+/* ── A card's other printings: the list ───────────────────────────────── */
 
 .editions-list {
   list-style: none;
@@ -1696,8 +1685,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Le nom de l'extension cède la place en premier : c'est la seule colonne
- * dont on peut se passer pour reconnaître une édition. */
+/* The set name gives way first: it is the only column a printing can be
+ * recognised without. */
 .edition-set {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1714,7 +1703,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Icônes et blocs de filtre ─────────────────────────────────────────── */
+/* ── Icons and filter blocks ───────────────────────────────────────────── */
 
 /* disc matches attr badge; star almost fills disc */
 .tile-star .star-badge {
@@ -1793,7 +1782,7 @@
     0 0 6px color-mix(in srgb, #e53935 40%, transparent);
 }
 
-/* Icônes en ligne des métadonnées — même diamètre que celles d'attribut. */
+/* Inline metadata icons — same diameter as the attribute ones. */
 .meta-ico.star-badge {
   width: 1rem;
   height: 1rem;
@@ -1813,7 +1802,7 @@
     0 0 6px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
-/* Icônes en ligne des statistiques de la liste. */
+/* Inline icons of the list's stats. */
 .meta-ico {
   width: 1rem;
   height: 1rem;
@@ -1885,7 +1874,7 @@
   filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 60%, transparent));
 }
 
-/* ── Champs avancés, réglages et note d'exemplaire ─────────────────────── */
+/* ── Advanced fields, settings and copy note ───────────────────────────── */
 
 .menu-check {
   display: flex;
@@ -1948,11 +1937,11 @@
   border-color: var(--gold);
 }
 
-/* ── Densité compacte ──────────────────────────────────────────────────── */
+/* ── Compact density ───────────────────────────────────────────────────── */
 
 /*
- * Posée sur `<body>` : ces règles la cherchent là, et les déplacer demanderait
- * de toutes les réécrire pour un gain nul.
+ * Set on `<body>`: these rules look for it there, and moving it would mean
+ * rewriting them all for no gain.
  */
 
 /* Density */

@@ -1,11 +1,11 @@
-/** Les briques d'interface partagées. */
+/** The shared interface building blocks. */
 
 /**
- * Crée un élément et lui pose son contenu par `textContent`.
+ * Creates an element and sets its content through `textContent`.
  *
- * Jamais `innerHTML` avec une donnée : un nom de carte, un pseudo ou un message
- * d'erreur du serveur sont des données, et une seule concaténation oubliée
- * suffit à ouvrir une injection.
+ * Never `innerHTML` with data: a card name, a display name or a server error
+ * message are data, and a single forgotten concatenation is enough to open an
+ * injection.
  */
 export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -25,7 +25,7 @@ export function el<K extends keyof HTMLElementTagNameMap>(
 
 let currentToast: HTMLElement | null = null;
 
-/** Un seul message à l'écran : le précédent s'efface avant que le suivant paraisse. */
+/** One message on screen at a time: the previous one goes before the next appears. */
 export function toast(message: string, kind: "info" | "error" | "success" = "info"): void {
   currentToast?.remove();
   const node = el("div", { class: "toast", role: "status", "data-kind": kind }, [message]);
@@ -40,16 +40,16 @@ export function toast(message: string, kind: "info" | "error" | "success" = "inf
 }
 
 /**
- * Un gabarit qui échappe par défaut.
+ * A template that escapes by default.
  *
- * Le balisage repris d'ATEM-old est volumineux : l'écrire nœud par nœud le
- * rendrait illisible et intransposable. On assemble donc des chaînes — mais
- * **toute interpolation est échappée**, sans exception à demander.
+ * The markup taken from ATEM-old is bulky: writing it node by node would make
+ * it unreadable and impossible to transpose. So we assemble strings — but
+ * **every interpolation is escaped**, with no exception to ask for.
  *
- * Un nom de carte, un pseudo ou un message d'erreur du serveur sont des
- * données. Une seule concaténation oubliée ouvre une injection, et c'est
- * exactement ce que cette fonction rend impossible : il n'existe pas d'échappée
- * de secours. Ce qui doit passer en HTML passe par `raw()`, qui se voit.
+ * A card name, a display name or a server error message are data. A single
+ * forgotten concatenation opens an injection, and that is exactly what this
+ * function makes impossible: there is no escape hatch. What must go through as
+ * HTML goes through `raw()`, which is visible.
  */
 const ESCAPES: Record<string, string> = {
   "&": "&amp;",
@@ -61,7 +61,7 @@ const ESCAPES: Record<string, string> = {
 
 const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (c) => ESCAPES[c]!);
 
-/** Marque une chaîne comme du HTML déjà construit, à ne pas ré-échapper. */
+/** Marks a string as HTML already built, not to be escaped again. */
 export class SafeHtml {
   constructor(readonly value: string) {}
   toString(): string {
@@ -86,13 +86,13 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): SafeH
 }
 
 /**
- * `html` conditionnel : rend le fragment seulement si la condition tient.
+ * Conditional `html`: renders the fragment only if the condition holds.
  *
- * Il n'accepte que du `SafeHtml`. Il acceptait aussi une chaîne simple, qu'il
- * passait à `raw()` — donc en HTML de confiance, sans échappement. Aucun
- * appelant ne s'en servait ainsi, mais c'était exactement l'échappée de secours
- * que ce fichier déclare ne pas avoir, et elle ne se voyait pas : `when(x, nom)`
- * a l'air inoffensif. Ce qui doit passer en HTML passe par `raw()`, qui se voit.
+ * It accepts `SafeHtml` only. It used to accept a plain string too, which it
+ * passed to `raw()` — hence as trusted HTML, unescaped. No caller used it that
+ * way, but it was exactly the escape hatch this file claims not to have, and it
+ * did not show: `when(x, name)` looks harmless. What must go through as HTML
+ * goes through `raw()`, which is visible.
  */
 export const when = (condition: unknown, fragment: SafeHtml): SafeHtml =>
   condition ? fragment : raw("");

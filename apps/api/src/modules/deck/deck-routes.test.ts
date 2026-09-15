@@ -41,7 +41,7 @@ test("no deck route answers without a session", async () => {
     ["GET", "/decks/00000000-0000-0000-0000-000000000000", undefined],
     ["PATCH", "/decks/00000000-0000-0000-0000-000000000000", { name: "x" }],
     ["DELETE", "/decks/00000000-0000-0000-0000-000000000000", undefined],
-    ["PUT", "/decks/00000000-0000-0000-0000-000000000000/cartes",
+    ["PUT", "/decks/00000000-0000-0000-0000-000000000000/cards",
       { passcode: 1, zone: "main", quantity: 1 }],
   ] as const) {
     const response = await req(method, path, body);
@@ -93,7 +93,7 @@ test("nobody writes into someone else's deck, even knowing its identifier", asyn
   for (const [method, path, body] of [
     ["PATCH", `/decks/${deck.id}`, { name: "Stolen" }],
     ["DELETE", `/decks/${deck.id}`, undefined],
-    ["PUT", `/decks/${deck.id}/cartes`, { passcode: 71000001, zone: "main", quantity: 1 }],
+    ["PUT", `/decks/${deck.id}/cards`, { passcode: 71000001, zone: "main", quantity: 1 }],
   ] as const) {
     const response = await req(method, path, body, intruder.cookie);
     assert.equal(response.status, 403, `${method} ${path}`);
@@ -121,8 +121,8 @@ test("setting a card twice in a row leaves the same deck", async () => {
   const deck = (await (await req("POST", "/decks", { name: "Idempotent" }, cookie)).json()) as { id: string };
 
   const body = { passcode: 71000002, zone: "main", quantity: 2 };
-  await req("PUT", `/decks/${deck.id}/cartes`, body, cookie);
-  const second = await req("PUT", `/decks/${deck.id}/cartes`, body, cookie);
+  await req("PUT", `/decks/${deck.id}/cards`, body, cookie);
+  const second = await req("PUT", `/decks/${deck.id}/cards`, body, cookie);
 
   assert.equal(second.status, 200);
   const state = (await second.json()) as { counts: { main: number } };
@@ -140,7 +140,7 @@ test("an invalid body is refused before reaching the database", async () => {
     { passcode: -5, zone: "main", quantity: 1 },
     { zone: "main", quantity: 1 },
   ]) {
-    const response = await req("PUT", `/decks/${deck.id}/cartes`, body, cookie);
+    const response = await req("PUT", `/decks/${deck.id}/cards`, body, cookie);
     assert.equal(response.status, 400, JSON.stringify(body));
   }
 });

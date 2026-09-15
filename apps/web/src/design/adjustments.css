@@ -1,20 +1,20 @@
 /**
- * Nos écarts délibérés par rapport aux feuilles reprises d'ATEM-old.
+ * Our deliberate departures from the sheets taken from ATEM-old.
  *
- * Elles sont dans un fichier à part, et non fondues dans les feuilles
- * d'origine : quand on se demandera plus tard « est-ce que ça vient d'ATEM-old
- * ou est-ce nous ? », la réponse doit être lisible sans faire d'archéologie.
+ * They live in a separate file, not melted into the original sheets: when
+ * someone later asks “does this come from ATEM-old, or is it us?”, the answer
+ * must be readable without any archaeology.
  *
- * Chaque règle ici doit dire pourquoi elle existe.
+ * Every rule here must say why it exists.
  */
 
 /**
- * L'obturateur du scanner reste sous la main.
+ * The scanner's shutter stays within reach.
  *
- * La modale d'origine défile (`max-height: 90vh; overflow: auto`), et sur un
- * téléphone la barre d'obturateur passe sous la ligne de flottaison. Or c'est
- * le geste qu'on répète à chaque carte : on inventorie une pile, pas une carte.
- * Faire défiler entre chaque prise rend l'opération pénible.
+ * The original modal scrolls (`max-height: 90vh; overflow: auto`), and on a
+ * phone the shutter bar drops below the fold. Yet it is the gesture repeated
+ * for every card: you inventory a pile, not a card. Scrolling between each
+ * shot makes the job tedious.
  */
 .scan-shutter-bar {
   position: sticky;
@@ -24,18 +24,18 @@
 }
 
 @media (max-height: 900px) {
-  /* Le viseur cède la hauteur dont la barre a besoin. Viser demande de la
-     place, pas tout l'écran. */
+  /* The viewfinder gives up the height the bar needs. Aiming needs room, not
+     the whole screen. */
   .scan-zoom-viewport {
     max-height: 40vh;
   }
 }
 
 /**
- * La barre applicative respire sur les côtés.
+ * The application bar breathes on its sides.
  *
- * Le pseudo et le bouton de déconnexion touchaient le bord droit de l'écran :
- * `.app-bar` d'origine vit dans une page qui portait son propre rembourrage.
+ * The username and the sign-out button touched the screen's right edge: the
+ * original `.app-bar` lived in a page that carried its own padding.
  */
 .app-bar {
   padding-inline: var(--space-3);
@@ -43,12 +43,11 @@
 }
 
 /**
- * Le bloc de droite se met en ligne et respire.
+ * The right-hand block lines up and breathes.
  *
- * `.app-bar-right` ne portait que `position: relative` dans la feuille
- * d'origine : la mise en page venait d'un `style="display:flex; gap:0.8rem"`
- * écrit sur la balise. Sans lui, le pseudo venait toucher le bouton de
- * déconnexion.
+ * `.app-bar-right` only carried `position: relative` in the original sheet: the
+ * layout came from a `style="display:flex; gap:0.8rem"` written on the tag.
+ * Without it, the username touched the sign-out button.
  */
 .app-bar-right {
   display: flex;
@@ -64,30 +63,28 @@
 }
 
 /**
- * La mention « en attente » existe toujours dans le DOM, vide quand il n'y a
- * rien à dire — c'est ce qui permet de la remplir sans la recréer. Elle se
- * cache d'elle-même quand elle n'a pas de texte, comme le bandeau d'erreur des
- * écrans d'authentification.
+ * The “pending” note always exists in the DOM, empty when there is nothing to
+ * say — that is what lets it be filled without recreating it. It hides itself
+ * when it has no text, like the authentication screens' error banner.
  */
 .meta-line .warn:empty {
   display: none;
 }
 
 /**
- * Les boutons de quantité atteignent la cible tactile.
+ * The quantity buttons reach the touch target size.
  *
- * `.btn-qty` fait 32 px dans la feuille d'origine. `base.css` note pourtant, à
- * propos d'un autre bouton, que « les recommandations d'Apple et de Google
- * donnent 44 et 48 points » — la remarque valait aussi ici et n'y a pas été
- * appliquée.
+ * `.btn-qty` is 32 px in the original sheet. Yet `base.css` notes, about
+ * another button, that “Apple's and Google's guidelines give 44 and 48 points”
+ * — the remark applied here too and was not applied.
  *
- * Or c'est le bouton le plus pressé de l'application : on inventorie des
- * centaines de cartes au pouce, le téléphone dans une main et la pile dans
- * l'autre. À 32 px on rate la cible une fois sur cinq, et un « −1 » raté au
- * lieu d'un « +1 » se voit rarement tout de suite.
+ * And it is the most pressed button in the application: hundreds of cards are
+ * inventoried by thumb, phone in one hand and the pile in the other. At 32 px
+ * the target is missed one time in five, and a “−1” hit instead of a “+1” is
+ * rarely noticed right away.
  *
- * Seulement sur pointeur grossier : à la souris, 32 px suffit et la densité de
- * la liste vaut mieux.
+ * Coarse pointers only: with a mouse, 32 px is enough and the list's density
+ * matters more.
  */
 @media (pointer: coarse) {
   .btn-qty {
@@ -97,26 +94,15 @@
 }
 
 /**
- * L'en-tête sur écran étroit : plus rien à ajuster.
+ * A page title, read but not seen.
  *
- * Il portait ici une mise en page sur deux rangées, pour que la marque, la
- * navigation et le compte cessent de se chevaucher. La coquille de navigation
- * a rendu ce raccommodage sans objet : sous 46 rem, la barre du haut disparaît
- * et la barre du bas la remplace. Deux règles qui se contredisaient — l'une
- * cachant la barre, l'autre la remettant en grille — et c'est la seconde qui
- * l'emportait, étant chargée après.
- */
-
-/**
- * Un titre de page, lu mais non vu.
+ * The original screen has no level-1 heading: the application bar says
+ * “Collection”, but that is a navigation link, not a document title. ATEM-old's
+ * mock-up had fixed exactly this defect on the authentication screens, going
+ * from `h2` to `h1`; the remark holds here.
  *
- * L'écran d'origine n'a pas de titre de niveau 1 : la barre applicative dit
- * « Collection », mais c'est un lien de navigation, pas un titre de document.
- * La maquette d'ATEM-old avait corrigé exactement ce défaut sur les écrans
- * d'authentification, en passant de `h2` à `h1` ; la remarque vaut ici.
- *
- * Il n'est pas affiché : la mise en page valide n'en a pas besoin, et l'ajouter
- * visuellement changerait un écran qui fonctionne.
+ * It is not displayed: the validated layout does not need it, and adding it
+ * visually would change a screen that works.
  */
 .page-heading {
   position: absolute;
@@ -131,16 +117,15 @@
 }
 
 /**
- * La barre d'outils se cale sous l'en-tête, quelle que soit sa hauteur.
+ * The toolbar settles under the header, whatever its height.
  *
- * `collection.css` fixe `top: 3.25rem` avec le commentaire « under app-bar » —
- * une valeur juste tant que l'en-tête tient sur une rangée. Sur téléphone il en
- * prend deux, et la barre d'outils glissait dessous : la recherche et les
- * onglets se recouvraient.
+ * `collection.css` sets `top: 3.25rem` with the comment “under app-bar” — a
+ * correct value as long as the header fits on one row. On a phone it took two,
+ * and the toolbar slid under it: the search and the tabs overlapped.
  *
- * La hauteur devient un jeton, réglé au même endroit que la mise en page qui la
- * change. Recopier une mesure d'un fichier à l'autre est ce qui avait produit
- * la divergence de la bande de visée du scanner ; on ne recommence pas.
+ * The height becomes a token, set in the same place as the layout that changes
+ * it. Copying a measurement from one file to another is what had produced the
+ * scanner's aiming-band drift; we do not do it again.
  */
 :root {
   --app-bar-height: 3.25rem;
@@ -152,10 +137,10 @@
 
 @media (max-width: 46rem) {
   /**
-   * Sous 46 rem, la barre du haut n'existe plus : elle ne réserve donc plus
-   * rien. La valeur y était de 6,25 rem, du temps où elle tenait sur deux
-   * rangées — et depuis que la barre du bas l'a remplacée, ces cent pixels
-   * n'étaient qu'un vide en tête d'écran.
+   * Below 46 rem, the top bar no longer exists: so it reserves nothing. The
+   * value used to be 6.25 rem, back when it took two rows — and since the bottom
+   * bar replaced it, those hundred pixels were only a gap at the top of the
+   * screen.
    */
   :root {
     --app-bar-height: 0rem;
@@ -163,9 +148,8 @@
 }
 
 /**
- * Deux classes que le balisage d'ATEM-old posait sans qu'aucune règle ne les
- * habille — l'audit l'avait relevé, et le contrôle des classes sans style le
- * confirme.
+ * A class ATEM-old's markup set without any rule styling it — the audit had
+ * noted it, and the unstyled-classes gate confirms it.
  */
 .web-loading {
   padding: var(--space-4);
@@ -173,8 +157,8 @@
 }
 
 /**
- * Le bloc de filtre : ATEM-old n'en habillait que le titre, et les sections
- * se touchaient. Il lui manquait sa propre respiration.
+ * The filter block: ATEM-old only styled its title, and the sections touched.
+ * It lacked breathing room of its own.
  */
 .filter-block {
   display: block;
@@ -185,32 +169,30 @@
 }
 
 /**
- * L'étiquette de la note se centre sur son champ.
+ * The note's label centres on its field.
  *
- * `.inspect-notes` est un rang souple dont les enfants s'étirent par défaut :
- * l'étiquette occupait toute la hauteur et son texte se posait en haut, à côté
- * d'un champ et d'un bouton centrés. Trois éléments sur une ligne, trois
- * alignements différents.
+ * `.inspect-notes` is a flex row whose children stretch by default: the label
+ * took the full height and its text sat at the top, next to a centred field and
+ * button. Three elements on one line, three different alignments.
  */
 .inspect-notes {
   align-items: center;
 }
 
-/* Assez de place pour « Note » sans que le mot se coupe, pas plus. */
+/* Enough room for “Note” without the word breaking, no more. */
 .inspect-notes > label {
   flex: 0 0 auto;
 }
 
 /**
- * « Autres éditions » respire, et se sépare de ce qui précède.
+ * “Other printings” breathes, and separates from what precedes it.
  *
- * Le bloc arrive après la note, sans marge ni trait : les deux se touchaient et
- * l'on ne voyait pas où l'un finissait. C'est pourtant l'information qu'on vient
- * chercher devant une carte qu'on trie — « est-ce que je l'ai déjà, et dans
- * quelle édition ? ».
+ * The block comes after the note, with no margin or rule: the two touched and
+ * you could not see where one ended. Yet it is the information you come for in
+ * front of a card being sorted — “do I already have it, and in which printing?”.
  *
- * Cet espacement est une étape : la liste mérite sa propre place dans la fiche,
- * et un design à part le jour où l'on voudra y cocher les éditions possédées.
+ * This spacing is a step: the list deserves its own place in the sheet, and a
+ * design of its own the day owned printings can be ticked there.
  */
 .editions {
   margin-top: var(--space-4);
@@ -223,14 +205,14 @@
 }
 
 /**
- * Le nombre d'éditions se lit dans le titre.
+ * The number of printings reads in the title.
  *
- * Un Dragon Blanc en compte soixante-dix-huit, et la liste occupe alors plus de
- * deux mille pixels — davantage que tout le reste de la fiche réuni. Annoncer
- * le compte ne raccourcit rien, mais évite que la longueur surprenne.
+ * A Blue-Eyes has seventy-eight, and the list then takes more than two thousand
+ * pixels — more than the rest of the sheet put together. Announcing the count
+ * shortens nothing, but keeps the length from surprising.
  *
- * Pas de défilement propre à ce bloc : une troisième barre dans une fiche qui
- * en a déjà une serait exactement ce qu'on vient de corriger ailleurs.
+ * No scrolling of its own for this block: a third scrollbar in a sheet that
+ * already has one would be exactly what was just fixed elsewhere.
  */
 .editions h3 {
   display: flex;
@@ -245,13 +227,13 @@
 }
 
 /**
- * Sur téléphone, le message passe en bas.
+ * On a phone, the message moves to the bottom.
  *
- * Il est posé à `4.25rem` du haut, la hauteur de la barre du haut — qui
- * n'existe pas sur téléphone. Il retombait donc pile sur la barre d'ajout,
- * recouvrant le champ de code au moment précis où l'on vient s'en servir. En
- * bas, au-dessus de la barre de navigation, il ne cache rien de ce qu'on
- * manipule — et c'est là qu'on attend ce genre de message au doigt.
+ * It sits `4.25rem` from the top, the top bar's height — which does not exist
+ * on a phone. So it landed right on the add bar, covering the code field at the
+ * very moment you come to use it. At the bottom, above the navigation bar, it
+ * hides nothing you are handling — and that is where such a message is
+ * expected under the thumb.
  */
 @media (max-width: 46rem) {
   .toast {

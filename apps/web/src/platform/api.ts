@@ -1,8 +1,8 @@
 /**
- * Le client d'API.
+ * The API client.
  *
- * Une seule fonction sait parler au serveur : le jour où l'authentification, la
- * gestion d'erreur ou le préfixe changent, ils changent ici.
+ * One function knows how to talk to the server: the day authentication, error
+ * handling or the prefix change, they change here.
  */
 import { t, tServer } from "./i18n/index.js";
 
@@ -24,8 +24,8 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     method: options.method ?? "GET",
     headers: options.body ? { "Content-Type": "application/json" } : undefined,
     body: options.body ? JSON.stringify(options.body) : undefined,
-    // Le jeton voyage dans un cookie `httpOnly` : aucun script ne peut le lire,
-    // donc aucun script ne peut le fuiter.
+    // The token travels in an `httpOnly` cookie: no script can read it, so no
+    // script can leak it.
     credentials: "same-origin",
     signal: options.signal ?? null,
   });
@@ -36,19 +36,19 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   try {
     payload = await response.json();
   } catch {
-    // Une réponse sans corps lisible reste une réponse : on garde le statut.
+    // A response with no readable body is still a response: we keep the status.
   }
 
   if (!response.ok) {
     const body = (payload ?? {}) as { error?: string; message?: string };
     /**
-     * Le message du serveur passe par le dictionnaire.
+     * The server's message goes through the dictionary.
      *
-     * L'API répond en français. Plutôt que d'inventer un code d'erreur distinct
-     * pour chacune de ses trente phrases, le front cherche la phrase elle-même
-     * — c'est la même clé que partout ailleurs. Une phrase inconnue ressort
-     * telle quelle : un message qu'on n'a pas su traduire vaut mieux qu'un
-     * message générique qui n'apprend rien.
+     * The API answers in English — its sentence **is** the key. Rather than
+     * inventing a distinct error code for each of its thirty sentences, the
+     * front looks the sentence itself up, exactly as everywhere else. An
+     * unknown sentence comes out as is: a message we failed to translate beats
+     * a generic one that teaches nothing.
      */
     throw new ApiError(
       response.status,
@@ -74,10 +74,10 @@ export type CardDetail = {
   passcode: number;
   name: string;
   desc: string | null;
-  /** Vrai quand la carte n'est pas encore traduite dans le catalogue. */
+  /** True when the card is not translated in the catalogue yet. */
   frenchPending: boolean;
   type: string | null;
-  /** Le cadre — `fusion`, `synchro`, `xyz`, `link`… Il décide de l'Extra Deck. */
+  /** The frame — `fusion`, `synchro`, `xyz`, `link`… It decides the Extra Deck. */
   frameType: string | null;
   race: string | null;
   attribute: string | null;
@@ -87,7 +87,7 @@ export type CardDetail = {
   linkValue: number | null;
   linkMarkers: string[] | null;
   archetype: string | null;
-  /** Le statut de banlist, tel que le catalogue l'écrit. */
+  /** The banlist status, as the catalogue writes it. */
   banlistTcg: string | null;
   imageUrl: string | null;
   imageUrlSmall: string | null;

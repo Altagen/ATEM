@@ -398,10 +398,10 @@ test.describe("Mise en page", () => {
 });
 
 test.describe("Redirection après connexion", () => {
-  /** Crée un compte depuis `/inscription?suite=…` et rend l'URL d'arrivée. */
+  /** Crée un compte depuis `/register?next=…` et rend l'URL d'arrivée. */
   async function inscrireAvecSuite(page: import("@playwright/test").Page, suite: string) {
     const compte = freshAccount();
-    await page.goto(`/inscription?suite=${encodeURIComponent(suite)}`);
+    await page.goto(`/register?next=${encodeURIComponent(suite)}`);
     await page.getByLabel("Pseudo").fill(compte.displayName);
     await page.getByLabel("Adresse e-mail").fill(compte.email);
     await page.getByLabel("Mot de passe", { exact: false }).first().fill(compte.password);
@@ -418,7 +418,7 @@ test.describe("Redirection après connexion", () => {
 
   test("une destination d'ailleurs ne quitte pas le site", async ({ page }) => {
     /**
-     * `?suite=` vient de l'URL, donc de n'importe qui. `pushState` refuse déjà
+     * `?next=` vient de l'URL, donc de n'importe qui. `pushState` refuse déjà
      * une autre origine — mais en **levant**, ce qui laissait la connexion à
      * moitié faite au lieu de retomber sur la collection. Les trois formes
      * comptent : deux barres, la barre inversée que la normalisation d'URL
@@ -510,7 +510,7 @@ test.describe("Navigation", () => {
     await signUp(page);
 
     // On quitte l'écran puis on y revient : la feuille ne doit pas survivre.
-    await page.goto("/connexion");
+    await page.goto("/login");
     await page.goBack();
     await page.waitForURL("**/collection");
 
@@ -773,7 +773,7 @@ test.describe("Verrou de défilement", () => {
     await expect(page.locator("#inspect-panel")).toBeVisible();
 
     // On quitte sans refermer : le routeur emporte la fiche avec la racine.
-    await page.goto("/connexion");
+    await page.goto("/login");
     await page.goBack();
     await page.waitForURL("**/collection");
 

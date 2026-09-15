@@ -1,20 +1,22 @@
-# Feuilles en attente de leur écran
+# Sheets waiting for their screen
 
-Ces feuilles viennent d'ATEM-old et **ne sont pas chargées** : aucun `@import`
-ne les référence, elles n'ajoutent donc rien au paquet livré.
+These sheets come from ATEM-old and **are not loaded**: no `@import` references
+them, so they add nothing to the shipped bundle.
 
-Elles attendent l'écran qu'elles habillent :
+They wait for the screen they style:
 
-| Feuille | Écran | Jalon |
+| Sheet | Screen | Milestone |
 |---|---|---|
-| `decks.css` | Atelier de deck, dossiers, vue liste/galerie | M2 |
-| `settings.css` | Paramètres du compte, import/export | M3 |
-| `pages/profile.css` | Profil public d'un joueur | M4 |
-| `pages/scanlist.css` | Scanlistes | M1 (P1) |
-| `components.css` | Bibliothèque de composants de la maquette — seules ses règles `.pwd-*` sont reprises, dans `design/password-meter.css` | — |
-| `shared-nav.css` | Boîte de réception, panneau de compte mobile, pagineur | M3–M4 |
+| `settings.css` | Account settings, import/export | M3 |
+| `pages/profile.css` | A player's public profile | M4 |
+| `components.css` | The mock-up's component library — only its `.pwd-*` rules are taken, in `design/password-meter.css` | — |
+| `shared-nav.css` | Inbox, mobile account panel, pager | M3–M4 |
 
-Les déplacer ici plutôt que de les importer tout de suite est délibéré : une
-feuille chargée sans son balisage est du CSS mort, et le contrôle
-`scripts/check-dead-css.mjs` la signalerait à juste titre. Quand l'écran arrive,
-la feuille remonte d'un cran et son `@import` est ajouté à `design/index.css`.
+`pruned/` holds the rules the dead-CSS purge removed from the shipped sheets,
+one file per sheet. When a screen brings back the markup such a rule styles,
+the rule moves back up into its sheet.
+
+Staging them here rather than importing them right away is deliberate: a sheet
+loaded without its markup is dead CSS, and `scripts/check-dead-css.mjs` would
+rightly report it. When the screen arrives, the sheet moves up a level and its
+`@import` is added to `design/index.css`.

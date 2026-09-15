@@ -13,28 +13,28 @@ import { collectionScreen } from "./screens/collection/screen.js";
 import { deckScreen } from "./screens/deck/screen.js";
 import { scanlistScreen } from "./screens/scanlist/screen.js";
 
-register("/connexion", authScreen("login"));
-register("/inscription", authScreen("register"));
+register("/login", authScreen("login"));
+register("/register", authScreen("register"));
 /**
- * Une route et sa place dans la navigation se déclarent d'un seul geste.
+ * A route and its place in the navigation are declared in one gesture.
  *
- * C'est ce qui rend impossible un onglet qui mène nulle part : la destination
- * n'existe que parce que l'écran existe.
+ * That is what makes a tab leading nowhere impossible: the destination exists
+ * only because the screen exists.
  */
 register("/collection", collectionScreen, {
   requiresSession: true,
   nav: { label: "Collection", icon: "🗃️", group: "main" },
 });
 /**
- * Les scanlistes n'ont **pas** de destination de navigation.
+ * Scanlists have **no** navigation destination.
  *
- * On y arrive depuis la barre d'outils de la collection. Un onglet de même
- * rang que « Collection » laissait croire à deux inventaires côte à côte,
- * alors qu'une scanliste est une antichambre : on y range un lot avant de
- * décider s'il entre en collection. C'est la place qu'elles avaient dans
- * ATEM-old, et elle porte cette lecture.
+ * They are reached from the collection's toolbar. A tab of the same rank as
+ * “Collection” suggested two inventories side by side, whereas a scanlist is an
+ * antechamber: a batch is filed there before deciding whether it enters the
+ * collection. That is the place they had in ATEM-old, and it carries that
+ * reading.
  */
-register("/scanlistes", scanlistScreen, { requiresSession: true });
+register("/scanlists", scanlistScreen, { requiresSession: true });
 register("/decks", deckScreen, {
   requiresSession: true,
   nav: { label: "Decks", icon: "🃏", group: "main" },
@@ -45,8 +45,8 @@ registerFallback((root) => {
     el("main", { class: "collection-page" }, [
       el("section", { class: "content" }, [
         el("div", { class: "empty-state" }, [
-          el("p", { class: "empty-title" }, ["Page introuvable"]),
-          el("p", { class: "muted" }, [el("a", { href: "/" }, ["Revenir à l'accueil"])]),
+          el("p", { class: "empty-title" }, [t("Page not found")]),
+          el("p", { class: "muted" }, [el("a", { href: "/" }, [t("Back to home")])]),
         ]),
       ]),
     ]),
@@ -62,30 +62,30 @@ async function start(): Promise<void> {
     toast(t("The server is unreachable."), "error");
   }
 
-  // La racine mène là où l'on peut aller, selon qu'il y a une session ou non.
+  // The root leads where one can go, depending on whether there is a session.
   if (window.location.pathname === "/") {
-    history.replaceState({}, "", knownUser() ? "/collection" : "/connexion");
+    history.replaceState({}, "", knownUser() ? "/collection" : "/login");
   }
 
-  // La navigation suit la route et la session. Se brancher sur les clics la
-  // laissait en retard d'une action : le clic précède la réponse du serveur.
+  // The navigation follows the route and the session. Hooking onto clicks left
+  // it one action behind: the click precedes the server's answer.
   onAfterRender(() => {
     /**
-     * Changer d'écran emporte les modales sans passer par leur fermeture : la
-     * fiche de carte et le panneau de filtres vivent dans la racine que le
-     * routeur remplace. Sans cette remise à zéro, le corps resterait figé et la
-     * page suivante ne défilerait plus du tout.
+     * Changing screens carries the modals away without going through their
+     * closing: the card sheet and the filter panel live in the root the router
+     * replaces. Without this reset, the body would stay frozen and the next
+     * page would not scroll at all.
      */
     releaseScroll();
     renderNavigation();
-    // La feuille de compte, elle, est posée sur le corps de page — que le
-    // routeur ne remplace pas.
+    // The account sheet, for its part, is attached to the page body — which the
+    // router does not replace.
     closeAccountSheet();
   });
   startRouter();
 
-  // L'état du service est relevé au démarrage, puis toutes les minutes : assez
-  // souvent pour signaler une coupure, assez rarement pour ne rien coûter.
+  // The service state is read at startup, then every minute: often enough to
+  // signal an outage, rarely enough to cost nothing.
   void refreshServiceState();
   window.setInterval(() => void refreshServiceState(), 60_000);
 }

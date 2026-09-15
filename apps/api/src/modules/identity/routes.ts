@@ -105,7 +105,7 @@ export function identityRoutes(db: Database) {
   });
 
   /** The interface language, carried by the account. */
-  app.patch("/me/langue", requireViewer, async (c) => {
+  app.patch("/me/locale", requireViewer, async (c) => {
     const viewer = c.get("viewer");
     if (!viewer) throw invalidInput("No session.");
 

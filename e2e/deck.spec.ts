@@ -919,7 +919,7 @@ test("le crayon ouvre l'atelier, et l'adresse le dit", async ({ page }) => {
   await page.getByRole("link", { name: "Modifier" }).click();
 
   await expect(page.locator("#edit-name")).toHaveValue("À modifier");
-  expect(page.url()).toContain("atelier=1");
+  expect(page.url()).toContain("workshop=1");
 
   // Et l'on revient à la fiche par où l'on est venu.
   await page.getByRole("link", { name: "← Fiche" }).click();

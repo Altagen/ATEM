@@ -1,46 +1,45 @@
 /**
- * Les dossiers, côté écran — le rangement, et rien d'autre.
+ * Folders, screen side — filing, and nothing else.
  *
- * On navigue **un étage à la fois**, comme dans un explorateur de fichiers :
- * on est quelque part, on voit ce qui s'y trouve, on descend ou l'on remonte.
- * C'est la forme à laquelle ATEM-old avait fini par revenir après avoir déplié
- * tout l'arbre d'un coup.
+ * We navigate **one level at a time**, as in a file explorer: you are
+ * somewhere, you see what is there, you go down or back up. That is the shape
+ * ATEM-old had ended up returning to after unfolding the whole tree at once.
  *
- * **Ce qui est grisé ici est refusé là-bas** : les destinations impossibles
- * viennent de `folderCanHost`, la fonction que le serveur appelle pour refuser.
- * Une seule règle, deux usages.
+ * **What is greyed out here is refused over there**: impossible destinations
+ * come from `folderCanHost`, the function the server calls to refuse. One rule,
+ * two uses.
  */
 import { folderCanHost, folderIsInside, type FolderNode } from "@atem/shared";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import { t } from "../../platform/i18n/index.js";
 import type { DeckFolder, DeckMoving, DeckState, DeckSummary } from "./state.js";
 
-/** L'arbre réduit à sa topologie, tel que les règles partagées le lisent. */
-const topologie = (folders: DeckFolder[]): FolderNode[] =>
+/** The tree reduced to its topology, as the shared rules read it. */
+const topology = (folders: DeckFolder[]): FolderNode[] =>
   folders.map((folder) => ({ id: folder.id, parentId: folder.parentId }));
 
 const folderById = (state: DeckState, id: string | null): DeckFolder | null =>
   id === null ? null : (state.folders.find((folder) => folder.id === id) ?? null);
 
-/** Les dossiers rangés directement dans celui-ci. */
+/** The folders filed directly inside this one. */
 export const childFolders = (state: DeckState, parentId: string | null): DeckFolder[] =>
   state.folders
     .filter((folder) => folder.parentId === parentId)
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
-/** Les decks rangés directement dans celui-ci. */
+/** The decks filed directly inside this one. */
 export const decksIn = (state: DeckState, folderId: string | null): DeckSummary[] =>
   state.decks
     .filter((deck) => deck.folderId === folderId)
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
 /**
- * Ce que la recherche montre.
+ * What the search shows.
  *
- * **Elle traverse les dossiers**, contrairement à ATEM-old qui ne filtrait que
- * l'étage courant. Chercher « dragon » et ne rien trouver parce qu'on est dans
- * le mauvais dossier est une réponse fausse à une question simple. Le chemin
- * s'affiche alors sous chaque deck, pour dire d'où il sort.
+ * **It crosses folders**, unlike ATEM-old which only filtered the current
+ * level. Searching “dragon” and finding nothing because you are in the wrong
+ * folder is a wrong answer to a simple question. The path is then displayed
+ * under each deck, to say where it comes from.
  */
 export const searchDecks = (state: DeckState, query: string): DeckSummary[] => {
   const q = query.trim().toLowerCase();
@@ -49,25 +48,25 @@ export const searchDecks = (state: DeckState, query: string): DeckSummary[] => {
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 };
 
-/** Le chemin d'un deck, pour la recherche — « Meta / Tier 1 », ou rien. */
+/** A deck's path, for the search — “Meta / Tier 1”, or nothing. */
 export const deckFolderPath = (state: DeckState, deck: DeckSummary): string =>
   folderById(state, deck.folderId)?.path.join(" / ") ?? "";
 
 /**
- * Le fil d'Ariane, jusqu'à l'étage courant.
+ * The breadcrumb, up to the current level.
  *
- * Chaque segment ramène à son étage : sans ça, remonter de deux dossiers
- * demanderait deux allers-retours par la carte « .. ».
+ * Each segment leads back to its level: without that, going up two folders
+ * would need two round trips through the “..” card.
  */
 export function breadcrumbHtml(state: DeckState): SafeHtml {
-  const courant = folderById(state, state.folderId);
-  const chemin = courant?.path ?? [];
-  // Les identifiants des dossiers traversés, de la racine jusqu'ici.
-  const étapes: { id: string; name: string }[] = [];
-  let curseur: DeckFolder | null = courant;
-  while (curseur) {
-    étapes.unshift({ id: curseur.id, name: curseur.name });
-    curseur = folderById(state, curseur.parentId);
+  const current = folderById(state, state.folderId);
+  const path = current?.path ?? [];
+  // The identifiers of the folders crossed, from the root down to here.
+  const steps: { id: string; name: string }[] = [];
+  let cursor: DeckFolder | null = current;
+  while (cursor) {
+    steps.unshift({ id: cursor.id, name: cursor.name });
+    cursor = folderById(state, cursor.parentId);
   }
 
   return html`<nav class="folder-path" aria-label="${t("Location")}">
@@ -75,24 +74,24 @@ export function breadcrumbHtml(state: DeckState): SafeHtml {
             ${state.folderId === null ? raw(' aria-current="page"') : raw("")}>
       ${t("Root")}
     </button>
-    ${étapes.map(
-      (étape, rang) => html`<span class="folder-path-sep" aria-hidden="true">/</span>
-        <button type="button" class="folder-path-step" data-goto-folder="${étape.id}"
-                data-drop="${étape.id}"
-                ${rang === chemin.length - 1 ? raw(' aria-current="page"') : raw("")}>
-          ${étape.name}
+    ${steps.map(
+      (step, rank) => html`<span class="folder-path-sep" aria-hidden="true">/</span>
+        <button type="button" class="folder-path-step" data-goto-folder="${step.id}"
+                data-drop="${step.id}"
+                ${rank === path.length - 1 ? raw(' aria-current="page"') : raw("")}>
+          ${step.name}
         </button>`,
     )}
   </nav>`;
 }
 
-/** Le menu « ⋯ », et ce qu'il propose. */
+/** The “⋯” menu, and what it offers. */
 function menuHtml(state: DeckState, id: string, actions: SafeHtml): SafeHtml {
-  const ouvert = state.menu === id;
+  const open = state.menu === id;
   return html`<div class="folder-menu-anchor">
     <button type="button" class="icon-btn folder-menu-btn" data-menu="${id}"
-            aria-expanded="${String(ouvert)}" aria-label="${t("Actions")}">⋯</button>
-    ${when(ouvert, html`<div class="folder-ctx-menu" role="menu">${actions}</div>`)}
+            aria-expanded="${String(open)}" aria-label="${t("Actions")}">⋯</button>
+    ${when(open, html`<div class="folder-ctx-menu" role="menu">${actions}</div>`)}
   </div>`;
 }
 
@@ -107,7 +106,7 @@ const folderActions = (id: string): SafeHtml => html`
     ${t("Delete")}
   </button>`;
 
-/** Le menu d'un deck : il ne propose que le rangement, le reste est dans l'atelier. */
+/** A deck's menu: it only offers filing, the rest is in the workshop. */
 export const deckMenu = (state: DeckState, id: string): SafeHtml =>
   menuHtml(
     state,
@@ -118,25 +117,25 @@ export const deckMenu = (state: DeckState, id: string): SafeHtml =>
   );
 
 /**
- * Ce qu'un dossier contient, dit sans avoir à l'ouvrir.
+ * What a folder holds, said without having to open it.
  *
- * Les deux formes du pluriel sont écrites en toutes lettres : « 1 deck(s) » est
- * la marque d'une traduction qui n'a pas été relue, et notre dictionnaire prend
- * la phrase française pour clé — il n'a pas de règle de pluriel à appliquer.
+ * Both plural forms are spelled out in full: “1 deck(s)” is the mark of a
+ * translation nobody reread, and our dictionary takes the phrase as its key —
+ * it has no plural rule to apply.
  */
 function folderMeta(state: DeckState, folder: DeckFolder): string {
-  const dossiers = childFolders(state, folder.id).length;
+  const folders = childFolders(state, folder.id).length;
   const decks = decksIn(state, folder.id).length;
-  if (dossiers === 0 && decks === 0) return t("Empty");
+  if (folders === 0 && decks === 0) return t("Empty");
 
-  const morceaux: string[] = [];
-  if (dossiers > 0) {
-    morceaux.push(dossiers === 1 ? t("1 folder") : t("{n} folders", { n: dossiers }));
+  const pieces: string[] = [];
+  if (folders > 0) {
+    pieces.push(folders === 1 ? t("1 folder") : t("{n} folders", { n: folders }));
   }
   if (decks > 0) {
-    morceaux.push(decks === 1 ? t("1 deck") : t("{n} decks", { n: decks }));
+    pieces.push(decks === 1 ? t("1 deck") : t("{n} decks", { n: decks }));
   }
-  return morceaux.join(" · ");
+  return pieces.join(" · ");
 }
 
 export function folderTile(state: DeckState, folder: DeckFolder): SafeHtml {
@@ -166,15 +165,15 @@ export function folderRow(state: DeckState, folder: DeckFolder): SafeHtml {
 }
 
 /**
- * La case « .. », qui remonte d'un étage.
+ * The “..” card, which goes up one level.
  *
- * Elle porte le nom du dossier parent plutôt qu'un simple « .. » : savoir où
- * l'on va vaut mieux que savoir qu'on remonte.
+ * It carries the parent folder's name rather than a bare “..”: knowing where
+ * you are going beats knowing that you are going up.
  */
 export function parentTile(state: DeckState): SafeHtml {
-  const courant = folderById(state, state.folderId);
-  if (!courant) return html``;
-  const parent = folderById(state, courant.parentId);
+  const current = folderById(state, state.folderId);
+  if (!current) return html``;
+  const parent = folderById(state, current.parentId);
   return html`<li class="folder-tile-li" data-drop="${parent?.id ?? ""}">
     <div class="folder-tile folder-tile-parent">
       <button type="button" class="folder-open" data-goto-folder="${parent?.id ?? ""}">
@@ -186,11 +185,11 @@ export function parentTile(state: DeckState): SafeHtml {
   </li>`;
 }
 
-/** La même remontée, en rangée : la vue liste ne doit pas obliger à viser le fil. */
+/** The same way up, as a row: list view must not force you to aim at the breadcrumb. */
 export function parentRow(state: DeckState): SafeHtml {
-  const courant = folderById(state, state.folderId);
-  if (!courant) return html``;
-  const parent = folderById(state, courant.parentId);
+  const current = folderById(state, state.folderId);
+  if (!current) return html``;
+  const parent = folderById(state, current.parentId);
   return html`<li class="drive-row" data-drop="${parent?.id ?? ""}">
     <button type="button" class="drive-main drive-folder" data-goto-folder="${parent?.id ?? ""}">
       <span class="drive-ico" aria-hidden="true">📁</span>
@@ -201,49 +200,49 @@ export function parentRow(state: DeckState): SafeHtml {
 }
 
 /**
- * Le bandeau du déplacement en cours.
+ * The banner of the move under way.
  *
- * Il dit **ce** qu'on déplace et **où** on le poserait, et il ne propose que
- * deux gestes. Entre les deux, on navigue comme d'habitude : c'est l'écran
- * courant qui désigne la destination.
+ * It says **what** is being moved and **where** it would land, and it offers
+ * only two gestures. In between, you navigate as usual: it is the current
+ * screen that designates the destination.
  *
- * Le bouton se grise avec la phrase du refus — la même que le serveur rendrait,
- * puisque c'est la même règle. Grisé et non caché : un bouton qui disparaît
- * laisse croire que le mode s'est arrêté.
+ * The button greys out along with the refusal's sentence — the same one the
+ * server would return, since it is the same rule. Greyed out and not hidden: a
+ * button that disappears suggests the mode has stopped.
  */
 export function moveBannerHtml(state: DeckState): SafeHtml {
   const moving = state.moving;
   if (!moving) return html``;
 
-  const quoi =
+  const what =
     moving.kind === "folder"
       ? (folderById(state, moving.id)?.name ?? "")
       : (state.decks.find((deck) => deck.id === moving.id)?.name ?? "");
-  const ici = folderById(state, state.folderId);
-  const refus = refusDeDeposer(state, moving, state.folderId);
+  const here = folderById(state, state.folderId);
+  const refusal = dropRefusal(state, moving, state.folderId);
 
   return html`<div class="move-banner" role="status">
     <span class="move-banner-what">
-      ${t("Moving “{name}”", { name: quoi })}
-      <span class="muted">${t("to {where}", { where: ici?.path.join(" / ") ?? t("Root") })}</span>
+      ${t("Moving “{name}”", { name: what })}
+      <span class="muted">${t("to {where}", { where: here?.path.join(" / ") ?? t("Root") })}</span>
     </span>
-    ${when(refus !== null, html`<span class="move-banner-why">${refus ?? ""}</span>`)}
+    ${when(refusal !== null, html`<span class="move-banner-why">${refusal ?? ""}</span>`)}
     <span class="move-banner-actions">
       <button type="button" class="btn" id="move-cancel">${t("Cancel")}</button>
       <button type="button" class="btn btn-primary" id="move-here"
-              ${refus === null ? raw("") : raw("disabled")}>${t("Move here")}</button>
+              ${refusal === null ? raw("") : raw("disabled")}>${t("Move here")}</button>
     </span>
   </div>`;
 }
 
 /**
- * Pourquoi ce dépôt est impossible — ou `null` s'il ne l'est pas.
+ * Why this drop is impossible — or `null` when it is not.
  *
- * Les phrases sont **celles du serveur**, mot pour mot : il refuserait avec
- * elles, et lire deux formulations différentes pour un même refus ferait douter
- * qu'il s'agisse de la même règle.
+ * The sentences are **the server's**, word for word: it would refuse with them,
+ * and reading two different wordings for the same refusal would make one doubt
+ * it is the same rule.
  */
-export function refusDeDeposer(
+export function dropRefusal(
   state: DeckState,
   moving: DeckMoving,
   destination: string | null,
@@ -253,53 +252,53 @@ export function refusDeDeposer(
     return deck && deck.folderId === destination ? t("Already here") : null;
   }
 
-  const dossier = folderById(state, moving.id);
-  if (!dossier) return null;
-  if (dossier.parentId === destination) return t("Already here");
+  const folder = folderById(state, moving.id);
+  if (!folder) return null;
+  if (folder.parentId === destination) return t("Already here");
   if (destination === null) return null;
   if (destination === moving.id) return t("A folder cannot be filed inside itself.");
 
-  const arbre = topologie(state.folders);
-  if (folderIsInside(arbre, destination, moving.id)) {
+  const tree = topology(state.folders);
+  if (folderIsInside(tree, destination, moving.id)) {
     return t("A folder cannot be filed inside one of its own.");
   }
-  if (!folderCanHost(arbre, moving.id, destination)) {
+  if (!folderCanHost(tree, moving.id, destination)) {
     return t("That folder and its contents would go past the last level.");
   }
   return null;
 }
 
-/** Le titre et le corps de la fenêtre, selon ce qu'elle demande. */
-function modalBody(state: DeckState): { titre: string; corps: SafeHtml; valider: string } {
+/** The window's title and body, according to what it asks for. */
+function modalBody(state: DeckState): { title: string; body: SafeHtml; confirm: string } {
   const modal = state.modal;
-  if (!modal) return { titre: "", corps: html``, valider: "" };
+  if (!modal) return { title: "", body: html``, confirm: "" };
 
   switch (modal.kind) {
     case "new-deck":
       return {
-        titre: t("New deck"),
-        valider: t("Create"),
-        // Pas de destination à choisir : le deck naît là où l'on regarde, et
-        // se déplace ensuite comme tout le reste.
-        corps: html`<label class="menu-field">
+        title: t("New deck"),
+        confirm: t("Create"),
+        // No destination to choose: the deck is born where you are looking, and
+        // moves afterwards like everything else.
+        body: html`<label class="menu-field">
           <span>${t("Deck name")}</span>
           <input type="text" id="modal-name" maxlength="60" placeholder="${t("Unique name…")}" />
         </label>`,
       };
     case "new-folder":
       return {
-        titre: t("New folder"),
-        valider: t("Create"),
-        corps: html`<label class="menu-field">
+        title: t("New folder"),
+        confirm: t("Create"),
+        body: html`<label class="menu-field">
           <span>${t("Folder name")}</span>
           <input type="text" id="modal-name" maxlength="60" placeholder="${t("Meta, Tryouts…")}" />
         </label>`,
       };
     case "rename-folder":
       return {
-        titre: t("Rename the folder"),
-        valider: t("Rename"),
-        corps: html`<label class="menu-field">
+        title: t("Rename the folder"),
+        confirm: t("Rename"),
+        body: html`<label class="menu-field">
           <span>${t("Folder name")}</span>
           <input type="text" id="modal-name" maxlength="60"
                  value="${folderById(state, modal.id)?.name ?? ""}" />
@@ -309,26 +308,26 @@ function modalBody(state: DeckState): { titre: string; corps: SafeHtml; valider:
 }
 
 /**
- * La fenêtre elle-même.
+ * The window itself.
  *
- * Elle remplace le `window.prompt` de la création de deck : une invite native
- * n'a ni le style de l'application, ni la place d'un second champ — et sur un
- * téléphone, elle s'ouvre en haut de l'écran, loin du pouce.
+ * It replaces the `window.prompt` of deck creation: a native prompt has neither
+ * the application's style nor room for a second field — and on a phone, it
+ * opens at the top of the screen, far from the thumb.
  */
 export function modalHtml(state: DeckState): SafeHtml {
   if (!state.modal) return html``;
-  const { titre, corps, valider } = modalBody(state);
+  const { title, body, confirm } = modalBody(state);
 
   return html`<div class="deck-modal-backdrop" id="modal-backdrop"></div>
   <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="deck-modal-head">
-      <h2 id="modal-title">${titre}</h2>
+      <h2 id="modal-title">${title}</h2>
       <button type="button" class="icon-btn" id="modal-close" aria-label="${t("Close")}">✕</button>
     </div>
-    <div class="deck-modal-body">${corps}</div>
+    <div class="deck-modal-body">${body}</div>
     <div class="deck-modal-foot">
       <button type="button" class="btn" id="modal-cancel">${t("Cancel")}</button>
-      <button type="button" class="btn btn-primary" id="modal-ok">${valider}</button>
+      <button type="button" class="btn btn-primary" id="modal-ok">${confirm}</button>
     </div>
   </div>`;
 }

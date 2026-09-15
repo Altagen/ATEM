@@ -31,10 +31,10 @@ test.describe("Captures de revue", () => {
     const profile = testInfo.project.name;
     test.setTimeout(90_000);
 
-    await page.goto("/connexion");
+    await page.goto("/login");
     await page.screenshot({ path: shot("01-connexion", profile), fullPage: true });
 
-    await page.goto("/inscription");
+    await page.goto("/register");
     await page.screenshot({ path: shot("02-inscription", profile), fullPage: true });
 
     await signUp(page);

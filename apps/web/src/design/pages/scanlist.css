@@ -1,7 +1,7 @@
 /**
- * Scanlistes — une liste datée, sur le modèle de la page d'import.
- * On y retrouve un lot par sa date ; l'action principale est en haut à droite,
- * là où on la cherche.
+ * Scanlists — a dated list, modelled on the import page.
+ * A batch is found again by its date; the main action sits top right, where
+ * people look for it.
  */
 .scan-page { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem var(--fond-de-page); }
 
@@ -40,8 +40,8 @@
 .scan-row-text strong { color: #fff; font-weight: 800; font-size: 0.98rem; }
 .scan-row-text .muted { font-size: 0.82rem; }
 
-/* Versée ou en attente : c'est la seule chose qu'on cherche du regard en
-   parcourant la page, donc elle porte sa couleur. */
+/* Poured or pending: it is the only thing the eye looks for when scanning the
+   page, so it carries its colour. */
 .scan-state { font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
 .scan-state.is-poured { color: var(--success); }
 .scan-state.is-pending { color: var(--caution); }
@@ -54,9 +54,9 @@
 .scan-trash { margin-left: auto; }
 .scan-note { margin: 0 0 1.25rem; font-size: 0.8rem; }
 
-/* ── Cadre de visée ────────────────────────────────────────────────────────
- * Il ne fait rien — la maquette n'a pas de lecteur — mais il dit où regarder,
- * et c'est ce que l'écran réel montrera à sa place.
+/* ── Aiming frame ──────────────────────────────────────────────────────────
+ * It does nothing — the mock-up has no reader — but it says where to look, and
+ * that is what the real screen will show in its place.
  */
 
 .scan-draft {
@@ -83,11 +83,11 @@
 .scan-draft-empty { padding: 0.5rem; font-size: 0.84rem; font-style: italic; }
 
 /**
- * Le lot en cours, encadré.
+ * The batch in progress, framed.
  *
- * Il se détache de la liste des lots enregistrés parce qu'il n'a pas le même
- * statut : celui-ci n'existe que dans ce navigateur, et disparaîtra si l'on
- * ferme l'onglet sans l'enregistrer. Le cadre le dit sans une phrase de plus.
+ * It stands apart from the list of saved batches because it does not have the
+ * same status: this one only exists in this browser, and will disappear if the
+ * tab is closed without saving it. The frame says so without one more sentence.
  */
 .scan-draft-panel {
   margin: 0 0 1.5rem;
@@ -102,12 +102,11 @@
 }
 
 /*
- * Le champ prend la place, les boutons gardent la leur — **sur une seule
- * rangée**.
+ * The field takes the room, the buttons keep theirs — **on a single row**.
  *
- * À `14rem` de base, la rangée du code passait à la ligne dès qu'elle portait
- * deux boutons : le scanner se retrouvait seul en dessous, détaché du champ
- * qu'il remplit. Le champ se rétrécit plutôt que de les repousser.
+ * With a `14rem` basis, the code row wrapped as soon as it carried two
+ * buttons: the scanner ended up alone underneath, cut off from the field it
+ * fills. The field shrinks rather than pushing them away.
  */
 .scan-draft-panel .add-field {
   flex: 1 1 6rem;
@@ -118,18 +117,18 @@
   flex-wrap: nowrap;
 }
 
-/* Les deux actions du lot, elles, ont le droit de se replier. */
+/* The batch's two actions, though, are allowed to wrap. */
 .scan-draft-panel .scan-actions:last-of-type {
   flex-wrap: wrap;
 }
 
 /**
- * Le compteur d'une ligne, et non celui de la page.
+ * A row's counter, not the page's.
  *
- * Il portait `.scan-count`, qui est un paragraphe de bilan — avec sa marge
- * basse de 1,25rem. Dans une rangée alignée au centre, cette marge poussait le
- * « ×2 » au-dessus des boutons « − » et « + », comme un défaut d'alignement
- * qu'on aurait cherché dans la grille.
+ * It carried `.scan-count`, which is a summary paragraph — with its 1.25rem
+ * bottom margin. In a centre-aligned row, that margin pushed the “×2” above the
+ * “−” and “+” buttons, like an alignment defect one would have looked for in
+ * the grid.
  */
 .scan-line-qty {
   min-width: 2.2rem;
@@ -138,17 +137,17 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Les actions du lot se détachent de sa dernière ligne. */
+/* The batch's actions stand apart from its last row. */
 .scan-draft-panel .scan-draft {
   margin-bottom: 1rem;
 }
 
 /**
- * Ce que le versement n'a pas su placer.
+ * What the pour could not place.
  *
- * Encadré et détaché de la liste du lot : ce sont les seules lignes sur
- * lesquelles il reste quelque chose à faire, et les chercher au milieu de
- * quarante autres reviendrait à ne pas les avoir nommées.
+ * Framed and set apart from the batch's list: these are the only rows with
+ * something left to do, and looking for them among forty others would amount
+ * to not having named them.
  */
 .scan-errors {
   margin: 0 0 1.25rem;

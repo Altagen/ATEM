@@ -1,9 +1,9 @@
 /**
- * L'ordre de chargement, repris de `design/styles/app.css` d'ATEM-old.
+ * The load order, taken from ATEM-old's `design/styles/app.css`.
  *
- * Il n'est pas indifférent : `collection.css` redéfinit `.muted`, `.btn` et
- * `.btn-primary` déjà posées par `base.css`, et compte sur le fait d'être
- * chargée après. Les intervertir change le rendu.
+ * It is not arbitrary: `collection.css` redefines `.muted`, `.btn` and
+ * `.btn-primary` already set by `base.css`, and counts on being loaded after
+ * it. Swapping them changes the rendering.
  */
 @import "./tokens.css";
 @import "./base.css";
@@ -17,5 +17,5 @@
 @import "./components/scanner.css";
 @import "./navigation.css";
 
-/* Nos écarts assumés, en dernier pour qu'ils l'emportent. */
+/* Our deliberate departures, last so that they win. */
 @import "./adjustments.css";

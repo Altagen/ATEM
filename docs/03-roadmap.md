@@ -194,7 +194,7 @@ piège : un écran français dont les erreurs parlent anglais.
 anglais, la valeur brute de l'API **est** l'anglais. `ygo-labels.ts` ne
 s'applique donc qu'en français. « Poisson » n'est pas une phrase d'interface.
 
-**La langue vit sur le compte** (`PATCH /auth/me/langue`), pas dans le
+**La langue vit sur le compte** (`PATCH /auth/me/locale`), pas dans le
 navigateur : on la choisit une fois, on la retrouve d'un appareil à l'autre.
 
 **Pas de moteur de pluriel.** Le français s'en passe ici — « ex. » ne s'accorde
@@ -264,7 +264,7 @@ cibles par deck). Ni l'un ni l'autre n'empêche de construire un deck.
 Proposé par Ange, repris d'ATEM-old (`renderDetail`) : **ouvrir un deck le
 montre**. Une page de lecture bâtie comme la collection — jaquette, nom,
 dossier, comptes, phrase d'état, recherche, liste ou galerie, onglets de zone —
-et un crayon en haut à droite qui mène à l'atelier, `?atelier=1` dans l'adresse.
+et un crayon en haut à droite qui mène à l'atelier, `?workshop=1` dans l'adresse.
 
 **C'est la réponse au besoin de lecture seule.** Un écran dont la version par
 défaut n'a *aucune* commande d'écriture rend l'affichage du deck d'un autre
@@ -392,7 +392,7 @@ suppression qui **réattache** au parent au lieu de cascader. Trois qu'on change
 
 `category`, le `@deprecated` d'ATEM-old, ne revient pas.
 
-Douze épreuves, dont celle qui tient l'ordre des routes (`/decks/dossiers`
+Douze épreuves, dont celle qui tient l'ordre des routes (`/decks/folders`
 déclarée après `/decks/:id` serait avalée) et celle qui vérifie qu'effacer son
 compte emporte bien l'arbre malgré le `parent_id` sans cascade.
 

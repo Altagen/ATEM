@@ -1,28 +1,29 @@
 /**
- * Le scanner de set codes.
+ * The set-code scanner.
  *
- * Balisage et classes repris d'ATEM-old (`design/styles/components/scanner.css`
- * et les classes `.scan-*` de `collection.css`). Le moteur de reconnaissance
- * l'est aussi, sans une ligne changée : ses réglages sont le produit de mesures
- * répétées, documentées dans `ocr/README.md`.
+ * Markup and classes taken from ATEM-old
+ * (`design/styles/components/scanner.css` and the `.scan-*` classes of
+ * `collection.css`). So is the recognition engine, without a line changed: its
+ * settings are the product of repeated measurements, documented in
+ * `ocr/README.md`.
  *
- * **La bande de visée n'est plus positionnée ici.** Elle l'est par
- * `.scan-zoom-band`, et `scripts/check-scan-band.mjs` vérifie que ses
- * pourcentages sont ceux de `SCAN_ZOOM_BAND`. Les avoir écrits aux deux
- * endroits sans rien qui les relie est ce qui avait produit, chez ATEM-old, un
- * viseur qui montrait une zone que l'OCR ne lisait pas.
+ * **The aiming band is no longer positioned here.** It is positioned by
+ * `.scan-zoom-band`, and `scripts/check-scan-band.mjs` checks that its
+ * percentages are those of `SCAN_ZOOM_BAND`. Having written them in both places
+ * with nothing linking them is what produced, in ATEM-old, a viewfinder showing
+ * an area the OCR did not read.
  *
- * **Le champ ne prend jamais le focus tout seul.** Sur téléphone, un focus fait
- * monter le clavier, qui recouvre la moitié de l'écran — dont la barre de
- * déclenchement. Il fallait alors taper à côté pour le refermer avant de
- * reprendre une photo, à chaque carte. Le champ reste là, à portée du doigt de
- * qui veut corriger ; il n'appelle plus le clavier de lui-même.
+ * **The field never takes focus on its own.** On a phone, focus raises the
+ * keyboard, which covers half the screen — including the shutter bar. One then
+ * had to tap beside it to dismiss it before taking another photo, for every
+ * card. The field stays there, within thumb's reach of anyone who wants to
+ * correct it; it no longer summons the keyboard by itself.
  *
- * **Le contrat reste non négociable : l'OCR n'est jamais autoritaire.** Il
- * propose, l'utilisateur confirme par « +1 » ou corrige le champ. Rien n'entre
- * en collection sans un geste explicite — une reconnaissance sûre à 95 % laisse
- * une carte fausse sur vingt, et personne ne relit un inventaire de huit cents
- * lignes.
+ * **The contract stays non-negotiable: the OCR is never authoritative.** It
+ * proposes, the user confirms with “+1” or corrects the field. Nothing enters
+ * the collection without an explicit gesture — recognition that is 95% sure
+ * leaves one wrong card in twenty, and nobody rereads an eight-hundred-line
+ * inventory.
  */
 import { t } from "../../platform/i18n/index.js";
 import { lockScroll, unlockScroll } from "../../platform/scroll-lock.js";
@@ -37,33 +38,33 @@ import {
 } from "./ocr/engine.js";
 
 /**
- * Ce que rend un « +1 » ou un « −1 », quel que soit ce qu'on inventorie.
+ * What a “+1” or a “−1” returns, whatever is being inventoried.
  *
- * Le scanner ne connaît ni la collection ni les lots : il lit un code et
- * rapporte le geste à qui le lui a demandé. C'est ce qui permet à la scanliste
- * de le réutiliser sans une ligne de changement — et surtout, c'est ce qui rend
- * son « −1 » incapable de toucher la collection. Il n'y a pas de chemin.
+ * The scanner knows neither the collection nor batches: it reads a code and
+ * reports the gesture to whoever asked. That is what lets the scanlist reuse it
+ * without a line of change — and above all, it is what makes its “−1” unable to
+ * touch the collection. There is no path.
  */
 export type ScanOutcome = {
   setCode: string;
   quantity: number;
-  /** Le nom de la carte, quand on le connaît — sinon c'est le code qui parle. */
+  /** The card's name, when known — otherwise the code speaks. */
   label: string | null;
-  /** Une précision, quand l'issue en mérite une : « identification en cours ». */
+  /** A clarification, when the outcome deserves one: “identification under way”. */
   hint?: string;
 };
 
 export type ScannerOptions = {
   onConfirm: (setCode: string, delta: number) => Promise<ScanOutcome>;
   onClose: () => void;
-  /** Ce que compte le total annoncé : « en collection », « dans le lot ». */
+  /** What the announced total counts: “in collection”, “in the batch”. */
   tallyLabel: string;
 };
 
 /**
- * Les étapes de la lecture — traduites à l'affichage, pas à la déclaration.
+ * The reading stages — translated at display time, not at declaration.
  *
- * Cette table est évaluée à l'import, avant que la langue du compte soit connue.
+ * This table is evaluated at import, before the account's language is known.
  */
 const STATUS_LABELS: Record<string, string> = {
   crop: "Framing",
@@ -113,12 +114,12 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     ],
   );
   /**
-   * Recommencer : on efface la lecture, pas la carte.
+   * Starting over: we erase the reading, not the card.
    *
-   * Après une lecture douteuse, le champ garde un code faux et la bande reste
-   * verrouillée dessus. Reprendre une photo par-dessus ne suffit pas toujours —
-   * il faut d'abord repartir de rien. Ce bouton ne touche ni la caméra ni la
-   * collection : il remet l'écran dans l'état où il s'est ouvert.
+   * After a doubtful reading, the field keeps a wrong code and the band stays
+   * locked onto it. Taking another photo on top is not always enough — one has
+   * to start from nothing first. This button touches neither the camera nor the
+   * collection: it puts the screen back in the state it opened in.
    */
   const restart = el(
     "button",
@@ -135,9 +136,9 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     { type: "button", class: "btn-scan-add-lg", "aria-label": t("Add a copy") },
     ["+1"],
   );
-  // L'obturateur reste au centre : c'est la convention de tout appareil photo,
-  // et le pouce le trouve sans regarder. Les deux boutons secondaires se
-  // groupent à sa gauche, le « +1 » garde sa place et sa taille à droite.
+  // The shutter stays in the centre: that is every camera's convention, and
+  // the thumb finds it without looking. The two secondary buttons group to its
+  // left, the “+1” keeps its place and its size on the right.
   const shutterBar = el("div", { class: "scan-shutter-bar" }, [
     el("div", { class: "scan-shutter-side-group" }, [restart, minus]),
     shutter,
@@ -146,7 +147,7 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
 
   const close = el("button", { type: "button", class: "icon-btn", "aria-label": t("Close") }, ["✕"]);
 
-  const modal = el("div", { class: "scan-modal", role: "dialog", "aria-modal": "true" }, [
+  const modal = el("div", { class: "scan-modal scan-modal-zoom", role: "dialog", "aria-modal": "true" }, [
     el("div", { class: "scan-modal-head" }, [el("h2", {}, [t("Scan a card")]), close]),
     el("div", { class: "scan-modal-body" }, [
       viewport,
@@ -162,23 +163,23 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
   document.body.append(backdrop, modal);
   lockScroll();
 
-  // Le dictionnaire de préfixes se charge pendant que l'utilisateur cadre : il
-  // conditionne le score de confiance, et l'attendre au déclic ajouterait une
-  // pause là où l'on est le moins patient.
+  // The prefix dictionary loads while the user frames the shot: it conditions
+  // the confidence score, and waiting for it at the click would add a pause
+  // exactly where people are least patient.
   void ensureSetDictLoaded();
 
   let stream: MediaStream | null = null;
   let busy = false;
 
   /**
-   * Fermer, une seule fois, et sans rien laisser derrière.
+   * Closing, once, and leaving nothing behind.
    *
-   * Le garde n'est pas une précaution de style : `dismiss` est branché sur
-   * quatre sources, et la fermeture normale n'en consomme qu'une. Sans lui, un
-   * scanner ouvert puis refermé au bouton laissait ses écouteurs de navigation
-   * en place — et la navigation suivante rappelait `onClose()` autant de fois
-   * qu'on avait ouvert le scanner, chacune relançant trois requêtes. C'est la
-   * même famille de défaut que l'écouteur qui s'accumulait sur la grille.
+   * The guard is not a stylistic precaution: `dismiss` is wired to four
+   * sources, and a normal close consumes only one. Without it, a scanner opened
+   * then closed with the button left its navigation listeners in place — and
+   * the next navigation called `onClose()` as many times as the scanner had
+   * been opened, each one firing three requests. Same family of defect as the
+   * listener that piled up on the grid.
    */
   let dismissed = false;
   function dismiss(): void {
@@ -205,20 +206,20 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
   backdrop.addEventListener("click", dismiss);
 
   /**
-   * Un changement de route ferme le scanner.
+   * A route change closes the scanner.
    *
-   * La modale est posée sur `document.body`, alors que le routeur ne remplace
-   * que `#app` : cliquer un lien de navigation laissait le scanner par-dessus
-   * l'écran suivant, sans moyen de le fermer au doigt — et **la caméra
-   * allumée**, témoin compris.
+   * The modal is attached to `document.body`, while the router only replaces
+   * `#app`: clicking a navigation link left the scanner on top of the next
+   * screen, with no way to close it by finger — and **the camera on**,
+   * indicator light included.
    */
   window.addEventListener("popstate", dismiss);
   document.addEventListener("atem:navigated", dismiss);
 
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      // `environment` : la caméra arrière. Sans cette contrainte, un téléphone
-      // ouvre la frontale, qui ne verra jamais la carte posée devant.
+      // `environment`: the rear camera. Without that constraint a phone opens
+      // the front one, which will never see the card lying in front of it.
       video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } },
       audio: false,
     });
@@ -256,13 +257,12 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     busy = true;
     shutter.disabled = true;
     /**
-     * Le cœur de l'obturateur pulse pendant la lecture.
+     * The shutter's core pulses while reading.
      *
-     * L'habillage existait — `.btn-scan-shutter.is-busy` — mais rien ne posait
-     * la classe : le bouton se contentait de griser, ce qui se lit comme une
-     * panne plutôt que comme un travail en cours. La lecture prend une à trois
-     * secondes, et le pourcentage affiché à côté ne se voit pas quand on tient
-     * l'appareil au-dessus d'une carte.
+     * The styling existed — `.btn-scan-shutter.is-busy` — but nothing set the
+     * class: the button merely greyed out, which reads as a failure rather than
+     * as work under way. Reading takes one to three seconds, and the percentage
+     * displayed next to it is invisible when holding the device above a card.
      */
     shutter.classList.add("is-busy");
     errorLine.textContent = "";
@@ -280,22 +280,22 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
         },
         "zoom-band",
         /**
-         * La taille **affichée** du viseur, sans quoi le recadrage est faux.
+         * The viewfinder's **displayed** size, without which the crop is wrong.
          *
-         * `captureScanPhoto` rend une toile détachée ; le moteur ne peut donc
-         * plus lire `clientWidth` sur l'élément vidéo, et son calcul de
-         * `object-fit: cover` retombe sur zéro. Il découpe alors sa bande sur
-         * l'image entière — du 16/9 — quand le viseur, lui, montre une tranche
-         * centrale en 3/4. On visait un endroit, l'OCR lisait ailleurs.
+         * `captureScanPhoto` returns a detached canvas; the engine can then no
+         * longer read `clientWidth` on the video element, and its
+         * `object-fit: cover` computation falls back to zero. It then cuts its
+         * band out of the whole image — 16:9 — while the viewfinder shows a
+         * central 3:4 slice. One aimed at a place, the OCR read elsewhere.
          *
-         * C'est la même panne que `check-scan-band.mjs` prévient entre le CSS
-         * et la constante, par un autre chemin : cette barrière compare les
-         * pourcentages, pas le cadrage de la source.
+         * It is the same failure `check-scan-band.mjs` prevents between the CSS
+         * and the constant, by another path: that gate compares percentages,
+         * not the source's framing.
          */
         { viewW: video.clientWidth, viewH: video.clientHeight },
-        // L'écran de scan dédié prend le budget large : l'utilisateur a
-        // délibérément ouvert la caméra pour cette carte-là, et une seconde de
-        // plus vaut mieux qu'une lecture ratée.
+        // The dedicated scan screen takes the wide budget: the user
+        // deliberately opened the camera for that card, and one more second
+        // beats a failed reading.
         { thorough: "full" },
       );
 
@@ -307,12 +307,12 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
           ? t("Code recognised — check it, then confirm.")
           : t("Uncertain reading — correct it if needed.");
         /**
-         * Les suggestions passent par le filtre du moteur.
+         * Suggestions go through the engine's filter.
          *
-         * `candidates` contient des fragments bruts extraits du texte lu :
-         * `OCR.md` précise que seuls les quasi-doublons soutenus par le
-         * catalogue doivent être proposés. Les offrir tous mettait un code
-         * tronqué ou de préfixe inconnu à une tape de la collection.
+         * `candidates` holds raw fragments extracted from the text read:
+         * `OCR.md` states that only near-duplicates backed by the catalogue
+         * should be proposed. Offering them all put a truncated code, or one
+         * with an unknown prefix, one tap away from the collection.
          */
         setCandidates(
           filterLogicalScanChoices(result.candidates, { prefer: result.code }).filter(
@@ -346,16 +346,16 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     errorLine.textContent = "";
     try {
       const outcome = await options.onConfirm(setCode, delta);
-      const nom = outcome.label ?? outcome.setCode;
+      const name = outcome.label ?? outcome.setCode;
       toast(
         outcome.hint
-          ? `${nom} — ${outcome.quantity} ex. · ${outcome.hint}`
-          : `${nom} — ${outcome.quantity} ex.`,
+          ? t("{name} — ×{n} · {hint}", { name, n: outcome.quantity, hint: outcome.hint })
+          : t("{name} — ×{n}", { name, n: outcome.quantity }),
         "success",
       );
       status.textContent = t("{code}: {n} {where}.", { code: outcome.setCode, n: outcome.quantity, where: options.tallyLabel });
-      // On enchaîne : c'est une pile qu'on inventorie, pas une carte. La caméra
-      // reste ouverte et le champ se vide, prêt pour la suivante.
+      // We carry on: it is a pile being counted, not a card. The camera stays
+      // open and the field clears, ready for the next one.
       codeInput.value = "";
       setLocked(null, false);
       setCandidates([]);

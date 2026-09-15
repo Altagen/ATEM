@@ -65,101 +65,32 @@ h2 {
   margin-right: 0.25rem;
 }
 
-/* ── Une action partie, et pas encore revenue ─────────────────────────────
- *
- * `aria-busy` est posé par `pendantLAction` le temps de l'aller-retour. Sans
- * habillage, ce serait un état que l'écran connaît et que personne ne voit :
- * le bouton resterait identique, on recliquerait, et c'est exactement ce
- * qu'on cherche à éviter.
- *
- * Le trait tourne plutôt qu'un simple grisé parce qu'un bouton grisé dit « pas
- * disponible » et non « en cours ». La différence compte quand l'attente dure
- * une seconde : dans un cas on attend, dans l'autre on s'en va.
- *
- * L'attribut est aussi ce que lisent les lecteurs d'écran, qui annoncent
- * l'occupation sans qu'on ait rien à ajouter.
- */
-[aria-busy="true"] {
-  position: relative;
-  cursor: progress;
-  opacity: 0.72;
-}
-
-[aria-busy="true"]::after {
-  content: "";
-  position: absolute;
-  inset-inline-end: var(--space-2);
-  inset-block-start: calc(50% - 0.45em);
-  inline-size: 0.9em;
-  block-size: 0.9em;
-  border: 2px solid currentColor;
-  border-block-start-color: transparent;
-  border-radius: 50%;
-  animation: atem-attente 0.7s linear infinite;
-}
-
-@keyframes atem-attente {
-  to { transform: rotate(360deg); }
-}
-
-/* Le mouvement se retire quand le système le demande ; l'état, lui, reste
- * visible par l'opacité et le curseur. */
-@media (prefers-reduced-motion: reduce) {
-  [aria-busy="true"]::after { animation: none; opacity: 0.5; }
-}
-
-/*
- * La coque de modale de la maquette, portée pour les mêmes raisons.
- *
- * L'écran des scanlistes pose `.modal-panel` et `.modal-head`, que rien
- * n'habille ni ici ni dans la maquette : ce sont des noms inventés au moment
- * du portage, à côté de `.modal` et `.modal-body` qui, eux, existent. On
- * reprend le vocabulaire de la maquette plutôt que d'habiller l'invention.
- */
-.modal {
-  position: relative;
-  background: var(--card);
-  border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
-  border-radius: 18px;
-  width: min(36rem, 100%);
-  max-height: 88vh;
-  overflow: auto;
-  box-shadow: 0 24px 60px color-mix(in srgb, var(--ombre) 55%, transparent);
-}
-
-/* depuis design/styles/pages/auth.css */
-.landing-brand { text-decoration: none; }
-
-/* depuis design/styles/pages/admin.css */
-
-/* Passe mobile portée de design/styles/components.css — voir le relevé du 3 septembre 2026. */
-@media (max-width: 560px) {
-  .pager { flex-wrap: wrap; justify-content: center; }
-  .pager span { order: 3; flex: 1 0 100%; text-align: center; }
-}
+/* Mobile pass ported from design/styles/components.css — see the survey of 3 September 2026. */
 @media (max-width: 900px) {
   .inspect-panel {
-    /* Aligné en haut : centrer un contenu plus grand que la fenêtre le pousse
-       hors de la zone défilable, et le haut de la carte devient inatteignable. */
+    /* Aligned to the top: centring content taller than the window pushes it
+       out of the scrollable area, and the top of the card becomes unreachable. */
     align-items: flex-start;
     padding: 1rem 1rem 2.5rem;
     overflow-y: auto;
     overscroll-behavior: contain;
     pointer-events: auto;
   }
-  /* Le bouton de fermeture ne défile pas avec le contenu : sinon il disparaît dès qu'on descend vers le texte. */ .inspect-close {
+  /* The close button does not scroll with the content: otherwise it disappears
+     as soon as you go down towards the text. */
+  .inspect-close {
     position: fixed;
   }
   .inspect-layout {
     flex-direction: column;
     align-items: center;
     width: 100%;
-    /* Le plafond de la rangée est ce qui recadrait : empilée, elle doit pouvoir
-       dépasser la fenêtre, puisque le panneau défile. */
+    /* The row's ceiling is what cropped: stacked, it must be allowed to exceed
+       the window, since the panel scrolls. */
     max-height: none;
     gap: 1.15rem;
-    /* Plus de rapport à tenir entre deux colonnes : le texte reprend l'échelle
-       de l'application. */
+    /* No ratio left to keep between two columns: the text returns to the
+       application's scale. */
     font-size: 1rem;
   }
   .inspect-art-col {
@@ -169,13 +100,13 @@ h2 {
   }
   .inspect-art {
     /**
-     * 72vh, et non toute la hauteur : il reste ainsi une amorce du titre sous
-     * la carte, qui dit qu'il y a quelque chose à faire défiler. Une carte
-     * pleine hauteur donne un écran qui a l'air complet et cache sa fiche.
+     * 72vh, not the full height: that leaves a glimpse of the title under the
+     * card, which says there is something to scroll to. A full-height card
+     * gives a screen that looks complete and hides its details.
      *
-     * Le calcul reste celui du côte-à-côte — la hauteur déduite de la largeur
-     * disponible, jamais l'inverse — pour la même raison : une hauteur imposée
-     * avec une largeur plafonnée écrase la carte.
+     * The computation stays the side-by-side one — height derived from the
+     * available width, never the reverse — for the same reason: an imposed
+     * height with a capped width squashes the card.
      */
     height: min(72vh, calc((100cqw - 0.5rem) * 86 / 59));
     width: auto;
@@ -185,11 +116,11 @@ h2 {
   .inspect-info-col {
     flex: 0 0 auto;
     width: 100%;
-    /* Largeur de lecture : une ligne qui court sur toute la fenêtre se suit mal. */
+    /* Reading width: a line running across the whole window is hard to follow. */
     max-width: min(100%, 34rem);
     max-height: none;
-    /* C'est le panneau qui défile, pas la fiche : deux zones de défilement
-       imbriquées obligeraient à viser la bonne. */
+    /* The panel scrolls, not the sheet: two nested scroll areas would force
+       you to aim at the right one. */
     overflow: visible;
     padding: 0 0.25rem 1rem;
   }
@@ -207,41 +138,34 @@ h2 {
   }
 }
 @media (max-width: 850px) {
-  /* La barre est fixe : sans cette réserve, elle recouvre la fin de la page. */ body { padding-bottom: 74px; }
-}
-@media (max-width: 850px) {
-}
-@media (max-width: 560px) {
-  /* Sur un téléphone, l'extension et la langue disparaissent : le code et la * rareté suffisent à reconnaître la carte qu'on tient. */ .edition-row {
-    grid-template-columns: auto 1fr auto;
-  }
+  /* The bar is fixed: without this reserve, it covers the end of the page. */
+  body { padding-bottom: 74px; }
 }
 
 /*
- * Cibles tactiles, portées de design/styles/components.css.
+ * Touch targets, ported from design/styles/components.css.
  *
- * Mesuré là-bas : l'engrenage d'un deck à 30×30, sous le seuil du doigt. Les
- * recommandations d'Apple et de Google donnent 44 et 48 points ; la maquette
- * tient 40, qui rentre dans les hauteurs existantes sans les déformer.
+ * Measured there: a deck's gear at 30×30, below the finger threshold. Apple's
+ * and Google's guidelines give 44 and 48 points; the mock-up holds 40, which
+ * fits the existing heights without distorting them.
  *
- * Seules les classes que ce balisage pose sont reprises : la marque, la
- * pastille de langue et l'avatar de l'en-tête appartiennent à la barre du
- * haut, que l'application masque en entier sur téléphone.
+ * Only the classes this markup sets are taken: the header's brand, language
+ * pill and avatar belong to the top bar, which the application hides entirely
+ * on a phone.
  */
 @media (max-width: 850px) {
-  .icon-btn,
-  .deck-portrait-settings {
+  .icon-btn {
     min-height: 40px;
     min-width: 40px;
   }
 }
 
 /*
- * L'état vide, là où huit écrans peuvent le lire.
+ * The empty state, where every screen can read it.
  *
- * Il vivait dans la feuille de la Collection, et servait aussi aux decks, aux
- * scanlistes et au profil : une règle partagée rangée chez l'un d'eux finit par
- * être modifiée pour lui seul.
+ * It lived in the Collection sheet, and also served the decks and the
+ * scanlists: a shared rule filed with one of them ends up being modified for
+ * that one alone.
  */
 .empty-state {
   text-align: center;
@@ -255,8 +179,8 @@ h2 {
 }
 
 /*
- * Le message éphémère. Il vivait dans la feuille de la Collection, alors que
- * huit écrans l'affichent — et un neuvième s'en dessinait un autre à la main.
+ * The transient message. It lived in the Collection sheet, although every
+ * screen displays it — and one more drew another by hand.
  */
 .toast {
   position: fixed;
@@ -273,17 +197,16 @@ h2 {
   gap: 0.6rem;
 
   /*
-   * Un fond **opaque**, et doré par défaut.
+   * An **opaque** background, gold by default.
    *
-   * La règle de base ne posait aucun fond : le message flottait par-dessus la
-   * collection, illisible, et se lisait comme un défaut d'affichage plutôt que
-   * comme une information. Les tons existaient bien plus bas — mais dans une
-   * classe `.toast-ok` que le balisage ne posait jamais, puisqu'il écrit
-   * `data-kind`. Trois sortes de messages s'affichaient donc à l'identique, et
-   * transparents.
+   * The base rule set no background: the message floated over the collection,
+   * unreadable, and read as a display glitch rather than as information. The
+   * tones did exist further down — but in a `.toast-ok` class the markup never
+   * set, since it writes `data-kind`. Three kinds of message therefore looked
+   * identical, and transparent.
    *
-   * `color-mix` entre deux couleurs opaques rend une couleur opaque : rien ne
-   * traverse, quelle que soit la page derrière.
+   * `color-mix` between two opaque colours returns an opaque colour: nothing
+   * shows through, whatever page lies behind.
    */
   background: color-mix(in srgb, var(--gold) 16%, var(--card));
   border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--border));
@@ -292,12 +215,13 @@ h2 {
 }
 
 /*
- * Les deux écarts au ton doré, sur l'attribut que le balisage écrit vraiment.
+ * The two departures from the gold tone, on the attribute the markup really
+ * writes.
  *
- * `ui.ts` pose `data-kind`, pas une classe : viser `.toast-ok` ne touchait
- * rien. C'est la deuxième fois que ce défaut se produit — ATEM-old tirait ses
- * couleurs d'un `style.cssText` et la Collection s'en remettait à des classes
- * inexistantes. Le sélecteur suit désormais le balisage.
+ * `ui.ts` sets `data-kind`, not a class: targeting `.toast-ok` touched nothing.
+ * It is the second time this defect happened — ATEM-old took its colours from a
+ * `style.cssText` and the Collection relied on classes that did not exist. The
+ * selector now follows the markup.
  */
 .toast[data-kind="success"] {
   background: color-mix(in srgb, var(--success) 16%, var(--card));
@@ -312,13 +236,14 @@ h2 {
 }
 
 /**
- * Le titre d'une section de page.
+ * A page section's title.
  *
- * Remonté de `staged/pruned/` avec l'écran des scanlistes : la purge l'avait
- * écarté à raison, plus rien ne le posait. C'est le mouvement prévu — une
- * règle descend quand son balisage disparaît, elle remonte quand il revient.
+ * Brought back up from `staged/pruned/` with the scanlists screen: the purge had
+ * rightly set it aside, nothing set it any more. That is the intended movement —
+ * a rule goes down when its markup disappears, it comes back up when the markup
+ * returns.
  */
-.titre-section {
+.section-title {
   margin: 0 0 0.35rem;
   font-size: 1.4rem;
   font-weight: 900;
@@ -326,14 +251,15 @@ h2 {
 }
 
 /**
- * Le bandeau d'erreur d'un écran.
+ * A screen's error banner.
  *
- * Remonté de `staged/pruned/` avec l'atelier de decks : la purge l'avait écarté
- * quand plus aucun écran ne le posait. C'est le mouvement prévu — une règle
- * descend quand son balisage disparaît, elle remonte quand il revient.
+ * Brought back up from `staged/pruned/` with the deck workshop: the purge had
+ * set it aside when no screen set it any more. That is the intended movement —
+ * a rule goes down when its markup disappears, it comes back up when the markup
+ * returns.
  *
- * Collant sous la barre du haut : une erreur qu'on fait défiler hors de l'écran
- * est une erreur qu'on croit réglée.
+ * Sticky under the top bar: an error scrolled off screen is an error one
+ * believes resolved.
  */
 .banner {
   margin: 0 0 1rem;

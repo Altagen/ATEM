@@ -1,14 +1,14 @@
 /**
- * Le rendu de l'écran de collection.
+ * Rendering of the collection screen.
  *
- * Balisage repris de `apps/web/src/collection/vue.ts` d'ATEM-old, qui fait
- * autorité — la maquette `design/pages/collection.html` est une version
- * antérieure, avec un autre jeu de classes.
+ * Markup taken from ATEM-old's `apps/web/src/collection/vue.ts`, which is
+ * authoritative — the `design/pages/collection.html` mock-up is an earlier
+ * version, with another set of classes.
  *
- * Ce qui n'est **pas** repris, et pourquoi : le champ « passcode » de la barre
- * avancée (notre API d'ajout ne le prend pas), le lien vers les scanlistes
- * (l'écran n'existe pas encore), et les notes de carte (pas d'endpoint). Poser
- * un contrôle qui ne fait rien est pire que de ne pas le poser.
+ * What is **not** taken, and why: the advanced bar's “passcode” field (our
+ * adding API does not accept it), the link to the scanlists (that screen does
+ * not exist yet), and card notes (no endpoint). Placing a control that does
+ * nothing is worse than not placing it.
  */
 import { t } from "../../platform/i18n/index.js";
 import { cardSheetHtml, detailGrid } from "../shared/card-sheet.js";
@@ -20,7 +20,7 @@ import {
 import type { CollectionItem, Facets, ViewState } from "./state.js";
 
 
-/** La nature d'une carte, telle que l'écran la regroupe et la filtre. */
+/** A card's nature, as the screen groups and filters it. */
 function kindOf(item: CollectionItem): "monster" | "spell" | "trap" | "unresolved" {
   const type = item.card?.type ?? "";
   if (!item.card) return "unresolved";
@@ -38,20 +38,17 @@ function groupTitle(item: CollectionItem): string {
 }
 
 /**
- * Découpe une liste **déjà triée** en groupes consécutifs de même titre.
+ * Cuts an **already sorted** list into consecutive groups sharing a title.
  *
- * Ce n'est pas un regroupement global : le groupement suit toujours l'ordre de
- * tri choisi, et un même titre peut réapparaître si le tri l'a séparé. C'est
- * délibéré — trier par quantité puis regrouper par type produirait sinon un
- * ordre que rien n'explique.
- */
-/**
- * Découpe une liste **déjà triée** en groupes consécutifs de même titre.
+ * This is not a global grouping: the grouping always follows the chosen sort
+ * order, and the same title can reappear if the sort separated it. That is
+ * deliberate — sorting by quantity then grouping by type would otherwise
+ * produce an order nothing explains.
  *
- * Sans regroupement, la liste sort d'un bloc, dans l'ordre du tri et rien
- * d'autre : c'est le comportement par défaut d'ATEM-old, et le bon. Découper
- * par famille impose une seconde clé d'ordre par-dessus celle qu'on a choisie,
- * et l'on ne retrouve plus ce qu'on cherche.
+ * Without grouping, the list comes out in one block, in the sort order and
+ * nothing else: that is ATEM-old's default behaviour, and the right one.
+ * Cutting by family imposes a second ordering key on top of the chosen one, and
+ * one no longer finds what one is looking for.
  */
 export function group(
   items: CollectionItem[],
@@ -142,8 +139,8 @@ function listItem(item: CollectionItem): SafeHtml {
 
 function tile(item: CollectionItem): SafeHtml {
   const art = item.card?.imageUrlSmall ?? item.card?.imageUrl;
-  // Pas de « +1 » ici : en galerie, on ouvre la carte pour agir. C'est le choix
-  // d'ATEM-old, et il tient — la tuile est une vignette, pas un formulaire.
+  // No “+1” here: in gallery view, you open the card to act. That is ATEM-old's
+  // choice, and it holds — the tile is a thumbnail, not a form.
   return html`<button type="button" class="tile js-open" data-id="${item.id}">
     <div class="tile-art">
       ${art
@@ -216,9 +213,9 @@ function hasActiveFilters(state: ViewState): boolean {
 }
 
 /**
- * Le nom de fichier d'une icône suit la valeur anglaise, espaces en tirets :
- * `Sea Serpent` → `Sea-Serpent.png`. C'est la convention des ressources
- * reprises d'ATEM-old ; s'en écarter casserait l'affichage en silence.
+ * An icon's file name follows the English value, spaces turned into dashes:
+ * `Sea Serpent` → `Sea-Serpent.png`. That is the convention of the assets taken
+ * from ATEM-old; departing from it would break the display in silence.
  */
 const iconFile = (value: string) => value.replace(/\s+/g, "-");
 
@@ -240,16 +237,16 @@ const levelBadge = (kind: "level" | "rank"): SafeHtml =>
        width="12" height="12" /></span>`;
 
 /**
- * Une puce de filtre.
+ * A filter chip.
  *
- * L'attribut de données est passé **en deux morceaux**, nom et valeur, jamais
- * comme un fragment d'HTML déjà écrit. La version précédente interpolait une
- * chaîne d'attributs par `raw()`, et les appelants la construisaient au gabarit
- * ordinaire : une rareté vaut ce que le catalogue distant a écrit, et une
- * valeur comme `" onmouseover="…` fermait l'attribut pour en ouvrir un autre.
+ * The data attribute is passed **in two pieces**, name and value, never as an
+ * already-written fragment of HTML. The previous version interpolated an
+ * attribute string through `raw()`, and callers built it with the ordinary
+ * template: a rarity is worth whatever the remote catalogue wrote, and a value
+ * like `" onmouseover="…` closed the attribute to open another one.
  *
- * C'est exactement l'échappée de secours que `platform/ui.ts` dit ne pas avoir.
- * Elle avait été rouverte ici.
+ * That is exactly the escape hatch `platform/ui.ts` says it does not have. It
+ * had been reopened here.
  */
 const chip = (
   active: boolean,
@@ -379,7 +376,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
         facets.properties.length > 0,
         html`<section class="filter-block">
           <div class="filter-block-head">
-            <h3 class="filter-block-title"/h3>
+            <h3 class="filter-block-title">${t("Spell / Trap property")}</h3>
             <button type="button" class="help-q" id="btn-help-st"
                     aria-expanded="false" aria-controls="help-st-hint">
               <span class="help-q-mark" aria-hidden="true">?</span>
@@ -460,7 +457,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
       ${when(
         facets.rarities.length > 0,
         html`<section class="filter-block">
-          <h3 class="filter-block-title"/h3>
+          <h3 class="filter-block-title">${t("Rarity")}</h3>
           <div class="chip-row">
             ${facets.rarities.map((value) =>
               chip(state.rarity === value, "data-filter-rarity", value, value),
@@ -499,7 +496,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
 }
 
 
-/** La fiche plein écran d'une carte ouverte. */
+/** The full-screen sheet of an opened card. */
 export function inspectHtml(item: CollectionItem): SafeHtml {
   const card = item.card;
 
@@ -527,13 +524,13 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
       </p>`,
     )}${when(
       /**
-       * Le retard de traduction se dit, et il se dit une fois — près du nom,
-       * qui est ce qu'on lit en premier.
+       * The translation lag is stated, and stated once — next to the name,
+       * which is what one reads first.
        *
-       * Le message ne peut pas être « cette carte n'a pas de nom français » :
-       * c'est faux, « Aspischool » s'appelle « Banc d'aspis ». C'est le
-       * catalogue qui ne l'a pas encore. Mesuré par extension : les anciennes
-       * sont traduites à 100 %, les récentes à 0-60 %.
+       * The message cannot be “this card has no French name”: that is false,
+       * “Aspischool” is called “Banc d'aspis”. It is the catalogue that does
+       * not have it yet. Measured set by set: old ones are 100% translated,
+       * recent ones 0-60%.
        */
       item.print.language === "fr" && card?.frenchPending,
       html`<p class="muted field-note">
@@ -578,13 +575,13 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
         <button type="button" class="icon-btn" id="btn-more" title="${t("Sort and filter")}"
                 aria-label="${t("Sort and filter")}" aria-haspopup="dialog"><span class="i-more" aria-hidden="true"></span></button>
         <!--
-          Les scanlistes se rejoignent d'ici, et non par un onglet de la barre
-          du bas — c'est la place qu'elles avaient dans ATEM-old, et elle dit
-          juste : on répertorie un lot **avant** de décider s'il entre en
-          collection. Un onglet de même rang que « Collection » laissait croire
-          à deux inventaires côte à côte.
+          Scanlists are reached from here, not from a tab in the bottom bar —
+          that is the place they had in ATEM-old, and it says it right: one
+          inventories a batch **before** deciding whether it enters the
+          collection. A tab of the same rank as “Collection” suggested two
+          inventories side by side.
         -->
-        <a class="btn scanlist-link" href="/scanlistes"
+        <a class="btn scanlist-link" href="/scanlists"
            title="${t("Inventory a batch without adding it to your collection")}">
           <span aria-hidden="true">🗂️</span>
           <span class="scanlist-link-label">${t("Scanlists")}</span>
@@ -644,21 +641,23 @@ export type PrintRow = {
 };
 
 /**
- * Les autres éditions de la même carte.
+ * The other printings of the same card.
  *
- * Repris d'ATEM-old : la question « est-ce que je l'ai déjà, et dans quelle
- * édition ? » se pose devant chaque carte qu'on trie. Y répondre dans la fiche
- * évite d'aller chercher ailleurs.
+ * Taken from ATEM-old: the question “do I already have it, and in which
+ * printing?” comes up in front of every card being sorted. Answering it in the
+ * sheet saves looking elsewhere.
  *
- * Le bloc n'apparaît qu'à partir de deux éditions : en dessous, il n'apprend
- * rien que la fiche ne dise déjà.
+ * The block only appears from two printings up: below that, it teaches nothing
+ * the sheet does not already say.
  */
 export function editionsHtml(prints: PrintRow[], ownedSetCodes: Set<string>): SafeHtml {
   if (prints.length < 2) return raw("");
-  const possedees = prints.filter((print) => ownedSetCodes.has(print.setCode)).length;
+  const ownedCount = prints.filter((print) => ownedSetCodes.has(print.setCode)).length;
 
   return html`<div class="editions">
-    <h3span class="muted">${prints.length}${possedees > 0 ? ` · ${possedees} possédée${possedees > 1 ? "s" : ""}` : ""}</span>
+    <h3>
+      ${t("Other printings")}
+      <span class="muted">${prints.length}${ownedCount > 0 ? ` · ${t("{n} owned", { n: ownedCount })}` : ""}</span>
     </h3>
     <ul class="editions-list">
       ${prints.map((print) => {

@@ -1,15 +1,15 @@
 /**
- * L'état des scanlistes.
+ * The scanlists' state.
  *
- * **Le lot en cours ne quitte jamais le navigateur, et ne lui survit pas.**
- * Rien n'est écrit dans `localStorage` : ce qui n'a pas été explicitement
- * enregistré meurt avec l'onglet, et il faudra rescanner. C'est une décision,
- * pas un oubli — un demi-état persisté qu'on retrouve trois jours plus tard
- * sans savoir ce qu'il contient vaut moins que rien.
+ * **The batch in progress never leaves the browser, and does not outlive it.**
+ * Nothing is written to `localStorage`: what has not been explicitly saved dies
+ * with the tab, and will have to be scanned again. That is a decision, not an
+ * oversight — a half-state persisted and found three days later without knowing
+ * what it holds is worth less than nothing.
  *
- * Il vit ici, au niveau du module : il traverse donc une navigation interne —
- * aller voir sa collection et revenir ne perd pas la pile en cours — et
- * disparaît à la fermeture.
+ * It lives here, at module level: it therefore survives an internal navigation
+ * — going to check your collection and coming back does not lose the pile being
+ * counted — and disappears on closing.
  */
 import type { ScanlistDetail, ScanlistLine, ScanlistSummary } from "@atem/shared";
 
@@ -22,30 +22,30 @@ export type ScanlistState = {
   loading: boolean;
   items: ScanlistSummary[];
   /**
-   * Les lignes que le dernier versement n'a pas su placer.
+   * The lines the last pour could not place.
    *
-   * Le serveur les nomme depuis le début ; l'écran n'en montrait que le
-   * nombre. « 3 lignes en échec » sans dire lesquelles ne laisse rien faire —
-   * ni corriger un code, ni comprendre pourquoi.
+   * The server has named them from the start; the screen only showed their
+   * count. “3 lines failed” without saying which leaves nothing to do — neither
+   * fixing a code nor understanding why.
    */
   pourErrors: { setCode: string; error: string }[];
-  /** Le lot ouvert en consultation, quand l'URL en désigne un. */
+  /** The batch open for reading, when the URL designates one. */
   opened: ScanlistDetail | null;
-  /** Le lot en cours de constitution, ou `null` si l'on n'en a pas commencé. */
+  /** The batch being built, or `null` when none has been started. */
   draft: Draft | null;
   error: string;
 };
 
 /**
- * Un seul objet, muté sur place — **jamais remplacé**.
+ * A single object, mutated in place — **never replaced**.
  *
- * `resetView` le réaffectait, et l'écran en gardait une référence prise juste
- * avant : ses mutations partaient alors dans un objet orphelin pendant que les
- * fonctions de ce module écrivaient dans le nouveau. L'écran s'affichait, et
- * plus aucun bouton ne faisait quoi que ce soit.
+ * `resetView` used to reassign it while the screen held a reference taken just
+ * before: its mutations then went into an orphaned object while this module's
+ * functions wrote into the new one. The screen rendered, and no button did
+ * anything at all.
  *
- * L'identité de cet objet fait partie du contrat : tout le reste du module
- * suppose que `scanlistState()` rend toujours le même.
+ * This object's identity is part of the contract: the rest of the module
+ * assumes `scanlistState()` always returns the same one.
  */
 const state: ScanlistState = {
   loading: true,
@@ -59,17 +59,17 @@ const state: ScanlistState = {
 export const scanlistState = (): ScanlistState => state;
 
 /**
- * Remet la vue à zéro, sans toucher au lot en cours.
+ * Resets the view, without touching the batch in progress.
  *
- * Le brouillon traverse volontairement les changements d'écran : aller
- * vérifier une carte dans sa collection ne perd pas la pile qu'on inventorie.
+ * The draft deliberately survives screen changes: going to check a card in your
+ * collection does not lose the pile being counted.
  */
 export function resetView(): void {
   state.loading = true;
   state.items = [];
   state.opened = null;
   state.error = "";
-  // Les échecs appartiennent au versement qu'on vient de voir, pas au suivant.
+  // The failures belong to the pour just seen, not to the next one.
   state.pourErrors = [];
 }
 
@@ -82,15 +82,15 @@ export function discardDraft(): void {
 }
 
 /**
- * Ajoute ou retire un exemplaire dans le lot — **et rien d'autre**.
+ * Adds or removes a copy in the batch — **and nothing else**.
  *
- * C'est la différence qui définit cet écran. Un « −1 » décrémente la ligne du
- * lot ; arrivée à zéro, elle y reste, visible, et les « −1 » suivants ne font
- * rien. Ils ne vont surtout pas retirer un exemplaire de la collection : le lot
- * n'a aucun lien avec elle tant qu'on ne l'a pas versé.
+ * This is the difference that defines this screen. A “−1” decrements the
+ * batch's line; once at zero it stays there, visible, and further “−1” do
+ * nothing. They certainly do not remove a copy from the collection: the batch
+ * has no link to it until it is poured.
  *
- * La ligne à zéro reste affichée exprès : c'est ce qui permet de voir ce qu'on
- * vient d'annuler. Elle sera écartée à l'enregistrement.
+ * The zero line stays displayed on purpose: that is what lets you see what you
+ * just cancelled. It will be dropped when saving.
  */
 export function applyToDraft(setCode: string, delta: number): ScanlistLine {
   const draft = state.draft ?? { name: "", lines: [] };
@@ -108,12 +108,12 @@ export function applyToDraft(setCode: string, delta: number): ScanlistLine {
     passcode: null,
     quantity: Math.max(0, delta),
   };
-  // Le dernier scanné en tête : c'est celui qu'on vérifie du regard.
+  // The most recently scanned first: that is the one the eye checks.
   draft.lines.unshift(line);
   return line;
 }
 
-/** Le nom arrivé après coup se pose sur la ligne, si elle est encore là. */
+/** A name arriving late lands on the line, if it is still there. */
 export function nameDraftLine(setCode: string, name: string, passcode: number | null): boolean {
   const line = state.draft?.lines.find((l) => l.setCode === setCode);
   if (!line || line.name) return false;

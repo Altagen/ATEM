@@ -42,7 +42,7 @@ export function createApp(db: Database) {
   app.route("/auth", identityRoutes(db));
   app.route("/catalogue", referentialRoutes(db));
   app.route("/collection", collectionRoutes(db));
-  app.route("/scanlistes", scanlistRoutes(db));
+  app.route("/scanlists", scanlistRoutes(db));
   app.route("/decks", deckRoutes(db));
 
   return app;

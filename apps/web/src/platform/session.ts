@@ -1,8 +1,9 @@
 /**
- * L'état de session, partagé par les écrans.
+ * The session state, shared by the screens.
  *
- * Une seule requête en vol à la fois : sans ce dédoublonnage, trois composants
- * qui s'affichent ensemble demandent trois fois le même profil au démarrage.
+ * One request in flight at a time: without that de-duplication, three
+ * components rendering together ask for the same profile three times at
+ * startup.
  */
 import { api, ApiError, type PublicUser } from "./api.js";
 import { setLocale } from "./i18n/index.js";
@@ -18,11 +19,11 @@ export function setUser(user: PublicUser | null): void {
   current = user;
   inFlight = null;
   /**
-   * La langue suit le compte, pas le navigateur.
+   * The language follows the account, not the browser.
    *
-   * C'est un réglage qu'on choisit une fois et qu'on retrouve sur son
-   * téléphone comme sur son ordinateur. Sans compte, on repart du français —
-   * les écrans de connexion n'ont pas encore de qui les lire.
+   * It is a setting you choose once and find again on your phone as on your
+   * computer. With no account we fall back to French — the sign-in screens do
+   * not know yet who is reading them.
    */
   setLocale(user?.locale ?? "fr");
 }
@@ -36,8 +37,8 @@ export async function loadUser(): Promise<PublicUser | null> {
       return user;
     })
     .catch((err) => {
-      // 401 n'est pas une panne : c'est la réponse normale à « qui suis-je ? »
-      // quand personne n'est connecté.
+      // A 401 is not a failure: it is the normal answer to “who am I?” when
+      // nobody is signed in.
       if (err instanceof ApiError && err.status === 401) return null;
       throw err;
     })

@@ -76,26 +76,26 @@ export function deckRoutes(db: Database) {
   /**
    * Folders, **before** `/:id`.
    *
-   * Hono tries routes in declaration order: further down, `/dossiers` would be
+   * Hono tries routes in declaration order: further down, `/folders` would be
    * swallowed by `/:id`, which would answer “invalid identifier” for a folder
    * list. A test holds that order, because moving a few lines would be enough
    * to undo it silently.
    */
-  app.get("/dossiers", async (c) => c.json({ items: await listFolders(db, viewerId(c)) }));
+  app.get("/folders", async (c) => c.json({ items: await listFolders(db, viewerId(c)) }));
 
-  app.post("/dossiers", async (c) => {
+  app.post("/folders", async (c) => {
     const parsed = FolderBody.safeParse(await jsonBody(c));
     if (!parsed.success) throw invalidInput("Invalid folder name.");
     return c.json(await createFolder(db, viewerId(c), parsed.data), 201);
   });
 
-  app.patch("/dossiers/:id", async (c) => {
+  app.patch("/folders/:id", async (c) => {
     const parsed = FolderPatchBody.safeParse(await jsonBody(c));
     if (!parsed.success) throw invalidInput("Invalid data.");
     return c.json(await updateFolder(db, viewerId(c), c.req.param("id"), parsed.data));
   });
 
-  app.delete("/dossiers/:id", async (c) => {
+  app.delete("/folders/:id", async (c) => {
     await deleteFolder(db, viewerId(c), c.req.param("id"));
     return c.json({ ok: true });
   });
@@ -121,7 +121,7 @@ export function deckRoutes(db: Database) {
    * an increment. Two identical requests leave the same deck, which guards
    * against a double tap without any counter to reconcile.
    */
-  app.put("/:id/cartes", async (c) => {
+  app.put("/:id/cards", async (c) => {
     const parsed = CardBody.safeParse(await jsonBody(c));
     if (!parsed.success) throw invalidInput("Invalid data.", { issues: parsed.error.issues });
     return c.json(await setDeckCard(db, viewerId(c), c.req.param("id"), parsed.data));

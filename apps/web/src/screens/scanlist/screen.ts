@@ -1,11 +1,11 @@
 /**
- * L'écran des scanlistes.
+ * The scanlists screen.
  *
- * **Il réutilise le scanner sans le modifier.** Celui-ci ne connaît ni la
- * collection ni les lots : il lit un code et rapporte le geste à qui le lui a
- * demandé. Ici, ce geste écrit dans un compteur qui vit en mémoire — c'est ce
- * qui rend le « −1 » de cet écran structurellement incapable de toucher la
- * collection. Il n'existe pas de chemin, pas même par erreur.
+ * **It reuses the scanner without modifying it.** The scanner knows neither the
+ * collection nor batches: it reads a code and reports the gesture to whoever
+ * asked. Here that gesture writes into a counter living in memory — which is
+ * what makes this screen's “−1” structurally unable to touch the collection.
+ * There is no path, not even by mistake.
  */
 import { t } from "../../platform/i18n/index.js";
 import { api, ApiError, type CardDetail } from "../../platform/api.js";
@@ -18,15 +18,15 @@ import {
 } from "./state.js";
 
 /**
- * Le temps qu'on accorde au catalogue pour nommer une carte.
+ * How long the catalogue is given to name a card.
  *
- * L'ajout ne l'attend jamais : la ligne entre tout de suite avec son set code,
- * que le navigateur tient déjà. Si le nom arrive avant la fin de ce délai, il
- * se pose sur la ligne ; sinon le code reste, et c'est très bien — refuser
- * d'inventorier une carte parce qu'on ne sait pas encore la nommer serait
- * absurde. Un code inconnu de YGOPRODeck ne sera d'ailleurs jamais nommé.
+ * The addition never waits for it: the line enters right away with its set
+ * code, which the browser already holds. If the name arrives before this delay
+ * is over, it lands on the line; otherwise the code stays, and that is fine —
+ * refusing to inventory a card because we cannot name it yet would be absurd. A
+ * code unknown to YGOPRODeck will never be named anyway.
  */
-const DELAI_NOM_MS = 2_500;
+const NAME_TIMEOUT_MS = 2_500;
 
 export async function scanlistScreen(root: HTMLElement, params: URLSearchParams): Promise<void> {
   const state = scanlistState();
@@ -34,39 +34,39 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
   root.className = "scanlist-page-root";
 
   /**
-   * Repeint l'écran **sans effacer ce qu'on est en train d'écrire**.
+   * Repaints the screen **without erasing what is being typed**.
    *
-   * Le nom d'une carte arrive après coup et déclenche une repeinture. Si elle
-   * tombe pendant qu'on saisit le code suivant, le champ est reconstruit vide
-   * et la frappe est perdue — sans rien qui l'explique, et au pire moment :
-   * quand on enchaîne les cartes d'une pile.
+   * A card's name arrives later and triggers a repaint. If it lands while the
+   * next code is being typed, the field is rebuilt empty and the keystrokes are
+   * lost — with nothing explaining it, and at the worst moment: while working
+   * through a pile of cards.
    *
-   * On rend donc au champ sa valeur, son focus et la position du curseur. Le
-   * nom du lot, lui, vit dans l'état et se réécrit tout seul.
+   * So we give the field back its value, its focus and the caret position. The
+   * batch's name lives in the state and rewrites itself.
    */
   function paint(): void {
-    const champ = root.querySelector<HTMLInputElement>("#draft-code");
-    const saisie = champ
-      ? { value: champ.value, focus: document.activeElement === champ, caret: champ.selectionStart }
+    const field = root.querySelector<HTMLInputElement>("#draft-code");
+    const typed = field
+      ? { value: field.value, focus: document.activeElement === field, caret: field.selectionStart }
       : null;
 
     root.innerHTML = scanlistHtml(state).toString();
     bind();
 
-    if (!saisie?.value && !saisie?.focus) return;
-    const frais = root.querySelector<HTMLInputElement>("#draft-code");
-    if (!frais) return;
-    frais.value = saisie.value;
-    if (saisie.focus) {
-      frais.focus();
-      const position = saisie.caret ?? saisie.value.length;
-      frais.setSelectionRange(position, position);
+    if (!typed?.value && !typed?.focus) return;
+    const fresh = root.querySelector<HTMLInputElement>("#draft-code");
+    if (!fresh) return;
+    fresh.value = typed.value;
+    if (typed.focus) {
+      fresh.focus();
+      const position = typed.caret ?? typed.value.length;
+      fresh.setSelectionRange(position, position);
     }
   }
 
   async function loadList(): Promise<void> {
     try {
-      const { items } = await api<{ items: ScanlistSummary[] }>("/scanlistes");
+      const { items } = await api<{ items: ScanlistSummary[] }>("/scanlists");
       state.items = items;
     } catch (err) {
       state.error = err instanceof ApiError ? err.message : t("Server unreachable.");
@@ -78,7 +78,7 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
 
   async function loadOne(id: string): Promise<void> {
     try {
-      state.opened = await api<ScanlistDetail>(`/scanlistes/${encodeURIComponent(id)}`);
+      state.opened = await api<ScanlistDetail>(`/scanlists/${encodeURIComponent(id)}`);
     } catch (err) {
       state.error = err instanceof ApiError ? err.message : t("Batch not found.");
     } finally {
@@ -88,23 +88,23 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
   }
 
   /**
-   * Va chercher le nom, sans jamais retenir l'ajout.
+   * Fetches the name, without ever holding the addition back.
    *
-   * L'appel continue côté serveur même si l'on cesse de l'attendre — le
-   * référentiel s'enrichit quand même, au bénéfice de la prochaine carte du
-   * même lot.
+   * The call carries on server-side even if we stop waiting for it — the
+   * referential is enriched anyway, to the benefit of the next card in the same
+   * batch.
    */
   function resolveName(setCode: string): void {
     void api<{ card: CardDetail | null }>(
       `/catalogue/impressions/${encodeURIComponent(setCode)}`,
-      { signal: AbortSignal.timeout(DELAI_NOM_MS) },
+      { signal: AbortSignal.timeout(NAME_TIMEOUT_MS) },
     )
       .then(({ card }) => {
         if (card && nameDraftLine(setCode, card.name, card.passcode)) paint();
       })
       .catch(() => {
-        // Délai dépassé, code inconnu, réseau absent : le set code reste
-        // affiché, et il dit déjà l'essentiel.
+        // Timed out, unknown code, no network: the set code stays displayed,
+        // and it already says the essential.
       });
   }
 
@@ -112,9 +112,9 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
     const setCode = rawCode.trim().toUpperCase();
     if (!setCode) throw new Error(t("No set code to record."));
 
-    const connuAvant = state.draft?.lines.some((line) => line.setCode === setCode) ?? false;
+    const knownBefore = state.draft?.lines.some((line) => line.setCode === setCode) ?? false;
     const line = applyToDraft(setCode, delta);
-    if (!connuAvant) resolveName(setCode);
+    if (!knownBefore) resolveName(setCode);
     paint();
     return { setCode: line.setCode, quantity: line.quantity, label: line.name };
   }
@@ -123,8 +123,8 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
     const draft = state.draft;
     if (!draft) return;
 
-    const nom = draft.name.trim();
-    if (!nom) {
+    const name = draft.name.trim();
+    if (!name) {
       state.error = t("Give the batch a name.");
       paint();
       return;
@@ -137,10 +137,10 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
     }
 
     try {
-      const lot = await api<ScanlistDetail>("/scanlistes", { method: "POST", body: { name: nom, lines } });
+      const batch = await api<ScanlistDetail>("/scanlists", { method: "POST", body: { name, lines } });
       discardDraft();
       state.error = "";
-      toast(t("“{name}” saved — ×{copies}", { name: lot.name, copies: lot.copyCount }), "success");
+      toast(t("“{name}” saved — ×{copies}", { name: batch.name, copies: batch.copyCount }), "success");
       await loadList();
     } catch (err) {
       state.error = err instanceof ApiError ? err.message : t("Saving failed.");
@@ -149,73 +149,73 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
   }
 
   /**
-   * Le fichier passe par un lien construit à la volée.
+   * The file goes through a link built on the fly.
    *
-   * On ne demande pas au serveur de nous rendre ce qu'on a déjà : le lot est
-   * en mémoire, et le navigateur sait fabriquer un fichier.
+   * We do not ask the server to hand back what we already have: the batch is in
+   * memory, and the browser knows how to make a file.
    */
   function exportOpened(): void {
-    const lot = state.opened;
-    if (!lot) return;
+    const batch = state.opened;
+    if (!batch) return;
 
-    const contenu = JSON.stringify(
+    const payload = JSON.stringify(
       {
         version: SCANLIST_EXPORT_VERSION,
-        name: lot.name,
-        createdAt: lot.createdAt,
-        pouredAt: lot.pouredAt,
-        lines: lot.lines,
+        name: batch.name,
+        createdAt: batch.createdAt,
+        pouredAt: batch.pouredAt,
+        lines: batch.lines,
       },
       null,
       2,
     );
 
-    const url = URL.createObjectURL(new Blob([contenu], { type: "application/json" }));
-    const lien = document.createElement("a");
-    lien.href = url;
-    lien.download = `${lot.name.replace(/[^\w\-]+/g, "-").toLowerCase()}.json`;
-    lien.click();
+    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${batch.name.replace(/[^\w\-]+/g, "-").toLowerCase()}.json`;
+    link.click();
     URL.revokeObjectURL(url);
   }
 
   async function pourOpened(): Promise<void> {
-    const lot = state.opened;
-    if (!lot || lot.pouredAt) return;
+    const batch = state.opened;
+    if (!batch || batch.pouredAt) return;
     state.pourErrors = [];
 
-    const bouton = root.querySelector<HTMLButtonElement>("#lot-pour");
-    if (bouton) bouton.disabled = true;
+    const button = root.querySelector<HTMLButtonElement>("#batch-pour");
+    if (button) button.disabled = true;
     try {
-      const bilan = await api<{
+      const report = await api<{
         poured: number;
         failed: number;
         errors: { setCode: string; error: string }[];
-      }>(`/scanlistes/${encodeURIComponent(lot.id)}/verser`, { method: "POST" });
-      // Gardées pour l'écran : les compter sans les nommer ne laisse rien faire.
-      state.pourErrors = bilan.errors;
-      // Un versement à moitié réussi se lit comme tel, pas comme un succès.
+      }>(`/scanlists/${encodeURIComponent(batch.id)}/pour`, { method: "POST" });
+      // Kept for the screen: counting them without naming them leaves nothing to do.
+      state.pourErrors = report.errors;
+      // A half-successful pour reads as such, not as a success.
       toast(
-        bilan.failed > 0
-          ? t("×{copies} poured · {n} line(s) failed", { copies: bilan.poured, n: bilan.failed })
-          : t("×{copies} poured into your collection.", { copies: bilan.poured }),
-        bilan.failed > 0 ? "error" : "success",
+        report.failed > 0
+          ? t("×{copies} poured · {n} line(s) failed", { copies: report.poured, n: report.failed })
+          : t("×{copies} poured into your collection.", { copies: report.poured }),
+        report.failed > 0 ? "error" : "success",
       );
-      await loadOne(lot.id);
+      await loadOne(batch.id);
     } catch (err) {
       toast(err instanceof ApiError ? err.message : t("Pouring failed."), "error");
-      if (bouton) bouton.disabled = false;
+      if (button) button.disabled = false;
     }
   }
 
   async function deleteOpened(): Promise<void> {
-    const lot = state.opened;
-    if (!lot) return;
-    if (!window.confirm(t("Discard “{name}”? This list will be lost.", { name: lot.name }))) return;
+    const batch = state.opened;
+    if (!batch) return;
+    if (!window.confirm(t("Discard “{name}”? This list will be lost.", { name: batch.name }))) return;
 
     try {
-      await api(`/scanlistes/${encodeURIComponent(lot.id)}`, { method: "DELETE" });
-      toast(t("“{name}” discarded.", { name: lot.name }), "success");
-      window.history.pushState({}, "", "/scanlistes");
+      await api(`/scanlists/${encodeURIComponent(batch.id)}`, { method: "DELETE" });
+      toast(t("“{name}” discarded.", { name: batch.name }), "success");
+      window.history.pushState({}, "", "/scanlists");
       state.opened = null;
       await loadList();
     } catch (err) {
@@ -244,35 +244,35 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
     });
 
     const codeInput = root.querySelector<HTMLInputElement>("#draft-code");
-    const ajouterSaisie = (): void => {
-      const saisi = codeInput?.value.trim();
-      if (!saisi) return;
-      // Vidé **avant** la repeinture : celle-ci restaure ce qu'elle trouve
-      // dans le champ, et y laisser le code le ferait réapparaître.
+    const addTyped = (): void => {
+      const entered = codeInput?.value.trim();
+      if (!entered) return;
+      // Cleared **before** the repaint: the repaint restores what it finds in
+      // the field, and leaving the code there would make it reappear.
       if (codeInput) codeInput.value = "";
       try {
-        addToDraft(saisi, 1);
-        // La saisie au clavier garde le focus : ici l'utilisateur tape, il n'a
-        // pas le doigt sur l'écran, et le champ suivant est celui-ci.
+        addToDraft(entered, 1);
+        // Keyboard entry keeps the focus: here the user is typing, they do not
+        // keep a finger on the screen, and the next field is this one.
         root.querySelector<HTMLInputElement>("#draft-code")?.focus();
       } catch (err) {
         state.error = err instanceof Error ? err.message : t("Cannot add.");
         paint();
       }
     };
-    root.querySelector("#draft-add")?.addEventListener("click", ajouterSaisie);
+    root.querySelector("#draft-add")?.addEventListener("click", addTyped);
     codeInput?.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
-        ajouterSaisie();
+        addTyped();
       }
     });
 
     root.querySelector("#draft-save")?.addEventListener("click", () => void save());
 
     root.querySelector("#draft-scan")?.addEventListener("click", async () => {
-      // Même chargement à la demande que la collection : le moteur pèse quatre
-      // mégaoctets, et la plupart des visites n'ouvrent jamais la caméra.
+      // Same on-demand loading as the collection: the engine weighs four
+      // megabytes, and most visits never open the camera.
       const { openScanner } = await import("../collection/scanner.js");
       await openScanner({
         tallyLabel: t("in the batch"),
@@ -281,28 +281,28 @@ export async function scanlistScreen(root: HTMLElement, params: URLSearchParams)
       });
     });
 
-    root.querySelector("#lot-pour")?.addEventListener("click", () => void pourOpened());
-    root.querySelector("#lot-export")?.addEventListener("click", exportOpened);
-    root.querySelector("#lot-delete")?.addEventListener("click", () => void deleteOpened());
+    root.querySelector("#batch-pour")?.addEventListener("click", () => void pourOpened());
+    root.querySelector("#batch-export")?.addEventListener("click", exportOpened);
+    root.querySelector("#batch-delete")?.addEventListener("click", () => void deleteOpened());
   }
 
   /**
-   * Les « + » et « − » de chaque ligne, délégués **une seule fois**.
+   * The “+” and “−” of each line, delegated **once**.
    *
-   * Posé au montage et non dans `bind()`, qui est rappelé à chaque repeinture :
-   * l'écouteur s'y serait accumulé, et un « −1 » aurait décrémenté de trois
-   * après trois repeintures. C'est le défaut qu'on a déjà corrigé sur la grille
-   * de collection, et il ne coûte rien de ne pas le refaire.
+   * Set at mount and not in `bind()`, which is called again on every repaint:
+   * the listener would have piled up there, and one “−1” would have decremented
+   * by three after three repaints. It is the defect already fixed on the
+   * collection grid, and it costs nothing not to repeat it.
    */
   root.addEventListener("click", (event) => {
-    const cible = (event.target as HTMLElement | null)?.closest<HTMLElement>(".js-draft");
-    if (!cible?.dataset.code) return;
-    applyToDraft(cible.dataset.code, Number(cible.dataset.d ?? "1"));
+    const target = (event.target as HTMLElement | null)?.closest<HTMLElement>(".js-draft");
+    if (!target?.dataset.code) return;
+    applyToDraft(target.dataset.code, Number(target.dataset.d ?? "1"));
     paint();
   });
 
   paint();
 
-  const id = params.get("lot");
+  const id = params.get("batch");
   await (id ? loadOne(id) : loadList());
 }

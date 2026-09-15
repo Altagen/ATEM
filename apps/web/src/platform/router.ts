@@ -1,23 +1,22 @@
 /**
- * Le routeur.
+ * The router.
  *
- * Une table de routes, pas une cascade de `if`. ATEM-old dispatchait dans un
- * `if/else` de 250 lignes : lisible à dix écrans, plus du tout au-delà.
+ * A table of routes, not a cascade of `if`s. ATEM-old dispatched in a 250-line
+ * `if/else`: readable at ten screens, not at all beyond.
  */
 /**
- * Un écran.
+ * A screen.
  *
- * Le troisième argument vit **le temps de l'écran** : il est rompu dès qu'on
- * navigue ailleurs. Tout ce qu'un écran pose en dehors de son `root` — un
- * écouteur sur `document`, un minuteur, une requête à annuler — doit s'y
- * accrocher, sinon il survit à l'écran qui l'a posé.
+ * The third argument lives **as long as the screen does**: it is aborted as
+ * soon as we navigate elsewhere. Everything a screen sets outside its `root` —
+ * a listener on `document`, a timer, a request to cancel — must hang on it,
+ * otherwise it survives the screen that set it.
  *
- * Le défaut que ça corrige a été vu : l'écran des decks posait `Échap` sur
- * `document` à chaque montage. Après deux navigations, trois écouteurs
- * répondaient ; le plus ancien remettait l'état à zéro et repeignait un `root`
- * détaché, si bien que les suivants n'avaient plus rien à faire — et la fiche
- * de carte ne se fermait plus. Le nœud racine est remplacé à chaque rendu, mais
- * `document`, lui, reste.
+ * The defect this fixes was seen: the deck screen set `Escape` on `document` at
+ * every mount. After two navigations, three listeners answered; the oldest
+ * reset the state and repainted a detached `root`, so the others had nothing
+ * left to do — and the card sheet no longer closed. The root node is replaced
+ * on every render, but `document` stays.
  */
 export type Screen = (
   root: HTMLElement,
@@ -26,18 +25,18 @@ export type Screen = (
 ) => void | Promise<void>;
 
 /**
- * Ce qu'il faut savoir d'un écran pour le proposer dans la navigation.
+ * What one needs to know about a screen to offer it in the navigation.
  *
- * Une destination n'existe **que** si sa route existe : les deux sont déclarées
- * ensemble, au même endroit. C'est ce qui rend impossible un onglet qui mène
- * nulle part — le défaut classique d'une barre de navigation écrite à part, où
- * l'on ajoute l'entrée avant l'écran et où l'on oublie de la retirer après.
+ * A destination exists **only** if its route exists: both are declared
+ * together, in the same place. That is what makes a tab leading nowhere
+ * impossible — the classic flaw of a navigation bar written apart, where the
+ * entry is added before the screen and forgotten after it goes.
  */
 export type Destination = {
   label: string;
-  /** Une émoticône, seule chose que la barre du bas affiche au-dessus du libellé. */
+  /** An emoji, the only thing the bottom bar shows above the label. */
   icon: string;
-  /** `main` : la barre principale. `account` : la feuille de compte, sur mobile. */
+  /** `main`: the main bar. `account`: the account sheet, on mobile. */
   group: "main" | "account";
 };
 
@@ -50,18 +49,18 @@ type Route = {
 
 const routes: Route[] = [];
 let fallback: Screen | null = null;
-/** Rompu au rendu suivant : c'est la durée de vie de l'écran courant. */
-let vieDeLEcran = new AbortController();
+/** Aborted at the next render: this is the current screen's lifetime. */
+let screenLife = new AbortController();
 let sessionCheck: () => boolean = () => true;
 const afterRender: (() => void)[] = [];
 
 /**
- * À exécuter après chaque rendu de route.
+ * To run after every route render.
  *
- * C'est le bon signal pour tout ce qui dépend de la route **et** de la session
- * — la barre de navigation, par exemple. Se brancher sur les clics ne marche
- * pas : le clic précède la réponse du serveur, si bien qu'après une connexion
- * la barre affichait encore « Connexion » jusqu'au clic suivant.
+ * It is the right signal for anything that depends on the route **and** the
+ * session — the navigation bar, for instance. Hooking onto clicks does not
+ * work: the click precedes the server's answer, so after signing in the bar
+ * still displayed “Sign in” until the next click.
  */
 export function onAfterRender(hook: () => void): void {
   afterRender.push(hook);
@@ -80,7 +79,7 @@ export function register(
   });
 }
 
-/** Les destinations d'un groupe, dans l'ordre où elles ont été déclarées. */
+/** A group's destinations, in the order they were declared. */
 export function destinations(group: Destination["group"]): { path: string; nav: Destination }[] {
   return routes
     .filter((route): route is Route & { nav: Destination } => route.nav?.group === group)
@@ -102,12 +101,12 @@ export function navigate(path: string, options: { replace?: boolean } = {}): voi
 }
 
 /**
- * Remplace le nœud racine au lieu de le vider.
+ * Replaces the root node instead of emptying it.
  *
- * ATEM-old a vécu le bug que ça corrige : un écran quitté dont une requête
- * revenait en retard continuait d'écrire dans le DOM de l'écran suivant. En
- * remplaçant le nœud, l'ancien écran écrit dans un élément détaché de la page —
- * inoffensif, et sans avoir à annuler quoi que ce soit.
+ * ATEM-old lived the bug this fixes: a screen left behind, whose request came
+ * back late, kept writing into the next screen's DOM. By replacing the node,
+ * the old screen writes into an element detached from the page — harmless, and
+ * with nothing to cancel.
  */
 function freshRoot(): HTMLElement {
   const previous = document.querySelector("#app");
@@ -122,11 +121,11 @@ export async function render(): Promise<void> {
   const match = routes.find((route) => route.path === url.pathname);
   const root = freshRoot();
 
-  // L'écran précédent perd ses écouteurs avant que le suivant ne pose les
-  // siens : sans ça, ils s'additionnent à chaque navigation.
-  vieDeLEcran.abort();
-  vieDeLEcran = new AbortController();
-  const signal = vieDeLEcran.signal;
+  // The previous screen loses its listeners before the next one sets its own:
+  // without that, they pile up on every navigation.
+  screenLife.abort();
+  screenLife = new AbortController();
+  const signal = screenLife.signal;
 
   if (!match) {
     if (fallback) await fallback(root, url.searchParams, signal);
@@ -134,14 +133,14 @@ export async function render(): Promise<void> {
     return;
   }
   if (match.requiresSession && !sessionCheck()) {
-    navigate(`/connexion?suite=${encodeURIComponent(url.pathname + url.search)}`, {
+    navigate(`/login?next=${encodeURIComponent(url.pathname + url.search)}`, {
       replace: true,
     });
     return;
   }
   for (const hook of afterRender) hook();
-  // Ce que le routeur ne remplace pas — une modale posée sur `document.body` —
-  // doit pouvoir se refermer de lui-même.
+  // What the router does not replace — a modal attached to `document.body` —
+  // must be able to close itself.
   document.dispatchEvent(new CustomEvent("atem:navigated"));
   await match.screen(root, url.searchParams, signal);
 }
@@ -150,8 +149,8 @@ export function startRouter(): void {
   window.addEventListener("popstate", () => void render());
   document.addEventListener("click", (event) => {
     const link = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>("a[href^='/']");
-    // On laisse passer ce que l'utilisateur a demandé explicitement : nouvel
-    // onglet, téléchargement, autre cible.
+    // We let through what the user asked for explicitly: new tab, download,
+    // another target.
     if (!link || link.target || link.hasAttribute("download")) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
     event.preventDefault();

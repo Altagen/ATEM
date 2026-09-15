@@ -9,7 +9,7 @@ import { addBySetCode, expectNoHorizontalOverflow, signUp } from "./helpers.js";
  */
 
 const ouvrirLot = async (page: import("@playwright/test").Page) => {
-  await page.goto("/scanlistes");
+  await page.goto("/scanlists");
   await page.getByRole("button", { name: "Nouveau lot" }).click();
 };
 
@@ -108,7 +108,7 @@ test("le lot en cours traverse une navigation interne", async ({ page }) => {
 
   await page.locator("a[href='/collection']").first().dispatchEvent("click");
   await expect(page).toHaveURL(/\/collection/);
-  await page.locator("a[href='/scanlistes']").first().dispatchEvent("click");
+  await page.locator("a[href='/scanlists']").first().dispatchEvent("click");
 
   await expect(page.locator(".scan-draft-li")).toHaveCount(1);
 });
@@ -179,7 +179,7 @@ test("les scanlistes se rejoignent depuis la collection, pas par un onglet", asy
   const lien = page.locator(".tools-bar .scanlist-link");
   await expect(lien).toBeVisible();
   await lien.click();
-  await expect(page).toHaveURL(/\/scanlistes/);
+  await expect(page).toHaveURL(/\/scanlists/);
   await expect(page.getByRole("heading", { name: "Scanlistes" })).toBeVisible();
 });
 

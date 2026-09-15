@@ -20,7 +20,7 @@ export function freshAccount() {
 
 export async function signUp(page: Page): Promise<ReturnType<typeof freshAccount>> {
   const account = freshAccount();
-  await page.goto("/inscription");
+  await page.goto("/register");
   await page.getByLabel("Pseudo").fill(account.displayName);
   await page.getByLabel("Adresse e-mail").fill(account.email);
   await page.getByLabel("Mot de passe", { exact: false }).first().fill(account.password);

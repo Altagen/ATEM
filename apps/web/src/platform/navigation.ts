@@ -1,20 +1,20 @@
 /**
- * La coquille de navigation.
+ * The navigation shell.
  *
- * Trois surfaces, un seul état :
+ * Three surfaces, one state:
  *
- * — la **barre du haut**, sur écran large ;
- * — la **barre du bas**, sur téléphone, qui la remplace entièrement ;
- * — la **feuille de compte**, que la barre du bas ouvre.
+ * — the **top bar**, on wide screens;
+ * — the **bottom bar**, on phones, which replaces it entirely;
+ * — the **account sheet**, which the bottom bar opens.
  *
- * Le choix de remplacer plutôt que d'adapter vient d'ATEM-old, et il tient : la
- * barre du haut ne gardait sur mobile que la marque, l'état du service et
- * l'avatar — cinq cibles dans une bande de 62 px, pour des réglages qu'on ne
- * visite pas en boucle. Le pouce, lui, est en bas de l'écran.
+ * Choosing to replace rather than adapt comes from ATEM-old, and it holds: on
+ * mobile the top bar kept only the brand, the service state and the avatar —
+ * five targets in a 62 px strip, for settings nobody visits in a loop. The
+ * thumb, meanwhile, is at the bottom of the screen.
  *
- * **Les destinations viennent du routeur.** Aucune liste n'est tenue ici : un
- * écran déclare sa route et sa place dans la navigation d'un seul geste, et une
- * entrée qui mène nulle part devient impossible à écrire.
+ * **Destinations come from the router.** No list is kept here: a screen
+ * declares its route and its place in the navigation in one gesture, and an
+ * entry leading nowhere becomes impossible to write.
  */
 import { api, ApiError, type PublicUser } from "./api.js";
 import { t } from "./i18n/index.js";
@@ -28,10 +28,10 @@ type ServiceState = "ok" | "unreachable" | "unknown";
 let serviceState: ServiceState = "unknown";
 
 /**
- * L'état du service — traduit à l'affichage, pas à la déclaration.
+ * The service state — translated at display time, not at declaration.
  *
- * Cette table est évaluée à l'import, avant que la langue du compte soit
- * connue : y appeler `t()` figerait le français pour toute la session.
+ * This table is evaluated at import, before the account's language is known:
+ * calling `t()` here would freeze one language for the whole session.
  */
 const SERVICE_LABELS: Record<ServiceState, { text: string; className: string }> = {
   ok: { text: "Online", className: "api-ok" },
@@ -40,11 +40,11 @@ const SERVICE_LABELS: Record<ServiceState, { text: string; className: string }> 
 };
 
 /**
- * L'état du service, montré en permanence.
+ * The service state, shown at all times.
  *
- * Quand le serveur ne répond plus, chaque geste échoue avec un message
- * différent et l'on cherche la panne dans l'application. Une pastille qui dit
- * « injoignable » répond à la question avant qu'on la pose.
+ * When the server stops answering, every gesture fails with a different message
+ * and people go looking for the bug in the application. A pill saying
+ * “unreachable” answers the question before it is asked.
  */
 export async function refreshServiceState(): Promise<void> {
   try {
@@ -57,12 +57,12 @@ export async function refreshServiceState(): Promise<void> {
 }
 
 /**
- * Le choix de langue.
+ * The language choice.
  *
- * Il vit ici, dans la barre du haut et dans la feuille de compte, parce que
- * c'est le seul réglage de compte que l'application porte aujourd'hui — l'écran
- * de réglages viendra en M3. Deux boutons plutôt qu'un menu : il n'y a que deux
- * langues, et un menu déroulant demanderait deux gestes pour la même chose.
+ * It lives here, in the top bar and in the account sheet, because it is the
+ * only account setting the application carries today — the settings screen
+ * comes in M3. Two buttons rather than a menu: there are only two languages,
+ * and a dropdown would ask two gestures for the same thing.
  */
 function languageSwitch(): HTMLElement {
   const user = knownUser()!;
@@ -86,12 +86,12 @@ function languageSwitch(): HTMLElement {
 
 async function switchLanguage(locale: "fr" | "en"): Promise<void> {
   try {
-    const { user } = await api<{ user: PublicUser }>("/auth/me/langue", {
+    const { user } = await api<{ user: PublicUser }>("/auth/me/locale", {
       method: "PATCH",
       body: { locale },
     });
-    // `setUser` applique la langue, puis on repeint tout : la barre, et l'écran
-    // courant, qui a été rendu dans l'autre langue.
+    // `setUser` applies the language, then we repaint everything: the bar, and
+    // the current screen, which was rendered in the other language.
     setUser(user);
     renderNavigation();
     void render();
@@ -101,12 +101,11 @@ async function switchLanguage(locale: "fr" | "en"): Promise<void> {
 }
 
 /**
- * Un lien de navigation — **et son libellé traduit**.
+ * A navigation link — **and its translated label**.
  *
- * Les destinations viennent du routeur, où elles sont déclarées en français.
- * Elles s'affichaient telles quelles : « Collection » est identique dans les
- * deux langues, ce qui a masqué le défaut jusqu'à ce qu'une autre destination
- * arrive.
+ * Destinations come from the router, where they are declared as plain strings.
+ * They used to be displayed as written: “Collection” is identical in both
+ * languages, which hid the defect until another destination arrived.
  */
 function link(path: string, label: string, className: string, icon?: string): HTMLElement {
   const isActive = window.location.pathname === path;
@@ -167,10 +166,10 @@ function bottomNav(): HTMLElement {
 }
 
 /**
- * La feuille de compte.
+ * The account sheet.
  *
- * Elle remplace, sur téléphone, ce que la barre du haut portait à droite :
- * l'identité, l'état du service, les écrans annexes et la déconnexion.
+ * On phones it replaces what the top bar carried on its right: the identity,
+ * the service state, the secondary screens and signing out.
  */
 function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
   const user = knownUser()!;
@@ -189,8 +188,8 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
       ]),
     );
   }
-  // Sans destination annexe, la liste n'a rien à montrer : on ne pose pas un
-  // conteneur vide qui laisserait croire à un chargement.
+  // With no secondary destination the list has nothing to show: we do not
+  // leave an empty container that would look like loading.
   if (list.childElementCount === 0) list.remove();
 
   const signOut = el("button", { type: "button", class: "account-sheet-logout" }, [
@@ -252,28 +251,28 @@ async function signOutNow(): Promise<void> {
   try {
     await api("/auth/logout", { method: "POST" });
   } finally {
-    // Même si le serveur n'a pas répondu, on ne laisse personne croire qu'il
-    // est encore connecté : l'état local suit la demande.
+    // Even if the server did not answer, we do not let anyone believe they are
+    // still signed in: the local state follows the request.
     setUser(null);
     renderNavigation();
-    navigate("/connexion");
+    navigate("/login");
   }
 }
 
 /**
- * Reconstruit la navigation.
+ * Rebuilds the navigation.
  *
- * Tout est refait plutôt que mis à jour en place : la destination courante,
- * l'identité et l'état du service changent ensemble, et les synchroniser à la
- * main est le genre de détail qu'on finit par oublier quelque part.
+ * Everything is redone rather than patched in place: the current destination,
+ * the identity and the service state change together, and synchronising them by
+ * hand is the kind of detail one ends up forgetting somewhere.
  */
 export function renderNavigation(): void {
   /**
-   * La feuille est refermée dans les règles avant d'être reconstruite.
+   * The sheet is closed properly before being rebuilt.
    *
-   * Cette fonction est aussi rappelée chaque minute par le relevé d'état du
-   * service : retirer la feuille sans la fermer laisserait le verrou de
-   * défilement posé pour rien, et la page ne défilerait plus jamais.
+   * This function is also called every minute by the service-state poll:
+   * removing the sheet without closing it would leave the scroll lock in place
+   * for nothing, and the page would never scroll again.
    */
   closeAccountSheet();
 
@@ -281,8 +280,8 @@ export function renderNavigation(): void {
     document.querySelector(selector)?.remove();
   }
 
-  // Les écrans d'authentification portent leur propre en-tête, et n'ont rien
-  // à naviguer.
+  // The authentication screens carry their own header, and have nothing to
+  // navigate.
   if (!knownUser()) return;
 
   const { backdrop, sheet } = accountSheet();

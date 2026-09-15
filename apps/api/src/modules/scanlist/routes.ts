@@ -1,7 +1,7 @@
 /**
  * The scanlist routes.
  *
- * Mounted on `/scanlistes`, apart from `/collection`: these are two distinct
+ * Mounted on `/scanlists`, apart from `/collection`: these are two distinct
  * inventories, and mixing them under the same prefix would have ended up mixing
  * them in the same code.
  */
@@ -68,7 +68,7 @@ export function scanlistRoutes(db: Database) {
 
   app.get("/:id", async (c) => c.json(await getScanlist(db, viewerId(c), c.req.param("id"))));
 
-  app.post("/:id/verser", async (c) =>
+  app.post("/:id/pour", async (c) =>
     c.json(await pourScanlist(db, viewerId(c), c.req.param("id"))),
   );
 

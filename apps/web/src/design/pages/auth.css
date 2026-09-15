@@ -1,9 +1,9 @@
-/* ── Écrans d'avant-connexion : accueil, connexion, inscription ────────────
+/* ── Pre-sign-in screens: landing, sign in, sign up ────────────────────────
  *
- * Ces trois pages n'ont pas la coque de l'application. Avant d'être connecté il
- * n'y a rien à naviguer : une bande avec la marque et le choix de langue, et le
- * contenu au centre. Les noms de classes sont ceux d'`apps/web`, qui reste la
- * référence de structure.
+ * These three pages have no application shell. Before signing in there is
+ * nothing to navigate: a band with the brand and the language choice, and the
+ * content in the middle. The class names are those of `apps/web`, which remains
+ * the structural reference.
  */
 .auth-page {
   max-width: none;
@@ -21,7 +21,7 @@
   box-sizing: border-box;
 }
 
-/* ── Bande de tête ────────────────────────────────────────────────────────── */
+/* ── Header band ──────────────────────────────────────────────────────────── */
 .landing-header {
   display: flex;
   align-items: center;
@@ -36,13 +36,8 @@
   letter-spacing: 0.12em;
   color: var(--gold);
 }
-@keyframes auth-rays { to { transform: rotate(360deg); } }
-/* Le réglage système fait foi : ce halo tourne pour le plaisir, rien d'autre. */
-@media (prefers-reduced-motion: reduce) {
-  .black-hole-rays { animation: none; }
-}
 
-/* ── Connexion et inscription ─────────────────────────────────────────────── */
+/* ── Sign in and sign up ──────────────────────────────────────────────────── */
 .auth-main-wrapper {
   flex: 1 1 auto;
   display: grid;
@@ -59,8 +54,8 @@
   background: var(--card);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
-/* L'inscription porte deux champs de plus et une jauge : elle respire un peu
-   plus large, comme dans l'application. */
+/* Sign-up carries two more fields and a meter: it breathes a little wider, as
+   it does in the application. */
 .auth-card.is-wide { max-width: 31rem; }
 .auth-card-title { margin: 0; font-size: 1.5rem; font-weight: 900; color: #fff; }
 .auth-subtitle { margin: 0.3rem 0 1.35rem; font-size: 0.84rem; }
@@ -108,9 +103,9 @@
 .auth-submit-btn:hover:not(:disabled) { filter: brightness(1.08); }
 .auth-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .auth-toggle { margin: 1.1rem 0 0; font-size: 0.84rem; text-align: center; }
-/* Le lien de bascule est tantôt un `a`, tantôt un `button` — « Se déconnecter »
-   agit, il ne mène pas ailleurs. Les deux doivent se lire pareil : sans cette
-   remise à zéro, le bouton garde le fond gris du navigateur. */
+/* The toggle link is sometimes an `a`, sometimes a `button` — “Sign out” acts,
+   it does not lead elsewhere. Both must read the same: without this reset, the
+   button keeps the browser's grey background. */
 .auth-link-btn {
   appearance: none;
   padding: 0;
@@ -124,12 +119,12 @@
 }
 .auth-link-btn:hover { color: var(--gold); }
 
-/* La jauge de mot de passe est celle des Paramètres, dont l'inscription se sert
-   aussi. Elle est déclarée ici pour que cette page la porte elle-même : une
-   feuille qu'on ne charge pas n'habille rien. */
+/* The password meter is the one from Settings, which sign-up uses as well. It
+   is declared here so that this page carries it itself: a sheet you do not load
+   styles nothing. */
 .field-note { margin: 0.35rem 0 0; font-size: 0.76rem; }
 
-/* La place du message est rendue une fois, et disparaît tant qu'elle est vide :
-   un cadre rouge sans texte se lit comme une erreur qu'on n'arrive pas à lire. */
+/* The message's slot is rendered once, and disappears while it is empty: a red
+   frame with no text reads as an error one cannot manage to read. */
 .auth-error-banner:empty { display: none; }
 .auth-input:disabled { opacity: 0.6; }

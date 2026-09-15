@@ -1,28 +1,26 @@
 /*
- * Le scanner de cartes — une seule feuille, pour la maquette et l'application.
+ * The card scanner.
  *
- * L'écran est le même des deux côtés : viseur au rapport d'une carte, bande de
- * visée, barre de déclenchement, pastilles de suggestion. La maquette n'a pas
- * de caméra — elle s'ouvre en `file://` — et montre donc le viseur dans son
- * état « caméra indisponible », qui est un état que l'application connaît
- * aussi. La forme, elle, est identique.
+ * Taken from ATEM-old, where this one sheet served both the mock-up and the
+ * application: viewfinder at a card's ratio, aiming band, shutter bar,
+ * suggestion pills. The mock-up had no camera and showed the viewfinder in its
+ * “camera unavailable” state, a state the application knows too — the shape is
+ * the same.
  *
- * `apps/web/src/style.css` importe ce fichier tel quel. Le recopier des deux
- * côtés le ferait diverger au premier ajustement, ce que
- * `check-css-doublons.sh` refuse — à juste titre : c'est déjà arrivé à la
- * feuille des scanlistes.
+ * `design/index.css` imports it once. Copying it into another sheet would make
+ * it drift at the first adjustment — which is what had happened to ATEM-old's
+ * scanlist sheet.
  */
 
 /* —— Le viseur —————————————————————————————————————————————————————— */
 
 /*
- * Le rapport est celui d'une carte, pas celui du flux.
+ * The ratio is a card's, not the stream's.
  *
- * La caméra rend ce qu'elle veut — souvent du 4/3 en portrait, du 16/9 en
- * paysage — et le viseur doit rester le même cadre quel que soit l'appareil,
- * sinon la bande de visée ne tombe plus sur le code d'extension. D'où un
- * rapport imposé et un `object-fit: cover` : on rogne le flux plutôt que de
- * déformer le cadre.
+ * The camera returns what it likes — often 4:3 in portrait, 16:9 in landscape
+ * — and the viewfinder must stay the same frame whatever the device, otherwise
+ * the aiming band no longer falls on the set code. Hence an imposed ratio and
+ * `object-fit: cover`: we crop the stream rather than distort the frame.
  */
 .scan-zoom-viewport {
   position: relative;
@@ -45,28 +43,28 @@
 }
 
 /*
- * La bande de visée : où poser le code d'extension.
+ * The aiming band: where to place the set code.
  *
- * Elle est posée aux mêmes proportions que la zone lue par l'OCR, sans quoi
- * elle mentirait — on cadrerait dans la bande et la reconnaissance lirait
- * ailleurs.
+ * It is laid out at the same proportions as the area the OCR reads, otherwise
+ * it would lie — you would frame inside the band and recognition would read
+ * elsewhere.
  */
 .scan-zoom-band {
   position: absolute;
   /*
-   * Ces quatre pourcentages sont ceux de `SCAN_ZOOM_BAND`, dans
-   * `apps/web/src/collection/ocr.ts`. Ce n'est pas une ressemblance : c'est la
-   * même bande, dessinée d'un côté et lue de l'autre.
+   * These four percentages are those of `SCAN_ZOOM_BAND`, in
+   * `apps/web/src/screens/collection/ocr/engine.ts`. It is not a resemblance:
+   * it is the same band, drawn on one side and read on the other.
    *
-   * Le 2 septembre 2026 je les ai inventés — 8 % de marge, 15 % du bas, 12 % de
-   * haut — en habillant vingt et une classes qui n'avaient aucune règle. La
-   * bande dessinée s'est retrouvée en bas du viseur, la bande lue au milieu :
-   * on cadrait le code d'extension à un endroit et l'OCR regardait ailleurs.
-   * Ange : « quand je scanne en OCR j'ai "Rien de fiable" ». Le module le
-   * disait pourtant, juste au-dessus de ses constantes — « Must match CSS
-   * .scan-zoom-band percentages » —, et rien ne le vérifiait.
+   * On 2 September 2026 they were invented — 8% margin, 15% from the bottom,
+   * 12% high — while styling twenty-one classes that had no rule. The drawn
+   * band ended up at the bottom of the viewfinder, the read band in the middle:
+   * you framed the set code in one place and the OCR looked elsewhere. Ange:
+   * “when I scan with OCR I get ‘Nothing reliable’”. The module said so,
+   * though, right above its constants — “Must match CSS .scan-zoom-band
+   * percentages” — and nothing checked it.
    *
-   * `scripts/check-bande-de-visee.mjs` compare désormais les deux.
+   * `scripts/check-scan-band.mjs` now compares the two.
    */
   left: 5%;
   width: 90%;
@@ -107,7 +105,7 @@
   margin: 0;
 }
 
-/* —— Le code lu, et les suggestions ——————————————————————————————— */
+/* —— The code read, and the suggestions ——————————————————————————— */
 
 .scan-code-row {
   display: flex;
@@ -135,7 +133,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-align: center;
-  /* 16px au moins : en dessous, iOS zoome sur le champ à la mise au point. */
+  /* 16px at least: below that, iOS zooms onto the field when it gets focus. */
   min-height: 2.6rem;
 }
 
@@ -175,14 +173,14 @@
   color: var(--fg-fort);
 }
 
-/* —— La barre de déclenchement ——————————————————————————————————— */
+/* —— The shutter bar ——————————————————————————————————————————————— */
 
 /*
- * Trois places fixes : côté, centre, côté.
+ * Three fixed places: side, centre, side.
  *
- * Le bouton central ne bouge pas d'un état à l'autre — avant la photo c'est
- * le déclencheur, après c'est « +1 » — parce qu'un pouce qui a trouvé sa
- * place ne devrait pas la rechercher entre deux cartes.
+ * The central button does not move from one state to the next — before the
+ * photo it is the shutter, after it is “+1” — because a thumb that has found
+ * its place should not have to look for it again between two cards.
  */
 .scan-shutter-bar {
   display: grid;
@@ -194,11 +192,11 @@
 }
 
 /*
- * Les deux boutons secondaires, groupés à gauche de l'obturateur.
+ * The two secondary buttons, grouped to the left of the shutter.
  *
- * Quatre cibles réparties également auraient décentré l'obturateur, qui est la
- * seule qu'on vise sans regarder — une pile de cartes dans l'autre main. Il
- * garde donc le milieu, et « ↺ » et « −1 » se partagent la colonne de gauche.
+ * Four evenly spread targets would have pushed the shutter off centre, and it
+ * is the only one aimed at without looking — a pile of cards in the other
+ * hand. So it keeps the middle, and “↺” and “−1” share the left column.
  */
 .scan-shutter-side-group {
   display: flex;
@@ -243,7 +241,7 @@
   transform: scale(0.88);
 }
 
-/* Pendant l'analyse, le cœur pulse : l'attente est visible sans texte. */
+/* While analysing, the core pulses: the wait is visible without text. */
 .btn-scan-shutter.is-busy .btn-scan-shutter-core {
   background: var(--gold);
   animation: scan-pulse 0.9s ease-in-out infinite;
@@ -285,12 +283,12 @@
 }
 
 /*
- * Le « +1 » : la seule action qui engage quelque chose, et elle se voit.
+ * The “+1”: the only action that commits anything, and it shows.
  *
- * Elle n'avait aucune couleur — le navigateur lui donnait son gris par défaut,
- * indistinguable du « −1 » d'à côté alors que l'une ajoute une carte à
- * l'inventaire et l'autre l'en retire. Elle prend le bleu du « + » de la barre
- * d'ajout : c'est le même geste, il porte la même couleur partout.
+ * It had no colour — the browser gave it its default grey, indistinguishable
+ * from the “−1” next to it although one adds a card to the inventory and the
+ * other removes it. It takes the blue of the add bar's “+”: it is the same
+ * gesture, and it wears the same colour everywhere.
  */
 .btn-scan-add-lg {
   appearance: none;
@@ -316,23 +314,22 @@
   cursor: not-allowed;
 }
 
-/* La flèche qui revient sur elle-même, à la taille du glyphe et non du texte. */
+/* The arrow turning back on itself, at glyph size rather than text size. */
 .i-restart {
   font-size: 1.45rem;
   line-height: 1;
 }
 
-/* —— Sur téléphone : plein écran, et au-dessus de la barre du bas ——— */
+/* —— On a phone: full screen, and above the bottom bar ——————————— */
 
 /*
- * La modale prend tout l'écran, y compris la place de la barre de
- * navigation — elle a sa propre croix de fermeture en haut à droite, donc la
- * barre du bas n'a rien à y faire. `--z-modal-panel` la met devant ; le plein
- * écran fait le reste.
+ * The modal takes the whole screen, including the navigation bar's space — it
+ * has its own close cross at the top right, so the bottom bar has no business
+ * there. `--z-modal-panel` puts it in front; full screen does the rest.
  *
- * `100dvh` et non `100vh` : sur mobile, `vh` compte la barre d'adresse du
- * navigateur même quand elle est repliée, et la barre de déclenchement
- * tombait sous le bord bas de l'écran.
+ * `100dvh` and not `100vh`: on mobile, `vh` counts the browser's address bar
+ * even when it is collapsed, and the shutter bar fell below the bottom edge of
+ * the screen.
  */
 @media (max-width: 719px) {
   .scan-modal-zoom {
@@ -349,7 +346,7 @@
   }
 
   .scan-modal-zoom .scan-modal-body {
-    /* La zone respirable, moins l'en-tête ; le viseur prend ce qui reste. */
+    /* The usable area, minus the header; the viewfinder takes what is left. */
     min-height: calc(100dvh - 3.4rem);
     justify-content: center;
     padding-bottom: max(1.1rem, env(safe-area-inset-bottom));
@@ -361,11 +358,11 @@
 }
 
 /*
- * La vidéo du viseur remplit son cadre, comme les illustrations ailleurs.
+ * The viewfinder's video fills its frame, like artworks elsewhere.
  *
- * Elle ne rejoint pas la règle partagée de `components.css` : cette feuille-là
- * est chargée par les douze pages, et la barrière refuse — à raison — d'y
- * habiller une classe que onze d'entre elles ne posent jamais.
+ * It does not join the shared rule of ATEM-old's `components.css`: that sheet
+ * was loaded by all twelve pages, and the gate rightly refused to style there a
+ * class eleven of them never set.
  */
 .scan-zoom-video {
   display: block;

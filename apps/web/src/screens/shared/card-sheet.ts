@@ -1,14 +1,14 @@
 /**
- * La fiche de carte en grand, partagée par les écrans qui la montrent.
+ * The full-size card sheet, shared by the screens that show it.
  *
- * La collection et l'atelier de decks affichent la même chose — l'illustration
- * en grand, les caractéristiques, l'effet — et diffèrent par ce qu'on peut
- * faire depuis là : retirer un exemplaire d'un côté, le poser dans une zone de
- * l'autre. ATEM-old avait deux fonctions distinctes qui répétaient le même
- * balisage ; il y avait donc deux endroits où corriger un alignement.
+ * The collection and the deck workshop display the same thing — the artwork
+ * large, the characteristics, the effect — and differ in what can be done from
+ * there: removing a copy on one side, placing it in a zone on the other.
+ * ATEM-old had two distinct functions repeating the same markup; there were
+ * therefore two places to fix an alignment.
  *
- * Le contenu propre à chaque écran passe par `headActions` et `extra`. Tout le
- * reste est ici, et l'alignement se règle une fois.
+ * The content specific to each screen goes through `headActions` and `extra`.
+ * Everything else is here, and alignment is settled once.
  */
 import { t } from "../../platform/i18n/index.js";
 import {
@@ -18,18 +18,17 @@ import {
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import type { CardDetail } from "../../platform/api.js";
 
-/** Une grille « intitulé / valeur », le motif de toute la fiche. */
+/** A “label / value” grid, the pattern of the whole sheet. */
 export const detailGrid = (entries: [string, string][]): SafeHtml =>
   html`<dl class="detail-grid">
     ${entries.map(([term, value]) => html`<div><dt>${term}</dt><dd>${value}</dd></div>`)}
   </dl>`;
 
 /**
- * Les caractéristiques d'une carte, dans l'ordre où on les lit.
+ * A card's characteristics, in the order they are read.
  *
- * Un monstre Lien n'a ni niveau ni défense : la ligne change de nature plutôt
- * que d'afficher deux tirets. C'est une carte différente, pas une carte
- * incomplète.
+ * A Link monster has neither level nor defence: the row changes nature rather
+ * than displaying two dashes. It is a different card, not an incomplete one.
  */
 export function cardDetailRows(card: CardDetail): [string, string][] {
   const isSpellTrap = card.type === CATALOGUE.spellCard || card.type === CATALOGUE.trapCard;
@@ -52,11 +51,11 @@ export function cardDetailRows(card: CardDetail): [string, string][] {
 }
 
 /**
- * La rose des marqueurs d'un monstre Lien.
+ * The compass of a Link monster's markers.
  *
- * Huit cases autour d'un centre, les flèches allumées là où le monstre pointe.
- * Une liste de noms — « Haut-Gauche, Bas » — demande de reconstruire la figure
- * dans sa tête ; la figure, elle, se lit.
+ * Eight cells around a centre, the arrows lit where the monster points. A list
+ * of names — “Top-Left, Bottom” — asks the reader to rebuild the figure in
+ * their head; the figure itself just reads.
  */
 export function linkCompassHtml(markers: string[] | null, linkValue: number | null): SafeHtml {
   if (!markers?.length) return raw("");
@@ -85,16 +84,16 @@ export function linkCompassHtml(markers: string[] | null, linkValue: number | nu
 }
 
 export type CardSheetOptions = {
-  /** L'illustration en grand, quand le catalogue l'a. */
+  /** The full-size artwork, when the catalogue has it. */
   art: string | null | undefined;
   title: string;
   subtitle: string;
-  /** Ce qu'on peut faire depuis l'en-tête : « −1 » ici, rien là. */
+  /** What can be done from the header: “−1” here, nothing there. */
   headActions?: SafeHtml;
   card: CardDetail | null;
-  /** Le bloc propre à l'écran, sous les caractéristiques. */
+  /** The screen-specific block, below the characteristics. */
   extra?: SafeHtml;
-  /** Ce qui se dit **avant** les caractéristiques — un avertissement. */
+  /** What is said **before** the characteristics — a warning. */
   notice?: SafeHtml;
 };
 

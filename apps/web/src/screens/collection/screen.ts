@@ -1,12 +1,12 @@
 /**
- * L'écran de collection.
+ * The collection screen.
  *
- * Le rendu vit dans `view.ts` — c'est le balisage validé d'ATEM-old. Ici, le
- * branchement : lecture de l'API, état, et délégation d'événements.
+ * Rendering lives in `view.ts` — that is ATEM-old's validated markup. Here, the
+ * wiring: reading the API, state, and event delegation.
  *
- * La délégation est délibérée : la grille se redessine à chaque changement de
- * filtre, et rattacher un écouteur par bouton fuirait à chaque rendu. Un seul
- * écouteur sur le conteneur suit ce qui apparaît et disparaît.
+ * The delegation is deliberate: the grid is redrawn at every filter change, and
+ * attaching one listener per button would leak at every render. A single
+ * listener on the container follows what appears and disappears.
  */
 import { t } from "../../platform/i18n/index.js";
 import { api, ApiError } from "../../platform/api.js";
@@ -34,11 +34,11 @@ export async function collectionScreen(
   root.className = "collection-page-root";
 
   /**
-   * La densité est posée sur `<body>`, pas sur la racine de l'écran.
+   * Density is set on `<body>`, not on the screen's root.
    *
-   * C'est là que les règles reprises d'ATEM-old la cherchent
-   * (`body.density-compact .item`), et la déplacer demanderait de réécrire ces
-   * règles pour un gain nul.
+   * That is where the rules taken from ATEM-old look for it
+   * (`body.density-compact .item`), and moving it would mean rewriting those
+   * rules for no gain.
    */
   function applyDensity(): void {
     document.body.classList.toggle("density-compact", state.density === "compact");
@@ -51,13 +51,12 @@ export async function collectionScreen(
   }
 
   /**
-   * La suite arrive quand on approche du bas.
+   * The rest arrives as we near the bottom.
    *
-   * La pagination existait côté serveur mais rien ne la déclenchait : au-delà
-   * de soixante éditions, la ligne de compte annonçait « 60/312 » et les 252
-   * autres étaient inatteignables. Le balisage repris n'a pas de bouton « voir
-   * plus » — un observateur au pied de la liste tient le même rôle sans rien
-   * ajouter à l'écran.
+   * Pagination existed server-side but nothing triggered it: past sixty
+   * printings the count line announced “60/312” and the other 252 were out of
+   * reach. The markup we took has no “see more” button — an observer at the
+   * foot of the list plays the same part without adding anything to the screen.
    */
   let sentinelObserver: IntersectionObserver | null = null;
 
@@ -80,8 +79,8 @@ export async function collectionScreen(
     watchSentinel();
     const meta = root.querySelector(".meta-line span");
     if (meta) {
-      // La même phrase que dans `view.ts`, et la même clé : deux écritures
-      // divergentes se traduiraient l'une sans l'autre.
+      // The same sentence as in `view.ts`, and the same key: two diverging
+      // spellings would each be translated without the other.
       meta.textContent = t("{shown}/{total} printing(s) · ×{copies}", {
         shown: state.items.length,
         total: state.total,
@@ -128,8 +127,8 @@ export async function collectionScreen(
       facets = await api<Facets>("/collection/facets");
       repaintFilters();
     } catch {
-      // Sans facettes, la recherche, le tri et les niveaux fonctionnent quand
-      // même : on n'empêche pas l'écran de servir parce qu'un raffinement manque.
+      // Without facets, search, sorting and levels still work: we do not stop
+      // the screen from serving because a refinement is missing.
     }
   }
 
@@ -162,7 +161,7 @@ export async function collectionScreen(
     }
   }
 
-  /** Vrai quand le panneau de filtres tient le verrou de défilement. */
+  /** True when the filter panel holds the scroll lock. */
   let filterPanelOpen = false;
 
   function setFilterPanel(open: boolean): void {
@@ -171,9 +170,9 @@ export async function collectionScreen(
     if (panel) panel.hidden = !open;
     if (backdrop) backdrop.hidden = !open;
 
-    // Le verrou suit l'état réel, pas l'appel : `setFilterPanel(true)` est
-    // rappelé à chaque puce cliquée, et compter deux fois ne se rattraperait
-    // jamais.
+    // The lock follows the real state, not the call: `setFilterPanel(true)` is
+    // called again at every chip clicked, and counting twice would never be
+    // caught up with.
     if (open === filterPanelOpen) return;
     filterPanelOpen = open;
     if (open) lockScroll();
@@ -188,7 +187,7 @@ export async function collectionScreen(
     if (wasOpen) unlockScroll();
   }
 
-  /** Le passcode de la fiche ouverte, pour ne pas y verser les éditions d'une autre. */
+  /** The open sheet's passcode, so another card's printings do not land in it. */
   let openedPasscode: number | null = null;
 
   function openInspect(id: number): void {
@@ -198,8 +197,8 @@ export async function collectionScreen(
     openedPasscode = item.card?.passcode ?? null;
     lockScroll();
     root.insertAdjacentHTML("beforeend", inspectHtml(item).toString());
-    // La croix et le fond doivent fermer : sur téléphone il n'y a pas de touche
-    // Échap, et sans ces deux écouteurs la fiche est un cul-de-sac.
+    // The cross and the backdrop must close: on a phone there is no Escape
+    // key, and without those two listeners the sheet is a dead end.
     root.querySelector("#btn-save-notes")?.addEventListener("click", () => void saveNotes(id));
     root.querySelector("#inspect-close")?.addEventListener("click", closeInspect);
     root.querySelector("#inspect-backdrop")?.addEventListener("click", closeInspect);
@@ -227,40 +226,40 @@ export async function collectionScreen(
   }
 
   /**
-   * Les autres éditions arrivent après coup.
+   * The other printings arrive afterwards.
    *
-   * La fiche s'ouvre tout de suite avec ce qu'on a déjà ; la liste des éditions
-   * demande un aller-retour, et la faire attendre retarderait l'ouverture pour
-   * une information secondaire. Si la requête échoue, le bloc n'apparaît
-   * simplement pas — la fiche reste utile sans lui.
+   * The sheet opens right away with what we already have; the list of printings
+   * needs a round trip, and waiting for it would delay the opening for
+   * secondary information. If the request fails the block simply does not
+   * appear — the sheet stays useful without it.
    */
   async function loadEditions(passcode: number, forCard: number | null): Promise<void> {
     try {
       const { prints } = await api<{ prints: PrintRow[] }>(`/catalogue/cards/${passcode}`);
       const host = root.querySelector(".inspect-info-body");
-      // La fiche a pu être fermée, ou **remplacée par une autre** pendant la
-      // requête : comparer le nœud ne suffit pas, il est recréé à chaque
-      // ouverture. C'est la carte demandée qu'on vérifie.
+      // The sheet may have been closed, or **replaced by another**, during the
+      // request: comparing the node is not enough, it is recreated at every
+      // opening. It is the requested card that we check.
       if (!host || openedPasscode !== forCard || openedPasscode !== passcode) return;
       const owned = new Set(state.items.map((entry) => entry.setCode));
       host.insertAdjacentHTML("beforeend", editionsHtml(prints, owned).toString());
     } catch {
-      // Information secondaire : son absence ne se signale pas.
+      // Secondary information: its absence is not reported.
     }
   }
 
-  // ── Branchements ──────────────────────────────────────────────────────
+  // ── Wiring ────────────────────────────────────────────────────────────
 
   /**
-   * La délégation de clic est posée **une seule fois**, au montage.
+   * Click delegation is set up **once only**, at mount.
    *
-   * Elle vivait dans `bindShell`, rappelé à chaque redessin — et comme la
-   * racine n'est pas remplacée, contrairement à `.content`, les écouteurs
-   * s'empilaient : après deux bascules de vue, un « +1 » en valait trois.
+   * It used to live in `bindShell`, called again at every redraw — and since
+   * the root is not replaced, unlike `.content`, the listeners piled up: after
+   * two view toggles, one “+1” counted as three.
    *
-   * Elle est sur la racine et non sur `.content` parce que la fiche de carte
-   * est insérée à côté de `<main>`, pas dedans : son bouton « −1 » ne recevait
-   * sinon jamais le clic.
+   * It sits on the root rather than on `.content` because the card sheet is
+   * inserted beside `<main>`, not inside it: its “−1” button would otherwise
+   * never receive the click.
    */
   root.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
@@ -289,8 +288,8 @@ export async function collectionScreen(
 
     search?.addEventListener("input", () => {
       window.clearTimeout(searchTimer);
-      // On attend que la frappe se calme : sans ça, « Magicien Sombre » lance
-      // quinze requêtes dont quatorze sont jetées.
+      // We wait for the typing to settle: without this, “Dark Magician” fires
+      // fifteen requests, fourteen of which are thrown away.
       searchTimer = window.setTimeout(() => {
         state.query = search.value;
         void load(true);
@@ -312,8 +311,8 @@ export async function collectionScreen(
       if (!setCode) return;
       const language = root.querySelector<HTMLSelectElement>("#opt-lang")?.value || null;
       const typed = root.querySelector<HTMLInputElement>("#opt-passcode")?.value.trim();
-      // Les huit chiffres en bas à gauche de la carte, quand on les a lus : ils
-      // dispensent d'attendre l'identification.
+      // The eight digits at the bottom left of the card, when they have been
+      // read: they spare us waiting for the identification.
       const passcode = typed && /^\d+$/.test(typed) ? Number(typed) : null;
 
       try {
@@ -346,11 +345,11 @@ export async function collectionScreen(
     });
 
     root.querySelector("#btn-scan")?.addEventListener("click", async () => {
-      // Chargé à la demande : le moteur de reconnaissance pèse quatre
-      // mégaoctets, et la plupart des visites n'ouvrent jamais la caméra.
+      // Loaded on demand: the recognition engine weighs four megabytes, and
+      // most visits never open the camera.
       const { openScanner } = await import("./scanner.js");
       await openScanner({
-        tallyLabel: "en collection",
+        tallyLabel: t("in collection"),
         onConfirm: async (setCode, delta) => {
           const item = await adjust(setCode, delta);
           if (!item) throw new Error(t("Saving failed."));
@@ -384,11 +383,11 @@ export async function collectionScreen(
     root.querySelector("#btn-more")?.addEventListener("click", () => setFilterPanel(true));
 
     /**
-     * Un seul écouteur pour toute la racine.
+     * A single listener for the whole root.
      *
-     * Il était posé sur `.content`, mais la fiche de carte est insérée **à côté**
-     * de `<main>`, pas dedans : son bouton « −1 » ne recevait donc jamais le
-     * clic. Écouter la racine couvre la grille comme la fiche.
+     * It used to sit on `.content`, but the card sheet is inserted **beside**
+     * `<main>`, not inside it: its “−1” button therefore never received the
+     * click. Listening on the root covers the grid as well as the sheet.
      */
     bindFilterPanel();
   }
@@ -410,12 +409,12 @@ export async function collectionScreen(
     repaintContent();
 
     /**
-     * Le compteur d'attente suit l'ajustement.
+     * The pending counter follows the adjustment.
      *
-     * Sans ça, retirer la dernière carte d'une ligne non identifiée laissait
-     * « 1 en attente d'identification » à l'écran jusqu'au rechargement complet
-     * — un chiffre qui ne correspondait plus à rien. Signalé par Ange après
-     * avoir supprimé une carte inventée exprès.
+     * Without this, removing the last card of an unidentified row left
+     * “1 awaiting identification” on screen until a full reload — a number that
+     * no longer matched anything. Reported by Ange after deleting a card made
+     * up on purpose.
      */
     await refreshPending();
   }
@@ -426,18 +425,18 @@ export async function collectionScreen(
     const next = !item.isFavorite;
 
     /**
-     * L'état bascule avant la réponse, et **toute la ligne suit**.
+     * The state flips before the answer, and **the whole row follows**.
      *
-     * Le favori se dit à deux endroits : le bouton étoile s'allume, et une
-     * pastille « ★ » se pose à côté du nom — en galerie, c'est une étoile sur
-     * la vignette. Seul le bouton était basculé à la main : la pastille
-     * n'apparaissait qu'à la repeinture suivante, si bien que l'écran donnait
-     * deux réponses différentes sur le même fait. Ange l'a lu comme un favori
-     * non enregistré, ce qui est la conclusion raisonnable — il l'était
-     * pourtant, et il revenait bien après un rechargement.
+     * A favourite is said in two places: the star button lights up, and a “★”
+     * pill sits next to the name — in gallery view, it is a star on the
+     * thumbnail. Only the button was toggled by hand: the pill appeared only at
+     * the next repaint, so the screen gave two different answers about the same
+     * fact. Ange read it as a favourite that had not been saved, which is the
+     * reasonable conclusion — it had been, though, and it did come back after a
+     * reload.
      *
-     * On repeint donc la liste depuis l'état, comme le fait déjà un « +1 » :
-     * une seule source de vérité, et plus rien à tenir d'accord à la main.
+     * So we repaint the list from the state, as a “+1” already does: a single
+     * source of truth, and nothing left to keep in agreement by hand.
      */
     item.isFavorite = next;
     repaintContent();
@@ -534,7 +533,7 @@ export async function collectionScreen(
     });
   }
 
-  /** Échap ferme la fiche d'abord, le panneau de filtres ensuite. */
+  /** Escape closes the sheet first, the filter panel next. */
   function onKey(event: KeyboardEvent): void {
     if (event.key !== "Escape") return;
     if (root.querySelector("#inspect-panel")) {
@@ -543,8 +542,8 @@ export async function collectionScreen(
     }
     setFilterPanel(false);
   }
-  // Même raison que sur les decks : `document` survit au changement d'écran,
-  // et un écouteur de plus par montage finit par répondre à la place du bon.
+  // Same reason as on the decks: `document` survives the screen change, and
+  // one more listener per mount ends up answering in place of the right one.
   document.addEventListener("keydown", onKey, { signal });
 
   paint();
