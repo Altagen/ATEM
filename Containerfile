@@ -36,6 +36,11 @@ COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/api/drizzle apps/api/drizzle
 COPY --from=build /app/apps/web/dist apps/web/dist
 
+# The media directory belongs to the unprivileged user. A named volume mounted
+# there takes the image's ownership on first use; created at mount time
+# instead, it would be root's, and no card image could ever be written.
+RUN mkdir -p /app/data/media && chown -R node:node /app/data
+
 # No root: a flaw in the application must not hand over the machine.
 USER node
 EXPOSE 3000

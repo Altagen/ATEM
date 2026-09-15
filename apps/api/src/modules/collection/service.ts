@@ -24,7 +24,8 @@ import { LIMITS, normalizeSetCode } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { invalidInput, notFound } from "../../platform/errors.js";
 import {
-  ensurePlaceholderPrint, printIndex, resolvePrintBySetCode, type CardDetail, type PrintIndex,
+  ensurePlaceholderPrint, printIndex, publicImageUrls, resolvePrintBySetCode,
+  type CardDetail, type PrintIndex,
 } from "../referential/index.js";
 import { enqueueResolve } from "./resolve-queue.js";
 import { ownedCards } from "./schema.js";
@@ -134,8 +135,7 @@ function toItem(row: IndexRow): CollectionItem {
           linkMarkers: row.linkMarkers,
           archetype: row.archetype,
           banlistTcg: row.banlistTcg,
-          imageUrl: row.imageUrl,
-          imageUrlSmall: row.imageUrlSmall,
+          ...publicImageUrls(row.passcode!, row),
         }
       : null,
   };

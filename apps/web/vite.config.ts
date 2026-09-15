@@ -26,6 +26,32 @@ const https =
     ? { cert: fs.readFileSync(certFile), key: fs.readFileSync(keyFile) }
     : undefined;
 
+/**
+ * The very policy nginx serves, read from `deploy/security-headers.conf`.
+ *
+ * Development runs under production's policy, so the end-to-end tests exercise
+ * it: a CSP only fails in a browser, silently, and a policy nobody runs under
+ * is a policy that breaks a screen on the day it ships.
+ *
+ * One directive is relaxed here, and only here: in development Vite injects
+ * stylesheets as inline `<style>` elements, which `style-src 'self'` refuses.
+ * The built front carries no inline style — `scripts/check-csp.mjs` fails if a
+ * `style="…"` attribute ever appears — so production keeps the strict form.
+ */
+function securityHeaders(): Record<string, string> {
+  const conf = fs.readFileSync(path.join(rootDir, "../../deploy/security-headers.conf"), "utf8");
+  const headers: Record<string, string> = {};
+  for (const line of conf.split("\n")) {
+    const match = /^\s*add_header\s+([\w-]+)\s+"([^"]*)"/.exec(line);
+    if (match?.[1] && match[2] !== undefined) headers[match[1]] = match[2];
+  }
+  const policy = headers["Content-Security-Policy"];
+  if (policy) {
+    headers["Content-Security-Policy"] = policy.replace("style-src 'self'", "style-src 'self' 'unsafe-inline'");
+  }
+  return headers;
+}
+
 export default defineConfig({
   build: {
     /**
@@ -39,6 +65,7 @@ export default defineConfig({
   server: {
     port: 5173,
     https,
+    headers: securityHeaders(),
     proxy: {
       "/api": {
         // The target is configurable: several instances can live on the same
@@ -49,6 +76,12 @@ export default defineConfig({
         // guard, and rewriting it would make every write fail in development.
         changeOrigin: false,
         rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+      // Card images, served by the API from its own disk (`referential/media.ts`).
+      // Same target; no rewrite, the API mounts them on `/media` itself.
+      "/media": {
+        target: process.env.ATEM_API_ORIGIN ?? "http://127.0.0.1:3000",
+        changeOrigin: false,
       },
     },
   },

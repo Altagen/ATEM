@@ -528,20 +528,34 @@ collections while respecting their visibility settings.
 
 ---
 
-## Next — card images served by ATEM
+## Card images served by ATEM — done on 2026-09-16
 
 The domain model's review of 2026-09-16 (decision record R5) found the one gap where
-the code, not the document, is wrong: card images are hot-linked from
+the code, not the document, was wrong: card images were hot-linked from
 `images.ygoprodeck.com`. YGOPRODeck's guide requires images to be downloaded and
-stored locally — “Failure to do so will result in an IP blacklist” — and ADR-003
+stored locally — “Failure to do so will result in an IP blacklist” — and ADR-003 had
 already decided they would be.
 
-- Download each image once, through the outbound token bucket, and store it locally
-- Serve it under `/media` (and bring back nginx's long-cache `location /media/`)
-- Then set a content security policy that allows no outside host
+Done:
+
+- an image is downloaded **the first time someone asks for it**, through the outbound
+  token bucket, and served from disk afterwards. Nothing is pre-fetched: pulling
+  14,524 artworks nobody looks at is the volume the guide warns about;
+- `GET /media/cards/<passcode>.jpg`, behind a session — open to anyone, it would let a
+  stranger make the instance pull the whole catalogue. Only a passcode-shaped name is
+  accepted, and the route sends `Cache-Control: immutable` — a passcode identifies a
+  card and its artwork never changes — which nginx passes through untouched;
+- every DTO hands the screens `/media/...`, never a remote address, and there is **no
+  fallback** to the remote URL: a regression shows as a missing image rather than as a
+  silent hot-link;
+- a content security policy that allows no outside host — ADR-010, checked by
+  `scripts/check-csp.mjs` and exercised by `e2e/security.spec.ts`, which loads an
+  artwork and fails if a single request reaches ygoprodeck.com.
 
 ATEM-old's `media/cache.ts`, `espace.ts` and `paths.ts` were triaged **TAKE**: host
-allowlist against SSRF, atomic writes, disk space reserve.
+allowlist against SSRF, atomic writes, disk space reserve. Two of its defects were
+left behind: a download no longer runs inside a request that did not ask for an
+image, and the remote-URL fallback is gone.
 
 ---
 

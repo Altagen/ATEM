@@ -42,6 +42,7 @@ step "Scanner aiming band" node scripts/check-scan-band.mjs
 step "Module boundaries" node scripts/check-module-boundaries.mjs
 step "Reached routes" node scripts/check-routes.mjs
 step "Bounded outbound calls" node scripts/check-outbound.mjs
+step "Content security policy" node scripts/check-csp.mjs
 step "Translations" node scripts/check-translations.mjs
 step "Disjoint test fixtures" node scripts/check-test-fixtures.mjs
 step "Dead CSS" node scripts/check-dead-css.mjs

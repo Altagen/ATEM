@@ -157,7 +157,7 @@ cards
   atk, def, level, scale, link_value, link_markers   -- nullable depending on type
   archetype         nullable
   banlist_tcg       nullable                -- R2
-  image_url, image_url_small          -- R5: still remote URLs — NON-CONFORMING
+  image_url, image_url_small          -- R5: the source; screens get /media (ADR-003)
   updated_at
 
 card_prints
@@ -275,7 +275,7 @@ who delegated the recommendation for each line.
 | R2 | `konami_id`, `banlist_ocg` | absent | **Document follows.** Nothing reads them (TCG only): declaring them would be dead columns. Added with the feature that reads them. |
 | R3 | `CardSet (set_prefix, set_name, release_date, num_of_cards)` | `set_name` on `card_prints` | **Document follows.** No screen browses sets. The table comes with a set view. |
 | R4 | `CardPrint`: `set_code_normalized`, `set_prefix`, `rarity_code`, `price_indicative`; non-null card | `canonical_set_code`; card nullable + `resolve_status` | **Document follows.** ADR-007 (two set code shapes) and ADR-008 (an unresolved printing has no card). No reader for the other columns. |
-| R5 | `CardImage` with `local_path` — “a file served by ATEM, never a remote URL” | remote `image_url` from `images.ygoprodeck.com`, loaded by the viewer's browser | **Code must follow — non-conforming, and the most important line.** The rule stands, for three reasons. YGOPRODeck's API guide (checked on 2026-09-16) says: “You must download and store these images yourself!” and “Do not continually hotlink images directly from this site […] Failure to do so will result in an IP blacklist.” Every viewer's browser currently contacts a third party. And no content security policy can close the page while images come from outside. To do: cache images locally, serve them under `/media`, then set a CSP. Proposed as the next piece of work. |
+| R5 | `CardImage` with `local_path` — “a file served by ATEM, never a remote URL” | `image_url` holds YGOPRODeck's address; every screen is given `/media/cards/<passcode>.jpg`, served from disk | **Settled: conforming, 2026-09-16.** The remote URL is kept as the *source* rather than moved to a table of its own: a passcode identifies one artwork, so `local_path` would be that passcode written twice. An image is downloaded the first time someone asks for it — through the outbound token bucket, from an HTTPS allowlist of one host — then served from disk forever. Nothing is pre-fetched: pulling 14,524 artworks nobody looks at is the volume YGOPRODeck's guide warns about. No fallback to the remote URL: a missing image is missing, never a hot-link. That is what let the content security policy close the page (`check-csp.mjs`). |
 | R6 | `ReferentialImport` job table | the idempotent `catalogue:sync` command | **Document follows.** A refresh is replayed by running the command again. A job table comes when refreshes are scheduled. |
 | R7 | `User.status`; `UserProfile (display_name, tag, avatar, banner, bio)` | `suspended_at`, `role`, `token_version` on `users`; `display_name`/`tag` there too; no profile table | **Document follows.** Session revocation and suspension are what the identity module needs; avatar, banner and bio have no screen yet (M3–M4). |
 | R8 | `visibility_profile/collection/decks`, “in the core right now” | absent | **Document follows ADR-009**, decided by Ange on 2026-09-11: no visibility setting in this iteration; the setting will sit on the read path, which is already the only place to filter. |

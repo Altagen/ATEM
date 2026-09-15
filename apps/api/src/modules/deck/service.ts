@@ -19,7 +19,7 @@ import type { Database } from "../../db/client.js";
 import { conflict, forbidden, invalidInput, notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { ownedByPasscode } from "../collection/index.js";
-import { cardsByPasscode } from "../referential/index.js";
+import { cardsByPasscode, publicImageUrls } from "../referential/index.js";
 import { assertFolderOwned } from "./folders.js";
 import { deckCards, decks, type DeckRow } from "./schema.js";
 
@@ -211,11 +211,12 @@ export async function listDecks(db: Database, ownerId: string): Promise<DeckSumm
       );
     }
     const pc = covers.get(deck.id) ?? null;
+    const coverCard = pc === null ? undefined : cardsByCode.get(pc);
     return toSummary(
       deck,
       counts,
       missing,
-      (pc === null ? null : cardsByCode.get(pc)?.imageUrlSmall) ?? null,
+      coverCard ? publicImageUrls(coverCard.passcode, coverCard).imageUrlSmall : null,
     );
   });
 }
@@ -254,7 +255,7 @@ export async function getDeck(
       // referential's rule, and a deck reads back as it was built.
       name: card?.nameFr ?? card?.nameEn ?? String(line.passcode),
       banlistTcg: card?.banlistTcg ?? null,
-      imageUrlSmall: card?.imageUrlSmall ?? null,
+      imageUrlSmall: card ? publicImageUrls(card.passcode, card).imageUrlSmall : null,
       main: line.mainQty,
       extra: line.extraQty,
       side: line.sideQty,
@@ -266,7 +267,8 @@ export async function getDeck(
   entries.sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
   const pc = coverPasscode(cardRows);
-  const cover = (pc === null ? null : catalogue.get(pc)?.imageUrlSmall) ?? null;
+  const coverCard = pc === null ? undefined : catalogue.get(pc);
+  const cover = coverCard ? publicImageUrls(coverCard.passcode, coverCard).imageUrlSmall : null;
 
   return { ...toSummary(deck, counts, missing, cover), cards: entries };
 }

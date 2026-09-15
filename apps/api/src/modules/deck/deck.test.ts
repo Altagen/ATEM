@@ -397,8 +397,8 @@ test("a deck's cover is the card it plays the most", async () => {
    * the deck's identity.
    */
   const user = await newUser();
-  await seed(72000400, "DKCV-FR400", { owner: user.id, copies: 3, image: "/i/400.jpg" });
-  await seed(72000401, "DKCV-FR401", { owner: user.id, copies: 3, image: "/i/401.jpg" });
+  await seed(72000400, "DKCV-FR400", { owner: user.id, copies: 3, image: "https://images.ygoprodeck.com/images/cards_small/72000400.jpg" });
+  await seed(72000401, "DKCV-FR401", { owner: user.id, copies: 3, image: "https://images.ygoprodeck.com/images/cards_small/72000401.jpg" });
 
   const deck = await createDeck(db, user.id, "Cover");
   assert.equal(deck.coverImage, null, "a brand-new deck has no face");
@@ -409,36 +409,36 @@ test("a deck's cover is the card it plays the most", async () => {
   // The number of copies wins, not row order nor the passcode — here the
   // larger of the two takes it.
   const [summary] = await listDecks(db, user.id);
-  assert.equal(summary?.coverImage, "/i/401.jpg", "the one it plays three times");
+  assert.equal(summary?.coverImage, "/media/cards/72000401-small.jpg", "the one it plays three times");
 
   // The full sheet answers the same: one rule, two screens.
-  assert.equal((await getDeck(db, user.id, deck.id)).coverImage, "/i/401.jpg");
+  assert.equal((await getDeck(db, user.id, deck.id)).coverImage, "/media/cards/72000401-small.jpg");
 });
 
 test("at equal copies, the cover does not change from one request to the next", async () => {
   // Without a tie-break, the row order returned by the database would make the
   // artwork vary on every refresh.
   const user = await newUser();
-  await seed(72000410, "DKCV-FR410", { owner: user.id, copies: 2, image: "/i/410.jpg" });
-  await seed(72000411, "DKCV-FR411", { owner: user.id, copies: 2, image: "/i/411.jpg" });
+  await seed(72000410, "DKCV-FR410", { owner: user.id, copies: 2, image: "https://images.ygoprodeck.com/images/cards_small/72000410.jpg" });
+  await seed(72000411, "DKCV-FR411", { owner: user.id, copies: 2, image: "https://images.ygoprodeck.com/images/cards_small/72000411.jpg" });
 
   const deck = await createDeck(db, user.id, "Tie");
   await setDeckCard(db, user.id, deck.id, { passcode: 72000411, zone: "main", quantity: 2 });
   await setDeckCard(db, user.id, deck.id, { passcode: 72000410, zone: "main", quantity: 2 });
 
   const [summary] = await listDecks(db, user.id);
-  assert.equal(summary?.coverImage, "/i/410.jpg", "the smallest passcode decides");
+  assert.equal(summary?.coverImage, "/media/cards/72000410-small.jpg", "the smallest passcode decides");
 });
 
 test("a deck holding only Extra cards still has a face", async () => {
   // The Main first, because that is what gets played; but a deck under
   // construction must not be left without artwork.
   const user = await newUser();
-  await seed(72000420, "DKCV-FR420", { owner: user.id, copies: 1, extra: true, image: "/i/420.jpg" });
+  await seed(72000420, "DKCV-FR420", { owner: user.id, copies: 1, extra: true, image: "https://images.ygoprodeck.com/images/cards_small/72000420.jpg" });
 
   const deck = await createDeck(db, user.id, "Extra only");
   await setDeckCard(db, user.id, deck.id, { passcode: 72000420, zone: "extra", quantity: 1 });
 
   const [summary] = await listDecks(db, user.id);
-  assert.equal(summary?.coverImage, "/i/420.jpg");
+  assert.equal(summary?.coverImage, "/media/cards/72000420-small.jpg");
 });

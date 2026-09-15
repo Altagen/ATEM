@@ -12,6 +12,7 @@ import {
 } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { cardPrints, cards, type CardPrintRow, type CardRow } from "./schema.js";
+import { publicImageUrls } from "./media.js";
 import { fetchCardById, fetchSetInfo, type YgoCard } from "./ygoprodeck.js";
 
 export type CardDetail = {
@@ -73,8 +74,8 @@ export function toCardDetail(row: CardRow, locale: string): CardDetail {
     linkMarkers: row.linkMarkers,
     archetype: row.archetype,
     banlistTcg: row.banlistTcg,
-    imageUrl: row.imageUrl,
-    imageUrlSmall: row.imageUrlSmall,
+    // Our own address, never YGOPRODeck's: see `media.ts`.
+    ...publicImageUrls(row.passcode, row),
   };
 }
 

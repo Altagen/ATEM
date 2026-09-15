@@ -58,10 +58,15 @@ lazy resolution.
 everything goes through the local database. Images are cached locally and served by
 ATEM, never hot-linked to YGOPRODeck.
 
-> **Note (2026-09-16).** Images are **not** cached yet: the screens load them from
-> `images.ygoprodeck.com`. That contradicts this decision and YGOPRODeck's own guide,
-> which requires images to be downloaded and stored locally, under threat of an IP
-> blacklist. Recorded as R5 in `01-domain-model.md`, and next in the roadmap.
+> **Done (2026-09-16).** Images are cached and served by ATEM. An artwork is
+> downloaded the first time someone asks for it — `GET /media/cards/<passcode>.jpg`,
+> behind a session, through the outbound token bucket — then read from disk. Only
+> `images.ygoprodeck.com` over HTTPS is downloaded from, and a redirect aborts the
+> download: the URL comes from a third party's response, so following it anywhere
+> would be request forgery. No fallback to the remote URL, so a regression shows as
+> a missing image rather than a silent hot-link. R5 in `01-domain-model.md`.
+>
+> This is what made ADR-010 possible: with no outside host left, the policy closes.
 
 ---
 
@@ -291,3 +296,42 @@ make false right now would give an always-true condition, impossible to check wi
 test: decoration. The day reading opens up, it is a field in the response and a
 `when()` around the pencil; the server refusal is already there and will not have to
 be revisited.
+
+---
+
+## ADR-010 — One content security policy, written once, served everywhere
+
+**Context.** A policy is only as good as the version the browser actually receives,
+and the usual failure is not a wrong directive: it is two copies drifting apart —
+nginx serving one, the development server another, so the strict one is first met in
+production, on the day it breaks a screen.
+
+Until images were served by ATEM (ADR-003), no policy could be written at all:
+`img-src` had to name `images.ygoprodeck.com`, and a policy with an outside host in
+it protects far less than it appears to.
+
+**Choice.** The policy lives in **one file**, `deploy/security-headers.conf`, with
+every directive justified beside it. nginx `include`s it. Vite reads that same file
+and serves it in development — so the end-to-end tests run under the real policy,
+which is the only way a directive that is too narrow is found by a test rather than
+by a person.
+
+Development relaxes exactly one directive: `style-src` also accepts
+`'unsafe-inline'`, because Vite injects the styles it hot-reloads as inline tags.
+Nothing else is relaxed, and the relaxation is a single named line rather than a
+second policy.
+
+**Why these directives.** `default-src 'self'` and then only what the application
+needs: `'wasm-unsafe-eval'` because Tesseract compiles WebAssembly and `blob:` for
+the worker it spawns — `'unsafe-eval'` is **not** needed and is refused by name.
+`frame-ancestors 'none'` and `object-src 'none'` because nothing here is ever framed
+or embedded. `connect-src 'self'`: the API is same-origin, and the OCR runs in the
+browser.
+
+**What keeps it honest.** `scripts/check-csp.mjs`, in `check-all.sh`. It refuses
+`'unsafe-inline'` on scripts and `'unsafe-eval'`; it requires the directives above to
+say what they say; it reads `apps/web/src` and fails if the code loads a host the
+policy does not allow, or carries a `style="…"` attribute the strict `style-src`
+would silently refuse; and it checks that nginx, Vite and the web image all still
+point at the one file. Each of those was verified by planting the fault and watching
+the gate fail.

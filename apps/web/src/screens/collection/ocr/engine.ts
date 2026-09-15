@@ -67,10 +67,11 @@ declare global {
  * fingerprint**. A pinned version trusts a name; a fingerprint trusts only the
  * content.
  *
- * It removes the only outside *script* host. It does not, by itself, close the
- * page to outside hosts: no content security policy is set yet, and card
- * images are still loaded from `images.ygoprodeck.com` — see the domain model's
- * decision record of 2026-09-16.
+ * It removed the only outside *script* host, which is what let the page be closed
+ * to outside hosts entirely (ADR-010, 2026-09-16): `script-src 'self'`, with
+ * `'wasm-unsafe-eval'` and `blob:` for the WebAssembly core and its worker — and
+ * nothing else. So the engine only starts as long as it is served from here, and
+ * `e2e/security.spec.ts` starts it under the real policy to prove it.
  */
 const TESSERACT_CDN = "/tesseract/tesseract.min.js";
 const TESSERACT_BASE = "/tesseract";

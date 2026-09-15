@@ -22,3 +22,5 @@ export {
 // it composes.
 export { type CardRow } from "./schema.js";
 export { referentialRoutes } from "./routes.js";
+export { mediaRoutes } from "./media-routes.js";
+export { publicImageUrls } from "./media.js";

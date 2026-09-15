@@ -12,7 +12,7 @@ import { AppError } from "./platform/errors.js";
 import { attachCallerIp } from "./platform/caller-ip.js";
 import { bodyLimit, csrfGuard, securityHeaders } from "./platform/security.js";
 import { attachViewer, identityRoutes } from "./modules/identity/index.js";
-import { referentialRoutes } from "./modules/referential/index.js";
+import { mediaRoutes, referentialRoutes } from "./modules/referential/index.js";
 import { collectionRoutes } from "./modules/collection/index.js";
 import { scanlistRoutes } from "./modules/scanlist/index.js";
 import { deckRoutes } from "./modules/deck/index.js";
@@ -41,6 +41,7 @@ export function createApp(db: Database) {
 
   app.route("/auth", identityRoutes(db));
   app.route("/catalogue", referentialRoutes(db));
+  app.route("/media", mediaRoutes(db));
   app.route("/collection", collectionRoutes(db));
   app.route("/scanlists", scanlistRoutes(db));
   app.route("/decks", deckRoutes(db));

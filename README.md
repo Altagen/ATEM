@@ -72,6 +72,28 @@ considered finished.
 `pnpm e2e:shots` tests nothing: it photographs the main screens on both profiles,
 to look at them — and to see what moved after a change.
 
+## Card images, and the policy that follows from them
+
+Card artworks are **downloaded once and served by ATEM**, never hot-linked:
+YGOPRODeck's guide requires it (“Failure to do so will result in an IP blacklist”),
+and every hot-linked image also sent a viewer's browser to a third party.
+
+An image is fetched the first time someone asks for it, through the outbound rate
+limit, and read from disk afterwards. Nothing is pre-fetched — the catalogue holds
+14,524 cards. Two settings, both optional:
+
+- `ATEM_MEDIA_DIR` — where images are stored. Defaults to `data/media`; in
+  production it is a volume, so images survive a redeployment.
+- `ATEM_DISK_RESERVE_BYTES` — what is always left free on that disk, 200 MB by
+  default. Images stop being written before the disk fills, while there is still
+  room to diagnose and clean.
+
+With no outside host left, the page can be closed: one content security policy,
+`deploy/security-headers.conf`, included by nginx **and** read by the development
+server, so the end-to-end tests run under the real thing. `scripts/check-csp.mjs`
+fails if the policy loosens or if the code starts needing something it forbids.
+See ADR-003 and ADR-010 in [`02-architecture.md`](docs/02-architecture.md).
+
 ## Structure
 
 ```
