@@ -58,6 +58,11 @@ lazy resolution.
 everything goes through the local database. Images are cached locally and served by
 ATEM, never hot-linked to YGOPRODeck.
 
+> **Note (2026-09-16).** Images are **not** cached yet: the screens load them from
+> `images.ygoprodeck.com`. That contradicts this decision and YGOPRODeck's own guide,
+> which requires images to be downloaded and stored locally, under threat of an IP
+> blacklist. Recorded as R5 in `01-domain-model.md`, and next in the roadmap.
+
 ---
 
 ## ADR-004 — Switch to EN for the query, printed code for identity

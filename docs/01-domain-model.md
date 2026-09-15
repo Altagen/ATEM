@@ -1,8 +1,9 @@
 # ATEM — Domain model (invariant core)
 
-> **Status: validated on 2026-09-09.** This document is frozen. Screens, filters and export formats stay open;
-> the entities and relations below only change through an explicit, recorded decision.
-> That is the guarantee we will not reproduce ATEM-old's drift.
+> **Status: validated on 2026-09-09, revised on 2026-09-16.** This document is frozen. Screens, filters and
+> export formats stay open; the entities and relations below only change through an explicit, recorded decision.
+> That is the guarantee we will not reproduce ATEM-old's drift. The 2026-09-16 revision is such a decision:
+> every change is listed, with its reason, in the decision record at the end.
 
 ---
 
@@ -129,137 +130,118 @@ copying a code from the wiki instead of reading it on the card, which is not the
 gesture the application serves. The limit is noted here so it is recognised if it
 comes up, rather than diagnosed again.
 
-### D5 — The reference data is read-only and versioned
+### D5 — The reference data is read-only and replayable
 
-The reference tables (`Card`, `CardPrint`, `CardSet`, `CardImage`,
-`CardLocalization`) are **never** written by a user action. They are filled by an
-identified import job (`ReferentialImport`), which makes a refresh replayable and
-diagnosable.
+The reference tables (`cards`, `card_prints`) are **never** written by a user
+action. They are filled by an identified, idempotent command
+(`pnpm --filter @atem/api catalogue:sync`) and by the resolution of scanned codes,
+both going through `referential`'s write API — which makes a refresh replayable and
+diagnosable. *(Revised on 2026-09-16 — see R6.)*
 
 ---
 
 ## Entities
 
+As built. Where this differs from the 2026-09-09 version, the reason is in the decision
+record (R1–R15).
+
 ### Reference data (immutable, source: YGOPRODeck)
 
 ```
-Card
+cards
   passcode          PK, 8 digits            -- identity in the rules' sense
-  konami_id         nullable
   name_en           -- always present, serves as fallback
-  desc_en
+  name_fr           nullable                -- R1: localisation as columns
+  desc_en, desc_fr  nullable
   type, frame_type, race, attribute   -- raw EN values, translated in the UI (C3)
   atk, def, level, scale, link_value, link_markers   -- nullable depending on type
   archetype         nullable
-  banlist_tcg, banlist_ocg           nullable
+  banlist_tcg       nullable                -- R2
+  image_url, image_url_small          -- R5: still remote URLs — NON-CONFORMING
+  updated_at
 
-CardLocalization                       -- 11,661 rows in FR (C3)
-  (card_passcode, lang)  PK
-  name, desc
-
-CardSet
-  set_prefix        PK      -- "LOB"
-  set_name                  -- "Legend of Blue Eyes White Dragon"
-  release_date, num_of_cards
-
-CardPrint                              -- 44,517 rows
+card_prints
   id                PK
-  card_passcode     FK -> Card
+  card_passcode     nullable FK -> cards    -- null while unresolved (ADR-008)
   set_code                  -- "LOB-EN001", as printed
-  set_code_normalized       -- "LOB-001", UNIQUE-ISH INDEX, see D4
-  set_prefix        FK -> CardSet
-  rarity, rarity_code
-  price_indicative  nullable
-
-CardImage                              -- 14,688 rows
-  image_id          PK      -- != passcode for alternative artworks
-  card_passcode     FK -> Card
-  variant                   -- full | small | cropped
-  local_path                -- file served by ATEM, never a remote URL
+  canonical_set_code        -- "LOB-001", the local join key (ADR-007)
+  set_name          nullable                -- R3: no set table
+  rarity                    -- "" = not known yet
+  language
+  resolve_status            -- resolved | pending | unidentified (ADR-008)
+  UNIQUE (set_code, rarity, language)
+  CHECK  (resolve_status = 'resolved') = (card_passcode is not null)
 ```
 
 ### User
 
 ```
-User
+users
   id                PK, uuid
-  email             UNIQUE
-  password_hash             -- scrypt
+  email             UNIQUE (case-insensitive)
+  password_hash             -- scrypt, versioned parameters
+  display_name, tag         -- username + discriminator, UNIQUE together (R7)
+  role                      -- member | admin
   locale                    -- fr | en
-  status, created_at
+  token_version             -- bumped to revoke every issued session
+  suspended_at      nullable
+  created_at
 
-UserProfile
-  user_id           PK, FK -> User
-  display_name, tag         -- username + discriminator
-  avatar, banner, bio
-  visibility_profile        -- public | friends | private
-  visibility_collection     -- same
-  visibility_decks          -- same
+auth_attempts               -- rate limiting, survives restarts
+  bucket, action, attempted_at
 ```
 
-> Visibility is in the core **right now**, while social is P0 but light. Adding
-> privacy rules afterwards on already written endpoints is a classic source of data
-> leaks.
+> Visibility is **not** in the core any more: ADR-009 decided that, for this
+> iteration, any session reads and only the owner writes (R8).
 
 ### Collection
 
 ```
-CollectionItem
-  (user_id, card_print_id)  PK          -- D2: the unit is the printing
-  quantity                  > 0
-  is_favorite
+owned_cards
+  id                PK
+  user_id           FK -> users, cascade
+  print_id          FK -> card_prints       -- D2: the unit is the printing
+  set_code                  -- what the player read, kept even if unresolved (R9)
+  quantity                  -- 0..1000; 0 rows are kept and hidden (R9)
+  is_favorite               -- per printing (R10)
+  notes             nullable
   added_at, updated_at
+  UNIQUE (user_id, print_id)
 
-ScanList                                -- P1, batch of scans outside the collection
+scanlists                   -- a batch inventoried outside the collection (R11)
   id, user_id, name, created_at
-ScanListEntry
-  scan_list_id, raw_set_code
-  card_print_id             nullable    -- null = unresolved, to fix by hand
-  quantity
+  poured_at         nullable                -- set once, by the pour itself
+
+scanlist_lines
+  scanlist_id, set_code, name, passcode     -- what was read, not a referential row
+  quantity                  CHECK 1..1000
+  UNIQUE (scanlist_id, set_code)
 ```
 
 ### Decks
 
 ```
-DeckFolder
-  id, user_id, parent_id  nullable      -- tree
-  name
-
-Deck
-  id, user_id, folder_id  nullable
-  name, description
-  cover_card_passcode     nullable
-  visibility                            -- public | friends | private
+deck_folders
+  id, user_id, parent_id  nullable          -- tree, max depth 3, no cascade on parent_id
+  name                      UNIQUE among siblings (nulls not distinct)
   created_at, updated_at
 
-DeckEntry
-  (deck_id, section, card_passcode)  PK -- D3: references the card
-  section                               -- MAIN | EXTRA | SIDE
-  quantity                  1..3
-  position                              -- display order
+decks
+  id, user_id, name         UNIQUE per user
+  folder_id               nullable, on delete set null
+  created_at, updated_at                    -- R12: cover derived, no description, no visibility
+
+deck_cards                                  -- D3: references the card (R13)
+  (deck_id, passcode)       UNIQUE
+  main_qty, extra_qty, side_qty
+  CHECK main_qty + extra_qty + side_qty between 0 and 3
 ```
 
-### Social (light P0)
+### Planned, not built
 
 ```
-Friendship
-  (requester_id, addressee_id)  PK
-  status                                -- pending | accepted
-  created_at, responded_at
-
-Block
-  (blocker_id, blocked_id)  PK
-```
-
-### Data & compliance
-
-```
-ImportJob
-  id, user_id, source                   -- atem | scanflip | cardmarket
-  mode                                  -- merge | replace
-  status, rows_total, rows_ok, rows_failed
-  report            -- failed rows, viewable (“Import history”)
-  created_at
+Friendship, Block           -- M4, owned by `social` (R15)
+ImportJob                   -- M3, owned by `data` (R15)
 ```
 
 ---
@@ -274,5 +256,33 @@ ImportJob
 - `UserProfile` plans a future attachment to a guild → do not denormalise the
   username or membership into other tables.
 - A duel will reference **two `Deck`s** → a deck must never be physically deleted
-  once used; plan a soft delete.
+  once used; plan a soft delete. *(Decks are hard-deleted today, since nothing
+  references them yet — see R14.)*
 - Trophies will be attached to the profile → `UserProfile` stays extensible.
+
+---
+
+## Decision record — 2026-09-16
+
+The model above was compared with the code, entity by entity. Each gap was settled one
+way or the other — the document follows the code when the code carries a decision
+taken since, the code must follow the document when the code is wrong. Decided by Ange,
+who delegated the recommendation for each line.
+
+| # | 2026-09-09 model | As built | Decision and reason |
+|---|---|---|---|
+| R1 | `CardLocalization (card_passcode, lang)` table | `name_fr`, `desc_fr` columns on `cards` | **Document follows.** Two languages only; a join less on every collection query. A table comes back with a third language. |
+| R2 | `konami_id`, `banlist_ocg` | absent | **Document follows.** Nothing reads them (TCG only): declaring them would be dead columns. Added with the feature that reads them. |
+| R3 | `CardSet (set_prefix, set_name, release_date, num_of_cards)` | `set_name` on `card_prints` | **Document follows.** No screen browses sets. The table comes with a set view. |
+| R4 | `CardPrint`: `set_code_normalized`, `set_prefix`, `rarity_code`, `price_indicative`; non-null card | `canonical_set_code`; card nullable + `resolve_status` | **Document follows.** ADR-007 (two set code shapes) and ADR-008 (an unresolved printing has no card). No reader for the other columns. |
+| R5 | `CardImage` with `local_path` — “a file served by ATEM, never a remote URL” | remote `image_url` from `images.ygoprodeck.com`, loaded by the viewer's browser | **Code must follow — non-conforming, and the most important line.** The rule stands, for three reasons. YGOPRODeck's API guide (checked on 2026-09-16) says: “You must download and store these images yourself!” and “Do not continually hotlink images directly from this site […] Failure to do so will result in an IP blacklist.” Every viewer's browser currently contacts a third party. And no content security policy can close the page while images come from outside. To do: cache images locally, serve them under `/media`, then set a CSP. Proposed as the next piece of work. |
+| R6 | `ReferentialImport` job table | the idempotent `catalogue:sync` command | **Document follows.** A refresh is replayed by running the command again. A job table comes when refreshes are scheduled. |
+| R7 | `User.status`; `UserProfile (display_name, tag, avatar, banner, bio)` | `suspended_at`, `role`, `token_version` on `users`; `display_name`/`tag` there too; no profile table | **Document follows.** Session revocation and suspension are what the identity module needs; avatar, banner and bio have no screen yet (M3–M4). |
+| R8 | `visibility_profile/collection/decks`, “in the core right now” | absent | **Document follows ADR-009**, decided by Ange on 2026-09-11: no visibility setting in this iteration; the setting will sit on the read path, which is already the only place to filter. |
+| R9 | `CollectionItem (user_id, card_print_id)` PK, `quantity > 0` | `owned_cards` with an id, the printed `set_code` copied, `notes`, `quantity` 0..1000 | **Document follows.** The printed code is the inventory's truth even when unresolved; notes are ATEM-old parity; a row at zero is kept so its note and favourite survive a re-purchase (tested). The bounds are checked inside the write's transaction, not by a `CHECK`: PostgreSQL evaluates a check on the row proposed for insertion, before `ON CONFLICT` turns it into an update, which breaks the race-free `quantity + delta` write — tried and measured. |
+| R10 | Favourite at card or printing level: open question (roadmap) | per printing | **Settled: per printing.** It is where the star lives on screen, one row per edition. |
+| R11 | `ScanListEntry (raw_set_code, card_print_id nullable)` | `scanlist_lines (set_code, name, passcode)`, `poured_at` | **Document follows.** A batch records what was read, independently of the reference data — pouring is what resolves. `poured_at` makes pouring a single, idempotent write. |
+| R12 | `Deck.description`, `cover_card_passcode`, `visibility` | absent | **Document follows.** The cover is derived from the most played card (2026-09-12); the description field had no screen and was removed as dead surface (2026-09-13); visibility per R8. |
+| R13 | `DeckEntry (deck_id, section, card_passcode)` PK, `quantity 1..3`, `position` | `deck_cards (deck_id, passcode)` with `main_qty`/`extra_qty`/`side_qty` | **Document follows.** One row per card is what makes the three-copy rule a database constraint across zones — ATEM-old's per-zone rows let a card total six. No `position`: display is sorted. |
+| R14 | “a deck must never be physically deleted once used” | hard delete | **Constraint kept, not implemented yet.** No duel references a deck, so “once used” cannot be true; a soft delete now would be dead code. It arrives with the first duel. |
+| R15 | `Friendship`, `Block`, `ImportJob` | absent | **Planned** — M4 and M3, as the roadmap says. Not gaps. |

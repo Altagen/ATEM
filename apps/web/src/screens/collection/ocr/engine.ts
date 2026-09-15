@@ -67,8 +67,10 @@ declare global {
  * fingerprint**. A pinned version trusts a name; a fingerprint trusts only the
  * content.
  *
- * Direct consequence: the content security policy no longer allows any outside
- * host.
+ * It removes the only outside *script* host. It does not, by itself, close the
+ * page to outside hosts: no content security policy is set yet, and card
+ * images are still loaded from `images.ygoprodeck.com` — see the domain model's
+ * decision record of 2026-09-16.
  */
 const TESSERACT_CDN = "/tesseract/tesseract.min.js";
 const TESSERACT_BASE = "/tesseract";

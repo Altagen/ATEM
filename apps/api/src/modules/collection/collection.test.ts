@@ -134,6 +134,20 @@ test("a row that falls to zero disappears from the collection", async () => {
   assert.equal(total, 0);
 });
 
+test("a row at zero keeps its note and favourite until the card comes back", async () => {
+  const user = await newUser();
+  const item = await adjustQuantity(db, user.id, { setCode: "DQDQ-FR001", delta: 1 });
+  await setNotes(db, user.id, item.id, "Signed by the artist");
+  await setFavorite(db, user.id, item.id, true);
+
+  await adjustQuantity(db, user.id, { setCode: "DQDQ-FR001", delta: -1 });
+  const back = await adjustQuantity(db, user.id, { setCode: "DQDQ-FR001", delta: 1 });
+
+  assert.equal(back.quantity, 1);
+  assert.equal(back.notes, "Signed by the artist");
+  assert.equal(back.isFavorite, true);
+});
+
 test("someone else's row is not found, rather than forbidden", async () => {
   // A 403 would confirm the row exists. A 404 says nothing.
   const owner = await newUser();

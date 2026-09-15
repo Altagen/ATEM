@@ -26,6 +26,23 @@ export const ownedCards = pgTable(
      * the inventory.
      */
     setCode: text("set_code").notNull(),
+    /**
+     * Zero is a legitimate value: the row is kept, and reads hide it.
+     *
+     * Removing the last copy does not delete the line, so its note and its
+     * favourite survive a sale followed by a re-purchase — the write only ever
+     * touches the quantity.
+     *
+     * **The bounds are not a database constraint, unlike `deck_cards`.**
+     * `adjustQuantity` writes in a single `INSERT … ON CONFLICT DO UPDATE SET
+     * quantity = quantity + delta`, so two simultaneous “+1” cannot lose an
+     * increment. PostgreSQL evaluates a `CHECK` on the row *proposed for
+     * insertion*, before the conflict turns it into an update: a “−2” on a row
+     * holding 2 would be refused for its `-2`, although the result is 0. Tried
+     * and measured on 2026-09-16 — seven tests fell. The bounds are therefore
+     * checked after the write, inside the same transaction, which rolls back
+     * when they are exceeded.
+     */
     quantity: integer("quantity").notNull().default(1),
     isFavorite: boolean("is_favorite").notNull().default(false),
     notes: text("notes"),

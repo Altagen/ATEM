@@ -528,12 +528,29 @@ collections while respecting their visibility settings.
 
 ---
 
+## Next — card images served by ATEM
+
+The domain model's review of 2026-09-16 (decision record R5) found the one gap where
+the code, not the document, is wrong: card images are hot-linked from
+`images.ygoprodeck.com`. YGOPRODeck's guide requires images to be downloaded and
+stored locally — “Failure to do so will result in an IP blacklist” — and ADR-003
+already decided they would be.
+
+- Download each image once, through the outbound token bucket, and store it locally
+- Serve it under `/media` (and bring back nginx's long-cache `location /media/`)
+- Then set a content security policy that allows no outside host
+
+ATEM-old's `media/cache.ts`, `espace.ts` and `paths.ts` were triaged **TAKE**: host
+allowlist against SSRF, atomic writes, disk space reserve.
+
+---
+
 ## Still to settle
 
 | Question | Needed for |
 |---|---|
-| Front / server framework / ORM / database (default: ATEM-old's) | M0 |
-| Favourite at the card or the printing level? | M1 |
+| Front / server framework / ORM / database (default: ATEM-old's) | M0 — *settled: ATEM-old's* |
+| Favourite at the card or the printing level? | M1 — *settled on 2026-09-16: per printing (R10)* |
 | Mode of use of the duel assistant | After M4 |
 
 ---
