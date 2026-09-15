@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 import { requireJwtSecret, resetJwtSecretCache } from "./secret.js";
 
 /**
- * La clé de signature est la seule chose qui empêche un tiers de forger une
- * session. ATEM-old avait un repli en dur écrit à trois endroits : une instance
- * déployée sans `JWT_SECRET` acceptait des jetons fabriqués par quiconque avait
- * lu le dépôt.
+ * The signing key is the only thing preventing a third party from forging a
+ * session. ATEM-old had a hard-coded fallback written in three places: an
+ * instance deployed without `JWT_SECRET` accepted tokens made by anyone who had
+ * read the repository.
  *
- * Ces épreuves vérifient que le garde-fou refuse de démarrer plutôt que
- * d'avertir — un avertissement se lit une fois et s'oublie.
+ * These tests check that the safeguard refuses to start rather than warning —
+ * a warning is read once and forgotten.
  */
 function withSecret<T>(value: string | undefined, run: () => T): T {
   const previous = process.env.JWT_SECRET;
@@ -25,32 +25,32 @@ function withSecret<T>(value: string | undefined, run: () => T): T {
   }
 }
 
-test("une clé absente empêche le démarrage", () => {
+test("a missing key prevents startup", () => {
   withSecret(undefined, () => {
-    assert.throws(() => requireJwtSecret(), /JWT_SECRET est requise/);
+    assert.throws(() => requireJwtSecret(), /JWT_SECRET is required/);
   });
 });
 
-test("une clé trop courte est refusée", () => {
-  // Huit caractères satisfont « la variable existe » tout en restant devinables.
+test("a key that is too short is refused", () => {
+  // Eight characters satisfy “the variable exists” while staying guessable.
   withSecret("court123", () => {
-    assert.throws(() => requireJwtSecret(), /32 au minimum/);
+    assert.throws(() => requireJwtSecret(), /32 minimum/);
   });
 });
 
-test("l'ancien repli d'ATEM-old est refusé nommément", () => {
-  // Il fait plus de 32 caractères : seule une comparaison explicite l'arrête.
-  // Le refuser par son nom évite qu'il revienne par copier-coller.
+test("ATEM-old's old fallback is refused by name", () => {
+  // It is longer than 32 characters: only an explicit comparison stops it.
+  // Refusing it by name keeps it from coming back by copy-paste.
   withSecret("atem_dev_secret_key_change_me_in_prod", () => {
-    assert.throws(() => requireJwtSecret(), /ancienne valeur de repli/);
+    assert.throws(() => requireJwtSecret(), /old fallback value/);
   });
 });
 
-test("une clé valide est acceptée, puis mise en cache", () => {
-  const secret = "une-cle-de-signature-de-plus-de-trente-deux-caracteres";
+test("a valid key is accepted, then cached", () => {
+  const secret = "a-signing-key-of-more-than-thirty-two-characters";
   withSecret(secret, () => {
     assert.equal(requireJwtSecret(), secret);
-    // Le cache évite de relire l'environnement à chaque requête.
+    // The cache avoids reading the environment again on every request.
     delete process.env.JWT_SECRET;
     assert.equal(requireJwtSecret(), secret);
   });

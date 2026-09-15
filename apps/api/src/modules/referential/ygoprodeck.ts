@@ -1,16 +1,16 @@
 /**
- * Le client YGOPRODeck.
+ * The YGOPRODeck client.
  *
- * Deux points appris à la dure et inscrits ici :
+ * Two lessons learned the hard way, written down here:
  *
- * — **Zod retire silencieusement les champs qu'il ne déclare pas.** `linkval` et
- *   `linkmarkers` manquaient au schéma d'ATEM-old, et toutes les cartes Lien
- *   affichaient « Lien — ». Le champ existait, la valeur n'arrivait jamais. Tout
- *   ajout ici doit être testé contre une charge utile réelle, jamais contre un
- *   objet reconstruit à la main.
+ * — **Zod silently drops the fields it does not declare.** `linkval` and
+ *   `linkmarkers` were missing from ATEM-old's schema, and every Link card
+ *   displayed “Link —”. The field existed, the value never arrived. Any
+ *   addition here must be tested against a real payload, never against an
+ *   object rebuilt by hand.
  *
- * — **L'API répond 400 avec un corps `{error}` quand elle ne trouve rien.** Ce
- *   n'est pas une panne, c'est une absence : il faut la lire, pas la propager.
+ * — **The API answers 400 with an `{error}` body when it finds nothing.** That
+ *   is not an outage, it is an absence: it must be read, not propagated.
  */
 import { z } from "zod";
 import { retryAfterMs, throttleOutbound, withOutboundSlot } from "./outbound-rate.js";
@@ -18,13 +18,13 @@ import { retryAfterMs, throttleOutbound, withOutboundSlot } from "./outbound-rat
 const BASE = "https://db.ygoprodeck.com/api/v7";
 
 /**
- * Le délai au bout duquel on renonce à attendre.
+ * The delay after which we stop waiting.
  *
- * `fetch` sans signal n'abandonne **jamais**. La file de résolution attend son
- * appel, son verrou reste pris, et un seul appel qui pend suffit à figer toute
- * identification jusqu'au redémarrage du processus. Le dump complet est le cas
- * long — 22 s mesurées, 21 Mo — d'où deux budgets distincts plutôt qu'un seul,
- * généreux pour tout le monde.
+ * `fetch` without a signal **never** gives up. The resolve queue waits on its
+ * call, its lock stays taken, and a single hanging call is enough to freeze all
+ * identification until the process restarts. The full dump is the long case —
+ * 22 s measured, 21 MB — hence two distinct budgets rather than a single one
+ * generous to everybody.
  */
 const TIMEOUT_MS = 15_000;
 const DUMP_TIMEOUT_MS = 120_000;
@@ -52,9 +52,9 @@ const YgoCardSchema = z.object({
   def: z.number().nullish(),
   level: z.number().nullish(),
   race: z.string().nullish(),
-  // Mesuré sur le dump complet : une carte sur 14 524 a `attribute: null`.
-  // Un champ absent et un champ nul sont deux choses différentes pour Zod ;
-  // l'API produit les deux, `.nullish()` accepte les deux.
+  // Measured on the full dump: one card in 14,524 has `attribute: null`. A
+  // missing field and a null field are two different things to Zod; the API
+  // produces both, `.nullish()` accepts both.
   attribute: z.string().nullish(),
   scale: z.number().nullish(),
   linkval: z.number().nullish(),
@@ -82,30 +82,31 @@ async function getJson(url: string, timeoutMs = TIMEOUT_MS): Promise<unknown | n
     fetch(url, { redirect: "follow", signal: AbortSignal.timeout(timeoutMs) }),
   );
   if (response.status === 400) {
-    // « No card matching your query » : une absence, pas une panne.
+    // “No card matching your query”: an absence, not an outage.
     return null;
   }
   /**
-   * Un 429 met **tout** le seau au pas, pas seulement cet appel.
+   * A 429 backs off the **whole** bucket, not just this call.
    *
-   * Le serveur ne dit pas « cette requête est de trop », il dit « vous parlez
-   * trop ». Continuer à plein débit pendant qu'on réessaie celle-ci vaut le
-   * blocage d'adresse d'une heure, pendant laquelle plus rien ne s'identifie.
+   * The server is not saying “this request is one too many”, it is saying “you
+   * are talking too much”. Carrying on at full rate while retrying this one
+   * earns the one-hour address ban, during which nothing gets identified at
+   * all.
    */
   if (response.status === 429) {
     const delay = retryAfterMs(response.headers.get("Retry-After")) ?? 60_000;
     throttleOutbound(delay);
-    throw new Error(`YGOPRODeck limite le débit (429), pause de ${Math.round(delay / 1000)} s`);
+    throw new Error(`YGOPRODeck is rate limiting (429), pausing ${Math.round(delay / 1000)} s`);
   }
   if (!response.ok) {
-    throw new Error(`YGOPRODeck a répondu ${response.status} sur ${url}`);
+    throw new Error(`YGOPRODeck answered ${response.status} on ${url}`);
   }
   const body: unknown = await response.json();
   if (body && typeof body === "object" && "error" in body) return null;
   return body;
 }
 
-/** Résout un set code **anglais**. Les autres régions ne sont pas indexées. */
+/** Resolves an **English** set code. Other regions are not indexed. */
 export async function fetchSetInfo(englishSetCode: string): Promise<YgoSetInfo | null> {
   const body = await getJson(
     `${BASE}/cardsetsinfo.php?setcode=${encodeURIComponent(englishSetCode)}`,
@@ -127,11 +128,11 @@ export async function fetchCardById(
 }
 
 /**
- * Le dump complet, en une seule requête.
+ * The full dump, in a single request.
  *
- * Mesuré le 2026-09-09 : 14 524 cartes et 21 Mo en anglais (22 s), 11 661 cartes
- * et 18 Mo en français. 2 863 cartes n'ont aucune version française — le repli
- * anglais n'est pas un cas limite, c'est un cinquième du catalogue.
+ * Measured on 2026-09-09: 14,524 cards and 21 MB in English (22 s), 11,661
+ * cards and 18 MB in French. 2,863 cards have no French version at all — the
+ * English fallback is not an edge case, it is a fifth of the catalogue.
  */
 export async function fetchAllCards(language?: "fr"): Promise<YgoCard[]> {
   const lang = language ? `?language=${language}` : "";
@@ -139,7 +140,7 @@ export async function fetchAllCards(language?: "fr"): Promise<YgoCard[]> {
   if (!body) return [];
   const parsed = z.object({ data: z.array(YgoCardSchema) }).safeParse(body);
   if (!parsed.success) {
-    throw new Error(`Dump YGOPRODeck illisible : ${parsed.error.issues[0]?.message ?? "?"}`);
+    throw new Error(`Unreadable YGOPRODeck dump: ${parsed.error.issues[0]?.message ?? "?"}`);
   }
   return parsed.data.data;
 }

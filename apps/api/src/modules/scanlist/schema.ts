@@ -6,11 +6,11 @@ import { LIMITS } from "@atem/shared";
 import { users } from "../identity/schema.js";
 
 /**
- * Un lot inventorié, indépendant de la collection.
+ * An inventoried batch, independent from the collection.
  *
- * `pouredAt` porte tout l'état : nul, le lot attend ; daté, il est entré en
- * collection. Un booléen aurait dit la même chose en perdant la seule
- * information qu'on redemande vraiment — **quand**.
+ * `pouredAt` carries the whole state: null, the batch is waiting; dated, it has
+ * entered the collection. A boolean would have said the same thing while losing
+ * the one piece of information anybody actually asks for again — **when**.
  */
 export const scanlists = pgTable(
   "scanlists",
@@ -25,15 +25,15 @@ export const scanlists = pgTable(
 );
 
 /**
- * Une ligne de lot.
+ * A batch line.
  *
- * Elle ne référence **aucune impression**. C'est délibéré : un lot est ce qu'on
- * a lu sur des cartons, pas ce que le catalogue en pense. Le code peut être
- * inconnu, mal lu, ou pointer une édition que YGOPRODeck n'indexe pas — la
- * ligne doit exister quand même, et c'est le versement qui fera le raccord.
+ * It references **no printing**. That is deliberate: a batch is what was read
+ * off cardboard, not what the catalogue thinks of it. The code may be unknown,
+ * misread, or point at an edition YGOPRODeck does not index — the line must
+ * exist anyway, and it is the pour that makes the connection.
  *
- * Le nom et le passcode sont recopiés tels qu'ils étaient au scan, pour que la
- * liste se relise identique dans six mois.
+ * The name and passcode are copied as they were at scan time, so that the list
+ * reads back identical in six months.
  */
 export const scanlistLines = pgTable(
   "scanlist_lines",
@@ -48,16 +48,15 @@ export const scanlistLines = pgTable(
     quantity: integer("quantity").notNull(),
   },
   (t) => [
-    // Un code n'apparaît qu'une fois par lot : c'est un compteur, pas un journal.
+    // A code appears once per batch: this is a counter, not a log.
     uniqueIndex("scanlist_lines_list_code_uidx").on(t.scanlistId, t.setCode),
     /**
-     * Une ligne enregistrée compte au moins un exemplaire.
+     * A saved line counts at least one copy.
      *
-     * Le zéro existe pendant qu'on scanne — c'est le plancher du « −1 », et il
-     * montre ce qu'on vient d'annuler — mais il ne s'enregistre pas : une ligne
-     * qui déclare zéro exemplaire ne dit rien. Le plafond, lui, empêche qu'un
-     * fichier bricolé fasse entrer un nombre arbitraire dans la collection au
-     * versement.
+     * Zero exists while scanning — it is the floor of “−1”, and it shows what
+     * was just cancelled — but it is not saved: a line declaring zero copies
+     * says nothing. The ceiling, for its part, prevents a hand-crafted file
+     * from bringing an arbitrary number into the collection on pouring.
      */
     check(
       "scanlist_lines_quantity_ck",

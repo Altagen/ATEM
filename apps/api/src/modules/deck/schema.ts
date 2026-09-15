@@ -8,15 +8,15 @@ import { users } from "../identity/schema.js";
 import { cards } from "../referential/schema.js";
 
 /**
- * Un dossier de decks.
+ * A deck folder.
  *
- * Repris d'ATEM-old, **sans sa colonne `sort_order`** : elle était écrite à
- * chaque création et l'écran triait par nom de toute façon. Une colonne que
- * personne ne lit est une colonne qui ment.
+ * Taken from ATEM-old, **without its `sort_order` column**: it was written on
+ * every creation and the screen sorted by name anyway. A column nobody reads is
+ * a column that lies.
  *
- * La profondeur maximale n'est pas ici : une règle qui parle du chemin complet
- * d'une ligne ne s'exprime pas dans une contrainte de colonne. Elle vit dans le
- * service, avec la détection de cycle, et ses épreuves.
+ * The maximum depth is not here: a rule that speaks of a row's whole path
+ * cannot be expressed in a column constraint. It lives in the service, along
+ * with cycle detection, and its tests.
  */
 export const deckFolders = pgTable(
   "deck_folders",
@@ -24,14 +24,13 @@ export const deckFolders = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     /**
-     * Le dossier parent, ou `null` à la racine.
+     * The parent folder, or `null` at the root.
      *
-     * **Pas de `cascade`, contrairement à ATEM-old.** Son schéma cascadait
-     * pendant que son service réattachait les enfants au grand-parent : deux
-     * réponses contradictoires à la même question, et c'est la base qui gagne
-     * dès qu'une suppression passe ailleurs que par le service. Ici la base ne
-     * répond rien — c'est la transaction du service qui réattache, et elle est
-     * la seule à le faire.
+     * **No `cascade`, unlike ATEM-old.** Its schema cascaded while its service
+     * re-attached children to the grandparent: two contradictory answers to the
+     * same question, and the database is what wins as soon as a deletion goes
+     * anywhere but through the service. Here the database answers nothing — the
+     * service's transaction re-attaches, and it is the only thing that does.
      */
     parentId: uuid("parent_id").references((): AnyPgColumn => deckFolders.id),
     name: text("name").notNull(),
@@ -41,23 +40,23 @@ export const deckFolders = pgTable(
   (t) => [
     index("deck_folders_user_idx").on(t.userId, t.parentId),
     /**
-     * Deux dossiers frères du même nom sont indiscernables dans un explorateur.
+     * Two sibling folders with the same name are indistinguishable in an
+     * explorer.
      *
-     * `nulls not distinct` parce que la racine est un `parent_id` nul : sans
-     * lui, Postgres considère deux nuls comme différents et la règle ne
-     * s'appliquerait **qu'aux sous-dossiers** — c'est-à-dire pas là où l'on
-     * crée le plus.
+     * `nulls not distinct` because the root is a null `parent_id`: without it,
+     * Postgres considers two nulls different and the rule would apply **to
+     * subfolders only** — that is, not where people create the most.
      */
     unique("deck_folders_sibling_name_uidx").on(t.userId, t.parentId, t.name).nullsNotDistinct(),
   ],
 );
 
 /**
- * Un deck.
+ * A deck.
  *
- * Reprise de la coquille d'ATEM-old, **sans sa colonne `category`** : elle y
- * était marquée `@deprecated` et pourtant recalculée à chaque écriture. Une
- * dette qui travaille est pire qu'une dette qui dort.
+ * ATEM-old's shell, **without its `category` column**: it was marked
+ * `@deprecated` there and recomputed on every write nonetheless. Debt that
+ * works is worse than debt that sleeps.
  */
 export const decks = pgTable(
   "decks",
@@ -66,11 +65,11 @@ export const decks = pgTable(
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     /**
-     * Le dossier qui le range, ou `null` à la racine.
+     * The folder that files it, or `null` at the root.
      *
-     * `set null` : un dossier effacé par un chemin qui ne passerait pas par le
-     * service laisse ses decks à la racine. Perdre le rangement est réparable,
-     * perdre les decks ne l'est pas.
+     * `set null`: a folder deleted by a path that would not go through the
+     * service leaves its decks at the root. Losing the filing is repairable,
+     * losing the decks is not.
      */
     folderId: uuid("folder_id").references(() => deckFolders.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -79,37 +78,36 @@ export const decks = pgTable(
   (t) => [
     index("decks_user_idx").on(t.userId, t.updatedAt),
     index("decks_user_folder_idx").on(t.userId, t.folderId),
-    // Deux decks du même nom chez la même personne sont impossibles à
-    // distinguer dans une liste — et la confirmation de suppression se tape au
-    // nom.
+    // Two decks with the same name belonging to the same person are impossible
+    // to tell apart in a list — and the delete confirmation is typed by name.
     uniqueIndex("decks_user_name_uidx").on(t.userId, t.name),
   ],
 );
 
 /**
- * Une carte d'un deck — **une ligne par carte, pas par impression**.
+ * A card in a deck — **one row per card, not per printing**.
  *
- * C'est la règle du jeu : trois Dragons Blancs en trois codes d'extension
- * restent trois Dragons Blancs. Et c'est ce qui rend le plafond exprimable.
+ * That is the rule of the game: three Blue-Eyes in three set codes remain three
+ * Blue-Eyes. And it is what makes the ceiling expressible.
  *
- * ATEM-old identifiait ses lignes par `(deck, zone, passcode, set_code)`. La
- * même carte vivait donc sur plusieurs lignes — zones différentes, impression
- * épinglée différente — et totalisait six exemplaires sans qu'aucune contrainte
- * n'agrège. Son plafond était vérifié **par ligne**, en Zod et dans le service,
- * ce qui ne garantissait rien.
+ * ATEM-old identified its rows by `(deck, zone, passcode, set_code)`. The same
+ * card therefore lived on several rows — different zones, different pinned
+ * printing — and totalled six copies without any constraint aggregating them.
+ * Its ceiling was checked **per row**, in Zod and in the service, which
+ * guaranteed nothing.
  *
- * Ici les trois zones sont trois colonnes de la même ligne. La contrainte porte
- * sur leur somme, et la base refuse le quatrième exemplaire quoi qu'il arrive —
- * même si un jour un service oublie de demander.
+ * Here the three zones are three columns of the same row. The constraint
+ * applies to their sum, and the database refuses the fourth copy whatever
+ * happens — even if some day a service forgets to ask.
  */
 export const deckCards = pgTable(
   "deck_cards",
   {
     deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
     /**
-     * `restrict` : le catalogue ne s'efface pas sous un deck qui s'en sert.
-     * Il est importé en bloc et n'est jamais nettoyé, donc ça ne gêne rien —
-     * mais l'écrire dit que la dépendance est voulue.
+     * `restrict`: the catalogue does not vanish from under a deck that uses
+     * it. It is imported wholesale and never cleaned up, so this gets in
+     * nobody's way — but writing it says the dependency is intended.
      */
     passcode: bigint("passcode", { mode: "number" })
       .notNull()
@@ -122,19 +120,19 @@ export const deckCards = pgTable(
     uniqueIndex("deck_cards_identity_uidx").on(t.deckId, t.passcode),
     index("deck_cards_passcode_idx").on(t.passcode),
     /**
-     * Le plafond des trois exemplaires, pour tout le deck.
+     * The three-copy ceiling, for the whole deck.
      *
-     * Il ne dépend ni de la banlist ni de la date : c'est la règle du jeu, et
-     * elle ne changera pas. C'est pour ça qu'elle vit ici et non dans du code
-     * qu'on pourrait oublier d'appeler — la banlist, elle, bouge avec le
-     * catalogue et reste au service.
+     * It depends neither on the banlist nor on the date: it is the rule of the
+     * game, and it will not change. That is why it lives here and not in code
+     * someone could forget to call — the banlist, for its part, moves with the
+     * catalogue and stays in the service.
      */
     check(
       "deck_cards_max_copies_ck",
       sql`${t.mainQty} + ${t.extraQty} + ${t.sideQty} between 0 and ${sql.raw(String(DECK_MAX_COPIES))}`,
     ),
-    // Aucune zone ne descend sous zéro : un « −1 » de trop ne fabrique pas une
-    // quantité négative qui fausserait tous les totaux.
+    // No zone goes below zero: one “−1” too many does not fabricate a negative
+    // quantity that would skew every total.
     check(
       "deck_cards_non_negative_ck",
       sql`${t.mainQty} >= 0 and ${t.extraQty} >= 0 and ${t.sideQty} >= 0`,

@@ -1,9 +1,9 @@
 /**
- * Le socle des tests d'intégration.
+ * The base of the integration tests.
  *
- * Le pool de connexions est fermé après la dernière suite : sans ça, la boucle
- * d'événements ne se vide jamais et le lanceur reste suspendu sans rien dire —
- * un symptôme pénible à diagnostiquer quand on ne l'a jamais vu.
+ * The connection pool is closed after the last suite: without that, the event
+ * loop never drains and the runner hangs without a word — a painful symptom to
+ * diagnose when you have never seen it.
  */
 import { after } from "node:test";
 import { createApp } from "./app.js";
@@ -18,10 +18,10 @@ export function createTestApp() {
 }
 
 /**
- * Une adresse email jamais vue.
+ * An email address never seen before.
  *
- * Les tests partagent une base : dépendre d'une adresse fixe ferait échouer le
- * second à cause du premier, et l'ordre d'exécution deviendrait significatif.
+ * Tests share one database: depending on a fixed address would make the second
+ * fail because of the first, and execution order would become significant.
  */
 export const freshEmail = (prefix: string) =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@exemple.test`;
@@ -38,12 +38,11 @@ export function jsonPost(
 }
 
 /**
- * Une requête JSON, quel que soit le verbe.
+ * A JSON request, whatever the verb.
  *
- * Les épreuves de route ne portaient que sur `POST` — ce qui suffisait tant que
- * seule l'authentification en avait. Un module qui expose `PUT`, `PATCH` et
- * `DELETE` a besoin de les éprouver aussi : c'est là que vit la question de
- * savoir **au nom de qui** on écrit.
+ * Route tests only covered `POST` — which was enough while only authentication
+ * had any. A module exposing `PUT`, `PATCH` and `DELETE` needs those tested
+ * too: that is where the question of **on whose behalf** we write lives.
  */
 export function jsonRequest(
   app: TestApp,
@@ -60,17 +59,17 @@ export function jsonRequest(
 }
 
 /**
- * Un compte tout neuf, et le cookie de sa session.
+ * A brand-new account, and its session cookie.
  *
- * Passer par la route plutôt que par le service : c'est la session telle que le
- * navigateur la reçoit qu'on veut éprouver, cookie compris.
+ * Going through the route rather than the service: it is the session as the
+ * browser receives it that we want to test, cookie included.
  */
 export async function freshSession(app: TestApp, prefix: string) {
   const email = freshEmail(prefix);
   const response = await jsonPost(app, "/auth/register", {
     email,
     password: "Un-Mot-De-Passe-1!",
-    displayName: `Testeur ${prefix}`,
+    displayName: `Tester ${prefix}`,
   });
   const cookie = response.headers.get("set-cookie")?.split(";")[0] ?? "";
   const { user } = (await response.json()) as { user: { id: string } };

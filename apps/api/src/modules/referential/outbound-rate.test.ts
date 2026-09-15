@@ -5,29 +5,29 @@ import {
 } from "./outbound-rate.js";
 
 /**
- * Le débit sortant vers YGOPRODeck.
+ * The outbound rate towards YGOPRODeck.
  *
- * ATEM-old s'est fait bloquer une heure pour l'avoir mal compté : il limitait
- * les appels d'API mais pas les téléchargements d'images, qui partaient par un
- * autre chemin. Un limiteur par type d'appel ne protège de rien — c'est le
- * total qui compte, et c'est pourquoi il n'existe qu'un seul seau.
+ * ATEM-old got banned for an hour for counting it badly: it limited API calls
+ * but not image downloads, which went out by another path. A limiter per kind
+ * of call protects nothing — the total is what counts, and that is why there is
+ * only one bucket.
  */
-test("les appels sont étalés dans le temps", async () => {
+test("calls are spread out over time", async () => {
   resetOutboundRate();
   const started = Date.now();
 
-  // Huit jetons par seconde : quatre appels demandent au moins trois
-  // intervalles d'attente, le premier partant tout de suite.
+  // Eight tokens per second: four calls require at least three waiting
+  // intervals, the first one leaving immediately.
   await Promise.all([1, 2, 3, 4].map(() => withOutboundSlot(async () => null)));
 
   const elapsed = Date.now() - started;
   assert.ok(
     elapsed >= 3 * 125 - 20,
-    `quatre appels devraient prendre au moins ~375 ms, pris ${elapsed} ms`,
+    `four calls should take at least ~375 ms, took ${elapsed} ms`,
   );
 });
 
-test("l'ordre d'appel est conservé", async () => {
+test("call order is preserved", async () => {
   resetOutboundRate();
   const seen: number[] = [];
   await Promise.all(
@@ -36,35 +36,35 @@ test("l'ordre d'appel est conservé", async () => {
   assert.deepEqual(seen, [0, 1, 2, 3]);
 });
 
-test("un appel isolé ne paie pas d'attente", async () => {
+test("a lone call pays no wait", async () => {
   resetOutboundRate();
   const started = Date.now();
   await withOutboundSlot(async () => null);
-  assert.ok(Date.now() - started < 60, "le premier jeton est disponible tout de suite");
+  assert.ok(Date.now() - started < 60, "the first token is available right away");
 });
 
-test("la valeur de la tâche est rendue telle quelle", async () => {
+test("the task's value is returned as is", async () => {
   resetOutboundRate();
-  assert.equal(await withOutboundSlot(async () => "charge utile"), "charge utile");
+  assert.equal(await withOutboundSlot(async () => "payload"), "payload");
 });
 
-test("une tâche qui lève ne bloque pas le seau", async () => {
+test("a task that throws does not block the bucket", async () => {
   resetOutboundRate();
-  await assert.rejects(() => withOutboundSlot(async () => Promise.reject(new Error("panne"))));
-  // Le jeton suivant doit être servi : sinon une seule panne réseau gèlerait
-  // toute résolution de carte jusqu'au redémarrage.
-  assert.equal(await withOutboundSlot(async () => "après"), "après");
+  await assert.rejects(() => withOutboundSlot(async () => Promise.reject(new Error("outage"))));
+  // The next token must be served: otherwise a single network outage would
+  // freeze all card resolution until the next restart.
+  assert.equal(await withOutboundSlot(async () => "after"), "after");
 });
 
 /**
- * La mise au pas après un 429.
+ * Backing off after a 429.
  *
- * Un refus pour excès de débit ne concerne pas la requête qui l'a reçu : il dit
- * que l'instance parle trop. La réessayer plus tard pendant que les autres
- * partent à plein débit vaut le blocage d'adresse d'une heure — et pendant
- * cette heure, plus aucune carte ne s'identifie.
+ * A rate refusal is not about the request that received it: it says the
+ * instance is talking too much. Retrying it later while the others go out at
+ * full rate earns the one-hour address ban — and during that hour, no card gets
+ * identified at all.
  */
-test("un 429 retient tout le seau, pas seulement l'appel refusé", async () => {
+test("a 429 holds the whole bucket back, not just the refused call", async () => {
   resetOutboundRate();
   throttleOutbound(300);
 
@@ -72,59 +72,60 @@ test("un 429 retient tout le seau, pas seulement l'appel refusé", async () => {
   await withOutboundSlot(async () => null);
   const elapsed = Date.now() - started;
 
-  assert.ok(elapsed >= 260, `l'appel suivant devrait attendre ~300 ms, pris ${elapsed} ms`);
+  assert.ok(elapsed >= 260, `the next call should wait ~300 ms, took ${elapsed} ms`);
 });
 
-test("une mise au pas plus courte n'écourte pas celle en cours", async () => {
+test("a shorter back-off does not cut short the one under way", async () => {
   resetOutboundRate();
   throttleOutbound(400);
   throttleOutbound(10);
 
   const started = Date.now();
   await withOutboundSlot(async () => null);
-  assert.ok(Date.now() - started >= 360, "la plus longue attente l'emporte");
+  assert.ok(Date.now() - started >= 360, "the longest wait wins");
 });
 
-test("la mise au pas est plafonnée", () => {
+test("the back-off is capped", () => {
   resetOutboundRate();
-  // Un `Retry-After` d'un jour ne doit pas condamner l'instance jusqu'au
-  // lendemain : on plafonne à dix minutes, quitte à retenter pour rien.
+  // A `Retry-After` of one day must not condemn the instance until tomorrow: we
+  // cap at ten minutes, even if it means retrying for nothing.
   throttleOutbound(24 * 3600_000);
   const started = Date.now();
   throttleOutbound(0);
-  assert.ok(Date.now() - started < 50, "la fonction ne bloque pas");
+  assert.ok(Date.now() - started < 50, "the function does not block");
 });
 
-test("une mise au pas absurde est ignorée", async () => {
+test("an absurd back-off is ignored", async () => {
   resetOutboundRate();
   throttleOutbound(Number.NaN);
   throttleOutbound(-5);
   const started = Date.now();
   await withOutboundSlot(async () => null);
-  assert.ok(Date.now() - started < 60, "ni NaN ni une valeur négative ne retiennent le seau");
+  assert.ok(Date.now() - started < 60, "neither NaN nor a negative value holds the bucket");
 });
 
 /**
- * `Retry-After` existe sous deux formes, et n'en lire qu'une revient à ignorer
- * l'autre en silence — donc à repartir aussitôt, ce que l'en-tête interdisait.
+ * `Retry-After` exists in two shapes, and reading only one amounts to ignoring
+ * the other in silence — hence setting off again at once, which the header
+ * forbade.
  */
-test("« Retry-After » se lit en secondes", () => {
+test("“Retry-After” reads in seconds", () => {
   assert.equal(retryAfterMs("120"), 120_000);
   assert.equal(retryAfterMs(" 30 "), 30_000);
   assert.equal(retryAfterMs("0"), 0);
 });
 
-test("« Retry-After » se lit aussi en date HTTP", () => {
+test("“Retry-After” also reads as an HTTP date", () => {
   const future = new Date(Date.now() + 5_000).toUTCString();
   const delay = retryAfterMs(future);
-  assert.ok(delay !== null && delay > 3_000 && delay <= 6_000, `délai lu : ${delay}`);
+  assert.ok(delay !== null && delay > 3_000 && delay <= 6_000, `delay read: ${delay}`);
 
-  // Une date déjà passée vaut « tout de suite », pas un délai négatif.
+  // A date already past means “right now”, not a negative delay.
   assert.equal(retryAfterMs(new Date(Date.now() - 60_000).toUTCString()), 0);
 });
 
-test("un « Retry-After » absent ou illisible ne dit rien", () => {
+test("a missing or unreadable “Retry-After” says nothing", () => {
   assert.equal(retryAfterMs(null), null);
   assert.equal(retryAfterMs(""), null);
-  assert.equal(retryAfterMs("bientôt"), null);
+  assert.equal(retryAfterMs("soon"), null);
 });

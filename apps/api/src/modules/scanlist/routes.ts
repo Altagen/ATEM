@@ -1,9 +1,9 @@
 /**
- * Les routes des scanlistes.
+ * The scanlist routes.
  *
- * Montées sur `/scanlistes`, à part de `/collection` : ce sont deux
- * inventaires distincts, et les mêler dans le même préfixe aurait fini par les
- * mêler dans le même code.
+ * Mounted on `/scanlistes`, apart from `/collection`: these are two distinct
+ * inventories, and mixing them under the same prefix would have ended up mixing
+ * them in the same code.
  */
 import { Hono } from "hono";
 import { z } from "zod";

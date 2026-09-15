@@ -1,15 +1,15 @@
 /**
- * Les dossiers de decks — le rangement, et rien d'autre.
+ * Deck folders — filing, and nothing else.
  *
- * Rien ici ne connaît une carte : un dossier porte des decks et d'autres
- * dossiers, c'est tout. La séparation vient d'ATEM-old, où elle tenait déjà.
+ * Nothing here knows about a card: a folder holds decks and other folders, that
+ * is all. The separation comes from ATEM-old, where it already held.
  *
- * **Trois règles font tout le sujet** : la profondeur maximale, l'absence de
- * cycle, et ce qui arrive au contenu d'un dossier qu'on efface. Aucune des
- * trois ne s'exprime dans une contrainte de colonne — elles parlent du chemin
- * complet d'une ligne — donc elles vivent ici, avec leurs épreuves.
+ * **Three rules make up the whole subject**: the maximum depth, the absence of
+ * cycles, and what happens to the contents of a folder being deleted. None of
+ * the three can be expressed in a column constraint — they speak of a row's
+ * whole path — so they live here, with their tests.
  *
- * **Les lectures prennent un propriétaire, les écritures un viewer** (ADR-009).
+ * **Reads take an owner, writes take a viewer** (ADR-009).
  */
 import { and, eq } from "drizzle-orm";
 import {
@@ -25,49 +25,48 @@ export type DeckFolder = {
   id: string;
   parentId: string | null;
   name: string;
-  /** Le chemin depuis la racine, le sien compris — « Meta », « Tier 1 ». */
+  /** The path from the root, its own name included — “Meta”, “Tier 1”. */
   path: string[];
-  /** 1 à la racine. Ce que la limite compte. */
+  /** 1 at the root. What the limit counts. */
   depth: number;
   createdAt: string;
   updatedAt: string;
 };
 
 /**
- * Tous les dossiers d'une personne, d'un coup.
+ * Every folder of one person, in one go.
  *
- * ATEM-old relisait la table entière à chaque contrôle — trois fois de suite
- * pour une seule création. Comme on en a besoin en entier pour calculer un
- * chemin ou une profondeur, on la lit **une fois** et tout le reste travaille
- * en mémoire. Un joueur en a quelques dizaines au plus.
+ * ATEM-old read the whole table again on every check — three times in a row for
+ * a single creation. Since we need it whole to compute a path or a depth, we
+ * read it **once** and everything else works in memory. A player has a few
+ * dozen at most.
  */
-async function charger(db: Database, userId: string): Promise<Map<string, DeckFolderRow>> {
+async function loadFolders(db: Database, userId: string): Promise<Map<string, DeckFolderRow>> {
   const rows = await db.select().from(deckFolders).where(eq(deckFolders.userId, userId));
   return new Map(rows.map((row) => [row.id, row]));
 }
 
 /**
- * Le chemin d'un dossier, racine d'abord.
+ * A folder's path, root first.
  *
- * La garde `vus` n'est pas de la superstition : si un cycle entrait en base par
- * un autre chemin que ce service, la remontée tournerait sans fin et la requête
- * ne rendrait jamais la main. On préfère un chemin tronqué à un serveur qui se
- * bloque.
+ * The `seen` guard is not superstition: if a cycle entered the database by a
+ * path other than this service, the walk up would spin forever and the request
+ * would never return. A truncated path beats a stuck server.
  */
-function cheminDe(row: DeckFolderRow, byId: Map<string, DeckFolderRow>): string[] {
-  const chemin: string[] = [];
-  const vus = new Set<string>();
-  let courant: DeckFolderRow | undefined = row;
-  while (courant && !vus.has(courant.id)) {
-    vus.add(courant.id);
-    chemin.unshift(courant.name);
-    courant = courant.parentId ? byId.get(courant.parentId) : undefined;
+function pathOf(row: DeckFolderRow, byId: Map<string, DeckFolderRow>): string[] {
+  const path: string[] = [];
+  const seen = new Set<string>();
+  let current: DeckFolderRow | undefined = row;
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    path.unshift(current.name);
+    current = current.parentId ? byId.get(current.parentId) : undefined;
   }
-  return chemin;
+  return path;
 }
 
 const toFolder = (row: DeckFolderRow, byId: Map<string, DeckFolderRow>): DeckFolder => {
-  const path = cheminDe(row, byId);
+  const path = pathOf(row, byId);
   return {
     id: row.id,
     parentId: row.parentId,
@@ -80,29 +79,29 @@ const toFolder = (row: DeckFolderRow, byId: Map<string, DeckFolderRow>): DeckFol
 };
 
 /**
- * L'arbre réduit à sa topologie, pour les fonctions partagées.
+ * The tree reduced to its topology, for the shared functions.
  *
- * Elles servent aussi à l'écran, qui grise ce que le serveur refuserait : une
- * seule implémentation, deux appelants. C'est la leçon de `checkDeckAdd`, qui
- * dans ATEM-old grisait un bouton pendant que le serveur laissait passer.
+ * They also serve the screen, which greys out what the server would refuse: one
+ * implementation, two callers. That is the lesson of `checkDeckAdd`, which in
+ * ATEM-old greyed a button out while the server let requests through.
  */
-const topologie = (byId: Map<string, DeckFolderRow>): FolderNode[] =>
+const treeOf = (byId: Map<string, DeckFolderRow>): FolderNode[] =>
   [...byId.values()].map((row) => ({ id: row.id, parentId: row.parentId }));
 
-const nomPropre = (brut: string): string => {
-  const propre = brut.trim();
-  if (!propre) throw invalidInput("Give the folder a name.");
-  return propre;
+const cleanName = (raw: string): string => {
+  const clean = raw.trim();
+  if (!clean) throw invalidInput("Give the folder a name.");
+  return clean;
 };
 
 /**
- * Le conflit de noms frères, rendu lisible.
+ * The sibling-name conflict, made readable.
  *
- * Le nom de la contrainte vit dans la **cause**, jamais dans le message : celui
- * de Drizzle porte la requête qui a échoué. La leçon vient du nom de deck déjà
- * pris, qui ressortait en 500.
+ * The constraint's name lives in the **cause**, never in the message: Drizzle's
+ * carries the query that failed. The lesson comes from the already-taken deck
+ * name, which surfaced as a 500.
  */
-function traduireConflit(err: unknown): never {
+function explainConflict(err: unknown): never {
   const cause = (err as { cause?: { constraint_name?: string } }).cause;
   if (cause?.constraint_name === "deck_folders_sibling_name_uidx") {
     throw conflict("A folder by that name is already filed in the same place.");
@@ -111,17 +110,17 @@ function traduireConflit(err: unknown): never {
 }
 
 export async function listFolders(db: Database, ownerId: string): Promise<DeckFolder[]> {
-  const byId = await charger(db, ownerId);
+  const byId = await loadFolders(db, ownerId);
   return [...byId.values()]
     .map((row) => toFolder(row, byId))
     .sort((a, b) => a.path.join("/").localeCompare(b.path.join("/"), "fr"));
 }
 
 /**
- * Un dossier appartient-il bien à cette personne ?
+ * Does this folder really belong to this person?
  *
- * Le module deck s'en sert avant de ranger un deck : sans ce contrôle, on
- * pourrait déposer son deck dans le dossier d'un inconnu en devinant un UUID.
+ * The deck module uses it before filing a deck: without this check, one could
+ * drop a deck into a stranger's folder by guessing a UUID.
  */
 export async function assertFolderOwned(
   db: Database,
@@ -143,15 +142,15 @@ export async function createFolder(
   viewerId: string,
   input: { name: string; parentId?: string | null },
 ): Promise<DeckFolder> {
-  const name = nomPropre(input.name);
+  const name = cleanName(input.name);
   const parentId = input.parentId ?? null;
 
   if (parentId !== null) {
     requireUuid(parentId);
-    const byId = await charger(db, viewerId);
+    const byId = await loadFolders(db, viewerId);
     const parent = byId.get(parentId);
     if (!parent) throw notFound("Folder not found.");
-    if (folderDepth(topologie(byId), parent.id) >= DECK_FOLDER_MAX_DEPTH) {
+    if (folderDepth(treeOf(byId), parent.id) >= DECK_FOLDER_MAX_DEPTH) {
       throw invalidInput("That folder is already on the last level.");
     }
   }
@@ -161,24 +160,23 @@ export async function createFolder(
       .insert(deckFolders)
       .values({ userId: viewerId, parentId, name })
       .returning();
-    if (!row) throw new Error("insertion sans résultat");
-    return toFolder(row, await charger(db, viewerId));
+    if (!row) throw new Error("insert returned nothing");
+    return toFolder(row, await loadFolders(db, viewerId));
   } catch (err) {
-    traduireConflit(err);
+    explainConflict(err);
   }
 }
 
 /**
- * Renommer un dossier, ou le déplacer.
+ * Renaming a folder, or moving it.
  *
- * Les deux dans le même geste parce que la base les écrit dans la même ligne,
- * et que déplacer sans renommer est un `parentId` sans `name`.
+ * Both in the same gesture because the database writes them on the same row,
+ * and because moving without renaming is a `parentId` without a `name`.
  *
- * **Le déplacement est la partie difficile.** Un dossier ne peut pas passer
- * sous lui-même ni sous l'un de ses descendants — la branche disparaîtrait de
- * l'arbre sans que rien ne l'efface — et il emmène ses étages avec lui : c'est
- * la hauteur de **son sous-arbre**, et non lui seul, qui doit tenir sous la
- * limite.
+ * **Moving is the hard part.** A folder cannot go under itself nor under one of
+ * its descendants — the branch would vanish from the tree without anything
+ * deleting it — and it takes its levels with it: it is the height of **its
+ * subtree**, not the folder alone, that must fit under the limit.
  */
 export async function updateFolder(
   db: Database,
@@ -187,14 +185,14 @@ export async function updateFolder(
   input: { name?: string; parentId?: string | null },
 ): Promise<DeckFolder> {
   requireUuid(folderId);
-  const byId = await charger(db, viewerId);
-  const existant = byId.get(folderId);
-  if (!existant) throw notFound("Folder not found.");
+  const byId = await loadFolders(db, viewerId);
+  const existing = byId.get(folderId);
+  if (!existing) throw notFound("Folder not found.");
 
-  const valeurs: { name?: string; parentId?: string | null; updatedAt: Date } = {
+  const values: { name?: string; parentId?: string | null; updatedAt: Date } = {
     updatedAt: new Date(),
   };
-  if (input.name !== undefined) valeurs.name = nomPropre(input.name);
+  if (input.name !== undefined) values.name = cleanName(input.name);
 
   if (input.parentId !== undefined) {
     const parentId = input.parentId;
@@ -205,47 +203,47 @@ export async function updateFolder(
       if (!byId.has(parentId)) throw notFound("Folder not found.");
 
       /**
-       * Les trois refus sont séparés parce que chacun a sa phrase. La question
-       * « est-ce que ça tient ? » a une réponse d'un seul tenant côté écran
-       * (`folderCanHost`) ; ici il faut dire **pourquoi** non.
+       * The three refusals are kept apart because each has its own sentence.
+       * The question “does it fit?” has a single answer on the screen side
+       * (`folderCanHost`); here we must say **why** not.
        */
-      const arbre = topologie(byId);
-      if (folderIsInside(arbre, parentId, folderId)) {
+      const tree = treeOf(byId);
+      if (folderIsInside(tree, parentId, folderId)) {
         throw invalidInput("A folder cannot be filed inside one of its own.");
       }
       if (
-        folderDepth(arbre, parentId) + folderSubtreeHeight(arbre, folderId) > DECK_FOLDER_MAX_DEPTH
+        folderDepth(tree, parentId) + folderSubtreeHeight(tree, folderId) > DECK_FOLDER_MAX_DEPTH
       ) {
         throw invalidInput("That folder and its contents would go past the last level.");
       }
     }
-    valeurs.parentId = parentId;
+    values.parentId = parentId;
   }
 
   try {
     const [row] = await db
       .update(deckFolders)
-      .set(valeurs)
+      .set(values)
       .where(and(eq(deckFolders.id, folderId), eq(deckFolders.userId, viewerId)))
       .returning();
     if (!row) throw notFound("Folder not found.");
-    return toFolder(row, await charger(db, viewerId));
+    return toFolder(row, await loadFolders(db, viewerId));
   } catch (err) {
-    traduireConflit(err);
+    explainConflict(err);
   }
 }
 
 /**
- * Effacer un dossier **sans effacer ce qu'il contient**.
+ * Deleting a folder **without deleting what it holds**.
  *
- * Ses sous-dossiers et ses decks remontent d'un étage. C'est la règle
- * d'ATEM-old, et la bonne : un dossier est un rangement, pas un propriétaire —
- * le jeter ne doit pas emporter des mois de construction. Sa base disait
- * pourtant l'inverse (`on delete cascade` sur le parent), et c'est elle qui
- * aurait gagné si une suppression était passée ailleurs que par ce service.
+ * Its subfolders and its decks move up one level. That is ATEM-old's rule, and
+ * the right one: a folder is filing, not ownership — discarding it must not
+ * carry away months of building. Its database said the opposite though
+ * (`on delete cascade` on the parent), and the database is what would have won
+ * had a deletion gone anywhere but through this service.
  *
- * Les trois écritures tiennent dans **une transaction** : à moitié faite, elle
- * laisserait des decks pointant sur un dossier disparu.
+ * The three writes hold in **one transaction**: half-done, it would leave decks
+ * pointing at a folder that no longer exists.
  */
 export async function deleteFolder(
   db: Database,
@@ -253,26 +251,26 @@ export async function deleteFolder(
   folderId: string,
 ): Promise<void> {
   requireUuid(folderId);
-  const [existant] = await db
+  const [existing] = await db
     .select()
     .from(deckFolders)
     .where(and(eq(deckFolders.id, folderId), eq(deckFolders.userId, viewerId)))
     .limit(1);
-  if (!existant) throw notFound("Folder not found.");
+  if (!existing) throw notFound("Folder not found.");
 
-  const parentId = existant.parentId;
-  const maintenant = new Date();
+  const parentId = existing.parentId;
+  const now = new Date();
 
   try {
     await db.transaction(async (tx) => {
       await tx
         .update(deckFolders)
-        .set({ parentId, updatedAt: maintenant })
+        .set({ parentId, updatedAt: now })
         .where(and(eq(deckFolders.userId, viewerId), eq(deckFolders.parentId, folderId)));
 
       await tx
         .update(decks)
-        .set({ folderId: parentId, updatedAt: maintenant })
+        .set({ folderId: parentId, updatedAt: now })
         .where(and(eq(decks.userId, viewerId), eq(decks.folderId, folderId)));
 
       await tx
@@ -281,11 +279,11 @@ export async function deleteFolder(
     });
   } catch (err) {
     /**
-     * Un enfant qui remonte peut heurter un homonyme à l'étage du dessus.
+     * A child moving up may collide with a namesake on the level above.
      *
-     * On refuse plutôt que de renommer d'office : le nom appartient à celui qui
-     * l'a écrit, et deux « Meta » côte à côte seraient sa surprise, pas son
-     * choix.
+     * We refuse rather than renaming on our own: the name belongs to whoever
+     * wrote it, and two “Meta” side by side would be their surprise, not their
+     * choice.
      */
     const cause = (err as { cause?: { constraint_name?: string } }).cause;
     if (cause?.constraint_name === "deck_folders_sibling_name_uidx") {

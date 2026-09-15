@@ -1,6 +1,6 @@
 /**
- * L'API publique du module identity — ce que les autres modules ont le droit
- * d'appeler. Personne n'importe `./schema.js` ni `./service.js` directement.
+ * The public API of the identity module — what other modules may call. Nobody
+ * imports `./schema.js` or `./service.js` directly.
  */
 export { attachViewer, requireViewer } from "./middleware.js";
 export { getPublicUser, type PublicUser } from "./service.js";

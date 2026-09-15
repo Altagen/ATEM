@@ -13,8 +13,8 @@ import { issueToken } from "./token.js";
 
 const RegisterBody = z.object({
   email: z.string().email().max(254),
-  // La règle de force est appliquée par le service, avec le détail de ce qui
-  // manque : ici on ne borne que la taille, pour refuser tôt l'absurde.
+  // The strength rule is applied by the service, with the detail of what is
+  // missing: here we only bound the size, to refuse the absurd early.
   password: z.string().min(1).max(LIMITS.password.max),
   displayName: z.string().min(2).max(32),
 });
@@ -59,8 +59,8 @@ export function identityRoutes(db: Database) {
     await recordAttempt(db, "login", buckets);
 
     const { user, tokenVersion } = await authenticate(db, body);
-    // La réussite libère les compteurs : sinon dix connexions légitimes en
-    // quinze minutes verrouilleraient un utilisateur normal.
+    // Success releases the counters: otherwise ten legitimate sign-ins in
+    // fifteen minutes would lock out a normal user.
     await clearAttempts(db, "login", buckets);
     setSessionCookie(c, issueToken(user.id, tokenVersion));
     return c.json({ user });
@@ -80,11 +80,11 @@ export function identityRoutes(db: Database) {
   });
 
   /**
-   * Effacer son compte.
+   * Deleting your account.
    *
-   * `DELETE` et non `POST` : le verbe dit ce qui se passe. Le mot de passe est
-   * dans le corps parce qu'il est redemandé — une session suffit pour tout le
-   * reste, pas pour un geste irréversible.
+   * `DELETE` and not `POST`: the verb says what happens. The password is in the
+   * body because it is asked again — a session is enough for everything else,
+   * not for an irreversible gesture.
    */
   app.delete("/me", requireViewer, async (c) => {
     const viewer = c.get("viewer");
@@ -104,7 +104,7 @@ export function identityRoutes(db: Database) {
     return c.json({ ok: true });
   });
 
-  /** La langue de l'interface, portée par le compte. */
+  /** The interface language, carried by the account. */
   app.patch("/me/langue", requireViewer, async (c) => {
     const viewer = c.get("viewer");
     if (!viewer) throw invalidInput("No session.");

@@ -1,7 +1,7 @@
 /**
- * Le module identity — comptes et sessions.
+ * The identity module — accounts and sessions.
  *
- * Aucun autre module ne lit la table `users` : ils passent par `getPublicUser`.
+ * No other module reads the `users` table: they go through `getPublicUser`.
  */
 import { eq, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
@@ -28,7 +28,7 @@ const toPublic = (row: UserRow): PublicUser => ({
   createdAt: row.createdAt,
 });
 
-/** Quatre chiffres, façon `#0042`. Retenté en cas de collision. */
+/** Four digits, `#0042` style. Retried on collision. */
 const randomTag = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
 
 export async function registerUser(
@@ -36,15 +36,15 @@ export async function registerUser(
   input: { email: string; password: string; displayName: string },
 ): Promise<{ user: PublicUser; tokenVersion: number }> {
   /**
-   * La règle vient de `@atem/shared`, la même fonction que l'écran utilise pour
-   * dessiner sa jauge. ATEM-old en avait quatre copies divergentes, et l'une
-   * d'elles approuvait des mots de passe que le serveur refusait ensuite.
+   * The rule comes from `@atem/shared`, the same function the screen uses to
+   * draw its meter. ATEM-old had four diverging copies, and one of them
+   * approved passwords the server then refused.
    */
   const strength = checkPasswordStrength(input.password);
   if (!strength.isValid) {
     throw invalidInput(
-      // Une seule chaîne, et non deux concaténées : c'est elle que le front
-      // cherche au dictionnaire pour la rendre en anglais.
+      // A single string, not two concatenated: this is what the front looks up
+      // in the dictionary to render it in French.
       "The password must be at least 16 characters long and contain an uppercase letter, a lowercase letter, a digit and a special character.",
       {
         hasMinLength: strength.hasMinLength,
@@ -70,15 +70,15 @@ export async function registerUser(
 
   const passwordHash = await hashPassword(input.password);
 
-  // Le couple (pseudo, discriminant) est unique : on retente sur collision
-  // plutôt que de refuser un pseudo déjà porté par quelqu'un d'autre.
+  // The (display name, tag) pair is unique: we retry on collision rather than
+  // refusing a display name someone else already carries.
   for (let attempt = 0; attempt < 8; attempt += 1) {
     try {
       const [row] = await db
         .insert(users)
         .values({ email, passwordHash, displayName, tag: randomTag() })
         .returning();
-      if (!row) throw new Error("insertion sans résultat");
+      if (!row) throw new Error("insert returned nothing");
       return { user: toPublic(row), tokenVersion: row.tokenVersion };
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
@@ -98,19 +98,19 @@ export async function authenticate(
     .where(sql`lower(${users.email}) = lower(${input.email.trim()})`)
     .limit(1);
 
-  // Message identique dans les deux cas : distinguer « compte inconnu » de
-  // « mot de passe faux » révélerait quelles adresses ont un compte ici.
+  // The same message in both cases: distinguishing “unknown account” from
+  // “wrong password” would reveal which addresses have an account here.
   const invalid = unauthorized("Incorrect email address or password.");
   if (!row) {
-    // On hache quand même, pour que la réponse prenne le même temps.
+    // We hash anyway, so that the answer takes the same time.
     await hashPassword(input.password);
     throw invalid;
   }
   if (!(await verifyPassword(input.password, row.passwordHash))) throw invalid;
   if (row.suspendedAt) throw unauthorized("This account is suspended.");
 
-  // Le mot de passe en clair n'est disponible qu'ici : c'est le seul moment où
-  // un hachage produit sous un coût dépassé peut être refait.
+  // The cleartext password is only available here: it is the only moment when
+  // a hash produced under an outdated cost can be recomputed.
   if (needsRehash(row.passwordHash)) {
     const fresh = await hashPassword(input.password);
     await db.update(users).set({ passwordHash: fresh }).where(eq(users.id, row.id));
@@ -119,7 +119,7 @@ export async function authenticate(
   return { user: toPublic(row), tokenVersion: row.tokenVersion };
 }
 
-/** Invalide tous les jetons émis pour ce compte. */
+/** Invalidates every token issued for this account. */
 export async function revokeSessions(db: Database, userId: string): Promise<void> {
   await db
     .update(users)
@@ -128,13 +128,13 @@ export async function revokeSessions(db: Database, userId: string): Promise<void
 }
 
 /**
- * Change la langue de l'interface.
+ * Changes the interface language.
  *
- * Elle vit sur le compte et non dans le navigateur : c'est un réglage qu'on
- * choisit une fois et qu'on retrouve sur son téléphone comme sur son
- * ordinateur. La contrainte `users_locale_vocab` refuse déjà toute autre
- * valeur en base ; on la vérifie ici pour rendre un message plutôt qu'une
- * erreur de contrainte.
+ * It lives on the account rather than in the browser: it is a setting you
+ * choose once and find again on your phone as on your computer. The
+ * `users_locale_vocab` constraint already refuses any other value in the
+ * database; we check it here to return a message rather than a constraint
+ * error.
  */
 export async function setLocale(
   db: Database,
@@ -153,23 +153,23 @@ export async function setLocale(
 }
 
 /**
- * Efface un compte, et tout ce qui s'y rattache.
+ * Deletes an account, and everything attached to it.
  *
- * **Le mot de passe est redemandé.** Une session suffit pour tout le reste ;
- * pas pour un geste irréversible. Un téléphone déverrouillé laissé sur une
- * table ne doit pas suffire à effacer huit cents cartes.
+ * **The password is asked again.** A session is enough for everything else; not
+ * for an irreversible gesture. An unlocked phone left on a table must not be
+ * enough to erase eight hundred cards.
  *
- * Ce qui part, et pourquoi c'est énuméré ici plutôt que laissé aux cascades :
+ * What goes, and why it is listed here rather than left to cascades:
  *
- * — la **collection** et les **scanlistes**, par `on delete cascade` ;
- * — les **tentatives d'authentification**, qui ne cascadent pas : elles n'ont
- *   pas de `user_id`, mais leur clé porte l'adresse — `email:ange@exemple.fr`.
- *   C'est de la donnée personnelle, et l'oublier ferait mentir « tout a été
- *   effacé ». Trouvé en listant les clés étrangères vers `users`, qui n'en
- *   montrait que deux.
+ * — the **collection** and the **scanlists**, through `on delete cascade`;
+ * — the **authentication attempts**, which do not cascade: they have no
+ *   `user_id`, but their key carries the address — `email:ange@example.com`.
+ *   That is personal data, and forgetting it would make “everything has been
+ *   erased” a lie. Found by listing the foreign keys pointing at `users`, which
+ *   showed only two.
  *
- * Les impressions du catalogue restent : elles n'appartiennent à personne, et
- * `card_prints.card_passcode` est en `set null` pour cette raison.
+ * The catalogue's printings stay: they belong to nobody, and
+ * `card_prints.card_passcode` is `set null` for that reason.
  */
 export async function deleteAccount(
   db: Database,

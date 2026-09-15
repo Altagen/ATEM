@@ -1,12 +1,12 @@
 /**
- * L'import du catalogue complet.
+ * Importing the full catalogue.
  *
- * Deux requêtes suffisent — mesuré le 2026-09-09 : 14 524 cartes en anglais
- * (21 Mo, 22 s) et 11 661 en français. On reste très loin des 20 requêtes par
- * seconde de la limite.
+ * Two requests are enough — measured on 2026-09-09: 14,524 cards in English
+ * (21 MB, 22 s) and 11,661 in French. We stay far below the 20-requests-per-
+ * second limit.
  *
- * L'insertion se fait par lots. ATEM-old enchaînait des dizaines de milliers
- * d'`await` séquentiels — des minutes pour un travail de secondes.
+ * Insertion happens in batches. ATEM-old chained tens of thousands of
+ * sequential `await`s — minutes for seconds of work.
  */
 import { sql } from "drizzle-orm";
 import { canonicalSetCode, languageFromSetCode, normalizeSetCode, parseSetCode } from "@atem/shared";
@@ -21,26 +21,26 @@ const BATCH = 500;
 const excluded = (column: string) => sql.raw(`excluded.${column}`);
 
 /**
- * Garde ce qu'on savait quand la nouvelle valeur est absente.
+ * Keeps what we knew when the new value is missing.
  *
- * Les deux dumps sont téléchargés en parallèle, et `fetchAllCards` rend un
- * tableau vide — pas une erreur — quand l'API répond 400 ou renvoie `{error}`.
- * Si le dump français dégrade ainsi pendant que l'anglais réussit, chaque carte
- * repart avec `name_fr: null` : **toutes les traductions effacées d'un coup**,
- * et le journal annonçant un succès.
+ * Both dumps are downloaded in parallel, and `fetchAllCards` returns an empty
+ * array — not an error — when the API answers 400 or returns `{error}`. If the
+ * French dump degrades that way while the English one succeeds, every card is
+ * written back with `name_fr: null`: **every translation wiped at once**, with
+ * the log announcing a success.
  */
 const keepKnown = (column: string) =>
   sql.raw(`coalesce(excluded.${column}, "cards".${column})`);
 
 export async function syncCatalogue(db: Database): Promise<void> {
-  console.log("[atem] téléchargement du catalogue…");
+  console.log("[atem] downloading the catalogue…");
   const [en, fr] = await Promise.all([fetchAllCards(), fetchAllCards("fr")]);
-  console.log(`[atem] ${en.length} cartes en anglais, ${fr.length} en français`);
+  console.log(`[atem] ${en.length} cards in English, ${fr.length} in French`);
 
-  // Un dump vide n'est pas un catalogue vide : c'est une réponse qu'on n'a pas
-  // su lire. Continuer écrirait cette absence dans la base.
-  if (en.length === 0) throw new Error("le dump anglais est vide — import annulé");
-  if (fr.length === 0) throw new Error("le dump français est vide — import annulé");
+  // An empty dump is not an empty catalogue: it is an answer we failed to
+  // read. Carrying on would write that absence into the database.
+  if (en.length === 0) throw new Error("the English dump is empty — import cancelled");
+  if (fr.length === 0) throw new Error("the French dump is empty — import cancelled");
 
   const frByPasscode = new Map(fr.map((card) => [card.id, card]));
   const cardRows = en.map((card) => cardFromYgo(card, frByPasscode.get(card.id) ?? null));
@@ -74,12 +74,12 @@ export async function syncCatalogue(db: Database): Promise<void> {
         },
       });
   }
-  console.log(`[atem] ${cardRows.length} cartes enregistrées`);
+  console.log(`[atem] ${cardRows.length} cards saved`);
 
   /**
-   * Une même identité `(set_code, rarity, language)` peut apparaître deux fois
-   * dans le dump. On dédoublonne avant d'insérer : PostgreSQL refuse un
-   * `ON CONFLICT` dont le lot contient lui-même deux fois la même clé.
+   * The same `(set_code, rarity, language)` identity can appear twice in the
+   * dump. We de-duplicate before inserting: PostgreSQL refuses an `ON CONFLICT`
+   * whose batch itself contains the same key twice.
    */
   const printRows = new Map<string, typeof cardPrints.$inferInsert>();
   let malformed = 0;
@@ -87,8 +87,8 @@ export async function syncCatalogue(db: Database): Promise<void> {
   for (const card of en) {
     for (const set of card.card_sets ?? []) {
       const setCode = normalizeSetCode(set.set_code);
-      // 12 entrées sur 44 517 n'ont pas de tiret (`DB13`, `DB5`). Elles sont
-      // malformées côté YGOPRODeck : on les compte et on les laisse.
+      // 12 entries out of 44,517 have no dash (`DB13`, `DB5`). They are
+      // malformed on YGOPRODeck's side: we count them and leave them.
       if (!parseSetCode(setCode)) {
         malformed += 1;
         continue;
@@ -124,8 +124,8 @@ export async function syncCatalogue(db: Database): Promise<void> {
       });
   }
   console.log(
-    `[atem] ${prints.length} impressions enregistrées` +
-      (malformed > 0 ? ` (${malformed} codes malformés ignorés)` : ""),
+    `[atem] ${prints.length} printings saved` +
+      (malformed > 0 ? ` (${malformed} malformed codes ignored)` : ""),
   );
 }
 

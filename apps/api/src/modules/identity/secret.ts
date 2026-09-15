@@ -1,17 +1,17 @@
 /**
- * La clé de signature des jetons — une seule lecture, aucune valeur de repli.
+ * The token signing key — read once, with no fallback value.
  *
- * ATEM-old avait un repli en dur écrit à trois endroits. Une instance déployée
- * sans `JWT_SECRET` acceptait donc des jetons forgés par quiconque a lu le
- * dépôt. Le nom de la constante annonçait le danger sans l'empêcher : un
- * garde-fou qui compte sur la vigilance n'en est pas un.
+ * ATEM-old had a hard-coded fallback written in three places. An instance
+ * deployed without `JWT_SECRET` therefore accepted tokens forged by anyone who
+ * had read the repository. The constant's name announced the danger without
+ * preventing it: a safeguard that relies on vigilance is not one.
  *
- * La longueur minimale ferme la porte d'à côté — une clé de huit caractères
- * satisfait « la variable existe » tout en restant devinable.
+ * The minimum length closes the door next to it — an eight-character key
+ * satisfies “the variable exists” while staying guessable.
  */
 const MIN_LENGTH = 32;
 
-/** L'ancien repli d'ATEM-old. Le refuser nommément évite qu'il revienne par copie. */
+/** ATEM-old's old fallback. Refusing it by name keeps it from coming back by copy. */
 const HISTORICAL_FALLBACK = "atem_dev_secret_key_change_me_in_prod";
 
 let cached: string | null = null;
@@ -22,19 +22,19 @@ export function requireJwtSecret(): string {
 
   if (!secret) {
     throw new Error(
-      "JWT_SECRET est requise. Générez-en une : openssl rand -base64 32",
+      "JWT_SECRET is required. Generate one: openssl rand -base64 32",
     );
   }
   if (secret === HISTORICAL_FALLBACK) {
     throw new Error(
-      "JWT_SECRET vaut l'ancienne valeur de repli, publiée dans un dépôt. " +
-        "Générez-en une autre : openssl rand -base64 32",
+      "JWT_SECRET holds the old fallback value, published in a repository. " +
+        "Generate another one: openssl rand -base64 32",
     );
   }
   if (secret.length < MIN_LENGTH) {
     throw new Error(
-      `JWT_SECRET fait ${secret.length} caractères, ${MIN_LENGTH} au minimum. ` +
-        "Générez-en une : openssl rand -base64 32",
+      `JWT_SECRET is ${secret.length} characters, ${MIN_LENGTH} minimum. ` +
+        "Generate one: openssl rand -base64 32",
     );
   }
 
@@ -42,7 +42,7 @@ export function requireJwtSecret(): string {
   return cached;
 }
 
-/** Tests : la clé est relue au prochain appel. */
+/** Tests: the key is read again on the next call. */
 export function resetJwtSecretCache(): void {
   cached = null;
 }

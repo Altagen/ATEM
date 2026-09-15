@@ -1,26 +1,25 @@
 /**
- * La résolution différée des impressions.
+ * Deferred resolution of printings.
  *
- * Une carte scannée entre dans l'inventaire immédiatement, en `pending`. C'est
- * cette file qui va ensuite demander à YGOPRODeck de quoi il s'agit.
+ * A scanned card enters the inventory immediately, as `pending`. It is this
+ * queue that then asks YGOPRODeck what it is.
  *
- * **Le dédoublonnage se fait par (utilisateur, code), pas par code seul.**
- * ATEM-old a vécu le bug : si A avait déjà mis `LOB-FR001` en file, l'entrée de
- * B était écartée comme un doublon — et la ligne de B restait provisoire
- * indéfiniment. Le travail à faire n'est pas « résoudre ce code », c'est
- * « réparer la ligne de cette personne ».
+ * **De-duplication is by (user, code), not by code alone.** ATEM-old lived the
+ * bug: if A had already queued `LOB-FR001`, B's entry was dropped as a
+ * duplicate — and B's line stayed provisional indefinitely. The work to do is
+ * not “resolve this code”, it is “repair this person's line”.
  */
 type Attempt = (userId: string, setCode: string) => Promise<boolean>;
 
 /**
- * Ce qu'on fait d'un code dont on sait qu'il n'existe pas.
+ * What we do with a code we know does not exist.
  *
- * Une absence est **définitive** : le code n'est pas chez YGOPRODeck, et le
- * redemander demain ne l'y mettra pas. Sans ce signal, la ligne restait
- * `pending` — indistinguable d'une résolution interrompue — et chaque
- * redémarrage la remettait en file. Sur une collection qui en compte
- * quelques-unes, c'est une rafale d'appels inutiles à chaque démarrage, vers
- * l'API même qu'on prend soin de ne pas saturer.
+ * An absence is **final**: the code is not at YGOPRODeck, and asking again
+ * tomorrow will not put it there. Without this signal the line stayed
+ * `pending` — indistinguishable from an interrupted resolution — and every
+ * restart queued it again. On a collection holding a few of those, that is a
+ * burst of useless calls at every startup, towards the very API we take care
+ * not to saturate.
  */
 type Abandon = (userId: string, setCode: string) => Promise<void>;
 
@@ -36,11 +35,11 @@ let abandonFn: Abandon | null = null;
 let timer: NodeJS.Timeout | null = null;
 
 /**
- * Le séparateur de clé.
+ * The key separator.
  *
- * Une barre verticale ne peut apparaître ni dans un UUID ni dans un set code
- * normalisé — dont l'alphabet se limite aux lettres, aux chiffres et au tiret.
- * Deux clés distinctes ne peuvent donc pas se confondre.
+ * A vertical bar can appear neither in a UUID nor in a normalised set code —
+ * whose alphabet is limited to letters, digits and the dash. Two distinct keys
+ * therefore cannot be confused.
  */
 const keyOf = (userId: string, setCode: string) => `${userId}|${setCode}`;
 
@@ -65,8 +64,8 @@ function schedule(delayMs: number): void {
     timer = null;
     void drain();
   }, delayMs);
-  // Ce minuteur ne retient pas un processus qui veut s'arrêter : aucun travail
-  // n'est perdu, la ligne reste `pending` et sera reprise au démarrage suivant.
+  // This timer does not hold back a process that wants to stop: no work is
+  // lost, the line stays `pending` and is picked up at the next startup.
   timer.unref();
 }
 
@@ -81,27 +80,27 @@ async function drain(): Promise<void> {
         const resolved = await attemptFn(entry.userId, entry.setCode);
         if (resolved) continue;
         /**
-         * Un échec **sans erreur** est une absence, pas une panne : ce code
-         * n'existe pas chez YGOPRODeck. Le réessayer ne le fera pas apparaître,
-         * et on l'inscrit pour que plus personne ne le redemande — ni cette
-         * file, ni la reprise du prochain démarrage.
+         * A failure **without an error** is an absence, not an outage: this
+         * code does not exist at YGOPRODeck. Retrying will not make it appear,
+         * so we record it so that nobody asks again — neither this queue nor
+         * the next startup's catch-up.
          */
         await abandonFn?.(entry.userId, entry.setCode);
       } catch (err) {
         const next = entry.attempts + 1;
         if (next < MAX_ATTEMPTS) {
-          // Attente croissante, avec une part d'aléa : sans elle, cent lignes
-          // mises en file ensemble repartiraient toutes à la même seconde.
+          // Growing wait, with a random share: without it, a hundred lines
+          // queued together would all set off on the same second.
           const delay = BASE_DELAY_MS * 2 ** next * (0.5 + Math.random());
           queue.set(key, { ...entry, attempts: next, readyAt: Date.now() + delay });
         } else {
           /**
-           * Quatre pannes d'affilée : on lâche pour cette fois, **sans**
-           * marquer le code absent. La différence compte — une coupure réseau
-           * n'est pas une carte inexistante, et la ligne doit repartir en file
-           * au prochain démarrage.
+           * Four outages in a row: we let go for this time, **without** marking
+           * the code absent. The difference matters — a network outage is not a
+           * non-existent card, and the line must be queued again at the next
+           * startup.
            */
-          console.warn(`[atem] résolution abandonnée pour ${entry.setCode} :`, err);
+          console.warn(`[atem] resolution abandoned for ${entry.setCode}:`, err);
         }
       }
     }
@@ -111,7 +110,7 @@ async function drain(): Promise<void> {
   }
 }
 
-/** Tests : vide la file. */
+/** Tests: empties the queue. */
 export function resetResolveQueue(): void {
   queue.clear();
   if (timer) clearTimeout(timer);
@@ -123,7 +122,7 @@ export function pendingCount(): number {
   return queue.size;
 }
 
-/** Tests : traite la file tout de suite, sans attendre le minuteur. */
+/** Tests: drains the queue right away, without waiting for the timer. */
 export async function drainNow(): Promise<void> {
   await drain();
 }

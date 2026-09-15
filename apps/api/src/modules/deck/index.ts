@@ -1,4 +1,4 @@
-/** L'API publique du module deck. */
+/** The public API of the deck module. */
 export { deckRoutes } from "./routes.js";
 export {
   type DeckCardEntry, type DeckDetail, type DeckSummary,

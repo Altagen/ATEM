@@ -1,10 +1,10 @@
 /**
- * Les routes des decks.
+ * The deck routes.
  *
- * **Les lectures prennent un propriétaire, les écritures un viewer** (ADR-009).
- * Aujourd'hui les deux sont la même personne — aucune route ne porte encore
- * l'identité d'autrui — mais les services le disent déjà, et c'est ce qui rendra
- * les Duellistes additifs plutôt qu'une reprise.
+ * **Reads take an owner, writes take a viewer** (ADR-009). Today both are the
+ * same person — no route carries someone else's identity yet — but the services
+ * already say so, and that is what will make the Duellists additive rather than
+ * a rewrite.
  */
 import { Hono } from "hono";
 import { z } from "zod";
@@ -24,7 +24,7 @@ const CreateBody = z.object({
 
 const PatchBody = z.object({
   name: z.string().trim().min(1).max(LIMITS.deckName.max).optional(),
-  /** `null` remet le deck à la racine ; absent ne touche pas au rangement. */
+  /** `null` moves the deck back to the root; absent leaves the filing alone. */
   folderId: z.string().uuid().nullable().optional(),
 });
 
@@ -74,12 +74,12 @@ export function deckRoutes(db: Database) {
   });
 
   /**
-   * Les dossiers, **avant** `/:id`.
+   * Folders, **before** `/:id`.
    *
-   * Hono essaie les routes dans l'ordre où on les déclare : plus bas,
-   * `/dossiers` serait avalé par `/:id`, qui répondrait « identifiant
-   * invalide » pour une liste de dossiers. Une épreuve tient cet ordre, parce
-   * qu'un déplacement de quelques lignes suffirait à le défaire sans bruit.
+   * Hono tries routes in declaration order: further down, `/dossiers` would be
+   * swallowed by `/:id`, which would answer “invalid identifier” for a folder
+   * list. A test holds that order, because moving a few lines would be enough
+   * to undo it silently.
    */
   app.get("/dossiers", async (c) => c.json({ items: await listFolders(db, viewerId(c)) }));
 
@@ -115,11 +115,11 @@ export function deckRoutes(db: Database) {
   });
 
   /**
-   * Pose la quantité d'une carte dans une zone.
+   * Sets the quantity of a card in a zone.
    *
-   * `PUT` et non `POST` : on déclare un état — « trois exemplaires au Main » —
-   * et non un incrément. Deux requêtes identiques laissent le même deck, ce qui
-   * met à l'abri du double appui sans compteur à réconcilier.
+   * `PUT` and not `POST`: we declare a state — “three copies in the Main” — not
+   * an increment. Two identical requests leave the same deck, which guards
+   * against a double tap without any counter to reconcile.
    */
   app.put("/:id/cartes", async (c) => {
     const parsed = CardBody.safeParse(await jsonBody(c));

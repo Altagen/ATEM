@@ -223,6 +223,18 @@ for (const file of [...files(WEB), ...files(API)]) {
     )) {
       employees.add(match[1]);
     }
+    /**
+     * `new AppError(code, message)` aussi.
+     *
+     * La phrase de la limitation de débit passait par là, et par là seulement :
+     * elle n'a jamais été traduite, et personne ne l'a vu — c'est l'écran qui
+     * l'affiche quand on se trompe trois fois de mot de passe.
+     */
+    for (const match of source.matchAll(
+      /\bnew AppError\(\s*"[a-z_]+"\s*,\s*"((?:[^"\\]|\\.)*)"/g,
+    )) {
+      employees.add(match[1]);
+    }
     continue;
   }
 

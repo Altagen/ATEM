@@ -1,10 +1,10 @@
 /**
- * Émission et lecture du jeton de session.
+ * Issuing and reading the session token.
  *
- * Le jeton porte `tv`, la version de session du compte. Elle est relue en base à
- * chaque requête : incrémenter la version en base invalide instantanément tous
- * les jetons déjà émis. Sans ça, « se déconnecter » ne fait que jeter un jeton
- * qui reste valable jusqu'à son expiration.
+ * The token carries `tv`, the account's session version. It is read back from
+ * the database on every request: incrementing the version instantly invalidates
+ * every token already issued. Without it, “sign out” merely discards a token
+ * that stays valid until it expires.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { requireJwtSecret } from "./secret.js";
@@ -40,7 +40,7 @@ export function readToken(token: string): TokenPayload | null {
 
   const expected = Buffer.from(sign(`${header}.${payload}`));
   const received = Buffer.from(signature);
-  // Longueurs différentes : `timingSafeEqual` lèverait au lieu de refuser.
+  // Different lengths: `timingSafeEqual` would throw instead of refusing.
   if (expected.length !== received.length) return null;
   if (!timingSafeEqual(expected, received)) return null;
 

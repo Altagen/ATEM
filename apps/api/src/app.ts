@@ -1,9 +1,9 @@
 /**
- * L'assemblage.
+ * The assembly.
  *
- * L'ordre compte : Hono n'applique un middleware qu'aux routes déclarées
- * **après** lui. En-têtes de sécurité, borne de corps, adresse appelante,
- * session, garde CSRF — puis les modules.
+ * Order matters: Hono applies a middleware only to routes declared **after**
+ * it. Security headers, body limit, caller address, session, CSRF guard — then
+ * the modules.
  */
 import { Hono } from "hono";
 import { ZodError } from "zod";
@@ -33,7 +33,7 @@ export function createApp(db: Database) {
     if (err instanceof ZodError) {
       return c.json({ error: "invalid_input", issues: err.issues }, 400);
     }
-    console.error("[atem] erreur non gérée :", err);
+    console.error("[atem] unhandled error:", err);
     return c.json({ error: "internal" }, 500);
   });
 

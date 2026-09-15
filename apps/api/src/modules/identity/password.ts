@@ -1,20 +1,20 @@
 /**
- * Le hachage des mots de passe. Porté d'ATEM-old, où il était déjà mûr.
+ * Password hashing. Ported from ATEM-old, where it was already mature.
  *
- * **Le format porte ses paramètres.** Un hachage écrit `sel:hachage` ne dit pas
- * sous quel coût il a été produit : relever ce coût — ce qu'il faut faire au fil
- * des années — invaliderait tous les mots de passe existants. Le format
- * `scrypt$N$r$p$sel$hachage` permet de monter sans rien casser, et l'ancien
- * reste relu.
+ * **The format carries its parameters.** A hash written `salt:hash` does not
+ * say at what cost it was produced: raising that cost — which has to happen
+ * over the years — would invalidate every existing password. The
+ * `scrypt$N$r$p$salt$hash` format makes it possible to raise it without
+ * breaking anything, and the old shape is still read.
  *
- * **Le hachage est asynchrone.** `scryptSync` bloque la boucle d'événements
- * pendant sa centaine de millisecondes : c'est un déni de service qu'on
- * s'inflige, et il s'aggrave précisément quand on relève le coût.
+ * **Hashing is asynchronous.** `scryptSync` blocks the event loop for its
+ * hundred-odd milliseconds: that is a denial of service inflicted on oneself,
+ * and it gets worse precisely when the cost is raised.
  *
- * **Le coût.** `N = 2^16` demande 64 Mo par hachage simultané. La recommandation
- * courante est `2^17`, soit 128 Mo — ce qu'une petite instance ne tient pas si
- * trente personnes se connectent en même temps. Le facteur quatre est pris, la
- * marge est notée, et le format permet de monter le jour venu.
+ * **The cost.** `N = 2^16` asks 64 MB per concurrent hash. The current
+ * recommendation is `2^17`, i.e. 128 MB — which a small instance cannot hold if
+ * thirty people sign in at once. The factor of four is taken, the margin is
+ * noted, and the format allows raising it when the day comes.
  */
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
@@ -30,12 +30,12 @@ const CURRENT_PARAMS = { N: 65536, r: 8, p: 1 } as const;
 
 const KEY_LENGTH = 64;
 
-/** `scrypt` refuse de travailler si `maxmem` ne dépasse pas `128 · N · r`. */
+/** `scrypt` refuses to work unless `maxmem` exceeds `128 · N · r`. */
 const memoryFor = (N: number, r: number) => Math.max(64, 128 * N * r * 2);
 
 type Params = { N: number; r: number; p: number };
 
-/** Un hachage `sel:hachage` vient de `scryptSync(mdp, sel, 64)`, coût par défaut. */
+/** A `salt:hash` hash comes from `scryptSync(password, salt, 64)`, default cost. */
 const LEGACY_PARAMS: Params = { N: 16384, r: 8, p: 1 };
 
 function parse(stored: string): { params: Params; salt: string; hash: string } | null {
@@ -73,22 +73,22 @@ export async function verifyPassword(password: string, stored: string): Promise<
       N, r, p, maxmem: memoryFor(N, r),
     });
   } catch {
-    // Paramètres impossibles dans un hachage abîmé : on refuse, sans lever.
+    // Impossible parameters in a damaged hash: we refuse, without throwing.
     return false;
   }
 
   const expected = Buffer.from(read.hash, "hex");
-  // `timingSafeEqual` exige deux tampons de même longueur : un hachage tronqué
-  // ferait lever plutôt que refuser.
+  // `timingSafeEqual` requires two buffers of the same length: a truncated hash
+  // would throw rather than refuse.
   if (expected.length !== derived.length) return false;
   return timingSafeEqual(expected, derived);
 }
 
 /**
- * Ce hachage mérite-t-il d'être refait ?
+ * Does this hash deserve to be recomputed?
  *
- * Le refaire demande le mot de passe en clair : ça ne peut se produire qu'à la
- * connexion, et c'est exactement là que l'appel a lieu.
+ * Recomputing needs the password in the clear: that can only happen at sign-in,
+ * and that is exactly where the call is made.
  */
 export function needsRehash(stored: string): boolean {
   const read = parse(stored);

@@ -10,27 +10,25 @@ export function referentialRoutes(db: Database) {
   const app = new Hono();
 
   /**
-   * Le catalogue exige une session.
+   * The catalogue requires a session.
    *
-   * Il reste volontairement pauvre : la recherche par nom a été retirée avec
-   * l'écran « Catalogue », qui n'existait pas dans ATEM-old et doublait une
-   * fonction que la collection assure déjà. Ajouter une carte à la collection
-   * résout son code par `POST /collection/adjust`, pas par ici.
+   * It stays deliberately thin: search by name was removed along with the
+   * “Catalogue” screen, which did not exist in ATEM-old and duplicated a
+   * function the collection already provides. Adding a card to the collection
+   * resolves its code through `POST /collection/adjust`, not through here.
    */
   app.use("*", requireViewer);
 
   /**
-   * Le nom d'une carte, à partir de son set code — **sans rien inscrire nulle
-   * part**.
+   * A card's name from its set code — **without writing anywhere**.
    *
-   * C'est ce dont la scanliste a besoin : elle inventorie un lot sans le verser,
-   * et doit pouvoir afficher « Grande Baleine » plutôt que « LTGY-FR008 ». Elle
-   * ne peut pas passer par `POST /collection/adjust`, qui ajouterait la carte à
-   * la collection — c'est précisément ce qu'elle refuse de faire.
+   * This is what the scanlist needs: it inventories a batch without pouring it,
+   * and must be able to display “Great White” rather than “LTGY-FR008”. It
+   * cannot go through `POST /collection/adjust`, which would add the card to
+   * the collection — precisely what it refuses to do.
    *
-   * La résolution peut enrichir le référentiel au passage : c'est sa raison
-   * d'être, et c'est partagé par tout le monde. Ce qu'elle ne touche jamais,
-   * c'est l'inventaire de qui que ce soit.
+   * Resolution may enrich the referential along the way: that is its purpose,
+   * and it is shared by everyone. What it never touches is anyone's inventory.
    */
   app.get("/impressions/:setCode", async (c) => {
     const setCode = c.req.param("setCode");
@@ -51,7 +49,7 @@ export function referentialRoutes(db: Database) {
     });
   });
 
-  /** La carte et toutes ses éditions — ce qu'affiche le bloc « Autres éditions ». */
+  /** The card and all its editions — what the “Other printings” block shows. */
   app.get("/cards/:passcode", async (c) => {
     const passcode = Number(c.req.param("passcode"));
     if (!Number.isInteger(passcode)) throw invalidInput("Invalid passcode.");

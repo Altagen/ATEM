@@ -1,9 +1,9 @@
 /**
- * Les erreurs que les routes savent traduire en réponse HTTP.
+ * The errors routes know how to turn into an HTTP response.
  *
- * Un service ne connaît pas le HTTP : il lève une erreur qui décrit *ce qui ne va
- * pas*, et la couche route décide du code. ATEM-old comparait des chaînes
- * (`msg === "folder_max_depth"`) — un renommage silencieux cassait la réponse.
+ * A service knows nothing about HTTP: it throws an error describing *what is
+ * wrong*, and the route layer decides the status. ATEM-old compared strings
+ * (`msg === "folder_max_depth"`) — a silent rename broke the response.
  */
 export type ErrorCode =
   | "not_found"
@@ -40,9 +40,9 @@ export class AppError extends Error {
   }
 }
 
-export const notFound = (m = "Ressource introuvable") => new AppError("not_found", m);
+export const notFound = (m = "Resource not found") => new AppError("not_found", m);
 export const conflict = (m: string, d?: Record<string, unknown>) => new AppError("conflict", m, d);
 export const invalidInput = (m: string, d?: Record<string, unknown>) =>
   new AppError("invalid_input", m, d);
-export const unauthorized = (m = "Authentification requise") => new AppError("unauthorized", m);
-export const forbidden = (m = "Accès refusé") => new AppError("forbidden", m);
+export const unauthorized = (m = "Authentication required") => new AppError("unauthorized", m);
+export const forbidden = (m = "Access denied") => new AppError("forbidden", m);

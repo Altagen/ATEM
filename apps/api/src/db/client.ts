@@ -1,8 +1,8 @@
 /**
- * La connexion à la base.
+ * The database connection.
  *
- * `DATABASE_URL` absente fait échouer le démarrage plutôt que la première
- * requête : une instance mal configurée doit refuser de servir, pas servir mal.
+ * A missing `DATABASE_URL` fails startup rather than the first query: a
+ * misconfigured instance must refuse to serve, not serve badly.
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -13,14 +13,14 @@ export type Database = ReturnType<typeof createDatabase>["db"];
 export function createDatabase(url = process.env.DATABASE_URL) {
   if (!url) {
     throw new Error(
-      "DATABASE_URL est requise. Exemple : postgres://atem:motdepasse@localhost:5432/atem",
+      "DATABASE_URL is required. Example: postgres://atem:password@localhost:5432/atem",
     );
   }
 
   const sql = postgres(url, {
     max: Number(process.env.ATEM_DB_POOL ?? 10),
-    // Les requêtes préparées ne survivent pas à un PgBouncer en mode transaction :
-    // il redistribue les connexions et l'énoncé préparé n'est plus là.
+    // Prepared statements do not survive a PgBouncer in transaction mode: it
+    // redistributes connections and the prepared statement is no longer there.
     prepare: false,
   });
 

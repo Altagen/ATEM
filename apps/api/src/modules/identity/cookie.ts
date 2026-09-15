@@ -1,14 +1,13 @@
 /**
- * Le transport du jeton.
+ * How the token travels.
  *
- * Le jeton est `httpOnly` : aucun script de la page ne peut le lire, ce qui le
- * met hors de portée d'une injection.
+ * The token is `httpOnly`: no script on the page can read it, which puts it out
+ * of reach of an injection.
  *
- * Il y avait ici un second cookie, lisible, censé dire au front qu'une session
- * existe. Personne ne l'a jamais lu — le front demande `/auth/me`, ce qui lui
- * rend l'identité en même temps que la réponse. Il partait donc à chaque
- * requête pour rien, avec un commentaire qui décrivait un rôle que rien ne
- * jouait.
+ * There was a second, readable cookie here, meant to tell the front that a
+ * session exists. Nobody ever read it — the front asks `/auth/me`, which gives
+ * it the identity along with the answer. So it went out on every request for
+ * nothing, with a comment describing a role nothing played.
  */
 import type { Context } from "hono";
 import { deleteCookie, setCookie } from "hono/cookie";
@@ -16,9 +15,8 @@ import { deleteCookie, setCookie } from "hono/cookie";
 export const SESSION_COOKIE = "atem_session";
 
 /**
- * `Secure` est levé sur localhost uniquement : en développement, le navigateur
- * refuserait un cookie `Secure` servi en clair, et personne ne pourrait se
- * connecter.
+ * `Secure` is lifted on localhost only: in development the browser would refuse
+ * a `Secure` cookie served in the clear, and nobody could sign in.
  */
 function isPlainLocalhost(c: Context): boolean {
   const host = new URL(c.req.url).hostname;

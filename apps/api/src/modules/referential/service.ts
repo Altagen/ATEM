@@ -1,10 +1,10 @@
 /**
- * Le module referential — le catalogue de cartes et d'impressions.
+ * The referential module — the catalogue of cards and printings.
  *
- * C'est le **seul** module qui écrit dans `cards` et `card_prints`. ATEM-old
- * laissait `collection` et `decks` y écrire directement, ce qui a produit trois
- * implémentations concurrentes de « carte pas encore résolue ». Les autres
- * modules passent désormais par les fonctions exportées ici.
+ * It is the **only** module that writes into `cards` and `card_prints`.
+ * ATEM-old let `collection` and `decks` write there directly, which produced
+ * three competing implementations of “card not resolved yet”. Other modules now
+ * go through the functions exported here.
  */
 import { and, eq, inArray, sql } from "drizzle-orm";
 import {
@@ -19,18 +19,17 @@ export type CardDetail = {
   name: string;
   desc: string | null;
   /**
-   * Vrai quand la carte n'est **pas encore** traduite dans le catalogue.
+   * True when the card is **not yet** translated in the catalogue.
    *
-   * 2 863 cartes sur 14 524 n'ont aucune donnée française chez YGOPRODeck — ni
-   * nom, ni texte. Et ce n'est pas une lacune définitive : mesuré par extension,
-   * les anciennes sont couvertes à 100 % (LOB, MRD, PSV, LON…) et les récentes
-   * à 0-60 % (ALIN 0 %, CORI 0 %, MP25 17 %, RA05 60 %). **La source accuse un
-   * retard**, elle ne renonce pas.
+   * 2,863 cards out of 14,524 have no French data at YGOPRODeck — no name, no
+   * text. And it is not a permanent gap: measured per set, old ones are covered
+   * 100% (LOB, MRD, PSV, LON…) and recent ones 0–60% (ALIN 0%, CORI 0%, MP25
+   * 17%, RA05 60%). **The source is behind**, it has not given up.
    *
-   * La distinction compte pour ce qu'on affiche : « cette carte n'a pas de nom
-   * français » est faux — « Aspischool » s'appelle « Banc d'aspis » —, alors que
-   * « pas encore dans le catalogue » est vrai et laisse espérer la prochaine
-   * synchronisation, qui les remplira.
+   * The distinction matters for what we display: “this card has no French name”
+   * is false — “Aspischool” is called « Banc d'aspis » — whereas “not in the
+   * catalogue yet” is true and leaves hope for the next sync, which will fill
+   * them in.
    */
   frenchPending: boolean;
   type: string | null;
@@ -50,8 +49,8 @@ export type CardDetail = {
 };
 
 /**
- * Le nom et le texte affichés suivent la langue demandée, avec repli sur
- * l'anglais — 2 863 cartes sur 14 524 n'ont pas de version française.
+ * The displayed name and text follow the requested language, falling back to
+ * English — 2,863 cards out of 14,524 have no French version.
  */
 export function toCardDetail(row: CardRow, locale: string): CardDetail {
   const wantsFr = locale === "fr";
@@ -60,7 +59,7 @@ export function toCardDetail(row: CardRow, locale: string): CardDetail {
     name: (wantsFr ? row.nameFr : null) ?? row.nameEn,
     desc: (wantsFr ? row.descFr : null) ?? row.descEn,
     // Le nom et le texte manquent ensemble : aucune carte n'a l'un sans l'autre
-    // (vérifié sur les 11 661 traduites). Un seul drapeau suffit.
+    // (checked over the 11,661 translated ones). One flag is enough.
     frenchPending: wantsFr && !row.nameFr,
     type: row.type,
     frameType: row.frameType,
@@ -105,16 +104,16 @@ export function cardFromYgo(en: YgoCard, fr?: YgoCard | null) {
 }
 
 /**
- * Enregistre une carte, **sans effacer ce qu'on savait déjà d'elle**.
+ * Saves a card **without erasing what we already knew about it**.
  *
- * Les champs localisés sont fusionnés, pas écrasés : `fetchCardById(id, "fr")`
- * rend `null` dès que l'API renvoie une erreur ou une charge utile qu'elle ne
- * sait pas relire, et un simple `set: {...input}` remplaçait alors le nom
- * français d'une carte par rien — au premier hoquet du point d'entrée français,
- * pendant qu'un joueur résolvait un scan.
+ * Localised fields are merged, not overwritten: `fetchCardById(id, "fr")`
+ * returns `null` as soon as the API answers with an error or a payload it
+ * cannot read back, and a plain `set: {...input}` then replaced a card's French
+ * name with nothing — at the first hiccup of the French endpoint, while a
+ * player was resolving a scan.
  *
- * `coalesce(nouveau, ancien)` garde la traduction connue tant qu'une meilleure
- * n'arrive pas. Une absence n'est pas une correction.
+ * `coalesce(new, old)` keeps the known translation until a better one arrives.
+ * An absence is not a correction.
  */
 export async function upsertCard(db: Database, input: ReturnType<typeof cardFromYgo>) {
   const keepKnown = (column: string) =>
@@ -135,13 +134,13 @@ export async function upsertCard(db: Database, input: ReturnType<typeof cardFrom
 }
 
 /**
- * Crée ou met à jour une impression.
+ * Creates or updates a printing.
  *
- * L'identité est `(set_code, rarity, language)` — une même carte existe en
- * plusieurs raretés sous le même code. ATEM-old cherchait la ligne existante par
- * `LIMIT 20` puis filtrage en mémoire, alors qu'un index unique porte exactement
- * ces trois colonnes : au-delà de vingt impressions partageant un set code, il
- * ratait silencieusement la ligne et en créait une seconde.
+ * The identity is `(set_code, rarity, language)` — the same card exists in
+ * several rarities under one code. ATEM-old looked the existing row up with
+ * `LIMIT 20` then filtered in memory, while a unique index carries exactly
+ * those three columns: past twenty printings sharing a set code, it silently
+ * missed the row and created a second one.
  */
 export async function upsertPrint(
   db: Database,
@@ -179,24 +178,24 @@ export async function upsertPrint(
     })
     .returning();
 
-  if (!row) throw new Error(`upsert d'impression sans résultat pour ${setCode}`);
+  if (!row) throw new Error(`printing upsert returned nothing for ${setCode}`);
   return row;
 }
 
 /**
- * Inscrit une impression **sans attendre le réseau**.
+ * Records a printing **without waiting for the network**.
  *
- * `POST /collection` doit répondre tout de suite : le joueur vient de scanner
- * une carte et attend son « +1 ». La ligne existe donc immédiatement, en
- * `pending`, et la résolution se fait ensuite. C'est le besoin légitime derrière
- * les « stubs » d'ATEM-old — sans le passcode négatif.
+ * `POST /collection` must answer right away: the player has just scanned a card
+ * and is waiting for their “+1”. So the row exists immediately, as `pending`,
+ * and resolution happens afterwards. This is the legitimate need behind
+ * ATEM-old's “stubs” — without the negative passcode.
  */
 export async function ensurePlaceholderPrint(
   db: Database,
   rawSetCode: string,
   options: {
     language?: string | null;
-    /** Le passcode, s'il est connu : huit chiffres en bas à gauche de la carte. */
+    /** The passcode, when known: eight digits at the bottom left of the card. */
     passcode?: number | null;
   } = {},
 ): Promise<CardPrintRow> {
@@ -204,22 +203,22 @@ export async function ensurePlaceholderPrint(
   const language = (options.language ?? languageFromSetCode(setCode)).toLowerCase();
 
   /**
-   * Un passcode fourni tranche l'identité sans attendre le réseau.
+   * A supplied passcode settles the identity without waiting for the network.
    *
-   * C'est le recours quand le set code est illisible — carte abîmée, pochette,
-   * mauvaise lumière : les huit chiffres, eux, restent lisibles. On ne s'en sert
-   * que si la carte est **déjà** au catalogue : aller la chercher demanderait un
-   * appel réseau, et rien ne sort sur le chemin d'une requête.
+   * It is the fallback when the set code is unreadable — damaged card, sleeve,
+   * bad light: the eight digits stay legible. We use it only if the card is
+   * **already** in the catalogue: fetching it would require a network call, and
+   * nothing goes out on a request's path.
    *
-   * **Il ne dispense pas de regarder ce qu'on sait déjà.** Ce chemin rendait
-   * directement une impression neuve, sans rareté et sans consulter l'index
-   * local : ajouter `ALIN-FR084` avec son passcode fabriquait donc une seconde
-   * impression du même code et de la même langue, à rareté vide, à côté de
-   * celle que la résolution avait déjà établie en « Common ». Deux lignes pour
-   * la même carte dans la collection, et le même code affiché deux fois.
+   * **It does not excuse ignoring what we already know.** This path used to
+   * return a brand-new printing directly, with no rarity and without consulting
+   * the local index: adding `ALIN-FR084` with its passcode therefore built a
+   * second printing of the same code and language, with an empty rarity, next
+   * to the one resolution had already established as “Common”. Two rows for the
+   * same card in the collection, and the same code displayed twice.
    *
-   * Le passcode ne sert plus qu'à **nommer la carte** ; le reste passe par le
-   * chemin commun.
+   * The passcode now only serves to **name the card**; the rest goes through
+   * the common path.
    */
   const knownCard = options.passcode
     ? ((
@@ -233,14 +232,14 @@ export async function ensurePlaceholderPrint(
 
   const existing = await findLocalPrint(db, setCode, { language });
 
-  // Rien de connu : une ligne provisoire, que la file de résolution reprendra —
-  // ou déjà identifiée, si le passcode nous l'a dite.
+  // Nothing known: a provisional row, which the resolve queue will pick up —
+  // or an already identified one, if the passcode told us.
   if (!existing) {
     return upsertPrint(db, { setCode, cardPasscode: knownCard, language });
   }
 
-  // Trouvée sous le code exact du joueur : rien à faire — sauf si elle
-  // attendait encore et que le passcode vient de la nommer.
+  // Found under the player's exact code: nothing to do — unless it
+  // was still waiting and the passcode has just named it.
   if (existing.setCode === setCode) {
     if (knownCard !== null && existing.cardPasscode === null) {
       return upsertPrint(db, {
@@ -255,15 +254,15 @@ export async function ensurePlaceholderPrint(
   }
 
   /**
-   * Trouvée sous une **autre notation** du même code — le cas normal après un
-   * import complet du catalogue, qui ne contient que les codes anglais.
+   * Found under **another notation** of the same code — the normal case after a
+   * full catalogue import, which only contains English codes.
    *
-   * On matérialise alors le code réellement imprimé sur la carte du joueur, en
-   * reprenant la carte et l'édition déjà connues. Sans ça, sa ligne pointerait
-   * vers l'impression anglaise : le nom s'afficherait en anglais sur une carte
-   * française, et l'export lui rendrait un code qu'il n'a jamais saisi.
+   * We then materialise the code actually printed on the player's card, reusing
+   * the card and edition already known. Without that, their row would point at
+   * the English printing: the name would display in English on a French card,
+   * and the export would hand back a code they never typed.
    *
-   * Vu à l'écran avant d'être vu dans le code.
+   * Seen on screen before being seen in the code.
    */
   return upsertPrint(db, {
     setCode,
@@ -275,20 +274,20 @@ export async function ensurePlaceholderPrint(
 }
 
 /**
- * Inscrit qu'un code n'existe pas chez YGOPRODeck.
+ * Records that a code does not exist at YGOPRODeck.
  *
- * Trois états, et le troisième ne servait à rien : la base déclarait
- * `unidentified`, la collection le comptait, l'écran l'affichait — mais rien ne
- * l'écrivait jamais. Une impression que la file avait renoncé à identifier
- * restait `pending`, donc indistinguable d'une résolution simplement
- * interrompue. Conséquence : chaque redémarrage la remettait en file, pour
- * redemander un code dont on savait déjà qu'il n'existe pas.
+ * Three states, and the third served nothing: the database declared
+ * `unidentified`, the collection counted it, the screen displayed it — but
+ * nothing ever wrote it. A printing the queue had given up identifying stayed
+ * `pending`, hence indistinguishable from a merely interrupted resolution.
+ * Consequence: every restart queued it again, to ask once more for a code we
+ * already knew did not exist.
  *
- * C'est l'état terminal des codes suffixés du wiki français — voir
+ * It is the terminal state of the French wiki's suffixed codes — see
  * `docs/01-domain-model.md`.
  *
- * On ne touche que les lignes `pending` : une impression identifiée entre-temps
- * par un autre chemin ne doit pas être défaite.
+ * We only touch `pending` rows: a printing identified in the meantime by
+ * another path must not be undone.
  */
 export async function markUnidentified(db: Database, rawSetCode: string): Promise<number> {
   const setCode = normalizeSetCode(rawSetCode);
@@ -309,21 +308,21 @@ export async function markUnidentified(db: Database, rawSetCode: string): Promis
 }
 
 /**
- * Cherche une impression déjà connue localement.
+ * Looks for a printing already known locally.
  *
- * On tente le code exact, puis son équivalent anglais : une carte française dont
- * seule l'édition anglaise est en base est la même carte, et il ne faut pas
- * repartir sur le réseau pour l'apprendre. La préférence va à la rareté et à la
- * langue exactes, puis à la rareté seule, puis à la langue seule — cet ordre est
- * une politique métier héritée d'ATEM-old, pas un hasard.
+ * We try the exact code, then its English counterpart: a French card whose
+ * English edition alone is in the database is the same card, and there is no
+ * need to go back on the network to learn it. Preference goes to the exact
+ * rarity and language, then rarity alone, then language alone — that order is a
+ * business policy inherited from ATEM-old, not an accident.
  */
 async function findLocalPrint(
   db: Database,
   setCode: string,
   hints: { rarity?: string; language: string },
 ): Promise<CardPrintRow | null> {
-  // On joint sur la forme canonique : `LOB-001` et `LOB-EN001` sont la même
-  // impression, et les deux formes existent dans la source comme sur les cartes.
+  // We join on the canonical shape: `LOB-001` and `LOB-EN001` are the same
+  // printing, and both shapes exist in the source as on the cards.
   const rows = await db
     .select()
     .from(cardPrints)
@@ -332,18 +331,18 @@ async function findLocalPrint(
   if (rows.length === 0) return null;
 
   /**
-   * Une impression identifiée l'emporte toujours sur une provisoire.
+   * An identified printing always beats a provisional one.
    *
-   * Sans cette priorité, une ligne provisoire créée au scan — rareté vide, donc
-   * correspondance « exacte » avec les indices d'un second scan tout aussi
-   * vague — était préférée à la vraie édition arrivée entre-temps, et la
-   * consolidation ne se déclenchait jamais. Trouvé en écrivant le test de
-   * consolidation, pas en relisant le code.
+   * Without that priority, a provisional row created at scan time — empty
+   * rarity, hence an “exact” match with the equally vague hints of a second
+   * scan — was preferred over the real edition that had arrived in the
+   * meantime, and consolidation never triggered. Found while writing the
+   * consolidation test, not by rereading the code.
    */
   const wanted = hints.rarity?.trim() ?? "";
 
   const preference = (candidates: CardPrintRow[]): CardPrintRow | null => {
-    // Une rareté demandée l'emporte, quand elle existe.
+    // A requested rarity wins, when it exists.
     if (wanted) {
       const exact = candidates.find(
         (r) => r.setCode === setCode && r.rarity === wanted && r.language === hints.language,
@@ -352,15 +351,14 @@ async function findLocalPrint(
     }
 
     /**
-     * Sans rareté demandée, une rareté **connue** vaut mieux qu'une vide.
+     * With no rarity requested, a **known** rarity beats an empty one.
      *
-     * Une rareté vide veut dire « on ne sait pas encore », pas « cette
-     * impression n'en a pas ». La version précédente traitait le vide comme une
-     * valeur : interrogée sans préférence, elle trouvait « exactement » la
-     * ligne à rareté vide et la préférait à celle que la résolution avait
-     * établie. Un doublon né ailleurs devenait ainsi la réponse canonique, et
-     * les ajouts suivants s'empilaient dessus pendant que les anciens restaient
-     * sur l'autre.
+     * An empty rarity means “we do not know yet”, not “this printing has
+     * none”. The previous version treated the empty string as a value: asked
+     * without preference, it found the empty-rarity row “exactly” and preferred
+     * it to the one resolution had established. A duplicate born elsewhere thus
+     * became the canonical answer, and later additions piled onto it while the
+     * older ones stayed on the other.
      */
     const sameCodeKnown = candidates.find(
       (r) => r.setCode === setCode && r.language === hints.language && r.rarity !== "",
@@ -383,12 +381,12 @@ async function findLocalPrint(
 }
 
 /**
- * Résout un set code physique en impression complète.
+ * Resolves a physical set code into a full printing.
  *
- * Le code interrogé est l'équivalent **anglais** — seuls ceux-là sont indexés
- * chez YGOPRODeck. Le code réellement imprimé sur la carte du joueur reste
- * l'identité de son impression : c'est ce qu'il voit, ce qu'il scanne, et ce
- * qu'il retrouve à l'export.
+ * The code we query is the **English** counterpart — only those are indexed at
+ * YGOPRODeck. The code actually printed on the player's card stays the identity
+ * of their printing: it is what they see, what they scan, and what they find
+ * again in the export.
  */
 export async function resolvePrintBySetCode(
   db: Database,
@@ -402,8 +400,8 @@ export async function resolvePrintBySetCode(
   const local = await findLocalPrint(db, setCode, { rarity, language });
   if (local?.resolveStatus === "resolved") {
     if (local.setCode === setCode) return local;
-    // La carte est connue, mais sous son code anglais. On matérialise le code
-    // du joueur sans repartir sur le réseau.
+    // The card is known, but under its English code. We materialise the
+    // player's code without going back on the network.
     return upsertPrint(db, {
       setCode,
       cardPasscode: local.cardPasscode,
@@ -431,8 +429,8 @@ export async function resolvePrintBySetCode(
     language,
   });
 
-  // On enregistre aussi la contrepartie anglaise : la prochaine carte de la même
-  // édition, dans n'importe quelle langue, se résoudra sans appel réseau.
+  // We also record the English counterpart: the next card from the same
+  // edition, in any language, will resolve without a network call.
   const english = toEnglishLookupSetCode(setCode);
   if (english !== setCode) {
     await upsertPrint(db, {
@@ -448,15 +446,15 @@ export async function resolvePrintBySetCode(
 }
 
 /**
- * Les fiches d'un lot de cartes, par passcode.
+ * The records of a batch of cards, by passcode.
  *
- * Exposé pour `deck`, qui compose des cartes et non des impressions : il a
- * besoin du nom, du cadre et du statut de banlist pour quarante cartes à la
- * fois. Les demander une par une ferait quarante requêtes là où une suffit.
+ * Exposed for `deck`, which composes cards rather than printings: it needs the
+ * name, the frame and the banlist status for forty cards at once. Asking one by
+ * one would be forty queries where one suffices.
  *
- * Rendre les lignes telles quelles plutôt qu'un `CardDetail` : la langue
- * d'affichage d'un deck suit la carte, pas l'interface, et c'est l'appelant qui
- * sait ce qu'il montre.
+ * Returning the rows as they are rather than a `CardDetail`: a deck's display
+ * language follows the card, not the interface, and it is the caller who knows
+ * what it shows.
  */
 export async function cardsByPasscode(
   db: Database,
@@ -476,7 +474,7 @@ export async function getCard(
   return row ? toCardDetail(row, locale) : null;
 }
 
-/** Les impressions d'une carte, pour choisir l'édition que l'on possède. */
+/** A card's printings, to pick the edition one owns. */
 export async function listPrintsForCard(db: Database, passcode: number) {
   return db
     .select()
@@ -486,18 +484,17 @@ export async function listPrintsForCard(db: Database, passcode: number) {
 }
 
 /**
- * La vue que les autres modules joignent.
+ * The view other modules join against.
  *
- * `collection` a besoin de filtrer, trier et paginer sur des attributs qui
- * appartiennent au référentiel — le nom d'une carte, son attribut, son niveau,
- * la rareté de l'impression. Le faire en mémoire imposerait de tout charger
- * pour compter ; le faire en SQL imposait jusqu'ici d'importer nos tables, ce
- * qui rouvre exactement la porte par laquelle ATEM-old s'est perdu.
+ * `collection` needs to filter, sort and paginate on attributes that belong to
+ * the referential — a card's name, its attribute, its level, the printing's
+ * rarity. Doing it in memory would mean loading everything to count; doing it
+ * in SQL used to mean importing our tables, which reopens exactly the door
+ * ATEM-old got lost through.
  *
- * On expose donc une **sous-requête nommée**, aux colonnes stables. Les autres
- * modules la joignent comme une table, filtrent et trient dessus, et n'ont
- * jamais à savoir comment `cards` et `card_prints` sont faites — ni le droit
- * d'y écrire.
+ * So we expose a **named subquery**, with stable columns. Other modules join it
+ * like a table, filter and sort on it, and never have to know how `cards` and
+ * `card_prints` are built — nor any right to write into them.
  */
 export function printIndex(db: Database) {
   return db
@@ -510,14 +507,14 @@ export function printIndex(db: Database) {
       resolveStatus: cardPrints.resolveStatus,
       passcode: cards.passcode,
       /**
-       * Le nom **imprimé sur l'exemplaire**, choisi ici plutôt que chez
-       * l'appelant : c'est une règle du référentiel, et la calculer en SQL
-       * permet de trier et de chercher dessus sans charger toute la collection.
+       * The name **printed on the copy**, decided here rather than at the
+       * caller: it is a rule of the referential, and computing it in SQL allows
+       * sorting and searching on it without loading the whole collection.
        *
-       * Une carte achetée en anglais reste affichée en anglais sous une
-       * interface française — c'est ce qui est écrit sur le carton posé sur la
-       * table. ATEM-old faisait `nameFr ?? nameEn` sans condition et montrait
-       * des noms français à un anglophone.
+       * A card bought in English stays displayed in English under a French
+       * interface — that is what is written on the cardboard lying on the
+       * table. ATEM-old did `nameFr ?? nameEn` unconditionally and showed
+       * French names to an English speaker.
        */
       name: sql<string>`coalesce(
         case when ${cardPrints.language} = 'fr' then ${cards.nameFr} end,
@@ -544,8 +541,8 @@ export function printIndex(db: Database) {
       imageUrlSmall: cards.imageUrlSmall,
     })
     .from(cardPrints)
-    // `left join` : une impression pas encore identifiée n'a pas de carte, et
-    // elle doit rester visible — c'est justement celle qu'on veut corriger.
+    // `left join`: a printing not yet identified has no card, and
+    // it must stay visible — it is precisely the one to be corrected.
     .leftJoin(cards, eq(cardPrints.cardPasscode, cards.passcode))
     .as("print_index");
 }

@@ -1,9 +1,9 @@
 /**
- * L'authentification des requêtes.
+ * Request authentication.
  *
- * Le contenu du jeton n'est jamais cru sur parole : rôle, suspension et version
- * de session sont relus en base à chaque requête. Un jeton reste sinon valable
- * après une suspension, jusqu'à son expiration.
+ * The token's content is never taken at face value: role, suspension and
+ * session version are read back from the database on every request. Otherwise a
+ * token stays valid after a suspension, until it expires.
  */
 import { eq } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
@@ -28,7 +28,7 @@ function extractToken(c: Context): string | null {
   return getCookie(c, SESSION_COOKIE) ?? null;
 }
 
-/** Renseigne `viewer` quand la session est valide. Ne refuse jamais. */
+/** Fills in `viewer` when the session is valid. Never refuses. */
 export function attachViewer(db: Database): MiddlewareHandler {
   return async (c, next) => {
     c.set("viewer", null);
@@ -57,8 +57,10 @@ export function attachViewer(db: Database): MiddlewareHandler {
   };
 }
 
-/** Exige une session. À monter après `attachViewer`. */
+/** Requires a session. To be mounted after `attachViewer`. */
 export const requireViewer: MiddlewareHandler = async (c, next) => {
-  if (!c.get("viewer")) throw unauthorized();
+  // The message is spelled out: the default of `unauthorized()` would never
+  // reach the dictionary, and the screen would show it in English.
+  if (!c.get("viewer")) throw unauthorized("Authentication required.");
   await next();
 };

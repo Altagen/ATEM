@@ -8,251 +8,251 @@ import { createFolder, deleteFolder, listFolders, updateFolder } from "./folders
 const { app, db } = createTestApp();
 
 /**
- * Les dossiers de decks.
+ * Deck folders.
  *
- * ATEM-old avait la bonne logique — profondeur, cycles, réattache — et **aucune
- * épreuve**. C'est précisément le genre de code qu'on ne relit jamais et qui se
- * défait au premier remaniement : trois règles qui parlent d'un arbre, dont
- * aucune ne tient dans une contrainte de colonne.
+ * ATEM-old had the right logic — depth, cycles, re-attaching — and **no test at
+ * all**. That is exactly the kind of code nobody rereads and that comes undone
+ * at the first refactor: three rules that speak of a tree, none of which fits
+ * in a column constraint.
  */
 
 async function newUser() {
   const { user } = await registerUser(db, {
-    email: freshEmail("dossier"),
+    email: freshEmail("folder"),
     password: "Un-Mot-De-Passe-1!",
-    displayName: "Rangeur",
+    displayName: "Filer",
   });
   return user;
 }
 
-test("un dossier se crée à la racine, et porte son chemin", async () => {
+test("a folder is created at the root, and carries its path", async () => {
   const user = await newUser();
   const meta = await createFolder(db, user.id, { name: "Meta" });
 
   assert.equal(meta.parentId, null);
   assert.deepEqual(meta.path, ["Meta"]);
-  assert.equal(meta.depth, 1, "la racine est le premier étage");
+  assert.equal(meta.depth, 1, "the root is the first level");
 
   const tier1 = await createFolder(db, user.id, { name: "Tier 1", parentId: meta.id });
   assert.deepEqual(tier1.path, ["Meta", "Tier 1"]);
   assert.equal(tier1.depth, 2);
 
-  const tous = await listFolders(db, user.id);
-  assert.deepEqual(tous.map((f) => f.path.join(" / ")), ["Meta", "Meta / Tier 1"]);
+  const all = await listFolders(db, user.id);
+  assert.deepEqual(all.map((f) => f.path.join(" / ")), ["Meta", "Meta / Tier 1"]);
 });
 
-test("deux dossiers du même nom ne se rangent pas côte à côte", async () => {
+test("two folders with the same name are not filed side by side", async () => {
   /**
-   * `nulls not distinct` est ce qui fait que la règle vaut **aussi à la
-   * racine**. Sans lui, Postgres tient deux `parent_id` nuls pour différents et
-   * l'on peut créer deux « Meta » à la racine — là où l'on crée le plus.
+   * `nulls not distinct` is what makes the rule hold **at the root too**.
+   * Without it, Postgres treats two null `parent_id` as different and one can
+   * create two “Meta” at the root — where people create the most.
    */
   const user = await newUser();
-  await createFolder(db, user.id, { name: "Doublon" });
+  await createFolder(db, user.id, { name: "Duplicate" });
   await assert.rejects(
-    () => createFolder(db, user.id, { name: "Doublon" }),
+    () => createFolder(db, user.id, { name: "Duplicate" }),
     /already filed in the same place/,
   );
 
-  // Le même nom ailleurs reste permis : c'est un chemin différent.
-  const autre = await createFolder(db, user.id, { name: "Ailleurs" });
-  const dedans = await createFolder(db, user.id, { name: "Doublon", parentId: autre.id });
-  assert.deepEqual(dedans.path, ["Ailleurs", "Doublon"]);
+  // The same name elsewhere stays allowed: it is a different path.
+  const elsewhere = await createFolder(db, user.id, { name: "Elsewhere" });
+  const inside = await createFolder(db, user.id, { name: "Duplicate", parentId: elsewhere.id });
+  assert.deepEqual(inside.path, ["Elsewhere", "Duplicate"]);
 });
 
-test("on ne s'emboîte pas au-delà du dernier étage", async () => {
+test("nesting does not go past the last level", async () => {
   const user = await newUser();
-  const un = await createFolder(db, user.id, { name: "Un" });
-  const deux = await createFolder(db, user.id, { name: "Deux", parentId: un.id });
-  const trois = await createFolder(db, user.id, { name: "Trois", parentId: deux.id });
-  assert.equal(trois.depth, 3);
+  const one = await createFolder(db, user.id, { name: "One" });
+  const two = await createFolder(db, user.id, { name: "Two", parentId: one.id });
+  const three = await createFolder(db, user.id, { name: "Three", parentId: two.id });
+  assert.equal(three.depth, 3);
 
   await assert.rejects(
-    () => createFolder(db, user.id, { name: "Quatre", parentId: trois.id }),
+    () => createFolder(db, user.id, { name: "Four", parentId: three.id }),
     /last level/,
   );
 });
 
-test("un dossier ne se range ni dans lui-même, ni dans l'un des siens", async () => {
+test("a folder is filed neither inside itself, nor inside one of its own", async () => {
   /**
-   * Le cas qui perd une branche sans rien effacer : le sous-arbre déplacé sous
-   * son propre descendant n'est plus joignable depuis la racine, et il ne reste
-   * qu'un cycle que plus aucune remontée ne quitte.
+   * The case that loses a branch without deleting anything: the subtree moved
+   * under its own descendant is no longer reachable from the root, and all that
+   * is left is a cycle no upward walk ever leaves.
    */
   const user = await newUser();
   const parent = await createFolder(db, user.id, { name: "Parent" });
-  const enfant = await createFolder(db, user.id, { name: "Enfant", parentId: parent.id });
+  const child = await createFolder(db, user.id, { name: "Child", parentId: parent.id });
 
   await assert.rejects(
     () => updateFolder(db, user.id, parent.id, { parentId: parent.id }),
     /inside itself/,
   );
   await assert.rejects(
-    () => updateFolder(db, user.id, parent.id, { parentId: enfant.id }),
+    () => updateFolder(db, user.id, parent.id, { parentId: child.id }),
     /inside one of its own/,
   );
 });
 
-test("un dossier déplacé emmène ses étages avec lui", async () => {
+test("a moved folder takes its levels with it", async () => {
   /**
-   * Le contrôle naïf regarde la profondeur du dossier déplacé. Ce qui compte
-   * est la hauteur de **son sous-arbre** : un dossier d'un étage qui en porte un
-   * second en occupe deux là où il arrive.
+   * The naive check looks at the depth of the folder being moved. What counts
+   * is the height of **its subtree**: a one-level folder carrying a second
+   * occupies two where it lands.
    */
   const user = await newUser();
-  const accueil = await createFolder(db, user.id, { name: "Accueil" });
-  const sousAccueil = await createFolder(db, user.id, { name: "Sous-accueil", parentId: accueil.id });
+  const host = await createFolder(db, user.id, { name: "Host" });
+  const subHost = await createFolder(db, user.id, { name: "Sub-host", parentId: host.id });
 
-  const porteur = await createFolder(db, user.id, { name: "Porteur" });
-  await createFolder(db, user.id, { name: "Porté", parentId: porteur.id });
+  const carrier = await createFolder(db, user.id, { name: "Carrier" });
+  await createFolder(db, user.id, { name: "Carried", parentId: carrier.id });
 
-  // Deux étages posés sur un dossier au deuxième : ça ferait quatre.
+  // Two levels dropped on a folder sitting on the second: that would make four.
   await assert.rejects(
-    () => updateFolder(db, user.id, porteur.id, { parentId: sousAccueil.id }),
+    () => updateFolder(db, user.id, carrier.id, { parentId: subHost.id }),
     /go past the last level/,
   );
 
-  // Un étage plus haut, ça tient tout juste.
-  const déplacé = await updateFolder(db, user.id, porteur.id, { parentId: accueil.id });
-  assert.deepEqual(déplacé.path, ["Accueil", "Porteur"]);
+  // One level higher, it just fits.
+  const moved = await updateFolder(db, user.id, carrier.id, { parentId: host.id });
+  assert.deepEqual(moved.path, ["Host", "Carrier"]);
 });
 
-test("effacer un dossier remonte ce qu'il contient, sans rien perdre", async () => {
+test("deleting a folder moves its contents up, losing nothing", async () => {
   /**
-   * La règle d'ATEM-old, et la bonne — mais sa base disait l'inverse : le
-   * `parent_id` cascadait pendant que son service réattachait. Deux réponses
-   * contradictoires, et c'est la base qui gagne dès qu'une suppression passe
-   * ailleurs. Ici la base ne répond rien, la transaction fait tout.
+   * ATEM-old's rule, and the right one — but its database said the opposite:
+   * the `parent_id` cascaded while its service re-attached. Two contradictory
+   * answers, and the database is what wins as soon as a deletion goes
+   * elsewhere. Here the database answers nothing, the transaction does
+   * everything.
    */
   const user = await newUser();
-  const grand = await createFolder(db, user.id, { name: "Grand" });
-  const milieu = await createFolder(db, user.id, { name: "Milieu", parentId: grand.id });
-  const petit = await createFolder(db, user.id, { name: "Petit", parentId: milieu.id });
+  const big = await createFolder(db, user.id, { name: "Big" });
+  const middle = await createFolder(db, user.id, { name: "Middle", parentId: big.id });
+  const small = await createFolder(db, user.id, { name: "Small", parentId: middle.id });
 
-  const deck = await createDeck(db, user.id, "Rangé au milieu");
-  await updateDeck(db, user.id, deck.id, { folderId: milieu.id });
+  const deck = await createDeck(db, user.id, "Filed in the middle");
+  await updateDeck(db, user.id, deck.id, { folderId: middle.id });
 
-  await deleteFolder(db, user.id, milieu.id);
+  await deleteFolder(db, user.id, middle.id);
 
-  const restants = await listFolders(db, user.id);
+  const left = await listFolders(db, user.id);
   assert.deepEqual(
-    restants.map((f) => f.path.join(" / ")).sort(),
-    ["Grand", "Grand / Petit"],
-    "le sous-dossier a remonté d'un étage",
+    left.map((f) => f.path.join(" / ")).sort(),
+    ["Big", "Big / Small"],
+    "the subfolder moved up one level",
   );
 
-  const [sommaire] = await listDecks(db, user.id);
-  assert.equal(sommaire?.folderId, grand.id, "le deck aussi, et il existe toujours");
-  assert.equal(restants.find((f) => f.id === petit.id)?.parentId, grand.id);
+  const [summary] = await listDecks(db, user.id);
+  assert.equal(summary?.folderId, big.id, "so did the deck, and it still exists");
+  assert.equal(left.find((f) => f.id === small.id)?.parentId, big.id);
 });
 
-test("effacer un dossier de la racine remet son contenu à la racine", async () => {
+test("deleting a root folder puts its contents back at the root", async () => {
   const user = await newUser();
-  const racine = await createFolder(db, user.id, { name: "À jeter" });
-  const dedans = await createFolder(db, user.id, { name: "Dedans", parentId: racine.id });
-  const deck = await createDeck(db, user.id, "Sans dossier bientôt");
-  await updateDeck(db, user.id, deck.id, { folderId: racine.id });
+  const root = await createFolder(db, user.id, { name: "To discard" });
+  const inside = await createFolder(db, user.id, { name: "Inside", parentId: root.id });
+  const deck = await createDeck(db, user.id, "Soon folderless");
+  await updateDeck(db, user.id, deck.id, { folderId: root.id });
 
-  await deleteFolder(db, user.id, racine.id);
+  await deleteFolder(db, user.id, root.id);
 
-  const restants = await listFolders(db, user.id);
-  assert.equal(restants.find((f) => f.id === dedans.id)?.parentId, null);
+  const left = await listFolders(db, user.id);
+  assert.equal(left.find((f) => f.id === inside.id)?.parentId, null);
   assert.equal((await listDecks(db, user.id))[0]?.folderId, null);
 });
 
-test("un enfant qui remonte sur un homonyme fait refuser la suppression", async () => {
+test("a child moving up onto a namesake makes the deletion refuse", async () => {
   /**
-   * On ne renomme pas d'office : le nom appartient à celui qui l'a écrit, et
-   * deux « Tier 1 » côte à côte seraient sa surprise, pas son choix.
+   * We do not rename on our own: the name belongs to whoever wrote it, and two
+   * “Tier 1” side by side would be their surprise, not their choice.
    */
   const user = await newUser();
-  const haut = await createFolder(db, user.id, { name: "Haut" });
-  const intermédiaire = await createFolder(db, user.id, { name: "Intermédiaire", parentId: haut.id });
-  await createFolder(db, user.id, { name: "Jumeau", parentId: haut.id });
-  await createFolder(db, user.id, { name: "Jumeau", parentId: intermédiaire.id });
+  const top = await createFolder(db, user.id, { name: "Top" });
+  const middle = await createFolder(db, user.id, { name: "Middle", parentId: top.id });
+  await createFolder(db, user.id, { name: "Twin", parentId: top.id });
+  await createFolder(db, user.id, { name: "Twin", parentId: middle.id });
 
-  await assert.rejects(
-    () => deleteFolder(db, user.id, intermédiaire.id),
-    /on the level above/,
-  );
-  // Et rien n'a bougé : la transaction est repartie en arrière.
+  await assert.rejects(() => deleteFolder(db, user.id, middle.id), /on the level above/);
+  // And nothing moved: the transaction rolled back.
   assert.equal((await listFolders(db, user.id)).length, 4);
 });
 
-test("le dossier d'un autre est introuvable, pas interdit", async () => {
-  // Un 403 dirait qu'il existe. Le filtre est dans la requête.
-  const moi = await newUser();
-  const autre = await newUser();
-  const sien = await createFolder(db, autre.id, { name: "Le sien" });
+test("someone else's folder is not found, rather than forbidden", async () => {
+  // A 403 would say it exists. The filter is in the query.
+  const me = await newUser();
+  const other = await newUser();
+  const theirs = await createFolder(db, other.id, { name: "Theirs" });
 
-  await assert.rejects(() => updateFolder(db, moi.id, sien.id, { name: "Volé" }), /not found/);
-  await assert.rejects(() => deleteFolder(db, moi.id, sien.id), /not found/);
+  await assert.rejects(() => updateFolder(db, me.id, theirs.id, { name: "Stolen" }), /not found/);
+  await assert.rejects(() => deleteFolder(db, me.id, theirs.id), /not found/);
 
-  const deck = await createDeck(db, moi.id, "Mon deck");
+  const deck = await createDeck(db, me.id, "My deck");
   await assert.rejects(
-    () => updateDeck(db, moi.id, deck.id, { folderId: sien.id }),
+    () => updateDeck(db, me.id, deck.id, { folderId: theirs.id }),
     /not found/,
-    "on ne dépose pas son deck chez un inconnu en devinant un UUID",
+    "one does not drop a deck into a stranger's folder by guessing a UUID",
   );
 });
 
-test("un identifiant qui n'est pas un UUID est refusé, pas planté", async () => {
+test("an identifier that is not a UUID is refused, not crashed on", async () => {
   const user = await newUser();
   await assert.rejects(
-    () => updateFolder(db, user.id, "pas-un-uuid", { name: "x" }),
+    () => updateFolder(db, user.id, "not-a-uuid", { name: "x" }),
     /Invalid identifier/,
   );
   await assert.rejects(() => deleteFolder(db, user.id, "../../etc"), /Invalid identifier/);
 });
 
-test("effacer son compte emporte ses dossiers", async () => {
+test("deleting your account takes your folders with it", async () => {
   /**
-   * Le `parent_id` ne cascade pas — c'est voulu — et il ne doit pas pour autant
-   * bloquer l'effacement du compte, qui supprime toute la branche d'un coup.
-   * La contrainte est vérifiée en fin d'instruction : l'épreuve le prouve.
+   * The `parent_id` does not cascade — that is intended — and it must not block
+   * the account deletion either, which removes the whole branch at once. The
+   * constraint is checked at the end of the statement: this test proves it.
    */
   const user = await newUser();
-  const haut = await createFolder(db, user.id, { name: "Haut" });
-  const bas = await createFolder(db, user.id, { name: "Bas", parentId: haut.id });
-  await createFolder(db, user.id, { name: "Plus bas", parentId: bas.id });
+  const top = await createFolder(db, user.id, { name: "Top" });
+  const bottom = await createFolder(db, user.id, { name: "Bottom", parentId: top.id });
+  await createFolder(db, user.id, { name: "Lower still", parentId: bottom.id });
 
   await deleteAccount(db, user.id, "Un-Mot-De-Passe-1!");
   assert.equal((await listFolders(db, user.id)).length, 0);
 });
 
-test("la liste des dossiers passe avant celle d'un deck", async () => {
+test("the folder list comes before a deck's", async () => {
   /**
-   * Hono essaie les routes dans l'ordre de déclaration : `/decks/dossiers`
-   * déclarée après `/decks/:id` serait avalée, et répondrait « identifiant
-   * invalide » pour une liste de dossiers. Quelques lignes déplacées suffisent
-   * à le défaire, sans rien casser d'autre — donc on le tient ici.
+   * Hono tries routes in declaration order: `/decks/dossiers` declared after
+   * `/decks/:id` would be swallowed, and would answer “invalid identifier” for
+   * a folder list. A few lines moved are enough to undo it, without breaking
+   * anything else — so we hold it here.
    */
-  const { cookie } = await freshSession(app, "routes-dossiers");
-  const réponse = await jsonRequest(app, "GET", "/decks/dossiers", undefined, { cookie });
+  const { cookie } = await freshSession(app, "routes-folders");
+  const response = await jsonRequest(app, "GET", "/decks/dossiers", undefined, { cookie });
 
-  assert.equal(réponse.status, 200);
-  assert.deepEqual(await réponse.json(), { items: [] });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { items: [] });
 });
 
-test("les dossiers se créent, se renomment et se jettent par la route", async () => {
+test("folders are created, renamed and discarded through the route", async () => {
   const { cookie } = await freshSession(app, "routes-crud");
 
-  const créé = await jsonRequest(app, "POST", "/decks/dossiers", { name: "Par la route" }, { cookie });
-  assert.equal(créé.status, 201);
-  const dossier = (await créé.json()) as { id: string; name: string };
-  assert.equal(dossier.name, "Par la route");
-
-  const renommé = await jsonRequest(
-    app, "PATCH", `/decks/dossiers/${dossier.id}`, { name: "Renommé" }, { cookie },
+  const created = await jsonRequest(
+    app, "POST", "/decks/dossiers", { name: "Through the route" }, { cookie },
   );
-  assert.equal(renommé.status, 200);
-  assert.equal(((await renommé.json()) as { name: string }).name, "Renommé");
+  assert.equal(created.status, 201);
+  const folder = (await created.json()) as { id: string; name: string };
+  assert.equal(folder.name, "Through the route");
 
-  const jeté = await jsonRequest(
-    app, "DELETE", `/decks/dossiers/${dossier.id}`, undefined, { cookie },
+  const renamed = await jsonRequest(
+    app, "PATCH", `/decks/dossiers/${folder.id}`, { name: "Renamed" }, { cookie },
   );
-  assert.equal(jeté.status, 200);
+  assert.equal(renamed.status, 200);
+  assert.equal(((await renamed.json()) as { name: string }).name, "Renamed");
 
-  const liste = await jsonRequest(app, "GET", "/decks/dossiers", undefined, { cookie });
-  assert.deepEqual(await liste.json(), { items: [] });
+  const discarded = await jsonRequest(
+    app, "DELETE", `/decks/dossiers/${folder.id}`, undefined, { cookie },
+  );
+  assert.equal(discarded.status, 200);
+
+  const list = await jsonRequest(app, "GET", "/decks/dossiers", undefined, { cookie });
+  assert.deepEqual(await list.json(), { items: [] });
 });

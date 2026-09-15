@@ -1,24 +1,23 @@
 /**
- * Le module collection — ce que le joueur possède.
+ * The collection module — what the player owns.
  *
- * **Deux identités, et elles ne se confondent pas.**
+ * **Two identities, and they are not the same.**
  *
- * — `ownerId` : à qui appartiennent les cartes. Une lecture le prend, et
- *   n'importe quelle session peut lire n'importe quel inventaire — c'est ce qui
- *   permettra à un duelliste de regarder la collection d'un autre.
- * — `viewerId` : qui demande, tel que la session l'établit. **Toute écriture le
- *   prend, et lui seul.** Jamais une identité venue du chemin de la requête.
+ * — `ownerId`: whose cards these are. A read takes it, and any session may read
+ *   any inventory — that is what will let a duellist look at someone else's
+ *   collection.
+ * — `viewerId`: who is asking, as the session establishes it. **Every write
+ *   takes it, and it alone.** Never an identity coming from the request path.
  *
- * Les deux étaient la même variable, ce qui rendait le code sûr *par accident*
- * : il tenait parce qu'on ne pouvait pas être quelqu'un d'autre. Les nommer
- * séparément fait dire à chaque signature de quoi elle parle, et rend visible
- * la faute qui consisterait à passer un propriétaire là où un viewer est
- * attendu — voir ADR-009.
+ * Both used to be the same variable, which made the code safe *by accident*: it
+ * held because one could not be someone else. Naming them apart makes every
+ * signature say what it talks about, and makes visible the mistake of passing
+ * an owner where a viewer is expected — see ADR-009.
  *
- * Il n'écrit jamais dans `cards` ni dans `card_prints` : il appelle le module
- * `referential`. C'est la correction du défaut le plus profond d'ATEM-old, où
- * `collection` et `decks` créaient chacun leurs propres lignes de catalogue,
- * avec trois logiques concurrentes qui s'ignoraient.
+ * It never writes into `cards` or `card_prints`: it calls the `referential`
+ * module. That is the fix for ATEM-old's deepest flaw, where `collection` and
+ * `decks` each created their own catalogue rows, with three competing logics
+ * that ignored one another.
  */
 import { and, asc, desc, eq, gt, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { LIMITS, normalizeSetCode } from "@atem/shared";
@@ -48,7 +47,7 @@ export type CollectionItem = {
 };
 
 export type CollectionFilters = {
-  /** Cherche dans le nom de la carte comme dans le set code. */
+  /** Searches the card's name as well as the set code. */
   query?: string;
   type?: string[];
   /** Le type d'invocation : normal, effect, fusion, synchro, xyz, link, pendulum. */
@@ -56,12 +55,12 @@ export type CollectionFilters = {
   race?: string[];
   attribute?: string[];
   /**
-   * Niveau, rang et valeur de Lien — trois listes distinctes.
+   * Level, rank and Link rating — three distinct lists.
    *
-   * L'API range les trois dans le même champ `level` (et `link_value` pour le
-   * dernier), mais ce ne sont pas la même chose : un Xyz de rang 4 n'est pas un
-   * monstre de niveau 4, et les mélanger produirait un filtre qui ne veut rien
-   * dire. ATEM-old en faisait trois blocs de puces ; on les reprend.
+   * The API files all three under the same `level` field (and `link_value` for
+   * the last), but they are not the same thing: a Rank 4 Xyz is not a Level 4
+   * monster, and mixing them would produce a filter that means nothing.
+   * ATEM-old made three chip blocks of them; we keep that.
    */
   levels?: string[];
   ranks?: string[];
@@ -71,31 +70,31 @@ export type CollectionFilters = {
   language?: string;
   rarity?: string;
   favoritesOnly?: boolean;
-  /** Ne montrer que ce qui n'a pas encore été identifié. */
+  /** Show only what has not been identified yet. */
   unresolvedOnly?: boolean;
   /**
-   * La grande famille : monstre, magie, piège.
+   * The broad family: monster, spell, trap.
    *
-   * « Monstre » n'est pas un type unique côté API — il y en a vingt et un. On
-   * l'exprime par exclusion, ce qui reste juste au premier type que Konami
-   * ajoutera. Ce filtre était appliqué côté écran, **après** la pagination :
-   * sur une collection dont les soixante premières lignes sont des magies, la
-   * grille se vidait et le reste devenait inatteignable.
+   * “Monster” is not a single type on the API side — there are twenty-one. We
+   * express it by exclusion, which stays correct on the first type Konami adds.
+   * This filter used to be applied on the screen side, **after** pagination: on
+   * a collection whose first sixty rows are spells, the grid emptied and the
+   * rest became unreachable.
    */
   kind?: "monster" | "spell" | "trap";
   sort?: "name" | "recent" | "quantity" | "setCode";
-  /** Le sens du tri. ATEM-old le proposait ; s'en passer force à trier à l'envers. */
+  /** Sort direction. ATEM-old offered it; without it you sort backwards. */
   sortDir?: "asc" | "desc";
   limit?: number;
   offset?: number;
 };
 
 /**
- * Une ligne possédée, enrichie par la vue du référentiel.
+ * An owned row, enriched by the referential's view.
  *
- * Le nom imprimé, les attributs de la carte et ceux de l'impression viennent
- * de `printIndex` : `collection` ne connaît ni `cards` ni `card_prints`, et ne
- * peut donc ni les lire ni les écrire par erreur.
+ * The printed name, the card's attributes and the printing's come from
+ * `printIndex`: `collection` knows neither `cards` nor `card_prints`, and
+ * therefore can neither read nor write them by mistake.
  */
 type IndexRow = Awaited<ReturnType<typeof rowsQuery>>[number];
 
@@ -118,8 +117,8 @@ function toItem(row: IndexRow): CollectionItem {
     card: hasCard
       ? {
           passcode: row.passcode!,
-          // Le nom imprimé est calculé par le référentiel, en SQL : c'est sa
-          // règle, et la garder là permet de trier et de chercher dessus.
+          // The printed name is computed by the referential, in SQL: that is
+          // its rule, and keeping it there allows sorting and searching on it.
           name: row.name,
           desc: (row.language === "fr" ? row.descFr : null) ?? row.descEn,
           frenchPending: row.language === "fr" && !row.nameFr,
@@ -152,12 +151,12 @@ function buildFilters(
   if (filters.query?.trim()) {
     const term = `%${filters.query.trim()}%`;
     /**
-     * On cherche dans le nom imprimé, dans les deux langues, dans le set code
-     * **et dans le passcode**.
+     * We search the printed name, in both languages, the set code **and the
+     * passcode**.
      *
-     * Le passcode est les huit chiffres imprimés en bas à gauche de la carte :
-     * quand le set code est illisible, c'est ce qui reste à lire. ATEM-old le
-     * comparait déjà ; l'oublier privait d'un recours.
+     * The passcode is the eight digits printed at the bottom left of the card:
+     * when the set code is unreadable, it is what remains legible. ATEM-old
+     * already compared it; dropping it removed a fallback.
      */
     const matched = or(
       ilike(idx.name, term),
@@ -187,21 +186,20 @@ function buildFilters(
   }
 
   /**
-   * Une liste de nombres, débarrassée de ce qui n'en est pas.
+   * A list of numbers, stripped of what is not one.
    *
-   * Le résultat peut être **vide** — `?level=abc` — et c'est ce cas qui
-   * comptait : le gabarit écrivait alors `in ()`, que PostgreSQL refuse, et la
-   * requête entière partait en 500 avec une trace. Une valeur de filtre
-   * illisible est une demande à laquelle rien ne correspond, pas une panne du
-   * serveur ; on rend donc une clause toujours fausse, comme le fait déjà
-   * `inArray` pour les marqueurs de Lien.
+   * The result may be **empty** — `?level=abc` — and that is the case that
+   * mattered: the template then wrote `in ()`, which PostgreSQL refuses, and
+   * the whole query went out as a 500 with a stack trace. An unreadable filter
+   * value is a request nothing matches, not a server failure; so we return an
+   * always-false clause, as `inArray` already does for Link markers.
    */
   const numbers = (values: string[]) => values.map(Number).filter(Number.isFinite);
   const anyOf = (column: PrintIndex["level"], values: number[]) =>
     values.length > 0 ? sql`${column} in ${values}` : sql`false`;
 
   if (filters.levels?.length) {
-    // Le niveau, à l'exclusion des Xyz : eux ont un rang.
+    // The level, excluding Xyz: those have a rank.
     clauses.push(
       sql`${anyOf(idx.level, numbers(filters.levels))} and ${idx.type} not like '%XYZ%'`,
     );
@@ -223,8 +221,8 @@ const ordering = (
   sort: CollectionFilters["sort"],
   direction: CollectionFilters["sortDir"],
 ) => {
-  // Chaque critère a un sens naturel : le plus récent d'abord, mais le nom de A
-  // à Z. `sortDir` renverse ce que l'on a choisi, il ne le redéfinit pas.
+  // Each criterion has a natural direction: most recent first, but names from A
+  // to Z. `sortDir` reverses what was chosen, it does not redefine it.
   const natural = sort === "name" || sort === "setCode" ? "asc" : "desc";
   const wanted = direction ?? natural;
   const order = wanted === "asc" ? asc : desc;
@@ -242,12 +240,11 @@ const ordering = (
 };
 
 /**
- * La requête de base, dont `IndexRow` tire sa forme.
+ * The base query, from which `IndexRow` takes its shape.
  *
- * Les colonnes de la vue sont nommées une par une : Drizzle refuse qu'on
- * sélectionne une sous-requête entière comme un objet imbriqué. C'est un peu
- * verbeux, et ça a l'avantage de rendre visible ce que `collection` consomme
- * réellement du référentiel.
+ * The view's columns are named one by one: Drizzle refuses selecting a whole
+ * subquery as a nested object. It is a little verbose, and it has the advantage
+ * of making visible what `collection` actually consumes from the referential.
  */
 function rowsQuery(db: Database, idx: PrintIndex) {
   return db
@@ -309,13 +306,13 @@ export async function listCollection(
 }
 
 /**
- * Ajoute ou retire des exemplaires d'un set code.
+ * Adds or removes copies of a set code.
  *
- * **Aucun appel réseau ici.** Le joueur vient de scanner sa carte et attend son
- * « +1 » : la ligne est écrite tout de suite, sur une impression provisoire si
- * le code est inconnu, et la résolution part en tâche de fond — mais seulement
- * **après** la validation de la transaction, sinon la résolution course une
- * écriture qui n'est pas encore visible.
+ * **No network call here.** The player has just scanned their card and is
+ * waiting for their “+1”: the row is written right away, on a provisional
+ * printing if the code is unknown, and resolution goes out in the background —
+ * but only **after** the transaction commits, otherwise resolution races a
+ * write that is not visible yet.
  */
 export async function adjustQuantity(
   db: Database,
@@ -341,18 +338,18 @@ export async function adjustQuantity(
   const needsResolution = print.resolveStatus !== "resolved";
 
   /**
-   * Une seule écriture, pas un lire-puis-écrire.
+   * One single write, not a read-then-write.
    *
-   * La version précédente lisait la ligne puis la mettait à jour, sans verrou.
-   * Deux « +1 » simultanés — un double appui, ou le « +1 » du scanner pressé
-   * deux fois — lisaient la même quantité et écrivaient la même somme : un
-   * incrément perdu. Sur une ligne inexistante, les deux insertions se
-   * couraient dessus et l'une mourait sur l'index unique, en 500.
+   * The previous version read the row then updated it, without a lock. Two
+   * simultaneous “+1” — a double tap, or the scanner's “+1” pressed twice —
+   * read the same quantity and wrote the same sum: one increment lost. On a
+   * non-existent row, the two inserts raced and one died on the unique index,
+   * as a 500.
    *
-   * PostgreSQL fait désormais l'addition lui-même. Les bornes sont vérifiées
-   * **après** l'écriture, à l'intérieur de la transaction : dépasser les fait
-   * annuler, et l'utilisateur reçoit un message qui dit ce qui n'allait pas
-   * plutôt qu'une quantité rabotée en silence.
+   * PostgreSQL now does the addition itself. The bounds are checked **after**
+   * the write, inside the transaction: going past them rolls it back, and the
+   * user gets a message saying what was wrong rather than a quantity silently
+   * clipped.
    */
   const item = await db.transaction(async (tx) => {
     const [written] = await tx
@@ -372,7 +369,7 @@ export async function adjustQuantity(
       throw invalidInput("You cannot own fewer than zero copies.");
     }
     if (written.quantity > LIMITS.quantity.max) {
-      throw invalidInput(`Au plus ${LIMITS.quantity.max} exemplaires d'une même édition.`);
+      throw invalidInput(`At most ${LIMITS.quantity.max} copies of one edition.`);
     }
     return written;
   });
@@ -386,11 +383,11 @@ export async function adjustQuantity(
 }
 
 /**
- * La note libre d'une ligne.
+ * A row's free-form note.
  *
- * ATEM-old la proposait au bas de la fiche : l'état de l'exemplaire, sa
- * provenance, ce qu'on en a payé. Elle voyage aussi dans l'export CSV, où elle
- * occupe la colonne `notes`.
+ * ATEM-old offered it at the bottom of the card sheet: the copy's condition,
+ * its provenance, what was paid for it. It also travels in the CSV export,
+ * where it occupies the `notes` column.
  */
 export async function setNotes(
   db: Database,
@@ -419,13 +416,13 @@ export async function setFavorite(
     .where(and(eq(ownedCards.id, ownedId), eq(ownedCards.userId, viewerId)))
     .returning({ id: ownedCards.id });
 
-  // Le filtre sur `viewerId` est **dans** la requête, pas après : une ligne qui
-  // n'appartient pas à l'appelant est introuvable, et non interdite. Un 403
-  // révélerait qu'elle existe.
+  // The `viewerId` filter is **in** the query, not after it: a row that does
+  // not belong to the caller is not found, rather than forbidden. A 403 would
+  // reveal that it exists.
   if (result.length === 0) throw notFound("Collection entry not found.");
 }
 
-/** Combien de lignes attendent encore d'être identifiées. */
+/** How many rows are still waiting to be identified. */
 export async function resolveStatus(
   db: Database,
   ownerId: string,
@@ -444,16 +441,15 @@ export async function resolveStatus(
 }
 
 /**
- * Combien d'exemplaires d'une carte, **toutes impressions confondues**.
+ * How many copies of a card, **across all printings**.
  *
- * C'est la règle qu'Ange a posée pour les decks : on compte par carte, pas par
- * code d'extension. Trois Dragons Blancs en `LOB-FR001`, `MAGO-FR001` et
- * `SDBE-FR001` font trois Dragons Blancs — c'est ce que la règle des trois
- * exemplaires regarde, et c'est ce qui borne un deck.
+ * This is the rule Ange set for decks: we count by card, not by set code. Three
+ * Blue-Eyes as `LOB-FR001`, `MAGO-FR001` and `SDBE-FR001` make three Blue-Eyes
+ * — that is what the three-copy rule looks at, and what bounds a deck.
  *
- * Exposé pour le module `deck`, qui ne touche pas aux tables de la collection.
- * Rendre une table plutôt qu'un compte à la fois : un deck de quarante cartes
- * poserait sinon quarante questions.
+ * Exposed for the `deck` module, which does not touch the collection's tables.
+ * Returning a table rather than one count at a time: a forty-card deck would
+ * otherwise ask forty questions.
  */
 export async function ownedByPasscode(
   db: Database,
@@ -487,19 +483,18 @@ export async function ownedByPasscode(
 }
 
 /**
- * Remet en file tout ce qui attendait encore, au démarrage.
+ * Queues again everything that was still waiting, at startup.
  *
- * Une ligne entre en collection immédiatement, en `pending`, et la file
- * l'identifie ensuite. Si le processus s'arrête entre les deux — un
- * redéploiement, un `docker compose down`, une coupure — la file meurt avec
- * lui : elle ne vit qu'en mémoire. **Rien ne reprenait ce travail**, et la
- * ligne restait « en attente d'identification » pour toujours, sans que rien
- * ne le signale. Le commentaire de `resolve-queue.ts` promettait pourtant
- * qu'elle serait « reprise au démarrage suivant ».
+ * A row enters the collection immediately, as `pending`, and the queue
+ * identifies it afterwards. If the process stops in between — a redeploy, a
+ * `docker compose down`, a power cut — the queue dies with it: it lives in
+ * memory only. **Nothing picked that work up again**, and the row stayed
+ * “awaiting identification” forever, with nothing signalling it. The comment in
+ * `resolve-queue.ts` promised it would be “picked up at the next startup”.
  *
- * Les codes déjà déclarés `unidentified` sont laissés où ils sont : on sait
- * qu'ils n'existent pas, et les redemander à chaque démarrage saturerait pour
- * rien l'API qu'on prend soin de ménager.
+ * Codes already declared `unidentified` are left where they are: we know they
+ * do not exist, and asking again at every startup would needlessly saturate the
+ * API we take care to spare.
  */
 export async function requeuePendingResolves(db: Database): Promise<number> {
   const idx = printIndex(db);
@@ -519,14 +514,14 @@ export async function requeuePendingResolves(db: Database): Promise<number> {
 }
 
 /**
- * Reprend une impression restée provisoire, et raccroche à la vraie édition les
- * lignes qui pointaient vers elle.
+ * Picks up a printing left provisional, and re-attaches the rows that pointed
+ * at it to the real edition.
  *
- * **Tout tient dans une transaction.** ATEM-old avait vécu la panne : entre la
- * suppression de la ligne provisoire et l'écriture de la ligne consolidée, une
- * interruption perdait des exemplaires. Ce n'est pas un cas rare — c'est le
- * chemin normal de chaque carte scannée : « sur un import de huit cents cartes,
- * la fenêtre s'ouvre huit cents fois ».
+ * **Everything holds in one transaction.** ATEM-old lived the failure: between
+ * deleting the provisional row and writing the consolidated one, an
+ * interruption lost copies. That is not a rare case — it is the normal path of
+ * every scanned card: “on an import of eight hundred cards, the window opens
+ * eight hundred times”.
  */
 export async function reresolve(
   db: Database,
@@ -541,17 +536,16 @@ export async function reresolve(
 
   await db.transaction(async (tx) => {
     /**
-     * Les lignes à consolider sont celles du même set code **encore en
-     * attente**, et pas seulement celles qui pointent une autre impression.
+     * The rows to consolidate are those of the same set code **still
+     * pending**, and not merely those pointing at another printing.
      *
-     * Sans cette restriction, un joueur possédant déjà `LOB-EN001` en Ultra
-     * Rare voyait sa ligne Secret Rare, scannée ensuite, fondue dans la
-     * première : l'exemplaire n'était pas perdu, son édition si. Or l'unité de
-     * l'inventaire est bien `(set_code, rareté, langue)` — consolider par-dessus
-     * la rareté contredit la raison d'être du module.
+     * Without that restriction, a player already owning `LOB-EN001` in Ultra
+     * Rare saw their Secret Rare row, scanned afterwards, melted into the
+     * first: the copy was not lost, its edition was. Yet the unit of the
+     * inventory is indeed `(set_code, rarity, language)` — consolidating across
+     * rarity contradicts the module's reason for being.
      *
-     * On ne fusionne donc que ce qui n'a pas encore d'identité : les lignes
-     * provisoires.
+     * So we merge only what has no identity yet: the provisional rows.
      */
     const pendingPrints = tx
       .select({ id: pendingPrintIds.printId })
@@ -606,15 +600,15 @@ export async function reresolve(
 }
 
 /**
- * Les valeurs réellement présentes dans la collection, pour peupler les filtres.
+ * The values actually present in the collection, to populate the filters.
  *
- * On ne propose que ce que le joueur possède : offrir « Dragon » à quelqu'un
- * qui n'en a aucun ne produit qu'un écran vide.
+ * We only offer what the player owns: offering “Dragon” to someone who has none
+ * produces nothing but an empty screen.
  *
- * `race` est séparé en deux listes, parce que l'API en fait un seul champ pour
- * deux notions : le type d'un monstre (Dragon, Guerrier) et la propriété d'une
- * Magie ou d'un Piège (Continue, Équipement). Un Piège « Normal » n'est pas un
- * monstre Normal — les mélanger produirait un filtre qui ne veut rien dire.
+ * `race` is split into two lists, because the API makes it a single field for
+ * two notions: a monster's type (Dragon, Warrior) and a Spell's or Trap's
+ * property (Continuous, Equip). A “Normal” Trap is not a Normal monster —
+ * mixing them would produce a filter that means nothing.
  */
 export async function collectionFacets(db: Database, ownerId: string) {
   const idx = printIndex(db);

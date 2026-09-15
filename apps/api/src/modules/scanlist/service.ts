@@ -1,16 +1,16 @@
 /**
- * Le module scanlist — inventorier sans verser à la collection.
+ * The scanlist module — taking stock without pouring into the collection.
  *
- * **Une scanliste ne se partage pas.** Un lot qu'on n'a pas encore tranché est
- * privé par nature : c'est un brouillon de décision, pas un inventaire. Tous
- * ses services prennent donc `viewerId` — celui que la session établit — et
- * aucun ne prend de propriétaire. La collection et les decks, eux, distinguent
- * les deux parce qu'on les regardera les uns chez les autres (ADR-009).
+ * **A scanlist is not shared.** A batch not yet settled is private by nature:
+ * it is a draft decision, not an inventory. All of its services therefore take
+ * `viewerId` — the one the session establishes — and none takes an owner. The
+ * collection and the decks, for their part, distinguish the two because people
+ * will look at each other's (ADR-009).
  *
- * Il n'écrit ni dans `cards`, ni dans `card_prints`, ni dans `owned_cards` :
- * verser passe par `collection`, qui passe lui-même par `referential`. C'est la
- * même règle que partout ici, et elle vaut surtout au versement — l'endroit
- * exact où ATEM-old aurait été tenté d'écrire directement.
+ * It writes neither into `cards`, nor `card_prints`, nor `owned_cards`:
+ * pouring goes through `collection`, which itself goes through `referential`.
+ * Same rule as everywhere here, and it matters most at the pour — exactly where
+ * ATEM-old would have been tempted to write directly.
  */
 import { and, desc, eq, sql } from "drizzle-orm";
 import { LIMITS, normalizeSetCode, type PourResult, type ScanlistDetail, type ScanlistLine, type ScanlistSummary } from "@atem/shared";
@@ -33,11 +33,10 @@ const toSummary = (
 });
 
 /**
- * Les lots d'une personne, du plus récent au plus ancien.
+ * One person's batches, newest first.
  *
- * Les deux compteurs sont calculés en SQL plutôt que sur les lignes chargées :
- * la liste des lots n'a pas à charger deux mille lignes pour afficher « 47
- * références · 63 ex. ».
+ * Both counters are computed in SQL rather than over loaded rows: the batch
+ * list has no business loading two thousand lines to display “47 refs · ×63”.
  */
 export async function listScanlists(db: Database, viewerId: string): Promise<ScanlistSummary[]> {
   const rows = await db
@@ -56,10 +55,10 @@ export async function listScanlists(db: Database, viewerId: string): Promise<Sca
 }
 
 /**
- * Un lot et ses lignes.
+ * A batch and its lines.
  *
- * Le filtre sur `viewerId` est **dans** la requête : le lot de quelqu'un d'autre
- * est introuvable, et non interdit. Un 403 dirait qu'il existe.
+ * The `viewerId` filter is **in** the query: someone else's batch is not found,
+ * rather than forbidden. A 403 would say it exists.
  */
 export async function getScanlist(
   db: Database,
@@ -95,14 +94,14 @@ export async function getScanlist(
 }
 
 /**
- * Enregistre un lot scanné.
+ * Saves a scanned batch.
  *
- * Le lot arrive entier, en une fois : tant qu'on scanne, il ne quitte pas le
- * navigateur. C'est ce qui rend le « −1 » du scanner incapable de toucher la
- * collection — il n'y a pas de chemin — et c'est aussi ce qui fait qu'un lot
- * non enregistré **meurt avec l'onglet**. Le choix est délibéré : rien ne
- * survit sans validation explicite, plutôt qu'un demi-état persisté qu'on
- * retrouve sans savoir ce qu'il contient.
+ * The batch arrives whole, in one go: while scanning, it never leaves the
+ * browser. That is what makes the scanner's “−1” unable to touch the
+ * collection — there is no path — and it is also what makes an unsaved batch
+ * **die with the tab**. The choice is deliberate: nothing survives without
+ * explicit validation, rather than a half-state persisted and found again
+ * without knowing what it holds.
  */
 export async function createScanlist(
   db: Database,
@@ -113,12 +112,12 @@ export async function createScanlist(
   if (!name) throw invalidInput("Give the batch a name.");
 
   /**
-   * Les codes sont normalisés **et regroupés** ici.
+   * Codes are normalised **and merged** here.
    *
-   * Le navigateur tient déjà un compteur par code, mais rien ne garantit que
-   * deux écritures d'un même code — `ltgy-fr008` et `LTGY-FR008` — n'y sont pas
-   * arrivées séparément. L'index unique les refuserait au milieu de
-   * l'insertion, et le lot serait perdu après le scan. On additionne.
+   * The browser already keeps one counter per code, but nothing guarantees that
+   * two spellings of the same code — `ltgy-fr008` and `LTGY-FR008` — did not
+   * arrive separately. The unique index would refuse them in the middle of the
+   * insert, and the batch would be lost after the scan. So we add them up.
    */
   const merged = new Map<string, ScanlistLine>();
   for (const line of input.lines) {
@@ -144,12 +143,12 @@ export async function createScanlist(
   const lines = [...merged.values()];
   if (lines.length === 0) throw invalidInput("No cards to save.");
   if (lines.length > LIMITS.scanlist.maxLines) {
-    throw invalidInput(`Un lot ne porte pas plus de ${LIMITS.scanlist.maxLines} références.`);
+    throw invalidInput(`A batch holds no more than ${LIMITS.scanlist.maxLines} references.`);
   }
 
   return db.transaction(async (tx) => {
     const [row] = await tx.insert(scanlists).values({ userId: viewerId, name }).returning();
-    if (!row) throw new Error("insertion sans résultat");
+    if (!row) throw new Error("insert returned nothing");
 
     await tx.insert(scanlistLines).values(
       lines.map((line) => ({
@@ -172,18 +171,17 @@ export async function createScanlist(
 }
 
 /**
- * Verse un lot dans la collection.
+ * Pours a batch into the collection.
  *
- * **Ligne par ligne, et sans transaction d'ensemble.** C'est délibéré, et c'est
- * l'inverse du réflexe : chaque ligne peut demander une résolution réseau, et
- * tenir une transaction ouverte pendant deux mille appels à YGOPRODeck
- * verrouillerait la collection pendant plusieurs minutes. Une ligne qui échoue
- * est comptée et nommée dans le bilan ; les autres entrent.
+ * **Line by line, and without an overall transaction.** That is deliberate, and
+ * the opposite of the reflex: each line may require a network resolution, and
+ * holding a transaction open across two thousand YGOPRODeck calls would lock
+ * the collection for several minutes. A line that fails is counted and named in
+ * the outcome; the others go in.
  *
- * La date de versement est posée **avant** de verser, dans la même écriture qui
- * vérifie qu'elle était nulle. Deux appels simultanés — un double appui — ne
- * peuvent donc pas verser deux fois : le second ne trouve plus de lot à
- * réserver et repart en conflit.
+ * The pour date is set **before** pouring, in the same write that checks it was
+ * null. Two simultaneous calls — a double tap — therefore cannot pour twice:
+ * the second finds no batch left to reserve and comes back with a conflict.
  */
 export async function pourScanlist(
   db: Database,
@@ -198,8 +196,8 @@ export async function pourScanlist(
     .returning();
 
   if (!reserved) {
-    // Distinguer les deux : un lot déjà versé n'est pas une erreur de demande,
-    // c'est un état qui s'y oppose — et le dire évite de chercher une panne.
+    // Telling the two apart: an already-poured batch is not a bad request, it
+    // is a state that refuses it — and saying so spares hunting for a bug.
     const [exists] = await db
       .select({ pouredAt: scanlists.pouredAt })
       .from(scanlists)
@@ -231,7 +229,7 @@ export async function pourScanlist(
       failed += 1;
       errors.push({
         setCode: line.setCode,
-        error: err instanceof Error ? err.message : "Échec inconnu.",
+        error: err instanceof Error ? err.message : "Unknown failure.",
       });
     }
   }
@@ -244,7 +242,7 @@ export async function pourScanlist(
   };
 }
 
-/** Jeter un lot. Ranger et détruire ne sont pas le même geste. */
+/** Discarding a batch. Filing and destroying are not the same gesture. */
 export async function deleteScanlist(db: Database, viewerId: string, id: string): Promise<void> {
   requireUuid(id);
   const deleted = await db

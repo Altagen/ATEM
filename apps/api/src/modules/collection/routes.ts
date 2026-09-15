@@ -8,7 +8,7 @@ import {
   adjustQuantity, collectionFacets, listCollection, resolveStatus, setFavorite, setNotes,
 } from "./service.js";
 
-/** Une liste envoyée en `?type=a&type=b` ou `?type=a,b` — les deux sont acceptées. */
+/** A list sent as `?type=a&type=b` or `?type=a,b` — both are accepted. */
 const csvList = z
   .union([z.string(), z.array(z.string())])
   .optional()
@@ -47,9 +47,9 @@ const AdjustBody = z.object({
   delta: z.number().int().min(-LIMITS.quantity.max).max(LIMITS.quantity.max),
   language: z.string().max(5).nullish(),
   /**
-   * Le passcode, s'il est connu : les huit chiffres en bas à gauche de la
-   * carte. Quand il est fourni, l'impression n'a pas à attendre d'être
-   * identifiée — on sait déjà de quelle carte il s'agit.
+   * The passcode, when known: the eight digits at the bottom left of the card.
+   * When it is provided, the printing does not have to wait to be identified —
+   * we already know which card it is.
    */
   passcode: z.number().int().positive().nullish(),
 });
@@ -98,7 +98,7 @@ export function collectionRoutes(db: Database) {
 
   app.get("/resolve-status", async (c) => c.json(await resolveStatus(db, viewerId(c))));
 
-  /** Le « +1 » et le « −1 » du scan comme de la grille. */
+  /** The “+1” and “−1” of the scanner as of the grid. */
   app.post("/adjust", async (c) => {
     let raw: unknown;
     try {

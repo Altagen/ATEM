@@ -13,33 +13,33 @@ const { app, db } = createTestApp();
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
   jsonPost(app, path, body, headers);
 
-test("le hachage relit son propre format", async () => {
+test("the hash reads back its own format", async () => {
   const stored = await hashPassword("Un-Mot-De-Passe-1!");
   assert.ok(stored.startsWith("scrypt$65536$8$1$"));
   assert.equal(await verifyPassword("Un-Mot-De-Passe-1!", stored), true);
-  assert.equal(await verifyPassword("autre-chose", stored), false);
+  assert.equal(await verifyPassword("something-else", stored), false);
   assert.equal(needsRehash(stored), false);
 });
 
-test("un hachage à l'ancien format reste lisible, et demande à être refait", async () => {
-  // C'est ce qui permet de relever le coût sans invalider les comptes existants.
+test("a hash in the old format stays readable, and asks to be redone", async () => {
+  // This is what allows raising the cost without invalidating existing accounts.
   const { scryptSync, randomBytes } = await import("node:crypto");
   const salt = randomBytes(16).toString("hex");
-  const legacy = `${salt}:${scryptSync("mot-de-passe-historique", salt, 64).toString("hex")}`;
+  const legacy = `${salt}:${scryptSync("historical-password", salt, 64).toString("hex")}`;
 
-  assert.equal(await verifyPassword("mot-de-passe-historique", legacy), true);
+  assert.equal(await verifyPassword("historical-password", legacy), true);
   assert.equal(needsRehash(legacy), true);
 });
 
-test("un hachage abîmé refuse au lieu de lever", async () => {
-  assert.equal(await verifyPassword("x", "scrypt$1$1$1$sel$tronque"), false);
-  assert.equal(await verifyPassword("x", "n'importe quoi"), false);
+test("a damaged hash refuses instead of throwing", async () => {
+  assert.equal(await verifyPassword("x", "scrypt$1$1$1$salt$truncated"), false);
+  assert.equal(await verifyPassword("x", "anything at all"), false);
 });
 
-test("l'unicité de l'email ignore la casse", async () => {
-  const email = freshEmail("casse");
+test("email uniqueness ignores case", async () => {
+  const email = freshEmail("case");
   const first = await post("/auth/register", {
-    email, password: "Un-Mot-De-Passe-1!", displayName: "Premier",
+    email, password: "Un-Mot-De-Passe-1!", displayName: "First",
   });
   assert.equal(first.status, 201);
 
@@ -49,14 +49,14 @@ test("l'unicité de l'email ignore la casse", async () => {
   assert.equal(second.status, 409);
 });
 
-test("le refus de connexion ne dit pas si le compte existe", async () => {
-  // Deux messages différents révéleraient quelles adresses ont un compte ici.
+test("the sign-in refusal does not say whether the account exists", async () => {
+  // Two different messages would reveal which addresses have an account here.
   const unknown = await post("/auth/login", {
-    email: freshEmail("inconnu"), password: "Un-Mot-De-Passe-1!",
+    email: freshEmail("unknown"), password: "Un-Mot-De-Passe-1!",
   });
-  const email = freshEmail("connu");
+  const email = freshEmail("known");
   await post("/auth/register", {
-    email, password: "Un-Mot-De-Passe-1!", displayName: "Connu",
+    email, password: "Un-Mot-De-Passe-1!", displayName: "Known",
   });
   const wrongPassword = await post("/auth/login", { email, password: "Un-Mauvais-Mot-Passe-9!" });
 
@@ -65,7 +65,7 @@ test("le refus de connexion ne dit pas si le compte existe", async () => {
   assert.deepEqual(await unknown.json(), await wrongPassword.json());
 });
 
-test("la déconnexion invalide le jeton déjà émis", async () => {
+test("signing out invalidates the token already issued", async () => {
   const email = freshEmail("session");
   const registered = await post("/auth/register", {
     email, password: "Un-Mot-De-Passe-1!", displayName: "Session",
@@ -77,20 +77,20 @@ test("la déconnexion invalide le jeton déjà émis", async () => {
 
   await app.request("/auth/logout", { method: "POST", headers: { cookie } });
 
-  // Le même jeton, après déconnexion : la version de session a changé en base.
+  // The same token, after signing out: the session version changed in the database.
   const after = await app.request("/auth/me", { headers: { cookie } });
   assert.equal(after.status, 401);
 });
 
-test("une session absente refuse l'accès", async () => {
+test("a missing session refuses access", async () => {
   assert.equal((await app.request("/auth/me")).status, 401);
 });
 
-test("le mot de passe doit réunir les quatre familles", async () => {
-  // Seize caractères ne suffisent pas : il faut aussi une majuscule, une
-  // minuscule, un chiffre et un caractère spécial. La règle vient de
-  // `@atem/shared` — la même fonction que la jauge de l'écran applique, ce qui
-  // rend impossible qu'elle approuve ce que le serveur refuse.
+test("the password must gather the four families", async () => {
+  // Sixteen characters are not enough: an uppercase letter, a lowercase one, a
+  // digit and a special character are also required. The rule comes from
+  // `@atem/shared` — the very function the screen's meter applies, which makes
+  // it impossible for it to approve what the server refuses.
   const tooSimple = await post("/auth/register", {
     email: freshEmail("simple"),
     password: "aaaaaaaaaaaaaaaaaaaa",
@@ -99,104 +99,104 @@ test("le mot de passe doit réunir les quatre familles", async () => {
   assert.equal(tooSimple.status, 400);
 
   const tooShort = await post("/auth/register", {
-    email: freshEmail("court"),
+    email: freshEmail("short"),
     password: "Aa1!",
-    displayName: "Court",
+    displayName: "Short",
   });
   assert.equal(tooShort.status, 400);
 
   const valid = await post("/auth/register", {
-    email: freshEmail("valide"),
+    email: freshEmail("valid"),
     password: "Mot-De-Passe-Test-7!",
-    displayName: "Valide",
+    displayName: "Valid",
   });
   assert.equal(valid.status, 201);
 });
 
-test("la route de santé répond sans session", async () => {
-  // Le healthcheck du compose l'interroge en boucle : elle ne doit ni exiger
-  // d'authentification, ni dépendre d'un état applicatif.
+test("the health route answers without a session", async () => {
+  // The compose healthcheck polls it in a loop: it must neither require
+  // authentication nor depend on application state.
   const response = await app.request("/health");
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { status: "ok" });
 });
 
-test("la garde d'origine tient derrière une terminaison TLS", async () => {
+test("the origin guard holds behind a TLS termination", async () => {
   /**
-   * Le navigateur annonce `https://…` pendant que l'API, derrière nginx ou le
-   * serveur de développement, reçoit du clair et se croit en `http://…`.
-   * Comparer les origines entières refusait alors **toute écriture** — avec un
-   * 403 opaque, et une connexion qui passait quand même.
+   * The browser announces `https://…` while the API, behind nginx or the
+   * development server, receives cleartext and believes it is on `http://…`.
+   * Comparing whole origins then refused **every write** — with an opaque 403,
+   * and a sign-in that went through anyway.
    */
   const response = await post(
     "/auth/register",
     {
       email: freshEmail("tls"),
       password: "Mot-De-Passe-Test-7!",
-      displayName: "Derriere TLS",
+      displayName: "Behind TLS",
     },
-    { Origin: "https://atem.exemple.fr", Host: "atem.exemple.fr" },
+    { Origin: "https://atem.example.com", Host: "atem.example.com" },
   );
   assert.equal(response.status, 201);
 });
 
-test("une origine d'un autre hôte reste refusée", async () => {
+test("an origin from another host stays refused", async () => {
   const response = await post(
     "/auth/register",
-    { email: freshEmail("etranger"), password: "Mot-De-Passe-Test-7!", displayName: "X" },
-    { Origin: "https://malveillant.example", Host: "atem.exemple.fr" },
+    { email: freshEmail("foreign"), password: "Mot-De-Passe-Test-7!", displayName: "X" },
+    { Origin: "https://malicious.example", Host: "atem.example.com" },
   );
   assert.equal(response.status, 403);
 });
 
-test("la langue du compte se change, et se relit", async () => {
+test("the account language changes, and reads back", async () => {
   const { user } = await registerUser(db, {
-    email: freshEmail("langue"),
+    email: freshEmail("language"),
     password: "Un-Mot-De-Passe-1!",
-    displayName: "Bilingue",
+    displayName: "Bilingual",
   });
-  assert.equal(user.locale, "fr", "le français est la valeur par défaut");
+  assert.equal(user.locale, "fr", "French is the default value");
 
-  const changé = await setLocale(db, user.id, "en");
-  assert.equal(changé.locale, "en");
+  const changed = await setLocale(db, user.id, "en");
+  assert.equal(changed.locale, "en");
   assert.equal((await getPublicUser(db, user.id)).locale, "en");
 });
 
-test("une langue inconnue est refusée avant la base", async () => {
+test("an unknown language is refused before the database", async () => {
   /**
-   * La contrainte `users_locale_vocab` la refuserait de toute façon, mais avec
-   * une erreur de contrainte que personne ne sait lire. On rend un message.
+   * The `users_locale_vocab` constraint would refuse it anyway, but with a
+   * constraint error nobody knows how to read. We return a message.
    */
   const { user } = await registerUser(db, {
-    email: freshEmail("langue"),
+    email: freshEmail("language"),
     password: "Un-Mot-De-Passe-1!",
-    displayName: "Bilingue",
+    displayName: "Bilingual",
   });
   await assert.rejects(() => setLocale(db, user.id, "kr"), /Unknown language/);
-  assert.equal((await getPublicUser(db, user.id)).locale, "fr", "rien n'a bougé");
+  assert.equal((await getPublicUser(db, user.id)).locale, "fr", "nothing moved");
 });
 
 /**
- * Effacer un compte.
+ * Deleting an account.
  *
- * « Tout a été effacé » doit être vrai, pas approximativement vrai.
+ * “Everything has been erased” must be true, not roughly true.
  */
-async function compteGarni() {
-  const email = freshEmail("efface");
+async function stockedAccount() {
+  const email = freshEmail("erase");
   const { user } = await registerUser(db, {
-    email, password: "Un-Mot-De-Passe-1!", displayName: "Partant",
+    email, password: "Un-Mot-De-Passe-1!", displayName: "Leaving",
   });
   await adjustQuantity(db, user.id, { setCode: "DELX-FR001", delta: 2 });
   await createScanlist(db, user.id, {
-    name: "Un lot",
+    name: "A batch",
     lines: [{ setCode: "DELX-FR002", name: null, passcode: null, quantity: 1 }],
   });
   resetResolveQueue();
   return { user, email };
 }
 
-test("effacer son compte emporte la collection et les lots", async () => {
-  const { user } = await compteGarni();
+test("deleting your account takes the collection and the batches with it", async () => {
+  const { user } = await stockedAccount();
   assert.equal((await listCollection(db, user.id, {})).total, 1);
   assert.equal((await listScanlists(db, user.id)).length, 1);
 
@@ -207,51 +207,50 @@ test("effacer son compte emporte la collection et les lots", async () => {
   assert.equal((await listScanlists(db, user.id)).length, 0);
 });
 
-test("effacer son compte emporte aussi les tentatives portant son adresse", async () => {
+test("deleting your account also takes the attempts carrying your address", async () => {
   /**
-   * `auth_attempts` n'a pas de `user_id` : aucune cascade ne l'atteint. Mais sa
-   * clé porte l'adresse — `email:ange@exemple.fr` — et c'est de la donnée
-   * personnelle. L'oublier ferait mentir « tout a été effacé ».
+   * `auth_attempts` has no `user_id`: no cascade reaches it. But its key carries
+   * the address — `email:ange@example.com` — and that is personal data.
+   * Forgetting it would make “everything has been erased” a lie.
    */
-  const { user, email } = await compteGarni();
+  const { user, email } = await stockedAccount();
   await db.insert(authAttempts).values({ bucket: `email:${email.toLowerCase()}`, action: "login" });
 
-  const avant = await db
+  const before = await db
     .select()
     .from(authAttempts)
     .where(eq(authAttempts.bucket, `email:${email.toLowerCase()}`));
-  assert.ok(avant.length > 0, "la trace existe bien avant");
+  assert.ok(before.length > 0, "the trace does exist beforehand");
 
   await deleteAccount(db, user.id, "Un-Mot-De-Passe-1!");
 
-  const après = await db
+  const after = await db
     .select()
     .from(authAttempts)
     .where(eq(authAttempts.bucket, `email:${email.toLowerCase()}`));
-  assert.equal(après.length, 0);
+  assert.equal(after.length, 0);
 });
 
-test("un mot de passe faux n'efface rien", async () => {
-  // Une session suffit pour tout le reste ; pas pour un geste irréversible.
-  const { user } = await compteGarni();
+test("a wrong password erases nothing", async () => {
+  // A session is enough for everything else; not for an irreversible gesture.
+  const { user } = await stockedAccount();
 
   await assert.rejects(() => deleteAccount(db, user.id, "Pas-Le-Bon-Mot-1!"), /Incorrect password/);
 
-  assert.ok(await getPublicUser(db, user.id), "le compte est toujours là");
-  assert.equal((await listCollection(db, user.id, {})).total, 1, "la collection aussi");
+  assert.ok(await getPublicUser(db, user.id), "the account is still there");
+  assert.equal((await listCollection(db, user.id, {})).total, 1, "so is the collection");
 });
 
-test("le catalogue survit à la suppression d'un compte", async () => {
+test("the catalogue survives an account deletion", async () => {
   /**
-   * Les impressions n'appartiennent à personne : `card_prints.card_passcode`
-   * est en `set null`, et une édition inscrite par quelqu'un qui s'en va
-   * profite encore à tous les autres.
+   * Printings belong to nobody: `card_prints.card_passcode` is `set null`, and
+   * an edition recorded by someone who leaves still benefits everyone else.
    */
-  const { user } = await compteGarni();
+  const { user } = await stockedAccount();
   await deleteAccount(db, user.id, "Un-Mot-De-Passe-1!");
 
   const { prints } = await import("../referential/schema.js").then(async (m) => ({
     prints: await db.select().from(m.cardPrints).where(eq(m.cardPrints.setCode, "DELX-FR001")),
   }));
-  assert.equal(prints.length, 1, "l'impression reste au catalogue");
+  assert.equal(prints.length, 1, "the printing stays in the catalogue");
 });

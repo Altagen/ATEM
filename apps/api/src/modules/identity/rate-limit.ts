@@ -1,10 +1,10 @@
 /**
- * La limitation des tentatives d'authentification.
+ * Limiting authentication attempts.
  *
- * Deux compteurs, pas un : l'adresse appelante **et** le compte visé. Compter la
- * seule adresse laisse un réseau de machines essayer un mot de passe par
- * machine ; compter le seul compte permet à une adresse de balayer les comptes
- * un par un. Les deux ensemble ferment les deux portes.
+ * Two counters, not one: the calling address **and** the targeted account.
+ * Counting the address alone lets a network of machines try one password per
+ * machine; counting the account alone lets one address sweep accounts one by
+ * one. Together they close both doors.
  */
 import { and, eq, gte, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
@@ -14,12 +14,12 @@ import { authAttempts } from "./schema.js";
 export type LimitRule = { max: number; windowMs: number };
 
 /**
- * Les plafonds, réglables par l'instance.
+ * The ceilings, tunable per instance.
  *
- * Une boutique qui inscrit vingt joueurs le soir d'un tournoi, depuis le même
- * réseau, se heurterait sinon à une limite pensée pour un usage domestique —
- * et l'organisateur n'aurait aucun moyen de la desserrer. Les valeurs par
- * défaut restent strictes ; la configuration existe pour les cas réels.
+ * A shop registering twenty players on tournament night, from the same network,
+ * would otherwise hit a limit designed for home use — and the organiser would
+ * have no way to loosen it. The defaults stay strict; configuration exists for
+ * the real cases.
  */
 const envInt = (name: string, fallback: number): number => {
   const raw = Number(process.env[name]);
@@ -52,7 +52,7 @@ export async function enforceRateLimit(
         ),
       );
     if ((row?.count ?? 0) >= rule.max) {
-      throw new AppError("rate_limited", "Trop de tentatives, réessayez plus tard.");
+      throw new AppError("rate_limited", "Too many attempts, try again later.");
     }
   }
 }
@@ -67,9 +67,9 @@ export async function recordAttempt(
 }
 
 /**
- * Les tentatives d'un compte qui vient de réussir n'ont plus de raison de
- * compter contre lui : sinon dix connexions légitimes en quinze minutes
- * verrouillent un utilisateur normal.
+ * The attempts of an account that just succeeded have no reason to count
+ * against it any more: otherwise ten legitimate sign-ins in fifteen minutes
+ * lock out a normal user.
  */
 export async function clearAttempts(
   db: Database,

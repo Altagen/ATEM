@@ -3,7 +3,7 @@ import {
   bigint, check, index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-/** La carte au sens des règles, identifiée par son passcode. Toujours réelle. */
+/** The card in the sense of the rules, identified by its passcode. Always real. */
 export const cards = pgTable(
   "cards",
   {
@@ -13,9 +13,9 @@ export const cards = pgTable(
     descEn: text("desc_en"),
     descFr: text("desc_fr"),
     /**
-     * Ces quatre champs restent en anglais : l'API ne les localise pas, même en
-     * `language=fr`. Ce sont nos clés de filtre, stables quelle que soit la
-     * langue affichée ; la traduction est une table de libellés côté interface.
+     * These four fields stay in English: the API does not localise them, even
+     * with `language=fr`. They are our filter keys, stable whatever language is
+     * displayed; translation is a label table on the interface side.
      */
     type: text("type"),
     frameType: text("frame_type"),
@@ -26,9 +26,9 @@ export const cards = pgTable(
     level: integer("level"),
     scale: integer("scale"),
     /**
-     * Rang et flèches d'un monstre Lien. Absents du schéma d'ATEM-old à
-     * l'origine : Zod retirait silencieusement les champs qu'il ne déclarait
-     * pas, et toutes les cartes Lien affichaient « Lien — ».
+     * A Link monster's rating and arrows. Missing from ATEM-old's schema at
+     * first: Zod silently dropped the fields it did not declare, and every Link
+     * card displayed “Link —”.
      */
     linkValue: integer("link_value"),
     linkMarkers: jsonb("link_markers").$type<string[]>(),
@@ -46,19 +46,19 @@ export const cards = pgTable(
 );
 
 /**
- * Une impression : la carte telle qu'elle est physiquement imprimée.
+ * A printing: the card as it is physically printed.
  *
- * `cardPasscode` est **nullable**, et c'est la décision centrale de ce module.
+ * `cardPasscode` is **nullable**, and that is this module's central decision.
  *
- * ATEM-old signalait « impression pas encore résolue » par un passcode
- * **négatif** dérivé d'un hachage du set code. La convention était implicite,
- * recopiée à la main dans quatre modules sous la forme `if (cardId > 0)`, sans
- * garde-fou de type — et deux set codes différents pouvaient produire le même
- * passcode par collision de hachage, ce qui n'était testé nulle part.
+ * ATEM-old signalled “printing not resolved yet” with a **negative** passcode
+ * derived from a hash of the set code. The convention was implicit, copied by
+ * hand into four modules as `if (cardId > 0)`, with no type-level safeguard —
+ * and two different set codes could produce the same passcode through a hash
+ * collision, which was tested nowhere.
  *
- * Ici, une impression non résolue n'a simplement pas de carte : la colonne est
- * nulle et `resolveStatus` le dit. Aucune ligne de carte fabriquée, aucun
- * nombre dont le signe porte un sens, aucune collision possible.
+ * Here an unresolved printing simply has no card: the column is null and
+ * `resolveStatus` says so. No fabricated card row, no number whose sign carries
+ * meaning, no possible collision.
  */
 export const cardPrints = pgTable(
   "card_prints",
@@ -67,20 +67,20 @@ export const cardPrints = pgTable(
     cardPasscode: bigint("card_passcode", { mode: "number" }).references(() => cards.passcode, {
       onDelete: "set null",
     }),
-    /** Le code tel qu'imprimé sur la carte du joueur : `LTGY-FR008`. */
+    /** The code as printed on the player's card: `LTGY-FR008`. */
     setCode: text("set_code").notNull(),
     /**
-     * La forme canonique, région retirée : `LTGY-008`, `LOB-001`.
+     * The canonical shape, region removed: `LTGY-008`, `LOB-001`.
      *
-     * C'est la clé de jointure locale, et elle ne peut pas être le code anglais.
-     * Les deux points d'entrée de YGOPRODeck se contredisent — le dump écrit
-     * `LOB-001`, `cardsetsinfo.php` répond sur `LOB-EN001` — et les cartes
-     * elles-mêmes portent l'une ou l'autre forme selon leur année d'impression.
-     * Joindre sur la forme canonique réunit ce que la source sépare.
+     * It is the local join key, and it cannot be the English code. YGOPRODeck's
+     * two entry points contradict each other — the dump writes `LOB-001`,
+     * `cardsetsinfo.php` answers on `LOB-EN001` — and the cards themselves
+     * carry one shape or the other depending on their print year. Joining on
+     * the canonical shape reunites what the source separates.
      */
     canonicalSetCode: text("canonical_set_code").notNull(),
     setName: text("set_name"),
-    /** Chaîne vide plutôt que NULL : l'index unique reste comparable. */
+    /** Empty string rather than NULL: the unique index stays comparable. */
     rarity: text("rarity").notNull().default(""),
     language: text("language").notNull().default("en"),
     resolveStatus: text("resolve_status").notNull().default("pending"),
@@ -94,8 +94,8 @@ export const cardPrints = pgTable(
       "card_prints_status_vocab",
       sql`${t.resolveStatus} in ('resolved', 'pending', 'unidentified')`,
     ),
-    // Une impression résolue a forcément une carte ; une impression sans carte
-    // ne peut pas se prétendre résolue. La base le garantit, pas la discipline.
+    // A resolved printing necessarily has a card; a printing without a card
+    // cannot claim to be resolved. The database guarantees it, not discipline.
     check(
       "card_prints_resolved_has_card",
       sql`(${t.resolveStatus} = 'resolved') = (${t.cardPasscode} is not null)`,

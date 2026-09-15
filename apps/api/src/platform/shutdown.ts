@@ -1,9 +1,9 @@
 /**
- * L'arrêt propre.
+ * Clean shutdown.
  *
- * Sans lui, un redéploiement coupe les requêtes en vol : le client reçoit une
- * connexion fermée au milieu d'une réponse, et une transaction peut rester
- * ouverte côté base. On cesse d'accepter, on laisse finir, puis on ferme.
+ * Without it, a redeploy cuts requests in flight: the client gets a closed
+ * connection in the middle of a response, and a transaction may stay open on
+ * the database side. We stop accepting, let what is running finish, then close.
  */
 type Closer = () => Promise<void> | void;
 
@@ -16,13 +16,13 @@ export function onShutdown(closer: Closer): void {
 
 export function installShutdownHandlers(graceMs = 10_000): void {
   const stop = async (signal: string) => {
-    // Un second signal pendant l'arrêt veut dire « tout de suite » : on obéit.
+    // A second signal during shutdown means “right now”: we obey.
     if (stopping) process.exit(1);
     stopping = true;
-    console.log(`[atem] ${signal} reçu, arrêt en cours…`);
+    console.log(`[atem] ${signal} received, shutting down…`);
 
     const deadline = setTimeout(() => {
-      console.error(`[atem] arrêt non terminé après ${graceMs} ms, sortie forcée`);
+      console.error(`[atem] shutdown unfinished after ${graceMs} ms, forcing exit`);
       process.exit(1);
     }, graceMs);
     deadline.unref();
@@ -31,7 +31,7 @@ export function installShutdownHandlers(graceMs = 10_000): void {
       try {
         await closer();
       } catch (err) {
-        console.error("[atem] échec pendant l'arrêt :", err);
+        console.error("[atem] failure during shutdown:", err);
       }
     }
     clearTimeout(deadline);

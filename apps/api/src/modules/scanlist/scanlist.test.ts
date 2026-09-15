@@ -17,7 +17,7 @@ async function newUser(): Promise<{ id: string }> {
   const { user } = await registerUser(db, {
     email: freshEmail("scanlist"),
     password: "Un-Mot-De-Passe-1!",
-    displayName: "Trieur",
+    displayName: "Sorter",
   });
   return { id: user.id };
 }
@@ -33,73 +33,73 @@ async function seedCard(passcode: number, setCode: string, name: string) {
   return upsertPrint(db, { setCode, cardPasscode: passcode, rarity: "Rare" });
 }
 
-const ligne = (setCode: string, quantity: number) => ({
+const line = (setCode: string, quantity: number) => ({
   setCode, name: null, passcode: null, quantity,
 });
 
-test("un lot enregistré ne touche pas la collection", async () => {
+test("a saved batch does not touch the collection", async () => {
   /**
-   * C'est la raison d'être du module. On inventorie un arrivage sans le
-   * verser : la collection ne doit pas bouger d'un exemplaire tant qu'on n'a
-   * pas explicitement demandé le versement.
+   * This is the module's reason for being. We inventory an arrival without
+   * pouring it: the collection must not move by a single copy until the pour
+   * has been asked for explicitly.
    */
   const user = await newUser();
-  await seedCard(88888801, "SCAN-FR001", "Trieuse");
+  await seedCard(88888801, "SCAN-FR001", "Sorted");
 
-  await createScanlist(db, user.id, { name: "Arrivage", lines: [ligne("SCAN-FR001", 3)] });
+  await createScanlist(db, user.id, { name: "Arrival", lines: [line("SCAN-FR001", 3)] });
 
   const collection = await listCollection(db, user.id, {});
-  assert.equal(collection.total, 0, "la collection reste vide");
+  assert.equal(collection.total, 0, "the collection stays empty");
 });
 
-test("les lignes à zéro n'entrent pas dans un lot enregistré", async () => {
+test("lines at zero do not enter a saved batch", async () => {
   /**
-   * Le zéro existe pendant qu'on scanne — c'est le plancher du « −1 », et il
-   * montre ce qu'on vient d'annuler. Il ne s'enregistre pas : une ligne qui
-   * déclare zéro exemplaire ne dit rien.
+   * Zero exists while scanning — it is the floor of “−1”, and it shows what was
+   * just cancelled. It is not saved: a line declaring zero copies says nothing.
    */
   const user = await newUser();
-  const lot = await createScanlist(db, user.id, {
-    name: "Avec des zéros",
-    lines: [ligne("SCAN-FR002", 2), ligne("SCAN-FR003", 0)],
+  const batch = await createScanlist(db, user.id, {
+    name: "With zeros",
+    lines: [line("SCAN-FR002", 2), line("SCAN-FR003", 0)],
   });
 
-  assert.equal(lot.lines.length, 1);
-  assert.equal(lot.lines[0]?.setCode, "SCAN-FR002");
-  assert.equal(lot.copyCount, 2);
+  assert.equal(batch.lines.length, 1);
+  assert.equal(batch.lines[0]?.setCode, "SCAN-FR002");
+  assert.equal(batch.copyCount, 2);
 });
 
-test("un lot entièrement à zéro est refusé", async () => {
+test("a batch entirely at zero is refused", async () => {
   const user = await newUser();
   await assert.rejects(
-    () => createScanlist(db, user.id, { name: "Vide", lines: [ligne("SCAN-FR004", 0)] }),
+    () => createScanlist(db, user.id, { name: "Empty", lines: [line("SCAN-FR004", 0)] }),
     /No cards to save/,
   );
 });
 
-test("un même code écrit de deux façons ne casse pas l'enregistrement", async () => {
+test("one code spelled two ways does not break the save", async () => {
   /**
-   * L'index unique `(lot, code)` refuserait la seconde insertion au milieu du
-   * lot, et tout le scan serait perdu. On additionne avant d'écrire.
+   * The unique index `(batch, code)` would refuse the second insert in the
+   * middle of the batch, and the whole scan would be lost. We add up before
+   * writing.
    */
   const user = await newUser();
-  const lot = await createScanlist(db, user.id, {
-    name: "Doublons",
-    lines: [ligne("scan-fr005", 2), ligne("SCAN-FR005", 3)],
+  const batch = await createScanlist(db, user.id, {
+    name: "Duplicates",
+    lines: [line("scan-fr005", 2), line("SCAN-FR005", 3)],
   });
 
-  assert.equal(lot.lines.length, 1);
-  assert.equal(lot.lines[0]?.quantity, 5);
+  assert.equal(batch.lines.length, 1);
+  assert.equal(batch.lines[0]?.quantity, 5);
 });
 
-test("verser ajoute les quantités à la collection", async () => {
+test("pouring adds the quantities to the collection", async () => {
   const user = await newUser();
-  await seedCard(88888806, "SCAN-FR006", "Versée");
-  const lot = await createScanlist(db, user.id, { name: "À verser", lines: [ligne("SCAN-FR006", 4)] });
+  await seedCard(88888806, "SCAN-FR006", "Poured");
+  const batch = await createScanlist(db, user.id, { name: "To pour", lines: [line("SCAN-FR006", 4)] });
 
-  const bilan = await pourScanlist(db, user.id, lot.id);
-  assert.equal(bilan.poured, 4);
-  assert.equal(bilan.failed, 0);
+  const outcome = await pourScanlist(db, user.id, batch.id);
+  assert.equal(outcome.poured, 4);
+  assert.equal(outcome.failed, 0);
 
   const collection = await listCollection(db, user.id, {});
   assert.equal(collection.total, 1);
@@ -107,132 +107,132 @@ test("verser ajoute les quantités à la collection", async () => {
   resetResolveQueue();
 });
 
-test("verser deux fois est refusé", async () => {
+test("pouring twice is refused", async () => {
   /**
-   * Verser deux fois doublerait la collection sans que rien ne le signale.
-   * La date est posée dans la même écriture qui vérifie qu'elle était nulle :
-   * un double appui ne peut pas passer entre les deux.
+   * Pouring twice would double the collection with nothing signalling it. The
+   * date is set in the same write that checks it was null: a double tap cannot
+   * slip between the two.
    */
   const user = await newUser();
-  await seedCard(88888807, "SCAN-FR007", "Deux fois");
-  const lot = await createScanlist(db, user.id, { name: "Double", lines: [ligne("SCAN-FR007", 2)] });
+  await seedCard(88888807, "SCAN-FR007", "Twice");
+  const batch = await createScanlist(db, user.id, { name: "Double", lines: [line("SCAN-FR007", 2)] });
 
-  await pourScanlist(db, user.id, lot.id);
-  await assert.rejects(() => pourScanlist(db, user.id, lot.id), /already been poured/);
+  await pourScanlist(db, user.id, batch.id);
+  await assert.rejects(() => pourScanlist(db, user.id, batch.id), /already been poured/);
 
   const collection = await listCollection(db, user.id, {});
-  assert.equal(collection.items[0]?.quantity, 2, "la quantité n'a pas doublé");
+  assert.equal(collection.items[0]?.quantity, 2, "the quantity has not doubled");
   resetResolveQueue();
 });
 
-test("deux versements simultanés ne versent qu'une fois", async () => {
+test("two simultaneous pours pour only once", async () => {
   const user = await newUser();
-  await seedCard(88888808, "SCAN-FR008", "Concurrente");
-  const lot = await createScanlist(db, user.id, { name: "Course", lines: [ligne("SCAN-FR008", 5)] });
+  await seedCard(88888808, "SCAN-FR008", "Concurrent");
+  const batch = await createScanlist(db, user.id, { name: "Race", lines: [line("SCAN-FR008", 5)] });
 
-  const issues = await Promise.allSettled([
-    pourScanlist(db, user.id, lot.id),
-    pourScanlist(db, user.id, lot.id),
+  const outcomes = await Promise.allSettled([
+    pourScanlist(db, user.id, batch.id),
+    pourScanlist(db, user.id, batch.id),
   ]);
-  const réussis = issues.filter((i) => i.status === "fulfilled");
-  assert.equal(réussis.length, 1, "un seul versement aboutit");
+  const succeeded = outcomes.filter((o) => o.status === "fulfilled");
+  assert.equal(succeeded.length, 1, "only one pour goes through");
 
   const collection = await listCollection(db, user.id, {});
   assert.equal(collection.items[0]?.quantity, 5);
   resetResolveQueue();
 });
 
-test("un lot survit à son versement, daté", async () => {
+test("a batch survives its pour, dated", async () => {
   const user = await newUser();
   await seedCard(88888809, "SCAN-FR009", "Trace");
-  const lot = await createScanlist(db, user.id, { name: "Trace", lines: [ligne("SCAN-FR009", 1)] });
-  await pourScanlist(db, user.id, lot.id);
+  const batch = await createScanlist(db, user.id, { name: "Trace", lines: [line("SCAN-FR009", 1)] });
+  await pourScanlist(db, user.id, batch.id);
 
-  const relu = await getScanlist(db, user.id, lot.id);
-  assert.ok(relu.pouredAt, "la date de versement est gardée");
-  assert.equal(relu.lines.length, 1, "les lignes aussi");
+  const read = await getScanlist(db, user.id, batch.id);
+  assert.ok(read.pouredAt, "the pour date is kept");
+  assert.equal(read.lines.length, 1, "so are the lines");
   resetResolveQueue();
 });
 
-test("le lot d'autrui est introuvable, pas interdit", async () => {
-  const propriétaire = await newUser();
-  const autre = await newUser();
-  const lot = await createScanlist(db, propriétaire.id, {
-    name: "Privé", lines: [ligne("SCAN-FR010", 1)],
+test("someone else's batch is not found, rather than forbidden", async () => {
+  const owner = await newUser();
+  const other = await newUser();
+  const batch = await createScanlist(db, owner.id, {
+    name: "Private", lines: [line("SCAN-FR010", 1)],
   });
 
-  // Un 403 dirait qu'il existe. Il ne doit rien dire du tout.
-  await assert.rejects(() => getScanlist(db, autre.id, lot.id), /not found/);
-  await assert.rejects(() => pourScanlist(db, autre.id, lot.id), /not found/);
-  await assert.rejects(() => deleteScanlist(db, autre.id, lot.id), /not found/);
+  // A 403 would say it exists. It must say nothing at all.
+  await assert.rejects(() => getScanlist(db, other.id, batch.id), /not found/);
+  await assert.rejects(() => pourScanlist(db, other.id, batch.id), /not found/);
+  await assert.rejects(() => deleteScanlist(db, other.id, batch.id), /not found/);
 });
 
-test("la liste ne montre que ses propres lots", async () => {
+test("the list shows only one's own batches", async () => {
   const user = await newUser();
-  const autre = await newUser();
-  await createScanlist(db, user.id, { name: "Le mien", lines: [ligne("SCAN-FR011", 1)] });
-  await createScanlist(db, autre.id, { name: "Le sien", lines: [ligne("SCAN-FR012", 1)] });
+  const other = await newUser();
+  await createScanlist(db, user.id, { name: "Mine", lines: [line("SCAN-FR011", 1)] });
+  await createScanlist(db, other.id, { name: "Theirs", lines: [line("SCAN-FR012", 1)] });
 
-  const lots = await listScanlists(db, user.id);
-  assert.equal(lots.length, 1);
-  assert.equal(lots[0]?.name, "Le mien");
-  assert.equal(lots[0]?.lineCount, 1);
-  assert.equal(lots[0]?.copyCount, 1);
+  const batches = await listScanlists(db, user.id);
+  assert.equal(batches.length, 1);
+  assert.equal(batches[0]?.name, "Mine");
+  assert.equal(batches[0]?.lineCount, 1);
+  assert.equal(batches[0]?.copyCount, 1);
 });
 
-test("jeter un lot emporte ses lignes", async () => {
+test("discarding a batch takes its lines with it", async () => {
   const user = await newUser();
-  const lot = await createScanlist(db, user.id, { name: "À jeter", lines: [ligne("SCAN-FR013", 2)] });
+  const batch = await createScanlist(db, user.id, { name: "To discard", lines: [line("SCAN-FR013", 2)] });
 
-  await deleteScanlist(db, user.id, lot.id);
+  await deleteScanlist(db, user.id, batch.id);
 
-  const restantes = await db
+  const left = await db
     .select()
     .from(scanlistLines)
-    .where(eq(scanlistLines.scanlistId, lot.id));
-  assert.equal(restantes.length, 0);
-  await assert.rejects(() => getScanlist(db, user.id, lot.id), /not found/);
+    .where(eq(scanlistLines.scanlistId, batch.id));
+  assert.equal(left.length, 0);
+  await assert.rejects(() => getScanlist(db, user.id, batch.id), /not found/);
 });
 
-test("une ligne que le catalogue ne place pas est comptée, sans bloquer les autres", async () => {
+test("a line the catalogue cannot place is counted, without blocking the others", async () => {
   /**
-   * Une scanliste versée à moitié doit se lire comme telle. La quantité
-   * plafonnée à 1000 fait échouer la ligne sans emporter le reste du lot.
+   * A half-poured scanlist must read as such. The quantity capped at 1000 makes
+   * the line fail without carrying away the rest of the batch.
    */
   const user = await newUser();
-  await seedCard(88888814, "SCAN-FR014", "Bonne");
-  const lot = await createScanlist(db, user.id, {
-    name: "Mixte",
-    lines: [ligne("SCAN-FR014", 2), ligne("", 3), ligne("SCAN-FR015", 1)],
+  await seedCard(88888814, "SCAN-FR014", "Good one");
+  const batch = await createScanlist(db, user.id, {
+    name: "Mixed",
+    lines: [line("SCAN-FR014", 2), line("", 3), line("SCAN-FR015", 1)],
   });
 
-  // La ligne au code vide est écartée dès l'enregistrement : elle n'a pas
-  // d'identité, et l'inventaire n'a rien à en faire.
-  assert.equal(lot.lines.length, 2);
+  // The empty-code line is dropped at save time: it has no identity, and the
+  // inventory has no use for it.
+  assert.equal(batch.lines.length, 2);
 
-  const bilan = await pourScanlist(db, user.id, lot.id);
-  assert.equal(bilan.poured, 3, "les deux lignes valides sont versées");
-  assert.equal(bilan.failed, 0);
+  const outcome = await pourScanlist(db, user.id, batch.id);
+  assert.equal(outcome.poured, 3, "both valid lines are poured");
+  assert.equal(outcome.failed, 0);
   resetResolveQueue();
 });
 
-test("un identifiant qui n'est pas un UUID est refusé, pas planté", async () => {
+test("an identifier that is not a UUID is refused, not crashed on", async () => {
   /**
-   * La colonne est un `uuid` : PostgreSQL refuse la comparaison avec une chaîne
-   * quelconque, et sans garde ce refus remontait en **erreur interne** — un 500
-   * pour une adresse mal tapée.
+   * The column is a `uuid`: PostgreSQL refuses the comparison with an arbitrary
+   * string, and without a guard that refusal surfaced as an **internal error** —
+   * a 500 for a mistyped address.
    *
-   * La première version de cette épreuve cherchait « invalid input syntax »
-   * dans le message et passait : Drizzle y met la requête échouée, pas la
-   * plainte de PostgreSQL, qui vit dans la cause. Elle vérifie donc maintenant
-   * que c'est bien **notre** refus qu'on reçoit.
+   * The first version of this test looked for “invalid input syntax” in the
+   * message and passed: Drizzle puts the failed query there, not PostgreSQL's
+   * complaint, which lives in the cause. So it now checks that what comes back
+   * is really **our** refusal.
    */
   const user = await newUser();
-  for (const bancal of ["pas-un-uuid", "", "12345", "00000000-0000-0000-0000-00000000000"]) {
+  for (const crooked of ["not-a-uuid", "", "12345", "00000000-0000-0000-0000-00000000000"]) {
     await assert.rejects(
-      () => getScanlist(db, user.id, bancal),
+      () => getScanlist(db, user.id, crooked),
       /Invalid identifier/,
-      `« ${bancal} »`,
+      `“${crooked}”`,
     );
   }
 });

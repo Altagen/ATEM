@@ -1,14 +1,14 @@
 /**
- * Le module deck — ce que le joueur veut jouer.
+ * The deck module — what the player wants to play.
  *
- * Il ne touche ni aux tables du catalogue, ni à celles de la collection : il
- * demande à `referential` ce qu'est une carte, et à `collection` combien on en
- * possède. C'est la frontière qu'ATEM-old n'avait pas — trois modules y
- * écrivaient dans le catalogue, chacun avec sa logique.
+ * It touches neither the catalogue tables nor the collection's: it asks
+ * `referential` what a card is, and `collection` how many are owned. That is
+ * the boundary ATEM-old did not have — three of its modules wrote into the
+ * catalogue, each with its own logic.
  *
- * **Deux identités, comme partout (ADR-009)** : `ownerId` pour lire, `viewerId`
- * pour écrire. Une lecture est ouverte à toute session ; une écriture n'est
- * jamais faite au nom d'autrui.
+ * **Two identities, as everywhere (ADR-009)**: `ownerId` to read, `viewerId` to
+ * write. A read is open to any session; a write is never made on someone else's
+ * behalf.
  */
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
@@ -28,42 +28,42 @@ export type DeckSummary = {
   name: string;
   createdAt: string;
   updatedAt: string;
-  /** Exemplaires par zone — ce que la liste montre sans ouvrir le deck. */
+  /** Copies per zone — what the list shows without opening the deck. */
   counts: { main: number; extra: number; side: number };
   /**
-   * Combien d'exemplaires manquent pour que le deck soit jouable.
+   * How many copies are missing for the deck to be playable.
    *
-   * Zéro presque toujours : un deck est borné par la collection au moment où on
-   * le construit. Il ne dérive que si l'on vend une carte ensuite.
+   * Zero almost always: a deck is bounded by the collection at the moment it is
+   * built. It only drifts if a card is sold afterwards.
    */
   missing: number;
   /**
-   * L'illustration qui représente le deck, ou rien.
+   * The artwork that stands for the deck, or nothing.
    *
-   * Une couverture choisie à la main demanderait une colonne, un sélecteur et
-   * une reprise quand la carte quitte le deck. Celle-ci se déduit : c'est la
-   * carte dont le deck a **le plus d'exemplaires au Main** — son identité, en
-   * pratique — départagée par le passcode pour que l'illustration ne change pas
-   * d'un rafraîchissement à l'autre.
+   * A cover chosen by hand would ask for a column, a picker, and a fix-up when
+   * that card leaves the deck. This one is deduced: it is the card the deck
+   * holds **the most copies of in the Main** — its identity, in practice —
+   * tie-broken by passcode so the artwork does not change from one refresh to
+   * the next.
    *
-   * On rend **l'adresse de l'image et rien d'autre** : le nom et le passcode de
-   * cette carte accompagnaient la réponse sans que rien ne les lise. Un deck
-   * dont la carte de tête n'a pas d'illustration retombe ici sur `null`, comme
-   * un deck vide — l'écran pose le dos de carte dans les deux cas, et n'a donc
-   * pas à les distinguer.
+   * We return **the image address and nothing else**: that card's name and
+   * passcode travelled with the answer without anything reading them. A deck
+   * whose leading card has no artwork falls back to `null` here, like an empty
+   * deck — the screen shows the card back in both cases, so it has no reason to
+   * tell them apart.
    */
   coverImage: string | null;
-  /** Le dossier qui le range, ou `null` à la racine. */
+  /** The folder that files it, or `null` at the root. */
   folderId: string | null;
 };
 
 /**
- * Une carte d'un deck, telle que l'atelier l'affiche.
+ * A card of a deck, as the workshop displays it.
  *
- * `type` et `frameType` en faisaient partie sans que rien ne les lise : la
- * question « est-ce une carte d'Extra Deck ? » se pose au moment d'**ajouter**,
- * sur la fiche venue de la collection, et le serveur la retranche de son côté.
- * Les envoyer pour chaque ligne de chaque deck ne servait qu'à les envoyer.
+ * `type` and `frameType` used to be part of it without anything reading them:
+ * the question “is this an Extra Deck card?” is asked when **adding**, on the
+ * card sheet coming from the collection, and the server settles it on its own
+ * side. Sending them for every row of every deck only served to send them.
  */
 export type DeckCardEntry = {
   passcode: number;
@@ -74,7 +74,7 @@ export type DeckCardEntry = {
   extra: number;
   side: number;
   owned: number;
-  /** Ce qui manque pour cette carte-là, et rien si rien ne manque. */
+  /** What is missing for that card, and nothing when nothing is. */
   missing: number;
 };
 
@@ -97,35 +97,34 @@ const toSummary = (
 });
 
 /**
- * La carte qui représente un deck.
+ * The card that stands for a deck.
  *
- * Le Main d'abord, parce que c'est ce qu'on joue ; l'Extra et le Side ensuite,
- * pour qu'un deck en cours de construction ne reste pas sans visage. Le
- * passcode départage : sans lui, deux cartes à trois exemplaires donneraient
- * une couverture différente à chaque requête, l'ordre des lignes n'étant pas
- * garanti.
+ * The Main first, because that is what gets played; the Extra and the Side
+ * next, so that a deck under construction is not left faceless. The passcode
+ * breaks ties: without it, two cards at three copies would give a different
+ * cover on every request, row order not being guaranteed.
  */
-function coverPasscode(lignes: { passcode: number; mainQty: number; extraQty: number; sideQty: number }[]): number | null {
-  let meilleure: { passcode: number; main: number; total: number } | null = null;
-  for (const ligne of lignes) {
-    const total = ligne.mainQty + ligne.extraQty + ligne.sideQty;
+function coverPasscode(rows: { passcode: number; mainQty: number; extraQty: number; sideQty: number }[]): number | null {
+  let best: { passcode: number; main: number; total: number } | null = null;
+  for (const row of rows) {
+    const total = row.mainQty + row.extraQty + row.sideQty;
     if (total === 0) continue;
-    const candidate = { passcode: ligne.passcode, main: ligne.mainQty, total };
+    const candidate = { passcode: row.passcode, main: row.mainQty, total };
     if (
-      meilleure === null ||
-      candidate.main > meilleure.main ||
-      (candidate.main === meilleure.main && candidate.total > meilleure.total) ||
-      (candidate.main === meilleure.main &&
-        candidate.total === meilleure.total &&
-        candidate.passcode < meilleure.passcode)
+      best === null ||
+      candidate.main > best.main ||
+      (candidate.main === best.main && candidate.total > best.total) ||
+      (candidate.main === best.main &&
+        candidate.total === best.total &&
+        candidate.passcode < best.passcode)
     ) {
-      meilleure = candidate;
+      best = candidate;
     }
   }
-  return meilleure?.passcode ?? null;
+  return best?.passcode ?? null;
 }
 
-/** Le deck et ses lignes, sans rien du catalogue ni de la collection. */
+/** The deck and its rows, with nothing from the catalogue or the collection. */
 async function loadDeck(db: Database, ownerId: string, deckId: string) {
   requireUuid(deckId);
   const [row] = await db
@@ -133,28 +132,28 @@ async function loadDeck(db: Database, ownerId: string, deckId: string) {
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, ownerId)))
     .limit(1);
-  // Le filtre est **dans** la requête : le deck d'un inconnu est introuvable, et
-  // non interdit. Un 403 dirait qu'il existe.
+  // The filter is **in** the query: a stranger's deck is not found, rather than
+  // forbidden. A 403 would say it exists.
   if (!row) throw notFound("Deck not found.");
 
-  const lignes = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
-  return { row, lignes };
+  const rows = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
+  return { row, rows };
 }
 
 /**
- * Charge un deck **pour écrire dessus**, et distingue les deux refus.
+ * Loads a deck **to write on it**, and tells the two refusals apart.
  *
- * Introuvable et interdit ne sont pas la même réponse. Une lecture peut se
- * permettre de confondre — répondre « introuvable » au deck d'un inconnu évite
- * de confirmer qu'il existe. Une **écriture**, non : le jour où l'on regarde le
- * deck d'un autre joueur, il est sous nos yeux, et lui répondre « introuvable »
- * quand on tente de le modifier serait un mensonge que rien n'explique.
+ * Not found and forbidden are not the same answer. A read can afford to blur
+ * them — answering “not found” for a stranger's deck avoids confirming that it
+ * exists. A **write** cannot: the day we look at another player's deck, it is
+ * in front of us, and answering “not found” when trying to modify it would be a
+ * lie nothing explains.
  *
- * Demandé par Ange : « même si on tente d'aller sur la route pour le modifier,
- * au final on n'ait un 403 ». La garantie vit **ici**, dans le service, et non
- * dans l'écran qui cache le crayon : un écran ne garde rien.
+ * Asked by Ange: “even if someone forces the route to modify it, in the end
+ * they get a 403”. The guarantee lives **here**, in the service, and not in the
+ * screen that hides the pencil: a screen guards nothing.
  */
-async function deckPourEcriture(db: Database, viewerId: string, deckId: string) {
+async function deckForWrite(db: Database, viewerId: string, deckId: string) {
   requireUuid(deckId);
   const [row] = await db.select().from(decks).where(eq(decks.id, deckId)).limit(1);
   if (!row) throw notFound("Deck not found.");
@@ -163,56 +162,61 @@ async function deckPourEcriture(db: Database, viewerId: string, deckId: string) 
 }
 
 /**
- * Les decks d'une personne, du plus récemment touché au plus ancien.
+ * One person's decks, from the most recently touched to the oldest.
  *
- * Le manque est calculé ici aussi : c'est la seule chose qu'on cherche du
- * regard en parcourant la liste — lesquels sont prêts à emporter.
+ * The shortfall is computed here too: it is the one thing the eye looks for
+ * when scanning the list — which ones are ready to take along.
  */
 export async function listDecks(db: Database, ownerId: string): Promise<DeckSummary[]> {
-  const rows = await db
+  const deckRows = await db
     .select()
     .from(decks)
     .where(eq(decks.userId, ownerId))
     .orderBy(desc(decks.updatedAt));
-  if (rows.length === 0) return [];
+  if (deckRows.length === 0) return [];
 
-  const lignes = await db
+  const cardRows = await db
     .select()
     .from(deckCards)
-    .where(inArray(deckCards.deckId, rows.map((row) => row.id)));
+    .where(inArray(deckCards.deckId, deckRows.map((row) => row.id)));
 
-  const possédés = await ownedByPasscode(db, ownerId, [
-    ...new Set(lignes.map((ligne) => ligne.passcode)),
+  const owned = await ownedByPasscode(db, ownerId, [
+    ...new Set(cardRows.map((row) => row.passcode)),
   ]);
 
   /**
-   * Les couvertures en **une** requête.
+   * The covers in **one** query.
    *
-   * Une par deck serait vingt requêtes pour vingt decks : c'est le défaut que
-   * la liste de collection avait eu, et qu'on ne refait pas.
+   * One per deck would be twenty queries for twenty decks: that is the flaw the
+   * collection list once had, and one we do not repeat.
    */
-  const couvertures = new Map<string, number | null>(
-    rows.map((row) => [row.id, coverPasscode(lignes.filter((l) => l.deckId === row.id))]),
+  const covers = new Map<string, number | null>(
+    deckRows.map((row) => [row.id, coverPasscode(cardRows.filter((c) => c.deckId === row.id))]),
   );
-  const fiches = await cardsByPasscode(db, [
-    ...new Set([...couvertures.values()].filter((pc): pc is number => pc !== null)),
+  const cardsByCode = await cardsByPasscode(db, [
+    ...new Set([...covers.values()].filter((pc): pc is number => pc !== null)),
   ]);
 
-  return rows.map((row) => {
-    const siennes = lignes.filter((ligne) => ligne.deckId === row.id);
+  return deckRows.map((deck) => {
+    const its = cardRows.filter((card) => card.deckId === deck.id);
     const counts = { main: 0, extra: 0, side: 0 };
     let missing = 0;
-    for (const ligne of siennes) {
-      counts.main += ligne.mainQty;
-      counts.extra += ligne.extraQty;
-      counts.side += ligne.sideQty;
+    for (const card of its) {
+      counts.main += card.mainQty;
+      counts.extra += card.extraQty;
+      counts.side += card.sideQty;
       missing += missingCopies(
-        ligne.mainQty + ligne.extraQty + ligne.sideQty,
-        possédés.get(ligne.passcode) ?? 0,
+        card.mainQty + card.extraQty + card.sideQty,
+        owned.get(card.passcode) ?? 0,
       );
     }
-    const pc = couvertures.get(row.id) ?? null;
-    return toSummary(row, counts, missing, (pc === null ? null : fiches.get(pc)?.imageUrlSmall) ?? null);
+    const pc = covers.get(deck.id) ?? null;
+    return toSummary(
+      deck,
+      counts,
+      missing,
+      (pc === null ? null : cardsByCode.get(pc)?.imageUrlSmall) ?? null,
+    );
   });
 }
 
@@ -221,51 +225,50 @@ export async function getDeck(
   ownerId: string,
   deckId: string,
 ): Promise<DeckDetail> {
-  const { row, lignes } = await loadDeck(db, ownerId, deckId);
+  const { row: deck, rows: cardRows } = await loadDeck(db, ownerId, deckId);
 
-  const passcodes = [...new Set(lignes.map((ligne) => ligne.passcode))];
-  const [possédés, fiches] = await Promise.all([
+  const passcodes = [...new Set(cardRows.map((card) => card.passcode))];
+  const [ownedByCode, catalogue] = await Promise.all([
     ownedByPasscode(db, ownerId, passcodes),
     cardsByPasscode(db, passcodes),
   ]);
-  const parPasscode = fiches;
 
   const counts = { main: 0, extra: 0, side: 0 };
   let missing = 0;
   const entries: DeckCardEntry[] = [];
 
-  for (const ligne of lignes) {
-    const fiche = parPasscode.get(ligne.passcode);
-    const owned = possédés.get(ligne.passcode) ?? 0;
-    const total = ligne.mainQty + ligne.extraQty + ligne.sideQty;
-    const manque = missingCopies(total, owned);
+  for (const line of cardRows) {
+    const card = catalogue.get(line.passcode);
+    const owned = ownedByCode.get(line.passcode) ?? 0;
+    const total = line.mainQty + line.extraQty + line.sideQty;
+    const shortfall = missingCopies(total, owned);
 
-    counts.main += ligne.mainQty;
-    counts.extra += ligne.extraQty;
-    counts.side += ligne.sideQty;
-    missing += manque;
+    counts.main += line.mainQty;
+    counts.extra += line.extraQty;
+    counts.side += line.sideQty;
+    missing += shortfall;
 
     entries.push({
-      passcode: ligne.passcode,
-      // Le nom imprimé suit la carte, pas l'interface : c'est la règle du
-      // référentiel, et un deck se relit comme on l'a construit.
-      name: fiche?.nameFr ?? fiche?.nameEn ?? String(ligne.passcode),
-      banlistTcg: fiche?.banlistTcg ?? null,
-      imageUrlSmall: fiche?.imageUrlSmall ?? null,
-      main: ligne.mainQty,
-      extra: ligne.extraQty,
-      side: ligne.sideQty,
+      passcode: line.passcode,
+      // The printed name follows the card, not the interface: that is the
+      // referential's rule, and a deck reads back as it was built.
+      name: card?.nameFr ?? card?.nameEn ?? String(line.passcode),
+      banlistTcg: card?.banlistTcg ?? null,
+      imageUrlSmall: card?.imageUrlSmall ?? null,
+      main: line.mainQty,
+      extra: line.extraQty,
+      side: line.sideQty,
       owned,
-      missing: manque,
+      missing: shortfall,
     });
   }
 
   entries.sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
-  const pc = coverPasscode(lignes);
-  const couverture = (pc === null ? null : parPasscode.get(pc)?.imageUrlSmall) ?? null;
+  const pc = coverPasscode(cardRows);
+  const cover = (pc === null ? null : catalogue.get(pc)?.imageUrlSmall) ?? null;
 
-  return { ...toSummary(row, counts, missing, couverture), cards: entries };
+  return { ...toSummary(deck, counts, missing, cover), cards: entries };
 }
 
 export async function createDeck(
@@ -274,29 +277,29 @@ export async function createDeck(
   name: string,
   folderId: string | null = null,
 ): Promise<DeckSummary> {
-  const propre = name.trim();
-  if (!propre) throw invalidInput("Give the deck a name.");
-  // Créer puis déplacer ferait deux écritures et un clignotement : on naît là
-  // où l'on regarde.
+  const clean = name.trim();
+  if (!clean) throw invalidInput("Give the deck a name.");
+  // Creating then moving would be two writes and a flicker: a deck is born
+  // where you are looking.
   await assertFolderOwned(db, viewerId, folderId);
 
   try {
     const [row] = await db
       .insert(decks)
-      .values({ userId: viewerId, name: propre, folderId })
+      .values({ userId: viewerId, name: clean, folderId })
       .returning();
-    if (!row) throw new Error("insertion sans résultat");
+    if (!row) throw new Error("insert returned nothing");
     return toSummary(row, { main: 0, extra: 0, side: 0 }, 0);
   } catch (err) {
     /**
-     * Le nom de la contrainte vit dans la **cause**, pas dans le message.
+     * The constraint's name lives in the **cause**, not in the message.
      *
-     * Drizzle enveloppe l'erreur du pilote : son `message` porte la requête qui
-     * a échoué, jamais le nom de l'index. Chercher dedans ne trouvait rien, et
-     * le conflit ressortait en erreur interne — un 500 pour un nom déjà pris.
+     * Drizzle wraps the driver's error: its `message` carries the query that
+     * failed, never the index name. Searching in it found nothing, and the
+     * conflict surfaced as an internal error — a 500 for a name already taken.
      *
-     * Deux decks du même nom sont impossibles à distinguer dans une liste, et
-     * la confirmation de suppression se tape au nom.
+     * Two decks with the same name are impossible to tell apart in a list, and
+     * the delete confirmation is typed by name.
      */
     const cause = (err as { cause?: { constraint_name?: string } }).cause;
     if (cause?.constraint_name === "decks_user_name_uidx") {
@@ -307,11 +310,11 @@ export async function createDeck(
 }
 
 /**
- * Renommer un deck, ou le ranger ailleurs.
+ * Renaming a deck, or filing it elsewhere.
  *
- * Les deux dans le même geste parce que la base les écrit dans la même ligne.
- * Il s'appelait `renameDeck` tant qu'il ne touchait qu'au nom ; le dossier l'a
- * rendu menteur.
+ * Both in the same gesture because the database writes them on the same row. It
+ * was called `renameDeck` while it only touched the name; the folder made that
+ * a lie.
  */
 export async function updateDeck(
   db: Database,
@@ -319,42 +322,42 @@ export async function updateDeck(
   deckId: string,
   input: { name?: string; folderId?: string | null },
 ): Promise<void> {
-  const valeurs: { name?: string; folderId?: string | null; updatedAt: Date } = {
+  const values: { name?: string; folderId?: string | null; updatedAt: Date } = {
     updatedAt: new Date(),
   };
 
   if (input.name !== undefined) {
-    const propre = input.name.trim();
-    if (!propre) throw invalidInput("Give the deck a name.");
-    valeurs.name = propre;
+    const clean = input.name.trim();
+    if (!clean) throw invalidInput("Give the deck a name.");
+    values.name = clean;
   }
   if (input.folderId !== undefined) {
-    // Sans ce contrôle, on rangerait son deck dans le dossier d'un inconnu en
-    // devinant un UUID — et il apparaîtrait dans l'explorateur de l'autre.
+    // Without this check, one could file a deck into a stranger's folder by
+    // guessing a UUID — and it would show up in that person's explorer.
     await assertFolderOwned(db, viewerId, input.folderId);
-    valeurs.folderId = input.folderId;
+    values.folderId = input.folderId;
   }
 
-  await deckPourEcriture(db, viewerId, deckId);
-  await db.update(decks).set(valeurs).where(eq(decks.id, deckId));
+  await deckForWrite(db, viewerId, deckId);
+  await db.update(decks).set(values).where(eq(decks.id, deckId));
 }
 
 export async function deleteDeck(db: Database, viewerId: string, deckId: string): Promise<void> {
-  await deckPourEcriture(db, viewerId, deckId);
+  await deckForWrite(db, viewerId, deckId);
   await db.delete(decks).where(eq(decks.id, deckId));
 }
 
 /**
- * Pose la quantité d'une carte dans une zone.
+ * Sets the quantity of a card in a zone.
  *
- * **Tout se décide ici, et une seule fois.** ATEM-old avait le bon calcul —
- * `checkDeckAdd` — et ne l'appelait jamais côté serveur : c'était un utilitaire
- * d'affichage. L'écran grisait un bouton, rien n'empêchait la requête.
+ * **Everything is decided here, once.** ATEM-old had the right computation —
+ * `checkDeckAdd` — and never called it server-side: it was a display helper.
+ * The screen greyed a button out, nothing stopped the request.
  *
- * Trois bornes se superposent, et la plus basse décide : la règle du jeu (trois
- * par deck, garantie en base par une contrainte), la banlist (qui bouge avec le
- * catalogue, donc ici), et la collection — décision d'Ange : on ne met pas dans
- * un deck une carte qu'on n'a pas.
+ * Three bounds overlap, and the lowest decides: the rule of the game (three per
+ * deck, guaranteed in the database by a constraint), the banlist (which moves
+ * with the catalogue, hence here), and the collection — Ange's decision: you do
+ * not put in a deck a card you do not have.
  */
 export async function setDeckCard(
   db: Database,
@@ -364,24 +367,24 @@ export async function setDeckCard(
 ): Promise<DeckDetail> {
   const quantity = Math.trunc(input.quantity);
   if (!Number.isFinite(quantity) || quantity < 0 || quantity > DECK_MAX_COPIES) {
-    // Écrit en toutes lettres : une phrase construite n'a pas de clé de
-    // traduction, et le contrôle ne la verrait pas.
+    // Spelled out in full: a sentence built at runtime has no translation key,
+    // and the gate would not see it.
     throw invalidInput("A zone holds no more than 3 copies.");
   }
 
-  await deckPourEcriture(db, viewerId, deckId);
-  const lignes = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
+  await deckForWrite(db, viewerId, deckId);
+  const rows = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
 
-  const fiche = (await cardsByPasscode(db, [input.passcode])).get(input.passcode);
-  if (!fiche) throw notFound("Unknown card.");
+  const card = (await cardsByPasscode(db, [input.passcode])).get(input.passcode);
+  if (!card) throw notFound("Unknown card.");
 
   /**
-   * L'Extra Deck n'accepte que ce qui lui revient, et réciproquement.
+   * The Extra Deck accepts only what belongs to it, and vice versa.
    *
-   * Une Fusion dans le Main Deck est une main morte ; un monstre à effet dans
-   * l'Extra est simplement illégal. Le refus est plus utile que le silence.
+   * A Fusion in the Main Deck is a dead hand; an Effect monster in the Extra is
+   * simply illegal. A refusal is more useful than silence.
    */
-  const extra = isExtraDeckCard({ type: fiche.type, frameType: fiche.frameType });
+  const extra = isExtraDeckCard({ type: card.type, frameType: card.frameType });
   if (input.zone === "extra" && !extra) {
     throw invalidInput("This card does not belong in the Extra Deck.");
   }
@@ -389,24 +392,24 @@ export async function setDeckCard(
     throw invalidInput("This card belongs in the Extra Deck, not the Main Deck.");
   }
 
-  const existante = lignes.find((ligne) => ligne.passcode === input.passcode);
-  const autresZones =
-    (existante ? existante.mainQty + existante.extraQty + existante.sideQty : 0) -
-    (existante ? existante[`${input.zone}Qty`] : 0);
+  const existingRow = rows.find((row) => row.passcode === input.passcode);
+  const otherZones =
+    (existingRow ? existingRow.mainQty + existingRow.extraQty + existingRow.sideQty : 0) -
+    (existingRow ? existingRow[`${input.zone}Qty`] : 0);
 
   if (quantity > 0) {
-    const possédés = await ownedByPasscode(db, viewerId, [input.passcode]);
+    const owned = await ownedByPasscode(db, viewerId, [input.passcode]);
     const issue = checkDeckAdd({
-      banlistTcg: fiche.banlistTcg,
-      owned: possédés.get(input.passcode) ?? 0,
-      // Ce qui est déjà là **hors de la zone qu'on écrit** : on remplace cette
-      // zone, on ne s'ajoute pas à elle.
-      inDeck: autresZones,
+      banlistTcg: card.banlistTcg,
+      owned: owned.get(input.passcode) ?? 0,
+      // What is already there **outside the zone being written**: we replace
+      // that zone, we do not add to it.
+      inDeck: otherZones,
       wanted: quantity,
     });
 
     if (issue.blockedBy) {
-      throw invalidInput(REFUS_LABELS[issue.blockedBy], {
+      throw invalidInput(BLOCKED_LABELS[issue.blockedBy], {
         reason: issue.blockedBy,
         remainingLegal: issue.remainingLegal,
         owned: issue.hardCap,
@@ -415,30 +418,30 @@ export async function setDeckCard(
   }
 
   /**
-   * La zone ne déborde pas.
+   * The zone does not overflow.
    *
-   * Une soixante-et-unième carte au Main n'est légale dans aucune situation ;
-   * un deck à douze cartes, en revanche, est un deck en cours. On refuse donc
-   * le maximum et on laisse le minimum se dire ailleurs.
+   * A sixty-first card in the Main is legal in no situation; a twelve-card
+   * deck, on the other hand, is a deck in progress. So we refuse the maximum
+   * and let the minimum be said elsewhere.
    */
-  const totalZone =
-    lignes.reduce((somme, ligne) => somme + ligne[`${input.zone}Qty`], 0) -
-    (existante?.[`${input.zone}Qty`] ?? 0) +
+  const zoneTotal =
+    rows.reduce((sum, row) => sum + row[`${input.zone}Qty`], 0) -
+    (existingRow?.[`${input.zone}Qty`] ?? 0) +
     quantity;
-  if (totalZone > DECK_ZONE_LIMITS[input.zone].max) {
-    throw invalidInput(ZONE_PLEINE_LABELS[input.zone]);
+  if (zoneTotal > DECK_ZONE_LIMITS[input.zone].max) {
+    throw invalidInput(ZONE_FULL_LABELS[input.zone]);
   }
 
   const zones = {
-    mainQty: input.zone === "main" ? quantity : (existante?.mainQty ?? 0),
-    extraQty: input.zone === "extra" ? quantity : (existante?.extraQty ?? 0),
-    sideQty: input.zone === "side" ? quantity : (existante?.sideQty ?? 0),
+    mainQty: input.zone === "main" ? quantity : (existingRow?.mainQty ?? 0),
+    extraQty: input.zone === "extra" ? quantity : (existingRow?.extraQty ?? 0),
+    sideQty: input.zone === "side" ? quantity : (existingRow?.sideQty ?? 0),
   };
 
   await db.transaction(async (tx) => {
     if (zones.mainQty + zones.extraQty + zones.sideQty === 0) {
-      // Une carte à zéro partout n'est pas dans le deck : on ne garde pas une
-      // ligne vide qui ferait nombre dans les décomptes.
+      // A card at zero everywhere is not in the deck: we do not keep an empty
+      // row that would count towards the totals.
       await tx
         .delete(deckCards)
         .where(and(eq(deckCards.deckId, deckId), eq(deckCards.passcode, input.passcode)));
@@ -458,31 +461,31 @@ export async function setDeckCard(
 }
 
 /**
- * Ce qu'on dit quand on refuse — la raison, pas « invalide ».
+ * What we say when we refuse — the reason, not “invalid”.
  *
- * Un refus qui n'explique pas envoie chercher la panne dans l'application. Ici
- * chacune des quatre bornes a sa phrase, et `details.reason` la rend lisible par
- * l'écran, qui grise le bouton avec la même information.
+ * A refusal that does not explain sends people hunting for a bug in the
+ * application. Here each of the four bounds has its sentence, and
+ * `details.reason` makes it readable by the screen, which greys the button out
+ * with the same information.
  *
- * Le suffixe `_LABELS` n'est pas décoratif : c'est ce à quoi
- * `check-translations.mjs` reconnaît une table de libellés affichés. Sans lui,
- * ces phrases seraient parties au front sans traduction, invisibles au
- * contrôle — elles ne passent pas par `invalidInput("…")` mais par une clé.
+ * The `_LABELS` suffix is not decoration: it is how `check-translations.mjs`
+ * recognises a table of displayed labels. Without it, these sentences would go
+ * to the front untranslated, invisible to the gate — they do not go through
+ * `invalidInput("…")` but through a key.
  *
- * Quatre entrées, quatre raisons atteignables. Il y en avait une cinquième —
- * « ok » — que le type exigeait et qu'aucun chemin n'atteignait : la faire
- * disparaître demandait de poser au contrôle la vraie question du premier
- * coup, ce que `wanted` permet.
+ * Four entries, four reachable reasons. There was a fifth — “ok” — that the
+ * type demanded and no path reached: making it disappear meant asking the check
+ * the real question the first time, which `wanted` allows.
  */
-const REFUS_LABELS: Record<DeckBlockReason, string> = {
+const BLOCKED_LABELS: Record<DeckBlockReason, string> = {
   forbidden: "This card is forbidden by the banlist.",
   banlist: "The banlist does not allow that many.",
   not_owned: "You do not own enough copies of this card.",
   max_copies: "A deck may hold no more than 3 copies of a card.",
 };
 
-/** Une zone pleine se dit par son nom : « le Main Deck » parle, « main » non. */
-const ZONE_PLEINE_LABELS: Record<DeckZone, string> = {
+/** A full zone is named: “the Main Deck” speaks, “main” does not. */
+const ZONE_FULL_LABELS: Record<DeckZone, string> = {
   main: "The Main Deck is full — 60 cards maximum.",
   extra: "The Extra Deck is full — 15 cards maximum.",
   side: "The Side Deck is full — 15 cards maximum.",

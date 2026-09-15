@@ -1,22 +1,22 @@
 /**
- * Les identifiants qui viennent du dehors.
+ * Identifiers that come from outside.
  *
- * Une colonne `uuid` n'accepte pas n'importe quelle chaîne : PostgreSQL refuse
- * la comparaison, et ce refus remonte en **erreur interne** — un 500, avec la
- * requête échouée dans les journaux, pour ce qui n'est qu'une adresse mal
- * tapée. C'est la même famille que `?level=abc`, qui produisait un 500 là où un
- * filtre illisible ne mérite qu'un 400.
+ * A `uuid` column does not accept any string: PostgreSQL refuses the
+ * comparison, and that refusal surfaces as an **internal error** — a 500, with
+ * the failed query in the logs, for what is only a mistyped address. Same
+ * family as `?level=abc`, which produced a 500 where an unreadable filter
+ * deserves no more than a 400.
  *
- * On vérifie donc la forme avant d'interroger. Dans le service et non dans la
- * route : le service est appelable par autre chose qu'une route — un script,
- * une file, une épreuve — et sa garantie ne doit pas dépendre de qui l'appelle.
+ * So we check the shape before querying. In the service, not in the route: a
+ * service is callable by something other than a route — a script, a queue, a
+ * test — and its guarantee must not depend on who calls it.
  */
 import { invalidInput } from "./errors.js";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** Rend l'identifiant, ou refuse la demande — jamais une erreur de base. */
+/** Returns the identifier, or refuses the request — never a database error. */
 export function requireUuid(value: string): string {
   if (!UUID.test(value)) throw invalidInput("Invalid identifier.");
   return value;

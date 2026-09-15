@@ -5,11 +5,11 @@ import { cardPrints } from "../referential/schema.js";
 import { users } from "../identity/schema.js";
 
 /**
- * Un exemplaire possédé.
+ * A copy owned.
  *
- * L'unité est l'**impression**, pas la carte : le joueur scanne un set code, il
- * déclare posséder une édition précise. Le « +1 / −1 » d'une ligne agit donc sur
- * l'édition, et deux éditions de la même carte sont deux lignes.
+ * The unit is the **printing**, not the card: the player scans a set code, so
+ * they declare owning one precise edition. A line's “+1 / −1” therefore acts on
+ * that edition, and two editions of the same card are two lines.
  */
 export const ownedCards = pgTable(
   "owned_cards",
@@ -18,12 +18,12 @@ export const ownedCards = pgTable(
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     printId: integer("print_id").notNull().references(() => cardPrints.id, { onDelete: "restrict" }),
     /**
-     * Le set code est recopié ici, alors qu'il vit déjà sur l'impression.
+     * The set code is copied here, although it already lives on the printing.
      *
-     * C'est ce que le joueur a réellement lu sur sa carte, et c'est ce que
-     * l'export doit lui rendre — même si l'impression n'a jamais été résolue,
-     * même si le catalogue change d'avis plus tard. La vérité de l'inventaire
-     * appartient à l'inventaire.
+     * It is what the player actually read on their card, and what the export
+     * must give back — even if the printing was never resolved, even if the
+     * catalogue changes its mind later. The truth of an inventory belongs to
+     * the inventory.
      */
     setCode: text("set_code").notNull(),
     quantity: integer("quantity").notNull().default(1),

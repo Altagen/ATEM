@@ -1,13 +1,12 @@
 /**
- * L'agrégateur de schéma — et rien d'autre.
+ * The schema aggregator — and nothing else.
  *
- * ATEM-old déclarait ses 21 tables dans un fichier de 780 lignes mêlant six
- * domaines. Chaque table y était saine ; c'est leur cohabitation qui a permis à
- * trois modules d'écrire dans les tables du catalogue, chacun avec sa propre
- * logique, sans connaître les deux autres.
+ * ATEM-old declared its 21 tables in a 780-line file mixing six domains. Each
+ * table was sound; it is their cohabitation that let three modules write into
+ * the catalogue tables, each with its own logic, none knowing the other two.
  *
- * Ici il n'y a rien à écrire : chaque module possède ses tables, ce fichier ne
- * fait que les réunir pour drizzle-kit. Il ne peut pas grossir.
+ * There is nothing to write here: each module owns its tables, this file only
+ * gathers them for drizzle-kit. It cannot grow.
  */
 export * from "../modules/identity/schema.js";
 export * from "../modules/referential/schema.js";

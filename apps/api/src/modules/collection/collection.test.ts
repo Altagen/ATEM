@@ -15,29 +15,29 @@ import { ownedCards } from "./schema.js";
 const { db } = createTestApp();
 
 /**
- * Les comptes sont créés par le service, pas par la route.
+ * Accounts are created by the service, not by the route.
  *
- * Ces tests portent sur la collection, pas sur le transport de
- * l'authentification — et la route applique une limitation de débit qui, à la
- * cinquième inscription, ferait échouer des tests qui n'ont rien à voir avec
- * elle. Passer par le service teste ce qu'on veut tester.
+ * These tests are about the collection, not about how authentication travels —
+ * and the route applies a rate limit that, at the fifth registration, would
+ * fail tests that have nothing to do with it. Going through the service tests
+ * what we mean to test.
  */
 async function newUser(): Promise<{ id: string }> {
   const { user } = await registerUser(db, {
     email: freshEmail("collec"),
     password: "Un-Mot-De-Passe-1!",
-    displayName: "Collectionneur",
+    displayName: "Collector",
   });
   return { id: user.id };
 }
 
 /**
- * Vérifie qu'une écriture est rejetée par une contrainte nommée de la base.
+ * Checks that a write is rejected by a named database constraint.
  *
- * Drizzle enveloppe l'erreur du pilote : son `message` porte la requête qui a
- * échoué, et le nom de la contrainte vit dans la cause. Sans cette distinction,
- * une assertion sur le message passerait pour n'importe quelle erreur SQL — y
- * compris une faute de frappe dans le test lui-même.
+ * Drizzle wraps the driver's error: its `message` carries the query that
+ * failed, and the constraint's name lives in the cause. Without that
+ * distinction, an assertion on the message would pass for any SQL error — the
+ * test's own typo included.
  */
 async function assertRejectedBy(constraint: string, write: () => Promise<unknown>) {
   try {
@@ -47,14 +47,14 @@ async function assertRejectedBy(constraint: string, write: () => Promise<unknown
     assert.equal(
       cause?.constraint_name,
       constraint,
-      `attendu un rejet par ${constraint}, obtenu ${cause?.constraint_name ?? "aucune contrainte"}`,
+      `expected a rejection by ${constraint}, got ${cause?.constraint_name ?? "no constraint"}`,
     );
     return;
   }
-  assert.fail(`l'écriture aurait dû être rejetée par ${constraint}`);
+  assert.fail(`the write should have been rejected by ${constraint}`);
 }
 
-/** Une carte et son impression, posées à la main : aucun test ne sort sur le réseau. */
+/** A card and its printing, placed by hand: no test goes out on the network. */
 async function seedCard(passcode: number, setCode: string, names: { en: string; fr?: string }) {
   await upsertCard(db, {
     passcode,
@@ -68,32 +68,32 @@ async function seedCard(passcode: number, setCode: string, names: { en: string; 
   return upsertPrint(db, { setCode, cardPasscode: passcode, rarity: "Rare" });
 }
 
-test("un code inconnu entre dans l'inventaire sans attendre le réseau", async () => {
+test("an unknown code enters the inventory without waiting for the network", async () => {
   const user = await newUser();
   const item = await adjustQuantity(db, user.id, { setCode: "ZZZZ-FR999", delta: 2 });
 
   assert.equal(item.quantity, 2);
   assert.equal(item.card, null);
-  // La ligne existe, elle est comptée, et elle sait qu'elle attend son identité.
+  // The row exists, it is counted, and it knows it is awaiting its identity.
   assert.equal(item.print.resolveStatus, "pending");
 });
 
-test("la saisie est normalisée avant d'identifier la ligne", async () => {
+test("input is normalised before identifying the row", async () => {
   const user = await newUser();
   await seedCard(11111111, "TEST-FR001", { en: "Test Card", fr: "Carte de test" });
 
   await adjustQuantity(db, user.id, { setCode: "test fr001", delta: 1 });
   const again = await adjustQuantity(db, user.id, { setCode: "  TEST-FR001  ", delta: 2 });
 
-  // Trois écritures approximatives, une seule ligne.
+  // Three loose spellings, a single row.
   assert.equal(again.quantity, 3);
   const { total } = await listCollection(db, user.id, {});
   assert.equal(total, 1);
 });
 
-test("le nom affiché suit la langue de l'exemplaire, pas celle de l'interface", async () => {
-  // Une carte achetée en anglais reste affichée en anglais : c'est ce qui est
-  // écrit sur le carton posé sur la table.
+test("the displayed name follows the copy's language, not the interface's", async () => {
+  // A card bought in English stays displayed in English: that is what is
+  // written on the cardboard lying on the table.
   const user = await newUser();
   await seedCard(22222222, "AAAA-EN001", { en: "Great White", fr: "Grande Baleine" });
   await seedCard(22222222, "AAAA-FR001", { en: "Great White", fr: "Grande Baleine" });
@@ -107,7 +107,7 @@ test("le nom affiché suit la langue de l'exemplaire, pas celle de l'interface",
   assert.equal(byCode.get("AAAA-FR001"), "Grande Baleine");
 });
 
-test("la quantité ne descend pas sous zéro", async () => {
+test("the quantity does not go below zero", async () => {
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "BBBB-FR001", delta: 1 });
   await assert.rejects(
@@ -116,16 +116,16 @@ test("la quantité ne descend pas sous zéro", async () => {
   );
 });
 
-test("la quantité est plafonnée", async () => {
-  // ATEM-old n'avait aucune borne haute : un CSV avec quantity=999999999 passait.
+test("the quantity is capped", async () => {
+  // ATEM-old had no upper bound: a CSV with quantity=999999999 went through.
   const user = await newUser();
   await assert.rejects(
     () => adjustQuantity(db, user.id, { setCode: "CCCC-FR001", delta: 1001 }),
-    /1000 exemplaires/,
+    /At most 1000 copies/,
   );
 });
 
-test("une ligne tombée à zéro disparaît de la collection", async () => {
+test("a row that falls to zero disappears from the collection", async () => {
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "DDDD-FR001", delta: 2 });
   await adjustQuantity(db, user.id, { setCode: "DDDD-FR001", delta: -2 });
@@ -134,8 +134,8 @@ test("une ligne tombée à zéro disparaît de la collection", async () => {
   assert.equal(total, 0);
 });
 
-test("la ligne d'autrui est introuvable, pas interdite", async () => {
-  // Un 403 confirmerait que la ligne existe. Un 404 ne dit rien.
+test("someone else's row is not found, rather than forbidden", async () => {
+  // A 403 would confirm the row exists. A 404 says nothing.
   const owner = await newUser();
   const stranger = await newUser();
   const item = await adjustQuantity(db, owner.id, { setCode: "EEEE-FR001", delta: 1 });
@@ -144,7 +144,7 @@ test("la ligne d'autrui est introuvable, pas interdite", async () => {
   await setFavorite(db, owner.id, item.id, true);
 });
 
-test("la collection d'un compte ignore celle des autres", async () => {
+test("an account's collection ignores everyone else's", async () => {
   const first = await newUser();
   const second = await newUser();
   await adjustQuantity(db, first.id, { setCode: "FFFF-FR001", delta: 3 });
@@ -153,10 +153,10 @@ test("la collection d'un compte ignore celle des autres", async () => {
   assert.equal((await listCollection(db, first.id, {})).total, 1);
 });
 
-test("la consolidation d'une ligne provisoire ne perd aucun exemplaire", async () => {
-  // Le chemin normal de chaque carte scannée : la ligne est d'abord provisoire,
-  // puis raccrochée à la vraie édition. ATEM-old y perdait des exemplaires
-  // quand l'opération n'était pas atomique.
+test("consolidating a provisional row loses no copy", async () => {
+  // The normal path of every scanned card: the row is provisional first, then
+  // re-attached to the real edition. ATEM-old lost copies there when the
+  // operation was not atomic.
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "GGGG-FR001", delta: 4 });
 
@@ -164,25 +164,25 @@ test("la consolidation d'une ligne provisoire ne perd aucun exemplaire", async (
   assert.equal(before.items[0]?.card, null);
   assert.equal(before.items[0]?.quantity, 4);
 
-  // La vraie édition apparaît au catalogue, comme après un appel réseau réussi.
+  // The real edition appears in the catalogue, as after a successful network call.
   await seedCard(33333333, "GGGG-FR001", { en: "Late Card", fr: "Carte tardive" });
   assert.equal(await reresolve(db, user.id, "GGGG-FR001"), true);
 
   const after = await listCollection(db, user.id, {});
-  assert.equal(after.total, 1, "une seule ligne après consolidation");
-  assert.equal(after.items[0]?.quantity, 4, "les quatre exemplaires sont conservés");
+  assert.equal(after.total, 1, "a single row after consolidation");
+  assert.equal(after.items[0]?.quantity, 4, "the four copies are kept");
   assert.equal(after.items[0]?.card?.name, "Carte tardive");
 });
 
-test("la consolidation fusionne avec une ligne déjà résolue", async () => {
+test("consolidation merges with an already resolved row", async () => {
   const user = await newUser();
   await seedCard(44444444, "HHHH-FR001", { en: "Known", fr: "Connue" });
   await adjustQuantity(db, user.id, { setCode: "HHHH-FR001", delta: 2 });
 
-  // Une seconde ligne provisoire sur le même code, comme après un scan qui
-  // n'aurait pas trouvé l'édition du premier coup.
+  // A second provisional row on the same code, as after a scan that did not
+  // find the edition on the first try.
   const placeholder = await upsertPrint(db, {
-    setCode: "HHHH-FR001", cardPasscode: null, rarity: "Autre",
+    setCode: "HHHH-FR001", cardPasscode: null, rarity: "Other",
   });
   await db.insert(ownedCards).values({
     userId: user.id, printId: placeholder.id, setCode: "HHHH-FR001", quantity: 3,
@@ -192,12 +192,12 @@ test("la consolidation fusionne avec une ligne déjà résolue", async () => {
 
   const after = await listCollection(db, user.id, {});
   assert.equal(after.total, 1);
-  assert.equal(after.items[0]?.quantity, 5, "2 + 3, rien de perdu");
+  assert.equal(after.items[0]?.quantity, 5, "2 + 3, nothing lost");
 });
 
-test("les filtres portent sur les valeurs canoniques anglaises", async () => {
-  // Les énumérations restent en anglais en base : un filtre reste valide quand
-  // l'utilisateur change la langue de son interface.
+test("filters apply to the canonical English values", async () => {
+  // Enumerations stay English in the database: a filter stays valid when the
+  // user changes their interface language.
   const user = await newUser();
   await seedCard(55555555, "IIII-FR001", { en: "Filtered", fr: "Filtrée" });
   await adjustQuantity(db, user.id, { setCode: "IIII-FR001", delta: 1 });
@@ -208,9 +208,9 @@ test("les filtres portent sur les valeurs canoniques anglaises", async () => {
   assert.equal((await listCollection(db, user.id, { levels: ["10"] })).total, 0);
 });
 
-test("une impression non identifiée reste visible et filtrable", async () => {
-  // C'est justement la ligne que le joueur veut corriger : elle ne doit pas
-  // disparaître parce qu'elle n'a pas de carte.
+test("an unidentified printing stays visible and filterable", async () => {
+  // It is precisely the row the player wants to fix: it must not disappear
+  // because it has no card.
   const user = await newUser();
   await seedCard(66666666, "JJJJ-FR001", { en: "Resolved", fr: "Résolue" });
   await adjustQuantity(db, user.id, { setCode: "JJJJ-FR001", delta: 1 });
@@ -222,8 +222,8 @@ test("une impression non identifiée reste visible et filtrable", async () => {
   assert.equal(unresolved.items[0]?.setCode, "KKKK-FR999");
 });
 
-test("la base refuse une impression résolue sans carte", async () => {
-  // L'invariant ne repose pas sur la discipline du code : PostgreSQL l'impose.
+test("the database refuses a resolved printing without a card", async () => {
+  // The invariant does not rest on the code's discipline: PostgreSQL enforces it.
   await assertRejectedBy("card_prints_resolved_has_card", () =>
     db.insert(cardPrints).values({
       setCode: "LLLL-FR001",
@@ -234,26 +234,26 @@ test("la base refuse une impression résolue sans carte", async () => {
   );
 });
 
-test("la base refuse un statut de résolution inventé", async () => {
+test("the database refuses an invented resolve status", async () => {
   await assertRejectedBy("card_prints_status_vocab", () =>
     db.insert(cardPrints).values({
       setCode: "MMMM-FR001",
       canonicalSetCode: "MMMM-001",
       cardPasscode: null,
-      resolveStatus: "peut-etre",
+      resolveStatus: "maybe",
     }),
   );
 });
 
-test("le catalogue n'est jamais écrit par la collection", async () => {
-  // Une carte provisoire ne crée aucune ligne dans `cards` : c'est ce qui
-  // remplace les passcodes négatifs d'ATEM-old.
+test("the catalogue is never written by the collection", async () => {
+  // A provisional card creates no row in `cards`: that is what replaces
+  // ATEM-old's negative passcodes.
   const user = await newUser();
   const before = await db.select({ passcode: cards.passcode }).from(cards);
   await adjustQuantity(db, user.id, { setCode: "NNNN-FR777", delta: 1 });
   const after = await db.select({ passcode: cards.passcode }).from(cards);
 
-  assert.equal(after.length, before.length, "aucune carte fabriquée");
+  assert.equal(after.length, before.length, "no card fabricated");
 
   const [print] = await db
     .select()
@@ -264,28 +264,28 @@ test("le catalogue n'est jamais écrit par la collection", async () => {
   assert.equal(print?.resolveStatus, "pending");
 });
 
-test("le code du joueur est matérialisé même si seul l'anglais est au catalogue", async () => {
-  // Le cas normal après un import complet : le catalogue ne contient que les
-  // codes anglais. Une carte française doit malgré tout produire une ligne
-  // portant le code réellement imprimé, et afficher le nom français.
+test("the player's code is materialised even if only English is in the catalogue", async () => {
+  // The normal case after a full import: the catalogue only contains English
+  // codes. A French card must nonetheless produce a row carrying the code
+  // actually printed, and display the French name.
   //
-  // Sans ça, la ligne pointait vers l'impression anglaise : nom anglais sur une
-  // carte française, et un code jamais saisi rendu à l'export. Défaut vu à
-  // l'écran, pas dans le code.
+  // Without that, the row pointed at the English printing: English name on a
+  // French card, and a code never typed handed back by the export. A defect
+  // seen on screen, not in the code.
   const user = await newUser();
   await seedCard(77777777, "OOOO-EN001", { en: "Great White", fr: "Grande Baleine" });
 
   const item = await adjustQuantity(db, user.id, { setCode: "OOOO-FR001", delta: 1 });
 
-  assert.equal(item.print.setCode, "OOOO-FR001", "le code imprimé du joueur");
+  assert.equal(item.print.setCode, "OOOO-FR001", "the player's printed code");
   assert.equal(item.print.language, "fr");
-  assert.equal(item.print.resolveStatus, "resolved", "raccrochée à la carte connue");
+  assert.equal(item.print.resolveStatus, "resolved", "re-attached to the known card");
   assert.equal(item.card?.name, "Grande Baleine");
 });
 
-test("la notation sans région rejoint la notation avec région", async () => {
-  // Le dump YGOPRODeck écrit « LOB-001 », cardsetsinfo répond sur « LOB-EN001 »,
-  // et les cartes portent l'une ou l'autre selon leur année d'impression.
+test("the region-less notation joins the one with a region", async () => {
+  // The YGOPRODeck dump writes “LOB-001”, cardsetsinfo answers on “LOB-EN001”,
+  // and cards carry one or the other depending on their print year.
   const user = await newUser();
   await seedCard(88888888, "PPPP-001", { en: "No Region", fr: "Sans région" });
 
@@ -295,14 +295,14 @@ test("la notation sans région rejoint la notation avec région", async () => {
   assert.equal(item.card?.name, "Sans région");
 });
 
-test("la consolidation ne fond pas deux raretés différentes", async () => {
-  // L'unité de l'inventaire est (set_code, rareté, langue). Consolider par
-  // dessus la rareté ne perd pas d'exemplaire, mais perd son édition — ce qui
-  // contredit la raison d'être du module.
+test("consolidation does not melt two different rarities together", async () => {
+  // The unit of the inventory is (set_code, rarity, language). Consolidating
+  // across rarity loses no copy, but loses its edition — which contradicts the
+  // module's reason for being.
   const user = await newUser();
   await seedCard(99999901, "RRRR-FR001", { en: "Two Rarities", fr: "Deux raretés" });
 
-  // Une édition connue, en Ultra Rare.
+  // A known edition, in Ultra Rare.
   const ultra = await upsertPrint(db, {
     setCode: "RRRR-FR001", cardPasscode: 99999901, rarity: "Ultra Rare", language: "fr",
   });
@@ -310,7 +310,7 @@ test("la consolidation ne fond pas deux raretés différentes", async () => {
     userId: user.id, printId: ultra.id, setCode: "RRRR-FR001", quantity: 3,
   });
 
-  // Et une seconde, en Secret Rare, elle aussi identifiée.
+  // And a second one, in Secret Rare, identified as well.
   const secret = await upsertPrint(db, {
     setCode: "RRRR-FR001", cardPasscode: 99999901, rarity: "Secret Rare", language: "fr",
   });
@@ -321,15 +321,15 @@ test("la consolidation ne fond pas deux raretés différentes", async () => {
   await reresolve(db, user.id, "RRRR-FR001");
 
   const after = await listCollection(db, user.id, {});
-  assert.equal(after.total, 2, "les deux raretés restent distinctes");
+  assert.equal(after.total, 2, "the two rarities stay distinct");
   const quantities = after.items.map((item) => item.quantity).sort();
   assert.deepEqual(quantities, [2, 3]);
 });
 
-test("deux ajouts simultanés ne perdent aucun exemplaire", async () => {
-  // Un double appui sur « +1 », ou le bouton du scanner pressé deux fois.
-  // Le lire-puis-écrire d'origine laissait les deux lire la même quantité et
-  // écrire la même somme : un incrément perdu, sans aucune erreur.
+test("two simultaneous additions lose no copy", async () => {
+  // A double tap on “+1”, or the scanner button pressed twice. The original
+  // read-then-write let both read the same quantity and write the same sum: one
+  // increment lost, with no error at all.
   const user = await newUser();
   await seedCard(99999902, "SSSS-FR001", { en: "Concurrent", fr: "Concurrent" });
 
@@ -340,12 +340,12 @@ test("deux ajouts simultanés ne perdent aucun exemplaire", async () => {
   );
 
   const { items } = await listCollection(db, user.id, {});
-  assert.equal(items[0]?.quantity, 8, "huit ajouts simultanés font huit exemplaires");
+  assert.equal(items[0]?.quantity, 8, "eight simultaneous additions make eight copies");
 });
 
-test("le passcode identifie la carte sans attendre", async () => {
-  // Le recours quand le set code est illisible : les huit chiffres en bas à
-  // gauche restent lisibles. ATEM-old avait ce champ ; il avait disparu.
+test("the passcode identifies the card without waiting", async () => {
+  // The fallback when the set code is unreadable: the eight digits at the
+  // bottom left stay legible. ATEM-old had this field; it had disappeared.
   const user = await newUser();
   await seedCard(12345678, "TTTT-EN001", { en: "By Passcode", fr: "Par passcode" });
 
@@ -355,14 +355,14 @@ test("le passcode identifie la carte sans attendre", async () => {
     passcode: 12345678,
   });
 
-  assert.equal(item.print.resolveStatus, "resolved", "identifiée tout de suite");
+  assert.equal(item.print.resolveStatus, "resolved", "identified right away");
   assert.equal(item.card?.name, "Par passcode");
-  assert.equal(item.setCode, "ZZZZ-FR001", "le code du joueur reste son identité");
+  assert.equal(item.setCode, "ZZZZ-FR001", "the player's code stays its identity");
 });
 
-test("un passcode inconnu n'empêche pas l'ajout", async () => {
-  // Aller chercher la carte demanderait un appel réseau, et rien ne sort sur
-  // le chemin d'une requête. La ligne entre en attente, comme d'habitude.
+test("an unknown passcode does not prevent the addition", async () => {
+  // Fetching the card would require a network call, and nothing goes out on a
+  // request's path. The row enters as pending, as usual.
   const user = await newUser();
   const item = await adjustQuantity(db, user.id, {
     setCode: "UUUU-FR001",
@@ -373,7 +373,7 @@ test("un passcode inconnu n'empêche pas l'ajout", async () => {
   assert.equal(item.quantity, 1);
 });
 
-test("la recherche trouve aussi par passcode", async () => {
+test("search finds by passcode too", async () => {
   const user = await newUser();
   await seedCard(24681012, "VVVV-FR001", { en: "Findable", fr: "Trouvable" });
   await adjustQuantity(db, user.id, { setCode: "VVVV-FR001", delta: 1 });
@@ -383,9 +383,9 @@ test("la recherche trouve aussi par passcode", async () => {
   assert.equal((await listCollection(db, user.id, { query: "99999999" })).total, 0);
 });
 
-test("le rang Xyz ne se confond pas avec le niveau", async () => {
-  // L'API range les deux dans le même champ. Un Xyz de rang 4 n'est pas un
-  // monstre de niveau 4 : les mélanger produit un filtre qui ne veut rien dire.
+test("an Xyz rank is not confused with a level", async () => {
+  // The API files both under the same field. A Rank 4 Xyz is not a Level 4
+  // monster: mixing them produces a filter that means nothing.
   const user = await newUser();
   await upsertCard(db, {
     passcode: 31415926, nameEn: "Xyz Four", nameFr: null, descEn: null, descFr: null,
@@ -403,13 +403,13 @@ test("le rang Xyz ne se confond pas avec le niveau", async () => {
   assert.equal(byRank.total, 1);
   assert.equal(byRank.items[0]?.card?.name, "Xyz Four");
 
-  // La carte de niveau 9 posée par `seedCard` n'a pas de rang 4.
+  // The level-9 card placed by `seedCard` has no rank 4.
   const byLevel = await listCollection(db, user.id, { levels: ["9"] });
   assert.equal(byLevel.total, 1);
   assert.equal(byLevel.items[0]?.card?.name, "Niveau quatre");
 });
 
-test("le sens du tri se renverse", async () => {
+test("the sort direction reverses", async () => {
   const user = await newUser();
   await seedCard(11111191, "XAAA-FR001", { en: "Alpha", fr: "Alpha" });
   await seedCard(11111192, "XBBB-FR001", { en: "Beta", fr: "Beta" });
@@ -423,35 +423,34 @@ test("le sens du tri se renverse", async () => {
   assert.equal(desc.items[0]?.setCode, "XBBB-FR001");
 });
 
-test("une note s'enregistre et se relit", async () => {
+test("a note is saved and read back", async () => {
   const user = await newUser();
   const item = await adjustQuantity(db, user.id, { setCode: "YYYY-FR001", delta: 1 });
 
-  await setNotes(db, user.id, item.id, "  Achetée en boutique  ");
+  await setNotes(db, user.id, item.id, "  Bought in store  ");
   const { items } = await listCollection(db, user.id, {});
-  assert.equal(items[0]?.notes, "Achetée en boutique", "les espaces de bord sont ôtés");
+  assert.equal(items[0]?.notes, "Bought in store", "edge whitespace is trimmed");
 
   await setNotes(db, user.id, item.id, "   ");
   const cleared = await listCollection(db, user.id, {});
-  assert.equal(cleared.items[0]?.notes, null, "une note vide est effacée");
+  assert.equal(cleared.items[0]?.notes, null, "an empty note is cleared");
 });
 
-test("la note d'autrui est introuvable", async () => {
+test("someone else's note is not found", async () => {
   const owner = await newUser();
   const stranger = await newUser();
   const item = await adjustQuantity(db, owner.id, { setCode: "YZZZ-FR001", delta: 1 });
-  await assert.rejects(() => setNotes(db, stranger.id, item.id, "vol"), /not found/);
+  await assert.rejects(() => setNotes(db, stranger.id, item.id, "theft"), /not found/);
 });
 
-test("une carte pas encore traduite est signalée", async () => {
+test("a card not yet translated is flagged", async () => {
   /**
-   * 2 863 cartes sur 14 524 n'ont **aucune** donnée française chez YGOPRODeck —
-   * ni nom, ni texte. Ce n'est pas définitif : mesuré par extension, les
-   * anciennes sont couvertes à 100 % et les récentes à 0-60 %. La source accuse
-   * un retard, elle ne renonce pas.
+   * 2,863 cards out of 14,524 have **no** French data at YGOPRODeck — no name,
+   * no text. It is not permanent: measured per set, old ones are covered 100%
+   * and recent ones 0–60%. The source is behind, it has not given up.
    *
-   * L'écran doit pouvoir le dire, et le dire juste : « Aspischool » s'appelle
-   * bien « Banc d'aspis », c'est le catalogue qui ne le sait pas encore.
+   * The screen must be able to say so, and say it correctly: “Aspischool” is
+   * indeed called « Banc d'aspis », it is the catalogue that does not know yet.
    */
   const user = await newUser();
   await upsertCard(db, {
@@ -465,12 +464,12 @@ test("une carte pas encore traduite est signalée", async () => {
   await adjustQuantity(db, user.id, { setCode: "ZAAA-FR001", delta: 1 });
 
   const { items } = await listCollection(db, user.id, {});
-  assert.equal(items[0]?.card?.name, "English Only", "le nom aussi est l'anglais");
+  assert.equal(items[0]?.card?.name, "English Only", "the name is the English one too");
   assert.equal(items[0]?.card?.desc, "Destroy one monster.");
-  assert.equal(items[0]?.card?.frenchPending, true, "l'écran doit pouvoir le dire");
+  assert.equal(items[0]?.card?.frenchPending, true, "the screen must be able to say so");
 });
 
-test("une carte traduite ne signale rien", async () => {
+test("a translated card flags nothing", async () => {
   const user = await newUser();
   await seedCard(55555592, "ZBBB-FR001", { en: "Both", fr: "Les deux" });
   await db
@@ -485,27 +484,27 @@ test("une carte traduite ne signale rien", async () => {
 });
 
 /**
- * La reprise au démarrage.
+ * The catch-up at startup.
  *
- * La file de résolution ne vit qu'en mémoire. Une ligne entrée juste avant un
- * redéploiement — ou un `docker compose down` — restait « en attente
- * d'identification » **pour toujours** : rien ne reprenait le travail, et rien
- * ne le signalait. Le commentaire de la file promettait pourtant l'inverse.
+ * The resolve queue lives in memory only. A row entered just before a redeploy
+ * — or a `docker compose down` — stayed “awaiting identification” **forever**:
+ * nothing picked the work up again, and nothing signalled it. The queue's own
+ * comment promised the opposite.
  */
 
 /**
- * Rejoue un redémarrage et rend les codes que la file redemanderait.
+ * Replays a startup and returns the codes the queue would ask for again.
  *
- * La base est partagée par toutes les épreuves du fichier : compter les entrées
- * ne dirait rien, puisqu'on y verrait aussi celles des autres. On regarde donc
- * **quels** codes la reprise met en file, et on cherche le nôtre.
+ * The database is shared by every test in this file: counting entries would say
+ * nothing, since the others' would show up too. So we look at **which** codes
+ * the catch-up queues, and search for ours.
  */
-async function codesReprisAuDemarrage(): Promise<string[]> {
+async function codesRequeuedAtStartup(): Promise<string[]> {
   resetResolveQueue();
-  const demandés: string[] = [];
+  const asked: string[] = [];
   configureResolveQueue({
     attempt: async (_userId, setCode) => {
-      demandés.push(setCode);
+      asked.push(setCode);
       return true;
     },
     abandon: async () => {},
@@ -514,53 +513,53 @@ async function codesReprisAuDemarrage(): Promise<string[]> {
   await requeuePendingResolves(db);
   await drainNow();
   resetResolveQueue();
-  return demandés;
+  return asked;
 }
 
-test("les lignes encore en attente repartent en file au démarrage", async () => {
+test("rows still pending are queued again at startup", async () => {
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "QQQQ-FR001", delta: 1 });
 
   assert.ok(
-    (await codesReprisAuDemarrage()).includes("QQQQ-FR001"),
-    "la ligne en attente doit être reprise",
+    (await codesRequeuedAtStartup()).includes("QQQQ-FR001"),
+    "the pending row must be picked up",
   );
 });
 
-test("un code déclaré inexistant n'est pas redemandé au démarrage", async () => {
+test("a code declared non-existent is not asked for again at startup", async () => {
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "QQQQ-FR002", delta: 1 });
 
-  // Ce que fait la file quand YGOPRODeck répond « rien » : une absence, pas
-  // une panne. Sans cette marque, chaque redémarrage relançait l'appel.
+  // What the queue does when YGOPRODeck answers “nothing”: an absence, not an
+  // outage. Without that mark, every restart fired the call again.
   assert.equal(await markUnidentified(db, "QQQQ-FR002"), 1);
 
   assert.ok(
-    !(await codesReprisAuDemarrage()).includes("QQQQ-FR002"),
-    "on ne redemande pas un code dont on sait qu'il n'existe pas",
+    !(await codesRequeuedAtStartup()).includes("QQQQ-FR002"),
+    "we do not ask again for a code we know does not exist",
   );
 });
 
-test("une ligne inexistante reste comptée comme en attente à l'écran", async () => {
+test("a non-existent row is still counted as pending on screen", async () => {
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "QQQQ-FR003", delta: 1 });
   await markUnidentified(db, "QQQQ-FR003");
 
   /**
-   * L'écran additionne les deux états : pour le joueur, une carte non
-   * identifiée reste une carte non identifiée, qu'on ait renoncé ou non. Le
-   * partage `pending` / `unidentified` sert la file, pas l'affichage.
+   * The screen adds the two states together: to the player, an unidentified
+   * card stays an unidentified card, whether we gave up or not. The
+   * `pending` / `unidentified` split serves the queue, not the display.
    */
-  const état = await resolveStatus(db, user.id);
-  assert.equal(état.unidentified, 1);
-  assert.equal(état.pending, 0);
+  const state = await resolveStatus(db, user.id);
+  assert.equal(state.unidentified, 1);
+  assert.equal(state.pending, 0);
 });
 
-test("marquer un code absent ne défait pas une impression identifiée", async () => {
-  await seedCard(99999903, "QQQQ-FR004", { en: "Bien connue", fr: "Bien connue" });
+test("marking a code absent does not undo an identified printing", async () => {
+  await seedCard(99999903, "QQQQ-FR004", { en: "Well known", fr: "Bien connue" });
 
-  const marquées = await markUnidentified(db, "QQQQ-FR004");
-  assert.equal(marquées, 0, "seules les lignes encore provisoires sont concernées");
+  const marked = await markUnidentified(db, "QQQQ-FR004");
+  assert.equal(marked, 0, "only rows still provisional are concerned");
 
   const [print] = await db
     .select()
@@ -570,80 +569,80 @@ test("marquer un code absent ne défait pas une impression identifiée", async (
   assert.equal(print?.resolveStatus, "resolved");
 });
 
-test("une ligne tombée à zéro n'est pas reprise au démarrage", async () => {
+test("a row that fell to zero is not picked up at startup", async () => {
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "QQQQ-FR005", delta: 1 });
   await adjustQuantity(db, user.id, { setCode: "QQQQ-FR005", delta: -1 });
 
   assert.ok(
-    !(await codesReprisAuDemarrage()).includes("QQQQ-FR005"),
-    "plus personne ne la possède : il n'y a rien à identifier",
+    !(await codesRequeuedAtStartup()).includes("QQQQ-FR005"),
+    "nobody owns it any more: there is nothing to identify",
   );
 });
 
-test("un filtre de niveau illisible ne fait pas tomber la requête", async () => {
+test("an unreadable level filter does not bring the query down", async () => {
   const user = await newUser();
-  await seedCard(99999904, "LVLX-FR001", { en: "Niveau lisible", fr: "Niveau lisible" });
+  await seedCard(99999904, "LVLX-FR001", { en: "Readable level", fr: "Niveau lisible" });
   await adjustQuantity(db, user.id, { setCode: "LVLX-FR001", delta: 1 });
 
   /**
-   * `?level=abc` arrivait jusqu'ici en liste non vide de valeurs non
-   * numériques : le gabarit écrivait `in ()`, que PostgreSQL refuse, et la
-   * requête entière partait en 500 avec une trace. Une valeur de filtre
-   * illisible est une demande à laquelle rien ne correspond, pas une panne.
+   * `?level=abc` reached this point as a non-empty list of non-numeric values:
+   * the template wrote `in ()`, which PostgreSQL refuses, and the whole query
+   * went out as a 500 with a stack trace. An unreadable filter value is a
+   * request nothing matches, not a failure.
    */
-  const niveaux = await listCollection(db, user.id, { levels: ["abc"] });
-  assert.equal(niveaux.total, 0);
+  const levels = await listCollection(db, user.id, { levels: ["abc"] });
+  assert.equal(levels.total, 0);
 
-  const rangs = await listCollection(db, user.id, { ranks: ["xyz", ""] });
-  assert.equal(rangs.total, 0);
+  const ranks = await listCollection(db, user.id, { ranks: ["xyz", ""] });
+  assert.equal(ranks.total, 0);
 
-  // Et une liste où quelques valeurs tiennent reste un filtre normal.
-  const mixte = await listCollection(db, user.id, { levels: ["abc", "9"] });
-  assert.equal(mixte.total, 1);
+  // And a list where some values hold stays a normal filter.
+  const mixed = await listCollection(db, user.id, { levels: ["abc", "9"] });
+  assert.equal(mixed.total, 1);
 });
 
-test("un passcode fourni ne fabrique pas une seconde impression du même code", async () => {
+test("a supplied passcode does not fabricate a second printing of the same code", async () => {
   /**
-   * Signalé par Ange depuis l'atelier : deux lignes pour la même carte, le même
-   * code affiché deux fois, et « 2 poss. » sur chacune.
+   * Reported by Ange from the workshop: two rows for the same card, the same
+   * code displayed twice, and “×2 owned” on each.
    *
-   * Le chemin du passcode rendait directement une impression neuve — sans
-   * rareté, et **sans consulter l'index local**. Ajouter un code déjà résolu en
-   * « Common » avec son passcode fabriquait donc une seconde impression du même
-   * code et de la même langue, à rareté vide. La collection portait alors des
-   * lignes sur les deux.
+   * The passcode path returned a brand-new printing directly — with no rarity,
+   * and **without consulting the local index**. Adding a code already resolved
+   * as “Common” with its passcode therefore built a second printing of the same
+   * code and language, with an empty rarity. The collection then carried rows
+   * on both.
    */
   const user = await newUser();
-  await seedCard(88000001, "PCPC-FR001", { en: "Deux fois", fr: "Deux fois" });
+  await seedCard(88000001, "PCPC-FR001", { en: "Twice", fr: "Deux fois" });
 
-  // La première fois sans passcode : la résolution établit l'impression.
+  // The first time without a passcode: resolution establishes the printing.
   await adjustQuantity(db, user.id, { setCode: "PCPC-FR001", delta: 1 });
-  // La seconde avec : c'est le chemin qui fabriquait le doublon.
+  // The second with it: this is the path that built the duplicate.
   await adjustQuantity(db, user.id, { setCode: "PCPC-FR001", delta: 1, passcode: 88000001 });
 
   const prints = await db
     .select()
     .from(cardPrints)
     .where(eq(cardPrints.setCode, "PCPC-FR001"));
-  assert.equal(prints.length, 1, "une seule impression pour un code et une langue");
+  assert.equal(prints.length, 1, "a single printing for one code and one language");
 
   const collection = await listCollection(db, user.id, {});
-  assert.equal(collection.total, 1, "une seule ligne de collection");
+  assert.equal(collection.total, 1, "a single collection row");
   assert.equal(collection.items[0]?.quantity, 2);
 });
 
-test("une rareté connue l'emporte sur une rareté vide", async () => {
+test("a known rarity beats an empty one", async () => {
   /**
-   * Une rareté vide veut dire « on ne sait pas encore », pas « cette impression
-   * n'en a pas ». Interrogée sans préférence, la recherche locale trouvait
-   * « exactement » la ligne vide et la préférait à celle que la résolution
-   * avait établie — un doublon né ailleurs devenait la réponse canonique.
+   * An empty rarity means “we do not know yet”, not “this printing has none”.
+   * Asked without a preference, the local lookup found the empty row
+   * “exactly” and preferred it to the one resolution had established — a
+   * duplicate born elsewhere became the canonical answer.
    */
-  // La carte est posée sous un autre code : `seedCard` crée sa propre
-  // impression, et on veut exactement deux impressions sur celui qu'on teste.
-  await seedCard(88000002, "PCPC-FR800", { en: "Rareté", fr: "Rareté" });
-  // Deux impressions du même code : l'une sait, l'autre pas.
+  // The card is placed under another code: `seedCard` creates its own printing,
+  // and we want exactly two printings on the one under test.
+  await seedCard(88000002, "PCPC-FR800", { en: "Rarity", fr: "Rareté" });
+  // Two printings of the same code: one knows, the other does not.
   await upsertPrint(db, {
     setCode: "PCPC-FR002", cardPasscode: 88000002, rarity: "Ultra Rare", language: "fr",
   });
@@ -655,32 +654,41 @@ test("une rareté connue l'emporte sur une rareté vide", async () => {
   await adjustQuantity(db, user.id, { setCode: "PCPC-FR002", delta: 1 });
 
   const collection = await listCollection(db, user.id, {});
-  assert.equal(collection.items[0]?.print.rarity, "Ultra Rare", "la rareté connue gagne");
+  assert.equal(collection.items[0]?.print.rarity, "Ultra Rare", "the known rarity wins");
 });
 
-test("un passcode identifie une impression qui attendait encore", async () => {
-  // Le passcode garde sa raison d'être : nommer la carte quand le code n'a pas
-  // encore été résolu. Il ne doit simplement plus créer de ligne à côté.
+test("a passcode identifies a printing that was still waiting", async () => {
+  // The passcode keeps its purpose: naming the card when the code has not been
+  // resolved yet. It must simply no longer create a row next to it.
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "PCPC-FR003", delta: 1 });
   /**
-   * On fige la file : c'est **l'attente** qu'on éprouve ici.
+   * We freeze the queue: it is **the waiting** that is under test here.
    *
-   * Sans ça, la résolution de fond a le temps de passer entre les deux ajouts
-   * et d'inscrire le code comme absent ; l'impression n'attend alors plus rien,
-   * et l'épreuve échoue une fois sur quelques dizaines. Vu deux fois le
-   * 2026-09-12, jamais reproduit à la demande — c'est bien la marque d'une
-   * course, pas d'un défaut du service.
+   * This test has failed intermittently — roughly once in four to eight runs,
+   * seen on 2026-09-12 and 2026-09-15, never on demand. The assertions below
+   * therefore carry the printings they read: the next occurrence will say what
+   * the database actually held, instead of only which line failed.
    */
   resetResolveQueue();
-  const avant = await listCollection(db, user.id, {});
-  assert.equal(avant.items[0]?.card, null, "elle attend son identification");
+  const prints = () => db.select().from(cardPrints).where(eq(cardPrints.setCode, "PCPC-FR003"));
 
-  await seedCard(88000003, "PCPC-FR900", { en: "Nommée", fr: "Nommée" });
+  const before = await listCollection(db, user.id, {});
+  assert.equal(
+    before.items[0]?.card,
+    null,
+    `it is awaiting identification — printings: ${JSON.stringify(await prints())}`,
+  );
+
+  await seedCard(88000003, "PCPC-FR900", { en: "Named", fr: "Nommée" });
   await adjustQuantity(db, user.id, { setCode: "PCPC-FR003", delta: 1, passcode: 88000003 });
 
-  const après = await listCollection(db, user.id, {});
-  assert.equal(après.total, 1, "toujours une seule ligne");
-  assert.equal(après.items[0]?.card?.name, "Nommée");
-  assert.equal(après.items[0]?.quantity, 2);
+  const after = await listCollection(db, user.id, {});
+  assert.equal(
+    after.total,
+    1,
+    `still a single row — printings: ${JSON.stringify(await prints())}`,
+  );
+  assert.equal(after.items[0]?.card?.name, "Nommée");
+  assert.equal(after.items[0]?.quantity, 2);
 });

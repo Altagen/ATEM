@@ -8,18 +8,18 @@ import { resetResolveQueue } from "../collection/resolve-queue.js";
 const { app, db } = createTestApp();
 
 /**
- * Les routes des decks — ce que le service ne peut pas éprouver seul.
+ * The deck routes — what the service cannot test on its own.
  *
- * Le service reçoit déjà une identité ; ces épreuves vérifient **d'où elle
- * vient**. C'est la question que la couture `ownerId` / `viewerId` a rendue
- * explicite (ADR-009), et celle qu'Ange a posée : un autre joueur ne doit rien
- * pouvoir modifier.
+ * The service already receives an identity; these tests check **where it comes
+ * from**. That is the question the `ownerId` / `viewerId` seam made explicit
+ * (ADR-009), and the one Ange asked: another player must not be able to modify
+ * anything.
  */
 
 const req = (method: string, path: string, body?: unknown, cookie?: string) =>
   jsonRequest(app, method, path, body, cookie ? { cookie } : {});
 
-async function carteEnCollection(passcode: number, setCode: string, userId: string, copies = 3) {
+async function cardInCollection(passcode: number, setCode: string, userId: string, copies = 3) {
   await upsertCard(db, {
     passcode, nameEn: `Route ${passcode}`, nameFr: `Route ${passcode}`,
     descEn: null, descFr: null, type: "Effect Monster", frameType: "effect",
@@ -32,9 +32,9 @@ async function carteEnCollection(passcode: number, setCode: string, userId: stri
   resetResolveQueue();
 }
 
-test("aucune route de deck ne répond sans session", async () => {
-  // La garde est montée sur le sous-ensemble entier : en oublier une seule
-  // suffirait à exposer les decks de tout le monde.
+test("no deck route answers without a session", async () => {
+  // The guard is mounted on the whole sub-app: forgetting a single route would
+  // be enough to expose everybody's decks.
   for (const [method, path, body] of [
     ["GET", "/decks", undefined],
     ["POST", "/decks", { name: "Sans session" }],
@@ -49,125 +49,125 @@ test("aucune route de deck ne répond sans session", async () => {
   }
 });
 
-test("le cycle complet d'un deck passe par ses routes", async () => {
+test("a deck's full life cycle goes through its routes", async () => {
   const { cookie } = await freshSession(app, "deckroute");
 
-  const créé = await req("POST", "/decks", { name: "Mon premier deck" }, cookie);
-  assert.equal(créé.status, 201);
-  const deck = (await créé.json()) as { id: string; name: string };
-  assert.equal(deck.name, "Mon premier deck");
+  const created = await req("POST", "/decks", { name: "My first deck" }, cookie);
+  assert.equal(created.status, 201);
+  const deck = (await created.json()) as { id: string; name: string };
+  assert.equal(deck.name, "My first deck");
 
-  const liste = await req("GET", "/decks", undefined, cookie);
-  assert.equal(liste.status, 200);
-  assert.equal(((await liste.json()) as { items: unknown[] }).items.length, 1);
+  const list = await req("GET", "/decks", undefined, cookie);
+  assert.equal(list.status, 200);
+  assert.equal(((await list.json()) as { items: unknown[] }).items.length, 1);
 
-  const renommé = await req("PATCH", `/decks/${deck.id}`, { name: "Renommé" }, cookie);
-  assert.equal(renommé.status, 200);
-  const relu = await req("GET", `/decks/${deck.id}`, undefined, cookie);
-  assert.equal(((await relu.json()) as { name: string }).name, "Renommé");
+  const renamed = await req("PATCH", `/decks/${deck.id}`, { name: "Renamed" }, cookie);
+  assert.equal(renamed.status, 200);
+  const read = await req("GET", `/decks/${deck.id}`, undefined, cookie);
+  assert.equal(((await read.json()) as { name: string }).name, "Renamed");
 
   assert.equal((await req("DELETE", `/decks/${deck.id}`, undefined, cookie)).status, 200);
   assert.equal((await req("GET", `/decks/${deck.id}`, undefined, cookie)).status, 404);
 });
 
-test("on n'écrit pas dans le deck d'un autre, même en connaissant son identifiant", async () => {
+test("nobody writes into someone else's deck, even knowing its identifier", async () => {
   /**
-   * C'est la garantie qu'Ange a demandée. L'identité d'écriture vient de la
-   * **session**, jamais du chemin : connaître l'identifiant d'un deck ne donne
-   * aucun droit dessus.
+   * This is the guarantee Ange asked for. The writing identity comes from the
+   * **session**, never from the path: knowing a deck's identifier grants no
+   * right over it.
    *
-   * **La lecture répond 404, les écritures 403.** La lecture ne confirme pas
-   * l'existence d'un deck qu'on n'a pas le droit de voir ; l'écriture, elle,
-   * doit dire la vérité — « ce deck n'est pas le vôtre » — parce que le jour où
-   * l'on regarde le deck d'un autre joueur, il est sous nos yeux, et
-   * « introuvable » serait un mensonge que rien n'explique.
+   * **The read answers 404, the writes 403.** The read does not confirm the
+   * existence of a deck one is not allowed to see; the write, on the other
+   * hand, must tell the truth — “this deck is not yours” — because the day we
+   * look at another player's deck, it is in front of us, and “not found” would
+   * be a lie nothing explains.
    */
-  const propriétaire = await freshSession(app, "proprio");
-  const intrus = await freshSession(app, "intrus");
-  await carteEnCollection(71000001, "RTRT-FR001", propriétaire.userId);
-  await carteEnCollection(71000001, "RTRT-FR002", intrus.userId);
+  const owner = await freshSession(app, "owner");
+  const intruder = await freshSession(app, "intruder");
+  await cardInCollection(71000001, "RTRT-FR001", owner.userId);
+  await cardInCollection(71000001, "RTRT-FR002", intruder.userId);
 
-  const créé = await req("POST", "/decks", { name: "À moi" }, propriétaire.cookie);
-  const deck = (await créé.json()) as { id: string };
+  const created = await req("POST", "/decks", { name: "Mine" }, owner.cookie);
+  const deck = (await created.json()) as { id: string };
 
   for (const [method, path, body] of [
-    ["PATCH", `/decks/${deck.id}`, { name: "Volé" }],
+    ["PATCH", `/decks/${deck.id}`, { name: "Stolen" }],
     ["DELETE", `/decks/${deck.id}`, undefined],
     ["PUT", `/decks/${deck.id}/cartes`, { passcode: 71000001, zone: "main", quantity: 1 }],
   ] as const) {
-    const response = await req(method, path, body, intrus.cookie);
+    const response = await req(method, path, body, intruder.cookie);
     assert.equal(response.status, 403, `${method} ${path}`);
     assert.match(((await response.json()) as { message: string }).message, /not yours/);
   }
 
-  const lecture = await req("GET", `/decks/${deck.id}`, undefined, intrus.cookie);
-  assert.equal(lecture.status, 404, "la lecture ne confirme pas l'existence");
+  const read = await req("GET", `/decks/${deck.id}`, undefined, intruder.cookie);
+  assert.equal(read.status, 404, "the read does not confirm existence");
 
-  // Et le deck n'a pas bougé.
-  const relu = await req("GET", `/decks/${deck.id}`, undefined, propriétaire.cookie);
-  const état = (await relu.json()) as { name: string; cards: unknown[] };
-  assert.equal(état.name, "À moi");
-  assert.equal(état.cards.length, 0);
+  // And the deck has not moved.
+  const again = await req("GET", `/decks/${deck.id}`, undefined, owner.cookie);
+  const state = (await again.json()) as { name: string; cards: unknown[] };
+  assert.equal(state.name, "Mine");
+  assert.equal(state.cards.length, 0);
 });
 
-test("poser une carte deux fois de suite laisse le même deck", async () => {
+test("setting a card twice in a row leaves the same deck", async () => {
   /**
-   * `PUT` déclare un état — « trois exemplaires au Main » — et non un
-   * incrément. Un double appui ne peut donc pas doubler la quantité, sans
-   * compteur à réconcilier.
+   * `PUT` declares a state — “three copies in the Main” — not an increment. A
+   * double tap therefore cannot double the quantity, with no counter to
+   * reconcile.
    */
   const { cookie, userId } = await freshSession(app, "idempot");
-  await carteEnCollection(71000002, "RTRT-FR003", userId);
+  await cardInCollection(71000002, "RTRT-FR003", userId);
   const deck = (await (await req("POST", "/decks", { name: "Idempotent" }, cookie)).json()) as { id: string };
 
-  const corps = { passcode: 71000002, zone: "main", quantity: 2 };
-  await req("PUT", `/decks/${deck.id}/cartes`, corps, cookie);
-  const seconde = await req("PUT", `/decks/${deck.id}/cartes`, corps, cookie);
+  const body = { passcode: 71000002, zone: "main", quantity: 2 };
+  await req("PUT", `/decks/${deck.id}/cartes`, body, cookie);
+  const second = await req("PUT", `/decks/${deck.id}/cartes`, body, cookie);
 
-  assert.equal(seconde.status, 200);
-  const état = (await seconde.json()) as { counts: { main: number } };
-  assert.equal(état.counts.main, 2);
+  assert.equal(second.status, 200);
+  const state = (await second.json()) as { counts: { main: number } };
+  assert.equal(state.counts.main, 2);
 });
 
-test("un corps invalide est refusé avant d'atteindre la base", async () => {
-  const { cookie } = await freshSession(app, "invalide");
+test("an invalid body is refused before reaching the database", async () => {
+  const { cookie } = await freshSession(app, "invalid");
   const deck = (await (await req("POST", "/decks", { name: "Validation" }, cookie)).json()) as { id: string };
 
-  for (const corps of [
-    { passcode: 1, zone: "cimetière", quantity: 1 },
+  for (const body of [
+    { passcode: 1, zone: "graveyard", quantity: 1 },
     { passcode: 1, zone: "main", quantity: 4 },
     { passcode: 1, zone: "main", quantity: -1 },
     { passcode: -5, zone: "main", quantity: 1 },
     { zone: "main", quantity: 1 },
   ]) {
-    const response = await req("PUT", `/decks/${deck.id}/cartes`, corps, cookie);
-    assert.equal(response.status, 400, JSON.stringify(corps));
+    const response = await req("PUT", `/decks/${deck.id}/cartes`, body, cookie);
+    assert.equal(response.status, 400, JSON.stringify(body));
   }
 });
 
-test("un nom de deck vide est refusé", async () => {
-  const { cookie } = await freshSession(app, "nomvide");
-  for (const corps of [{ name: "" }, { name: "   " }, {}]) {
-    assert.equal((await req("POST", "/decks", corps, cookie)).status, 400, JSON.stringify(corps));
+test("an empty deck name is refused", async () => {
+  const { cookie } = await freshSession(app, "emptyname");
+  for (const body of [{ name: "" }, { name: "   " }, {}]) {
+    assert.equal((await req("POST", "/decks", body, cookie)).status, 400, JSON.stringify(body));
   }
 });
 
-test("un corps illisible ne fait pas tomber la route", async () => {
-  // Un client qui envoie du JSON tronqué mérite un 400, pas une erreur interne.
-  const { cookie } = await freshSession(app, "illisible");
+test("an unreadable body does not bring the route down", async () => {
+  // A client sending truncated JSON deserves a 400, not an internal error.
+  const { cookie } = await freshSession(app, "unreadable");
   const response = await app.request("/decks", {
     method: "POST",
     headers: { "Content-Type": "application/json", cookie },
-    body: "{ceci n'est pas du JSON",
+    body: "{this is not JSON",
   });
   assert.equal(response.status, 400);
 });
 
-test("la garde d'origine protège les écritures de deck", async () => {
+test("the origin guard protects deck writes", async () => {
   /**
-   * `SameSite=Strict` fait déjà l'essentiel ; la garde d'origine est la seconde
-   * serrure. Elle est montée pour toute l'application — cette épreuve vérifie
-   * qu'un module ajouté après coup en hérite bien.
+   * `SameSite=Strict` already does the essential; the origin guard is the
+   * second lock. It is mounted for the whole application — this test checks
+   * that a module added afterwards does inherit it.
    */
   const { cookie } = await freshSession(app, "csrfdeck");
   const response = await app.request("/decks", {
@@ -175,21 +175,21 @@ test("la garde d'origine protège les écritures de deck", async () => {
     headers: {
       "Content-Type": "application/json",
       cookie,
-      Origin: "https://ailleurs.exemple",
-      Host: "atem.exemple.fr",
+      Origin: "https://elsewhere.example",
+      Host: "atem.example.com",
     },
-    body: JSON.stringify({ name: "Depuis ailleurs" }),
+    body: JSON.stringify({ name: "From elsewhere" }),
   });
   assert.equal(response.status, 403);
 });
 
-test("un identifiant qui n'est pas un UUID ne fait pas tomber la route", async () => {
-  // La colonne est un `uuid` : PostgreSQL refuse la comparaison, et sans garde
-  // le refus remonte en erreur interne.
-  const { cookie } = await freshSession(app, "pasuuid");
-  const response = await req("GET", "/decks/pas-un-uuid", undefined, cookie);
+test("an identifier that is not a UUID does not bring the route down", async () => {
+  // The column is a `uuid`: PostgreSQL refuses the comparison, and without a
+  // guard the refusal surfaces as an internal error.
+  const { cookie } = await freshSession(app, "notauuid");
+  const response = await req("GET", "/decks/not-a-uuid", undefined, cookie);
   assert.ok(
     response.status === 400 || response.status === 404,
-    `attendu 400 ou 404, reçu ${response.status}`,
+    `expected 400 or 404, got ${response.status}`,
   );
 });

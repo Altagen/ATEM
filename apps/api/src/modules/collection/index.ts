@@ -1,4 +1,4 @@
-/** L'API publique du module collection. */
+/** The public API of the collection module. */
 export { collectionRoutes } from "./routes.js";
 export {
   adjustQuantity, listCollection, ownedByPasscode, requeuePendingResolves, reresolve,

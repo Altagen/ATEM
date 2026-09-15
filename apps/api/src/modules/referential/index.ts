@@ -1,9 +1,9 @@
 /**
- * L'API publique du module referential.
+ * The public API of the referential module.
  *
- * `ensurePlaceholderPrint` et `upsertPrint` sont ici parce que `collection` et
- * `decks` en ont besoin — c'est précisément ce qui les dispense d'écrire
- * eux-mêmes dans `cards` et `card_prints`, comme ils le faisaient dans ATEM-old.
+ * `ensurePlaceholderPrint` and `upsertPrint` are here because `collection` and
+ * `decks` need them — which is precisely what spares them writing into `cards`
+ * and `card_prints` themselves, as they did in ATEM-old.
  */
 export {
   cardsByPasscode,
@@ -18,7 +18,7 @@ export {
   type CardDetail,
   type PrintIndex,
 } from "./service.js";
-// La forme d'une ligne de carte appartient au schéma ; `deck` en a besoin pour
-// nommer ce qu'il compose.
+// The shape of a card row belongs to the schema; `deck` needs it to name what
+// it composes.
 export { type CardRow } from "./schema.js";
 export { referentialRoutes } from "./routes.js";

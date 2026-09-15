@@ -1,14 +1,14 @@
 /**
- * L'adresse de l'appelant, pour la limitation de débit.
+ * The caller's address, for rate limiting.
  *
- * `X-Forwarded-For` est un en-tête que **le client peut écrire**. ATEM-old a
- * découvert en production que sa limitation était contournable en le forgeant :
- * une adresse différente à chaque requête, donc un compteur toujours à zéro.
+ * `X-Forwarded-For` is a header **the client can write**. ATEM-old discovered
+ * in production that its limiting could be bypassed by forging it: a different
+ * address on every request, hence a counter forever at zero.
  *
- * On ne lit donc cet en-tête que si l'instance déclare ses proxys de confiance
- * dans `ATEM_TRUSTED_PROXIES`. Sans cette déclaration, on prend l'adresse de la
- * connexion, quitte à compter tout le monde ensemble derrière un proxy — se
- * tromper dans le sens strict est le bon sens quand on doute.
+ * So we read that header only if the instance declares its trusted proxies in
+ * `ATEM_TRUSTED_PROXIES`. Without that declaration we take the connection's
+ * address, even if it means counting everyone together behind a proxy — erring
+ * on the strict side is the sensible way to be wrong.
  */
 import type { MiddlewareHandler } from "hono";
 import { getConnInfo } from "@hono/node-server/conninfo";
@@ -26,12 +26,12 @@ const trustedProxies = () =>
     .filter(Boolean);
 
 /**
- * L'adresse de la connexion, ou `unknown`.
+ * The connection's address, or `unknown`.
  *
- * `getConnInfo` suppose l'adaptateur Node et lève sans lui — sous test, ou sous
- * un autre adaptateur. Une limitation de débit qui fait tomber le serveur quand
- * elle ne sait pas qui appelle est pire que le problème qu'elle traite : on
- * dégrade vers un seau commun, plus strict, jamais vers une panne.
+ * `getConnInfo` assumes the Node adapter and throws without it — under test, or
+ * under another adapter. A rate limiter that brings the server down when it
+ * does not know who is calling is worse than the problem it treats: we degrade
+ * to a shared, stricter bucket, never to an outage.
  */
 function connectionAddress(c: Parameters<MiddlewareHandler>[0]): string {
   try {
