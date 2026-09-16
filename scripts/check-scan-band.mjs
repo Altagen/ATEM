@@ -25,7 +25,11 @@ const SHEET = path.join(ROOT, "design/components/scanner.css");
 const engine = readFileSync(ENGINE, "utf8");
 const sheet = readFileSync(SHEET, "utf8");
 
-const engineBlock = engine.match(/export const SCAN_ZOOM_BAND\s*=\s*\{([^}]*)\}/);
+// `export` optional: the constant is read here as text, so it does not need to
+// be part of the module's public surface — and on 2026-09-17 it stopped being
+// so. A pattern that insists on a keyword it does not need turns a tidy-up into
+// a failing gate.
+const engineBlock = engine.match(/(?:export\s+)?const SCAN_ZOOM_BAND\s*=\s*\{([^}]*)\}/);
 if (!engineBlock) {
   console.error(`✗ SCAN_ZOOM_BAND not found in ${path.relative(ROOT, ENGINE)}`);
   process.exit(1);

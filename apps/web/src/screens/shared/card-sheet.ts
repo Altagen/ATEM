@@ -30,7 +30,7 @@ export const detailGrid = (entries: [string, string][]): SafeHtml =>
  * A Link monster has neither level nor defence: the row changes nature rather
  * than displaying two dashes. It is a different card, not an incomplete one.
  */
-export function cardDetailRows(card: CardDetail): [string, string][] {
+function cardDetailRows(card: CardDetail): [string, string][] {
   const isSpellTrap = card.type === CATALOGUE.spellCard || card.type === CATALOGUE.trapCard;
   return [
     [t("Type"), translateType(card.type)],
@@ -57,7 +57,7 @@ export function cardDetailRows(card: CardDetail): [string, string][] {
  * of names — “Top-Left, Bottom” — asks the reader to rebuild the figure in
  * their head; the figure itself just reads.
  */
-export function linkCompassHtml(markers: string[] | null, linkValue: number | null): SafeHtml {
+function linkCompassHtml(markers: string[] | null, linkValue: number | null): SafeHtml {
   if (!markers?.length) return raw("");
   const cells = [
     "Top-Left", "Top", "Top-Right",

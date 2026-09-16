@@ -626,7 +626,7 @@ const REFUSAL_LABELS: Record<string, string> = {
  * The same categories as the Collection screen, plus “Extra” — which makes no
  * sense there and makes some here: it is the only pile filled separately.
  */
-export function visibleCollection(state: DeckState): CollectionRow[] {
+function visibleCollection(state: DeckState): CollectionRow[] {
   const q = state.query.trim().toLowerCase();
   return state.collection.filter((row) => {
     const card = row.card;

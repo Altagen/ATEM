@@ -97,6 +97,43 @@ const EXPORT_RE =
   /^export\s+(?:async\s+)?(?:function|const|let|class|type|interface|enum)\s+([A-Za-z_][A-Za-z0-9_]*)/;
 
 const dead = [];
+
+/**
+ * The header of every exported declaration: what it takes and what it gives.
+ *
+ * Read to the first `{` **at depth zero** — not simply the first one. A
+ * parameter written as an inline object opens a brace inside the parentheses,
+ * and stopping there truncated the signature before its return type: nine types
+ * naming a perfectly public contract were reported as over-exposed, among them
+ * `DeckAddCheck`, which is what `checkDeckAdd` returns. A check that cries wolf
+ * nine times is a check people learn to scroll past.
+ *
+ * `class`, `type` and `interface` count as headers too: `ErrorCode` names an
+ * exported constructor's parameter, `DeckModal` a field of an exported state.
+ */
+function exportedHeaders(src) {
+  const headers = [];
+  const start = /^export\s+(?:async\s+)?(?:function|const|class|type|interface)\b/gm;
+  for (const match of src.matchAll(start)) {
+    let parens = 0;
+    let angles = 0;
+    for (let index = match.index; index < src.length; index += 1) {
+      const char = src[index];
+      if (char === "(") parens += 1;
+      else if (char === ")") parens -= 1;
+      else if (char === "<") angles += 1;
+      else if (char === ">") angles -= 1;
+      else if (parens === 0 && angles <= 0 && (char === "{" || char === ";" || char === "\n")) {
+        // A type alias keeps going over several lines; a function stops here.
+        if (char === "\n" && /^export\s+(?:type|interface)\b/.test(match[0])) continue;
+        headers.push(src.slice(match.index, index + 1));
+        break;
+      }
+    }
+  }
+  return headers;
+}
+
 const overExposed = [];
 const testOnly = [];
 
@@ -142,9 +179,9 @@ for (const file of sources) {
        * `export async function getDeck(\n  db: Database,\n  …\n): Promise<DeckDetail>`.
        * So we take from the keyword to the opening brace.
        */
-      const signatures =
-        own.match(/^export\s+(?:async\s+)?(?:function|const)[\s\S]*?(?:\{|=>|;)/gm) ?? [];
-      if (signatures.some((sig) => new RegExp(`\\b${symbol}\\b`).test(sig))) continue;
+      if (exportedHeaders(own).some((header) => new RegExp(`\\b${symbol}\\b`).test(header))) {
+        continue;
+      }
     }
 
     const inside = countIn(own, symbol, line.trim());

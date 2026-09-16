@@ -113,7 +113,7 @@ function withTimeout<T>(
   });
 }
 
-export function loadTesseract(): Promise<NonNullable<Window["Tesseract"]>> {
+function loadTesseract(): Promise<NonNullable<Window["Tesseract"]>> {
   if (typeof window !== "undefined" && window.Tesseract) {
     return Promise.resolve(window.Tesseract);
   }
@@ -215,7 +215,7 @@ async function getOcrWorker(
 }
 
 /** Normalize a set-code token for compare / UI (upper, no spaces, single hyphens). */
-export function normalizeSetCodeToken(raw: string): string {
+function normalizeSetCodeToken(raw: string): string {
   return raw.trim().toUpperCase().replace(/\s+/g, "").replace(/-+/g, "-");
 }
 
@@ -1261,9 +1261,9 @@ export function pickBestSetCode(candidates: string[]): string | null {
 }
 
 export const YGO_CARD_RATIO = 59 / 86;
-export const SCAN_CARD_HEIGHT_FRAC = 0.84;
+const SCAN_CARD_HEIGHT_FRAC = 0.84;
 
-export const SCAN_SETCODE = {
+const SCAN_SETCODE = {
   x: 0.52,
   y: 0.67,
   w: 0.44,
@@ -1283,7 +1283,7 @@ export type CardGuideRect = {
 
 export type CoverCrop = { sx: number; sy: number; sw: number; sh: number };
 
-export function getObjectFitCoverCrop(
+function getObjectFitCoverCrop(
   mediaW: number,
   mediaH: number,
   elW: number,
@@ -1785,7 +1785,7 @@ function cropRegion(
   return out;
 }
 
-export function prepareSetCodeRegions(
+function prepareSetCodeRegions(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
   opts?: { viewW?: number; viewH?: number },
 ): HTMLCanvasElement[] {
@@ -1849,7 +1849,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
  * Must match CSS .scan-zoom-band percentages.
  * Height 30% for framing margin without enlarging the camera viewport.
  */
-export const SCAN_ZOOM_BAND = {
+const SCAN_ZOOM_BAND = {
   x: 0.05,
   y: 0.34,
   w: 0.9,
@@ -1897,7 +1897,7 @@ function zoomBandSourceRect(
  * 4. ink%        — darkest 22% only
  * 5. invert gray — rare polarity
  */
-export function prepareZoomBandVariants(
+function prepareZoomBandVariants(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
   opts?: { viewW?: number; viewH?: number },
 ): HTMLCanvasElement[] {
@@ -2213,7 +2213,7 @@ export async function ocrSetCodeFromImage(
   };
 }
 
-export function captureVideoFrame(video: HTMLVideoElement): HTMLCanvasElement {
+function captureVideoFrame(video: HTMLVideoElement): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = video.videoWidth || video.clientWidth || 640;
   c.height = video.videoHeight || video.clientHeight || 480;
