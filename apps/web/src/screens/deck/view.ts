@@ -61,15 +61,16 @@ const KIND_LABELS: Record<string, string> = {
  * without reading them, which counts when you come back a hundred times.
  */
 function zoneIcon(zone: DeckZone): SafeHtml {
-  const paths: Record<DeckZone, string> = {
-    main: `<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/>`,
-    extra: `<path d="M12 2l4 8 8 1-6 5 2 8-8-4-8 4 2-8-6-5 8-1z"/>`,
-    side: `<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 12l10 5 10-5"/><path d="M2 17l10 5 10-5"/>`,
+  // The shapes are markup, so they are marked trusted **as literals** — written
+  // here, never assembled from a value. The `<svg>` around them then goes
+  // through `html` like everything else, which escapes `zone`.
+  const paths: Record<DeckZone, SafeHtml> = {
+    main: raw(`<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/>`),
+    extra: raw(`<path d="M12 2l4 8 8 1-6 5 2 8-8-4-8 4 2-8-6-5 8-1z"/>`),
+    side: raw(`<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 12l10 5 10-5"/><path d="M2 17l10 5 10-5"/>`),
   };
-  return raw(
-    `<svg class="zone-ico zone-ico-${zone}" viewBox="0 0 24 24" width="14" height="14" ` +
-      `aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">${paths[zone]}</svg>`,
-  );
+  return html`<svg class="zone-ico zone-ico-${zone}" viewBox="0 0 24 24" width="14" height="14"
+    aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">${paths[zone]}</svg>`;
 }
 
 /** The banlist pill — nothing at all when the card is unlimited. */
@@ -90,7 +91,9 @@ function banBadge(banlistTcg: string | null | undefined): SafeHtml {
 const thumbnail = (url: string | null | undefined, cls = "thumb"): SafeHtml =>
   url
     ? html`<img loading="lazy" decoding="async" class="${cls}" src="${url}" alt="" />`
-    : raw(`<div class="thumb-empty ${cls === "thumb" ? "" : cls}">?</div>`);
+    // `html`, not `raw`: the class is interpolated, so it goes through the
+    // escaping like any other value. Nothing here needs to be trusted.
+    : html`<div class="thumb-empty ${cls === "thumb" ? "" : cls}">?</div>`;
 
 /**
  * The zone counter, with its limits.

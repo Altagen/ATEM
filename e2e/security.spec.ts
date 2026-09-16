@@ -119,3 +119,35 @@ test("the OCR engine starts under the policy", async ({ page }) => {
   expect(started, "the OCR engine must run under the policy").toBe("ran");
   expect(refusals).toEqual([]);
 });
+
+test("a name carrying markup is shown, never executed", async ({ page }) => {
+  /**
+   * The template escapes what it interpolates, and `scripts/check-escaping.mjs`
+   * refuses the ways around it. This is the same promise measured from the
+   * outside, on the strings a person actually controls: a deck's name, a batch's
+   * name, a note on a card.
+   *
+   * The payload uses `onerror` rather than `<script>`: a script element written
+   * through `innerHTML` never runs, so it would pass even against a hole. An
+   * image that fails to load does run its handler — that is what a real attempt
+   * looks like.
+   */
+  const payload = `<img src=x onerror="window.__owned=1">`;
+  await signUp(page);
+
+  await page.goto("/decks");
+  await page.getByRole("button", { name: "Construire un deck" }).click();
+  await page.locator("#modal-name").fill(payload);
+  await page.getByRole("button", { name: "Créer" }).click();
+  await page.waitForTimeout(400);
+
+  // Shown as characters: the name is readable, and no image was ever created.
+  await expect(page.locator("#edit-name")).toHaveValue(payload);
+  expect(await page.locator('img[src="x"]').count()).toBe(0);
+  expect(await page.evaluate(() => (window as { __owned?: number }).__owned)).toBeUndefined();
+
+  // And in the list, where it is rendered as text rather than in a field.
+  await page.goto("/decks");
+  await expect(page.getByText(payload, { exact: false }).first()).toBeVisible();
+  expect(await page.evaluate(() => (window as { __owned?: number }).__owned)).toBeUndefined();
+});

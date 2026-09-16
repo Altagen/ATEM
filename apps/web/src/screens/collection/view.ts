@@ -248,16 +248,39 @@ const levelBadge = (kind: "level" | "rank"): SafeHtml =>
  * That is exactly the escape hatch `platform/ui.ts` says it does not have. It
  * had been reopened here.
  */
+/** Every attribute a filter chip may carry. Adding one is a deliberate act. */
+type FilterAttribute =
+  | "data-filter-attr"
+  | "data-filter-fav"
+  | "data-filter-frame"
+  | "data-filter-kind"
+  | "data-filter-lang"
+  | "data-filter-level"
+  | "data-filter-link"
+  | "data-filter-race"
+  | "data-filter-rank"
+  | "data-filter-rarity"
+  | "data-filter-st"
+  | "data-filter-unresolved";
+
 const chip = (
   active: boolean,
-  attribute: string,
+  /**
+   * The attribute's **name**, injected unescaped — so it is a closed set, not a
+   * string. A name cannot be escaped (`data-x` would become text), and the
+   * compiler is what guarantees the value is a literal we wrote: an audit by
+   * reading only holds until the next caller.
+   */
+  attribute: FilterAttribute,
   value: string,
   label: string | SafeHtml,
   extra = "",
 ): SafeHtml =>
   html`<button type="button"
     class="chip${extra ? ` ${extra}` : ""}${active ? " is-active" : ""}"
-    ${raw(attribute)}="${value}">${label}</button>`;
+    ${/* raw-name: an attribute's name cannot be escaped; FilterAttribute is a
+          closed union, so the compiler guarantees it is one we wrote. */
+    raw(attribute)}="${value}">${label}</button>`;
 
 export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
   const kinds: [string, string][] = [
