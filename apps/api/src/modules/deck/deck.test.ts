@@ -5,6 +5,7 @@ import { registerUser } from "../identity/service.js";
 import { upsertCard, upsertPrint } from "../referential/index.js";
 import { adjustQuantity } from "../collection/service.js";
 import { resetResolveQueue } from "../collection/resolve-queue.js";
+import { DECK_MAIN_TARGET_DEFAULT } from "@atem/shared";
 import { createDeck, deleteDeck, getDeck, listDecks, updateDeck, setDeckCard } from "./service.js";
 
 const { db } = createTestApp();
@@ -441,4 +442,64 @@ test("a deck holding only Extra cards still has a face", async () => {
 
   const [summary] = await listDecks(db, user.id);
   assert.equal(summary?.coverImage, "/media/cards/72000420-small.jpg");
+});
+
+test("a new deck is aimed at forty, the usual format", async () => {
+  /**
+   * The default matters more than it looks: it is what makes the verdict
+   * identical to what it was before targets existed. Every deck created before
+   * the column got 40 too, by the migration's default.
+   */
+  const user = await newUser();
+  const deck = await createDeck(db, user.id, "Fresh");
+  assert.equal(deck.targetMain, DECK_MAIN_TARGET_DEFAULT);
+
+  const [summary] = await listDecks(db, user.id);
+  assert.equal(summary?.targetMain, 40, "and it travels with the list");
+  assert.equal((await getDeck(db, user.id, deck.id)).targetMain, 40, "and with the sheet");
+});
+
+test("the size a deck is aimed at is the player's, and it is kept", async () => {
+  const user = await newUser();
+  const deck = await createDeck(db, user.id, "Sixty");
+
+  await updateDeck(db, user.id, deck.id, { targetMain: 60 });
+  assert.equal((await getDeck(db, user.id, deck.id)).targetMain, 60);
+
+  // Changing the name does not reset the aim, and changing the aim does not
+  // rename: a partial update touches only what it names.
+  await updateDeck(db, user.id, deck.id, { name: "Sixty, renamed" });
+  const after = await getDeck(db, user.id, deck.id);
+  assert.equal(after.targetMain, 60);
+  assert.equal(after.name, "Sixty, renamed");
+});
+
+test("a target outside the rules is refused with a sentence, not a 500", async () => {
+  /**
+   * The database holds the same range, so a bad value could only ever produce a
+   * constraint violation — that is, an internal error for something the person
+   * simply typed. The service answers before it gets there.
+   */
+  const user = await newUser();
+  const deck = await createDeck(db, user.id, "Bounds");
+
+  for (const targetMain of [39, 61, 0, -1, 40.5]) {
+    await assert.rejects(
+      () => updateDeck(db, user.id, deck.id, { targetMain }),
+      /between 40 and 60/,
+      String(targetMain),
+    );
+  }
+  assert.equal((await getDeck(db, user.id, deck.id)).targetMain, 40, "and nothing was written");
+});
+
+test("the aim of someone else's deck cannot be changed either", async () => {
+  // The new field goes through the same ownership gate as the rest, and that is
+  // checked rather than assumed.
+  const owner = await newUser();
+  const stranger = await newUser();
+  const deck = await createDeck(db, owner.id, "Not yours");
+
+  await assert.rejects(() => updateDeck(db, stranger.id, deck.id, { targetMain: 60 }), /not yours/);
+  assert.equal((await getDeck(db, owner.id, deck.id)).targetMain, 40);
 });

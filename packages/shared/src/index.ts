@@ -9,6 +9,8 @@ export { LIMITS } from "./limits.js";
 export {
   banlistMaxCopies,
   checkDeckAdd,
+  DECK_MAIN_TARGET_DEFAULT,
+  DECK_MAIN_TARGET_STEPS,
   DECK_MAX_COPIES,
   DECK_ZONE_LIMITS,
   DECK_ZONES,

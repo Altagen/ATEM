@@ -209,6 +209,8 @@ export async function deckScreen(
     const field = root.querySelector<HTMLInputElement>("#modal-name");
     field?.focus();
     field?.select();
+    // The options window has no name to type: the picker is what it opens on.
+    if (!field) root.querySelector<HTMLSelectElement>("#modal-target-main")?.focus();
   }
 
   function closeWindow(): void {
@@ -226,6 +228,31 @@ export async function deckScreen(
   async function confirmWindow(): Promise<void> {
     const modal = state.modal;
     if (!modal) return;
+
+    /**
+     * Settled before the name check, because this window has none: reaching
+     * that check would refuse the options window for a field it does not own.
+     */
+    if (modal.kind === "deck-options") {
+      const picked = Number(
+        root.querySelector<HTMLSelectElement>("#modal-target-main")?.value ?? "",
+      );
+      try {
+        await api(`/decks/${encodeURIComponent(modal.id)}`, {
+          method: "PATCH",
+          body: { targetMain: picked },
+        });
+      } catch (err) {
+        toast(err instanceof ApiError ? err.message : t("Saving failed."), "error");
+        return;
+      }
+      state.modal = null;
+      // The verdict is computed from the deck in hand, so it has to be the one
+      // the server now holds — not the one we had before the write.
+      await loadDeck(modal.id);
+      toast(t("Deck options saved."), "success");
+      return;
+    }
 
     const name = root.querySelector<HTMLInputElement>("#modal-name")?.value.trim() ?? "";
     if (name === "") {
@@ -404,6 +431,11 @@ export async function deckScreen(
       if (state.moving) void drop(state.moving, state.folderId);
     });
     root.querySelector("#btn-delete")?.addEventListener("click", () => void deleteDeck());
+    // Only in the workshop: the sheet is for looking, and two ways in to the
+    // same window would be one too many — as for the bin.
+    root.querySelector("#btn-deck-options")?.addEventListener("click", () => {
+      if (state.opened) openWindow({ kind: "deck-options", id: state.opened.id });
+    });
 
     /**
      * The list's search does not touch the network.

@@ -9,7 +9,10 @@
  * come from `folderCanHost`, the function the server calls to refuse. One rule,
  * two uses.
  */
-import { folderCanHost, folderIsInside, type FolderNode } from "@atem/shared";
+import {
+  DECK_MAIN_TARGET_DEFAULT, DECK_MAIN_TARGET_STEPS, folderCanHost, folderIsInside,
+  type FolderNode,
+} from "@atem/shared";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import { t } from "../../platform/i18n/index.js";
 import type { DeckFolder, DeckMoving, DeckState, DeckSummary } from "./state.js";
@@ -304,6 +307,37 @@ function modalBody(state: DeckState): { title: string; body: SafeHtml; confirm: 
                  value="${folderById(state, modal.id)?.name ?? ""}" />
         </label>`,
       };
+    case "deck-options": {
+      /**
+       * The size aimed at, and nothing else yet.
+       *
+       * ATEM-old also offered an Extra and a Side size here. They are not
+       * missing: their rule minimum is zero, so a target there counts towards
+       * nothing and could only refuse cards the rules allow. The folder is not
+       * here either — filing a deck is a move, and moving is a mode.
+       */
+      const target = state.decks.find((d) => d.id === modal.id)?.targetMain
+        ?? state.opened?.targetMain
+        ?? DECK_MAIN_TARGET_DEFAULT;
+      return {
+        title: t("Deck options"),
+        confirm: t("Apply"),
+        body: html`<label class="menu-field">
+          <span>${t("Main Deck size aimed at")}</span>
+          <select id="modal-target-main">
+            ${DECK_MAIN_TARGET_STEPS.map(
+              (n) =>
+                html`<option value="${String(n)}" ${target === n ? "selected" : ""}>
+                  ${String(n)}
+                </option>`,
+            )}
+          </select>
+        </label>
+        <p class="muted">
+          ${t("It decides when the deck is called ready. The rules still allow 40 to 60 cards whatever you aim for.")}
+        </p>`,
+      };
+    }
   }
 }
 

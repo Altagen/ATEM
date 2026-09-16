@@ -39,6 +39,32 @@ export const DECK_MAX_COPIES = 3;
  * building it. The distinction is the same as for the three-copy rule: what can
  * never be true is forbidden, what is not true yet is said.
  */
+/**
+ * The size a player is building the Main Deck **towards** — their own, per deck.
+ *
+ * The rules give a range, 40 to 60, and both ends are playable: a 40-card deck
+ * draws its combo more often, a 60-card one survives decking out. Which one a
+ * deck is aiming for is the player's decision, and nothing in the cards says it.
+ * So it is stored per deck, and it is what “how many left?” counts towards.
+ *
+ * **A target refuses nothing.** It moves the line between “still building” and
+ * “finished”, never the legality: the sixty-first card is refused because the
+ * rules refuse it, and a forty-first is accepted whatever the target says.
+ * ATEM-old used its `main_size` as a maximum and showed “limit exceeded” on a
+ * perfectly legal deck — the application inventing a rule of its own.
+ *
+ * The default is 40, which is both the most common format and the value that
+ * makes the verdict identical to what it was before targets existed.
+ */
+export const DECK_MAIN_TARGET_DEFAULT = 40;
+
+/**
+ * What the picker offers. The stored value is only bounded by the rules' 40–60:
+ * a deck aiming for 41 is a legitimate intention, it is simply not worth a line
+ * in a menu of five.
+ */
+export const DECK_MAIN_TARGET_STEPS = [40, 45, 50, 55, 60] as const;
+
 export const DECK_ZONE_LIMITS = {
   main: { min: 40, max: 60 },
   extra: { min: 0, max: 15 },
@@ -62,17 +88,26 @@ export const DECK_ZONE_LIMITS = {
  *   later removed from the collection.
  * - `empty`: nothing yet. “40 more in the Main” on a brand-new deck would be
  *   exact and useless.
- * - `short`: under construction, below the Main minimum.
- * - `ready`: playable.
+ * - `short`: under construction, below the deck's target.
+ * - `ready`: built to the size it was aimed at.
  */
 export type DeckStatus =
   | { kind: "over"; zone: DeckZone; excess: number }
   | { kind: "missing"; missing: number }
   | { kind: "empty" }
-  | { kind: "short"; missing: number; min: number }
+  | { kind: "short"; missing: number; target: number }
   | { kind: "ready" };
 
-export function deckStatus(counts: Record<DeckZone, number>, missing: number): DeckStatus {
+/**
+ * `targetMain` is the deck's own, and it is **required** rather than defaulted
+ * here: a call site that forgot it would otherwise get 40 silently and say
+ * “ready” about a deck aimed at 60.
+ */
+export function deckStatus(
+  counts: Record<DeckZone, number>,
+  missing: number,
+  targetMain: number,
+): DeckStatus {
   for (const zone of DECK_ZONES) {
     const excess = counts[zone] - DECK_ZONE_LIMITS[zone].max;
     if (excess > 0) return { kind: "over", zone, excess };
@@ -80,8 +115,9 @@ export function deckStatus(counts: Record<DeckZone, number>, missing: number): D
   if (missing > 0) return { kind: "missing", missing };
   if (DECK_ZONES.every((zone) => counts[zone] === 0)) return { kind: "empty" };
 
-  const { min } = DECK_ZONE_LIMITS.main;
-  if (counts.main < min) return { kind: "short", missing: min - counts.main, min };
+  if (counts.main < targetMain) {
+    return { kind: "short", missing: targetMain - counts.main, target: targetMain };
+  }
   return { kind: "ready" };
 }
 

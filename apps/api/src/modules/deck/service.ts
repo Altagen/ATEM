@@ -55,6 +55,11 @@ export type DeckSummary = {
   coverImage: string | null;
   /** The folder that files it, or `null` at the root. */
   folderId: string | null;
+  /**
+   * The Main Deck size this deck is aimed at — what “finished” means for it.
+   * The screen needs it to write the verdict, so it travels with every deck.
+   */
+  targetMain: number;
 };
 
 /**
@@ -94,6 +99,7 @@ const toSummary = (
   missing,
   coverImage,
   folderId: row.folderId,
+  targetMain: row.targetMain,
 });
 
 /**
@@ -322,9 +328,14 @@ export async function updateDeck(
   db: Database,
   viewerId: string,
   deckId: string,
-  input: { name?: string; folderId?: string | null },
+  input: { name?: string; folderId?: string | null; targetMain?: number },
 ): Promise<void> {
-  const values: { name?: string; folderId?: string | null; updatedAt: Date } = {
+  const values: {
+    name?: string;
+    folderId?: string | null;
+    targetMain?: number;
+    updatedAt: Date;
+  } = {
     updatedAt: new Date(),
   };
 
@@ -332,6 +343,15 @@ export async function updateDeck(
     const clean = input.name.trim();
     if (!clean) throw invalidInput("Give the deck a name.");
     values.name = clean;
+  }
+  if (input.targetMain !== undefined) {
+    // The range is the rules', and the database holds it too: this only turns
+    // what would be a 500 from the constraint into the sentence it deserves.
+    const { min, max } = DECK_ZONE_LIMITS.main;
+    if (!Number.isInteger(input.targetMain) || input.targetMain < min || input.targetMain > max) {
+      throw invalidInput(`A Main Deck is built between ${min} and ${max} cards.`);
+    }
+    values.targetMain = input.targetMain;
   }
   if (input.folderId !== undefined) {
     // Without this check, one could file a deck into a stranger's folder by

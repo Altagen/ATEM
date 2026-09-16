@@ -3,7 +3,7 @@ import {
   bigint, check, index, integer, pgTable, text, timestamp, unique, uniqueIndex, uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
-import { DECK_MAX_COPIES } from "@atem/shared";
+import { DECK_MAIN_TARGET_DEFAULT, DECK_MAX_COPIES, DECK_ZONE_LIMITS } from "@atem/shared";
 import { users } from "../identity/schema.js";
 import { cards } from "../referential/schema.js";
 
@@ -72,12 +72,30 @@ export const decks = pgTable(
      * losing the decks is not.
      */
     folderId: uuid("folder_id").references(() => deckFolders.id, { onDelete: "set null" }),
+    /**
+     * The Main Deck size this deck is being built towards.
+     *
+     * The rules allow 40 to 60 and both ends are playable; which one a deck aims
+     * for is the player's intention, and nothing in the cards carries it. It
+     * decides when the deck is called finished — never what is refused, which
+     * stays the rules' 60.
+     *
+     * The `CHECK` is safe here, unlike the one tried on `owned_cards.quantity`:
+     * this column is only ever written by a plain `UPDATE`, never by an
+     * `ON CONFLICT DO UPDATE` whose check would be evaluated on the proposed
+     * insert instead.
+     */
+    targetMain: integer("target_main").notNull().default(DECK_MAIN_TARGET_DEFAULT),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
     index("decks_user_idx").on(t.userId, t.updatedAt),
     index("decks_user_folder_idx").on(t.userId, t.folderId),
+    check(
+      "decks_target_main_in_rules",
+      sql`${t.targetMain} between ${sql.raw(String(DECK_ZONE_LIMITS.main.min))} and ${sql.raw(String(DECK_ZONE_LIMITS.main.max))}`,
+    ),
     // Two decks with the same name belonging to the same person are impossible
     // to tell apart in a list — and the delete confirmation is typed by name.
     uniqueIndex("decks_user_name_uidx").on(t.userId, t.name),

@@ -8,7 +8,7 @@
  */
 import { Hono } from "hono";
 import { z } from "zod";
-import { DECK_MAX_COPIES, DECK_ZONES, LIMITS } from "@atem/shared";
+import { DECK_MAX_COPIES, DECK_ZONE_LIMITS, DECK_ZONES, LIMITS } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { invalidInput } from "../../platform/errors.js";
 import { requireViewer } from "../identity/index.js";
@@ -26,6 +26,17 @@ const PatchBody = z.object({
   name: z.string().trim().min(1).max(LIMITS.deckName.max).optional(),
   /** `null` moves the deck back to the root; absent leaves the filing alone. */
   folderId: z.string().uuid().nullable().optional(),
+  /**
+   * The Main Deck size aimed at. Any whole number the rules allow is accepted,
+   * not only the five the picker offers: a deck built towards 41 is a
+   * legitimate intention, it is just not worth a line in a menu.
+   */
+  targetMain: z
+    .number()
+    .int()
+    .min(DECK_ZONE_LIMITS.main.min)
+    .max(DECK_ZONE_LIMITS.main.max)
+    .optional(),
 });
 
 const FolderBody = z.object({

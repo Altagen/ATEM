@@ -50,6 +50,13 @@
       "when": 1789297603981,
       "tag": "0006_ambiguous_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789540464480,
+      "tag": "0007_smart_timeslip",
+      "breakpoints": true
     }
   ]
 }

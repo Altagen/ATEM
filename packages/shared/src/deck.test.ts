@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  banlistMaxCopies, checkDeckAdd, deckStatus, isExtraDeckCard, missingCopies,
-  parseBanlistStatus,
+  banlistMaxCopies, checkDeckAdd, DECK_MAIN_TARGET_DEFAULT, DECK_MAIN_TARGET_STEPS, deckStatus,
+  isExtraDeckCard, missingCopies, parseBanlistStatus,
 } from "./deck.js";
 
 /**
@@ -134,25 +134,53 @@ test("asking for more than what is left says which bound spoke", () => {
 
 test("a deck's verdict names one thing at a time", () => {
   const full = { main: 40, extra: 0, side: 0 };
-  assert.equal(deckStatus(full, 0).kind, "ready");
-  assert.equal(deckStatus({ main: 60, extra: 15, side: 15 }, 0).kind, "ready", "at the limits");
-  assert.equal(deckStatus({ main: 0, extra: 0, side: 0 }, 0).kind, "empty");
+  const D = DECK_MAIN_TARGET_DEFAULT;
+  assert.equal(deckStatus(full, 0, D).kind, "ready");
+  assert.equal(deckStatus({ main: 60, extra: 15, side: 15 }, 0, D).kind, "ready", "at the limits");
+  assert.equal(deckStatus({ main: 0, extra: 0, side: 0 }, 0, D).kind, "empty");
 
   // Under construction: enough to write “28 more in the Main”.
-  assert.deepEqual(deckStatus({ main: 12, extra: 0, side: 0 }, 0), {
-    kind: "short", missing: 28, min: 40,
+  assert.deepEqual(deckStatus({ main: 12, extra: 0, side: 0 }, 0, D), {
+    kind: "short", missing: 28, target: 40,
   });
 
   // Above a limit: the offending zone and how many to remove.
-  assert.deepEqual(deckStatus({ main: 61, extra: 0, side: 0 }, 0), {
+  assert.deepEqual(deckStatus({ main: 61, extra: 0, side: 0 }, 0, D), {
     kind: "over", zone: "main", excess: 1,
   });
-  assert.deepEqual(deckStatus({ main: 40, extra: 16, side: 0 }, 0), {
+  assert.deepEqual(deckStatus({ main: 40, extra: 16, side: 0 }, 0, D), {
     kind: "over", zone: "extra", excess: 1,
   });
 
   // The shortfall counts even on a deck of legal size.
-  assert.deepEqual(deckStatus(full, 2), { kind: "missing", missing: 2 });
+  assert.deepEqual(deckStatus(full, 2, D), { kind: "missing", missing: 2 });
+});
+
+test("the target moves the finish line, never the legality", () => {
+  /**
+   * A deck aimed at 60 is not finished at 40, even though it is playable there:
+   * the player said 60. And a deck aimed at 40 is finished at 40, even though
+   * the rules would allow twenty more.
+   */
+  assert.deepEqual(deckStatus({ main: 40, extra: 0, side: 0 }, 0, 60), {
+    kind: "short", missing: 20, target: 60,
+  });
+  assert.equal(deckStatus({ main: 60, extra: 0, side: 0 }, 0, 60).kind, "ready");
+  assert.equal(deckStatus({ main: 40, extra: 0, side: 0 }, 0, 40).kind, "ready");
+
+  /**
+   * The sixty-first card is refused whatever the target, and a forty-first is
+   * accepted whatever the target — ATEM-old showed “limit exceeded” there,
+   * which is the application inventing a rule.
+   */
+  assert.equal(deckStatus({ main: 61, extra: 0, side: 0 }, 0, 60).kind, "over");
+  assert.equal(deckStatus({ main: 41, extra: 0, side: 0 }, 0, 40).kind, "ready");
+
+  // Every step the picker offers is a target the verdict understands.
+  for (const step of DECK_MAIN_TARGET_STEPS) {
+    assert.equal(deckStatus({ main: step, extra: 0, side: 0 }, 0, step).kind, "ready", String(step));
+    assert.equal(deckStatus({ main: step - 1, extra: 0, side: 0 }, 0, step).kind, "short", String(step));
+  }
 });
 
 test("the verdict announces first what prevents play", () => {
@@ -161,7 +189,7 @@ test("the verdict announces first what prevents play", () => {
    * copy from the collection is **too big** first: that is what gets fixed
    * first, and it is true whatever you own.
    */
-  assert.equal(deckStatus({ main: 61, extra: 0, side: 0 }, 3).kind, "over");
+  assert.equal(deckStatus({ main: 61, extra: 0, side: 0 }, 3, DECK_MAIN_TARGET_DEFAULT).kind, "over");
   // And a shortfall comes before incompleteness, which is not a defect.
-  assert.equal(deckStatus({ main: 12, extra: 0, side: 0 }, 1).kind, "missing");
+  assert.equal(deckStatus({ main: 12, extra: 0, side: 0 }, 1, DECK_MAIN_TARGET_DEFAULT).kind, "missing");
 });

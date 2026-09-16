@@ -102,9 +102,17 @@ const thumbnail = (url: string | null | undefined, cls = "thumb"): SafeHtml =>
 function countsBar(deck: DeckDetail, state: DeckState): SafeHtml {
   return html`<p class="meta-line deck-counts">
     ${DECK_ZONES.map((zone) => {
-      const { min, max } = DECK_ZONE_LIMITS[zone];
+      const { max } = DECK_ZONE_LIMITS[zone];
+      /**
+       * The denominator is the **rules' ceiling**, not the target: it answers
+       * “how many more may I legally put in?”, which does not depend on what
+       * this deck is aiming for. The target decides the shortfall colour only,
+       * and only in the Main — the other two zones have no floor to fall short
+       * of.
+       */
+      const floor = zone === "main" ? deck.targetMain : DECK_ZONE_LIMITS[zone].min;
       const n = deck.counts[zone];
-      const cls = n > max ? "count-over" : n >= max ? "count-full" : n < min ? "count-short" : "";
+      const cls = n > max ? "count-over" : n >= max ? "count-full" : n < floor ? "count-short" : "";
       return html`<span class="${cls}"
         >${zoneIcon(zone)} ${ZONE_LABELS[zone]} <strong>${n}</strong>/${max}</span
       >`;
@@ -131,7 +139,7 @@ const ZONE_LABELS: Record<DeckZone, string> = { main: "Main", extra: "Extra", si
  * dresses the list's pill: two screens, one judgement.
  */
 function deckStatusHtml(deck: DeckDetail): SafeHtml {
-  const status = deckStatus(deck.counts, deck.missing);
+  const status = deckStatus(deck.counts, deck.missing, deck.targetMain);
   switch (status.kind) {
     case "over":
       return html`<p class="deck-status deck-status-over">
@@ -154,10 +162,12 @@ function deckStatusHtml(deck: DeckDetail): SafeHtml {
         ${t("Empty deck — add your first cards from your collection.")}
       </p>`;
     case "short":
+      // “aiming for”, not “minimum”: 40 is the rules' floor, but a deck aimed
+      // at 60 is unfinished at 45 — and that number is the player's, not ours.
       return html`<p class="deck-status deck-status-short">
-        ${t("Deck incomplete: {n} more in the Main (minimum {min}).", {
+        ${t("Deck incomplete: {n} more in the Main (aiming for {target}).", {
           n: status.missing,
-          min: status.min,
+          target: status.target,
         })}
       </p>`;
     case "ready":
@@ -361,7 +371,7 @@ function zonesPanel(state: DeckState, deck: DeckDetail): SafeHtml {
  * decides, in both cases.
  */
 function deckPill(deck: DeckSummary): SafeHtml {
-  const status = deckStatus(deck.counts, deck.missing);
+  const status = deckStatus(deck.counts, deck.missing, deck.targetMain);
   return html`<span class="zone-pill ${status.kind === "ready" ? "deck-ready" : "deck-unready"}"
     >${status.kind === "ready"
       ? t("Ready")
@@ -560,6 +570,7 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
           on its building, and it lives on the sheet. Two places to delete is
           one too many.
         -->
+        <button type="button" class="btn" id="btn-deck-options">${t("Options")}</button>
         <a class="btn" href="/decks?deck=${deck.id}">${t("← Sheet")}</a>
         <a class="btn" href="/decks">${t("All decks")}</a>
       </div>
@@ -589,6 +600,12 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
       ${collectionPanel(state)}
       ${zonesPanel(state, deck)}
     </div>
+    <!--
+      The same window as the list's, and it must be rendered here too: the
+      workshop is a different screen, so a modal left in the list's markup opens
+      on nothing. Found by the test, not by reading.
+    -->
+    ${modalHtml(state)}
   </main>`;
 }
 

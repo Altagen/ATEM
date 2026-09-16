@@ -989,3 +989,79 @@ test("the deck sheet does not overflow", async ({ page }) => {
   await expect(page.locator(".tile")).toHaveCount(1);
   expect(await expectNoHorizontalOverflow(page)).toBeLessThanOrEqual(0);
 });
+
+test("the size a deck aims for is the player's, and it moves the finish line", async ({ page }) => {
+  /**
+   * The rules allow 40 to 60 and both ends are playable, so which one a deck is
+   * built towards is a decision only the player can make. What is measured here
+   * is that the decision is **kept** and that it **changes the verdict** — a
+   * picker that saves nothing would be the hollow affordance ATEM-old had.
+   */
+  await signUp(page);
+  await stockCollection(page, ["SDCR-FR014"]);
+  await newDeck(page, "Aimed at sixty");
+  await showPanel(page, "collection");
+  await page.locator(".js-coll[data-d='1']").first().click();
+
+  // Aimed at forty by default: one card in, thirty-nine to go.
+  await expect(page.locator(".deck-status")).toContainText("encore 39");
+
+  await page.getByRole("button", { name: "Options" }).click();
+  await page.locator("#modal-target-main").selectOption("60");
+  await page.getByRole("button", { name: "Appliquer" }).click();
+
+  // The same deck, the same card: only the finish line moved.
+  const status = page.locator(".deck-status");
+  await expect(status).toContainText("encore 59");
+  await expect(status).toContainText("objectif 60");
+  await expect(status).toHaveClass(/deck-status-short/);
+
+  // The denominator stays the rules' ceiling: it answers “how many more may I
+  // legally add?”, which the target does not change.
+  await expect(page.locator(".deck-counts")).toContainText("Main 1/60");
+
+  // And it survives a reload: it was written, not just displayed.
+  await page.reload();
+  await expect(page.locator(".deck-status")).toContainText("objectif 60");
+});
+
+test("a deck aimed at forty is ready at forty, and the window opens on its own value", async ({ page }) => {
+  /**
+   * The other half of the promise: the target says when the deck is finished,
+   * and reopening the window shows what was chosen rather than the default.
+   */
+  await signUp(page);
+  await newDeck(page, "Kept choice");
+
+  await page.getByRole("button", { name: "Options" }).click();
+  await expect(page.locator("#modal-target-main")).toHaveValue("40");
+  await page.locator("#modal-target-main").selectOption("45");
+  await page.getByRole("button", { name: "Appliquer" }).click();
+
+  await page.getByRole("button", { name: "Options" }).click();
+  await expect(page.locator("#modal-target-main")).toHaveValue("45");
+
+  // Cancelling writes nothing — the window closes on the value already saved.
+  await page.locator("#modal-target-main").selectOption("60");
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await page.getByRole("button", { name: "Options" }).click();
+  await expect(page.locator("#modal-target-main")).toHaveValue("45");
+});
+
+test("the options window fits on the screen", async ({ page }) => {
+  // The same measurement as the creation window: a native select is exactly
+  // what pushes a modal past the viewport on a phone.
+  await signUp(page);
+  await newDeck(page, "Window size");
+  await page.getByRole("button", { name: "Options" }).click();
+
+  const modal = page.locator(".deck-modal");
+  await expect(modal).toBeVisible();
+  const box = await modal.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(box!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height);
+});

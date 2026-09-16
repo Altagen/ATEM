@@ -229,6 +229,7 @@ deck_folders
 decks
   id, user_id, name         UNIQUE per user
   folder_id               nullable, on delete set null
+  target_main             default 40, CHECK between 40 and 60   -- the size aimed at
   created_at, updated_at                    -- R12: cover derived, no description, no visibility
 
 deck_cards                                  -- D3: references the card (R13)

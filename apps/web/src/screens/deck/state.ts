@@ -61,6 +61,11 @@ export type DeckSummary = {
   coverImage: string | null;
   /** The folder it is filed in, or `null` at the root. */
   folderId: string | null;
+  /**
+   * The Main Deck size this deck is aimed at — what “finished” means for it.
+   * The server decides the default (40), so the screen never invents one.
+   */
+  targetMain: number;
 };
 
 /**
@@ -89,7 +94,15 @@ export type DeckFolder = {
 export type DeckModal =
   | { kind: "new-deck" }
   | { kind: "new-folder" }
-  | { kind: "rename-folder"; id: string };
+  | { kind: "rename-folder"; id: string }
+  /**
+   * The deck's own settings — its target size, today.
+   *
+   * It reuses the same window as the rest rather than bringing its own: one
+   * backdrop, one Escape, one Cancel that undoes nothing because nothing was
+   * written yet.
+   */
+  | { kind: "deck-options"; id: string };
 
 /**
  * What is being moved, and nothing else.

@@ -246,8 +246,8 @@ A deck is created, filled from the collection, and says whether it is playable.
 | Zone sizes: 40–60 Main, 15 Extra, 15 Side | **yes** — the maximum refuses, the minimum reports |
 
 **Left to close M2**: deck folders, and the options modal (target sizes per deck).
-Neither prevents building a deck. *Folders and the gallery have since shipped
-(2026-09-12 and 13, sections below); the options modal remains.*
+Neither prevents building a deck. *Folders and the gallery shipped on 2026-09-12 and
+13 (sections below), the options modal on 2026-09-16 — **M2 is closed**.*
 
 ### A deck's sheet — 2026-09-13
 
@@ -401,17 +401,57 @@ a few things like that in ATEM-old”. ATEM-old had two (“unsaved”, “limit
 our deck list already carried a “Ready / Incomplete” pill, but the workshop said
 nothing.
 
-`deckStatus(counts, missing)`, in `@atem/shared`, returns **a single** verdict,
+`deckStatus(counts, missing, targetMain)`, in `@atem/shared`, returns **a single** verdict,
 ordered by severity: `over` (above a limit) → `missing` (the deck holds more copies
 than the collection) → `empty` → `short` (below the Main minimum) → `ready`. Three
 simultaneous warnings cannot be read; what prevents playing is named first, what is
-left to do next.
+left to do next. (`short` counted towards the rules' minimum of 40 until the deck's
+own target arrived on 2026-09-16, below.)
 
 It also returns **what is needed to write the sentence** — the number to remove, or to
 add — so nobody has to subtract in their head: “Deck incomplete: 39 more in the Main
 (minimum 40).” And it replaces `deckIsPlayable`, which answered the same question
 with yes or no: the list's pill and the workshop's sentence now come from the same
 judgement, two screens no longer able to contradict each other.
+
+### The deck options window — 2026-09-16 *(M2 closed)*
+
+The last line of M2. ATEM-old had a window offering a folder, a Main size, an Extra
+size, a Side size and a link to the banlist. **Only one of the five was transposed**,
+and the reasons are worth keeping:
+
+- the **folder** is not chosen here: filing a deck is a move, and moving is a mode you
+  navigate — Ange's own design, better than a drop-down that makes you picture the
+  tree instead of looking at it;
+- the **banlist** has no table on this side, and a link to nothing is worse than no
+  link;
+- the **Extra and Side sizes** are the interesting refusal. Their rule minimum is
+  zero, so a target there counts towards nothing; ATEM-old used them as *maxima* and
+  displayed “limit exceeded” on a legal deck — the application inventing a rule of its
+  own. What refuses stays the rules': 15, and 60 in the Main.
+- the **Main size aimed at** is the one that carries meaning. The rules allow 40 to 60
+  and both ends are playable: a 40-card deck draws its combo more often, a 60-card one
+  survives decking out. Nothing in the cards says which a deck is going for — only the
+  player does.
+
+**What it changes, and what it does not.** The target moves the line between “still
+building” and “ready”, never legality: the sixty-first card is still refused, the
+forty-first still accepted. The counter keeps the rules' ceiling as its denominator —
+`Main 45/60` answers “how many more may I legally add?”, which no target changes —
+while the sentence carries the intention: “Deck incomplete: 15 more in the Main
+(aiming for 60).”
+
+The default is 40, which is both the usual format and the value that makes every
+verdict identical to what it was before targets existed. The migration gives 40 to
+every deck already created, so nothing moved under anyone.
+
+`deckStatus` takes the target as a **required** argument rather than defaulting it: a
+call site that forgot it would otherwise answer “ready” about a deck aimed at 60.
+
+It reuses the list's window instead of bringing its own — one backdrop, one Escape,
+one Cancel — and that revealed a defect a reading would not have: the window was
+rendered only by the list screen, so opening it from the workshop opened nothing. The
+end-to-end test found it.
 
 ### No draft — decision of 2026-09-12
 
