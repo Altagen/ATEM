@@ -21,3 +21,39 @@ export function requireUuid(value: string): string {
   if (!UUID.test(value)) throw invalidInput("Invalid identifier.");
   return value;
 }
+
+/**
+ * A row identifier, as a `serial` column can hold it.
+ *
+ * `Number.isInteger` is not a range check: `1e20` is a whole number to
+ * JavaScript, so it passed, and PostgreSQL then refused the comparison against
+ * an `integer` column — a 500, with the query in the logs, for a mistyped
+ * address. Measured during the audit of 2026-09-16 on `/catalogue/cards/…`.
+ */
+const INT4_MAX = 2_147_483_647;
+
+export function requireRowId(raw: string | undefined): number {
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > INT4_MAX) {
+    throw invalidInput("Invalid identifier.");
+  }
+  return value;
+}
+
+/**
+ * A passcode: eight digits in the rules' sense, ten to be safe.
+ *
+ * The column is a `bigint`, so the ceiling is far higher than `integer`'s — but
+ * “far higher” is still a ceiling, and a passcode is a card's identity, not an
+ * arbitrary number. Ten digits is what `media-routes` already accepts in its
+ * file names; the two now agree instead of each having an opinion.
+ */
+const PASSCODE_MAX = 9_999_999_999;
+
+export function requirePasscode(raw: string | undefined): number {
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > PASSCODE_MAX) {
+    throw invalidInput("Invalid passcode.");
+  }
+  return value;
+}

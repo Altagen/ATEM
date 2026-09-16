@@ -3,6 +3,7 @@ import { z } from "zod";
 import { LIMITS } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { invalidInput } from "../../platform/errors.js";
+import { requireRowId } from "../../platform/identifiers.js";
 import { requireViewer } from "../identity/index.js";
 import {
   adjustQuantity, collectionFacets, listCollection, resolveStatus, setFavorite, setNotes,
@@ -113,8 +114,7 @@ export function collectionRoutes(db: Database) {
   });
 
   app.patch("/:id/notes", async (c) => {
-    const id = Number(c.req.param("id"));
-    if (!Number.isInteger(id)) throw invalidInput("Invalid identifier.");
+    const id = requireRowId(c.req.param("id"));
 
     let raw: unknown;
     try {
@@ -132,8 +132,7 @@ export function collectionRoutes(db: Database) {
   });
 
   app.patch("/:id/favorite", async (c) => {
-    const id = Number(c.req.param("id"));
-    if (!Number.isInteger(id)) throw invalidInput("Invalid identifier.");
+    const id = requireRowId(c.req.param("id"));
 
     let raw: unknown;
     try {

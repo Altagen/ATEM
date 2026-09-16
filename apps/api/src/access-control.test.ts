@@ -135,3 +135,45 @@ test("without a session, every write route refuses", async () => {
     assert.equal(response.status, 401, `${method} ${path}`);
   }
 });
+
+test("an out-of-range identifier is refused, not turned into a server error", async () => {
+  /**
+   * `Number.isInteger(1e20)` is true — it is a whole number to JavaScript — so
+   * the guard passed it to PostgreSQL, which refused the comparison against a
+   * `bigint` column. A mistyped address became a 500, with the failed query in
+   * the logs. Measured through the running API during the audit of 2026-09-16,
+   * then closed here for every numeric identifier at once.
+   */
+  const { cookie } = await freshSession(app, "range");
+
+  const refused: [string, string][] = [
+    ["GET", "/catalogue/cards/99999999999999999999"],
+    ["GET", "/catalogue/cards/0"],
+    ["GET", "/catalogue/cards/-1"],
+    ["GET", "/catalogue/cards/abc"],
+    // `integer` overflows far sooner than `bigint`: 2^31 is already too much.
+    ["PATCH", "/collection/2147483648/notes"],
+    ["PATCH", "/collection/1e20/favorite"],
+  ];
+
+  for (const [method, path] of refused) {
+    const response = await req(method, path, method === "GET" ? undefined : {}, cookie);
+    assert.equal(response.status, 400, `${method} ${path}`);
+    const body = (await response.json()) as { error: string };
+    assert.equal(body.error, "invalid_input", `${method} ${path}`);
+  }
+});
+
+test("an unexpected failure says nothing about the server", async () => {
+  /**
+   * Whatever goes wrong, the client is told `internal` and nothing else: no
+   * query, no stack, no constraint name. The details belong in the log, where
+   * the operator is — and a failed query is a map of the schema to anyone else.
+   */
+  const { cookie } = await freshSession(app, "opaque");
+  const response = await req("GET", "/catalogue/cards/abc", undefined, cookie);
+  const body = await response.text();
+
+  assert.doesNotMatch(body, /select |insert |update |from "|drizzle|postgres/i);
+  assert.doesNotMatch(body, /\bat \/|\.ts:\d+/, "no stack frame reaches the client");
+});

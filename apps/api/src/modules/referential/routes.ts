@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Database } from "../../db/client.js";
 import { invalidInput, notFound } from "../../platform/errors.js";
+import { requirePasscode } from "../../platform/identifiers.js";
 import { requireViewer } from "../identity/index.js";
 import { getCard, listPrintsForCard, resolvePrintBySetCode, toCardDetail } from "./service.js";
 import { cards } from "./schema.js";
@@ -51,8 +52,7 @@ export function referentialRoutes(db: Database) {
 
   /** The card and all its editions — what the “Other printings” block shows. */
   app.get("/cards/:passcode", async (c) => {
-    const passcode = Number(c.req.param("passcode"));
-    if (!Number.isInteger(passcode)) throw invalidInput("Invalid passcode.");
+    const passcode = requirePasscode(c.req.param("passcode"));
     const card = await getCard(db, passcode, c.get("viewer")?.locale ?? "fr");
     if (!card) throw notFound("Unknown card.");
     return c.json({ card, prints: await listPrintsForCard(db, passcode) });
