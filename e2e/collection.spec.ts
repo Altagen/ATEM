@@ -4,6 +4,64 @@ import {
 } from "./helpers.js";
 
 test.describe("Collection", () => {
+  test("unpinning the search bar gives the phone its second row back", async ({ page }) => {
+    /**
+     * Asked for by Ange, who remembered the control from ATEM-old — and it
+     * turned out to be the missing half of the gallery complaint.
+     *
+     * The rail is `sticky` at `top: 0` and 142 px tall, so while it is pinned it
+     * covers 137 px of the first row: two cards are visible and scrolling never
+     * gives a third. A note in the stylesheet claimed pinning “makes no sense”
+     * on a phone because the band follows the scroll; measuring says the
+     * opposite, and this test is what says it out loud.
+     *
+     * The button itself cannot return to the rail — at 320 px the four other
+     * controls leave 64 px for the search field — so the setting lives in the
+     * “⋯” panel, next to columns and density.
+     */
+    test.skip(test.info().project.name !== "mobile", "the rail keeps its button on a wide screen");
+
+    await signUp(page);
+    for (const code of ["SDCR-FR010", "SDCR-FR011", "SDCR-FR012", "SDCR-FR013"]) {
+      await addBySetCode(page, code);
+    }
+    await useGalleryView(page);
+
+    /** Tiles neither hidden behind the sticky rail nor behind the bottom bar. */
+    const clearTiles = async () =>
+      page.evaluate(() => {
+        const rail = (document.querySelector(".pin-rail") as HTMLElement).getBoundingClientRect();
+        const nav = (document.querySelector(".global-mobile-bottom-nav") as HTMLElement)
+          .getBoundingClientRect().top;
+        return [...document.querySelectorAll(".tile")].filter((tile) => {
+          const box = tile.getBoundingClientRect();
+          return box.top >= Math.max(0, rail.bottom) && box.bottom <= nav;
+        }).length;
+      });
+
+    const toBottom = async () => {
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForTimeout(250);
+    };
+
+    await toBottom();
+    expect(await clearTiles(), "pinned, the rail covers the first row").toBe(2);
+
+    await page.getByRole("button", { name: "Trier et filtrer" }).click();
+    await page.locator("#pin-bar").uncheck();
+    await page.keyboard.press("Escape");
+    await toBottom();
+
+    // Two columns, two rows — the view Ange asked for.
+    expect(await clearTiles(), "unpinned, the bar scrolls away").toBe(4);
+
+    // And the choice is kept: it is a preference, not a gesture to repeat.
+    await page.reload();
+    await useGalleryView(page);
+    await toBottom();
+    expect(await clearTiles()).toBe(4);
+  });
+
   test("the gallery keeps two columns on a phone, however narrow", async ({ page }) => {
     /**
      * Reported by Ange: in gallery view the cards were nearly fullscreen, where

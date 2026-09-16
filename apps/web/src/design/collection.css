@@ -219,6 +219,11 @@
   transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
+/* Shown only where the rail's pin button is hidden — see the 850px block. */
+.menu-check-pin {
+  display: none;
+}
+
 .pin-rail[data-pinned="true"] {
   position: sticky;
   top: 3.25rem; /* under app-bar */
@@ -1618,11 +1623,25 @@
   .pin-rail .search { padding-block: 0; }
   .pin-rail .search input { font-size: 0.85rem; min-height: 40px; padding-block: 0; }
 
-  /* Pinning makes no sense here: the band always follows the scroll, and the
-     button cost one more target in an already full row. Measured at 320px, the
-     four other controls left only 64 pixels for the search field — four
-     letters. */
+  /**
+   * The pin leaves the rail — and moves into the panel, it does not disappear.
+   *
+   * A previous note here claimed pinning “makes no sense” on a phone because the
+   * band follows the scroll. It is the opposite, and measuring said so: the rail
+   * is `sticky` at `top: 0` and **142 px tall**, so it covers 137 px of the
+   * first gallery row for as long as it stays pinned. Two cards are visible, and
+   * scrolling does not give a third. Unpinning is what gives the phone its
+   * second row back — the screen where vertical space is scarcest is the one
+   * that needs the control most.
+   *
+   * What was true in that note is the width: at 320 px the four other controls
+   * leave 64 pixels for the search field, four letters. So the button gives up
+   * its place in the row, and the setting joins the display options in the “⋯”
+   * panel, where columns and density already live.
+   */
   [data-pin] { display: none; }
+
+  .menu-check-pin { display: flex; }
 
   .add-bar { gap: 0.35rem; }
   .add-bar .add-input { font-size: 0.85rem; min-height: 36px; }

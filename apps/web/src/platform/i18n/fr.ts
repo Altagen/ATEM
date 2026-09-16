@@ -219,6 +219,7 @@ export const FR: Record<string, string> = {
   "Nothing to save — every line is at zero.": "Aucune carte à enregistrer — toutes les lignes sont à zéro.",
   "Nothing yet. Scan a card, or type its code.": "Rien encore. Scannez une carte, ou saisissez son code.",
   "OK": "OK",
+  "Keep the search bar on screen": "Garder la barre de recherche à l'écran",
   "One moment…": "Un instant…",
   "Options": "Options",
   "Online": "En ligne",

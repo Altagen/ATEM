@@ -328,6 +328,15 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
           <input type="checkbox" id="group-monster"${state.groupByMonster ? raw(" checked") : raw("")} />
           ${t("Group monsters by type")}
         </label>
+        <!--
+          The same setting as the rail's pin button, for the screens where that
+          button has no room. Only one of the two is ever visible — the button
+          below 850px, this line above it — so there is one control, not two.
+        -->
+        <label class="menu-check menu-check-pin">
+          <input type="checkbox" id="pin-bar"${state.pinned ? raw(" checked") : raw("")} />
+          ${t("Keep the search bar on screen")}
+        </label>
       </section>
 
       <section class="filter-block">
