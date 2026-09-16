@@ -381,11 +381,6 @@ export async function collectionScreen(
     };
 
     root.querySelector("#btn-pin")?.addEventListener("click", () => setPinned(!state.pinned));
-    // The same setting reached from the panel, where the rail has no room for
-    // the button — below 850px. One of the two is shown, never both.
-    root.querySelector("#pin-bar")?.addEventListener("change", (event) => {
-      setPinned((event.target as HTMLInputElement).checked);
-    });
 
     root.querySelector("#btn-more")?.addEventListener("click", () => setFilterPanel(true));
 

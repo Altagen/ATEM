@@ -328,15 +328,6 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
           <input type="checkbox" id="group-monster"${state.groupByMonster ? raw(" checked") : raw("")} />
           ${t("Group monsters by type")}
         </label>
-        <!--
-          The same setting as the rail's pin button, for the screens where that
-          button has no room. Only one of the two is ever visible — the button
-          below 850px, this line above it — so there is one control, not two.
-        -->
-        <label class="menu-check menu-check-pin">
-          <input type="checkbox" id="pin-bar"${state.pinned ? raw(" checked") : raw("")} />
-          ${t("Keep the search bar on screen")}
-        </label>
       </section>
 
       <section class="filter-block">
@@ -578,9 +569,6 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
                   data-view="gallery" title="${t("Gallery")}" aria-label="${t("Gallery view")}"
                   aria-pressed="${String(state.view === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
         </div>
-        <button type="button" class="icon-btn${state.pinned ? " is-active" : ""}" id="btn-pin"
-                data-pin title="${t("Pin the bar")}" aria-label="${t("Pin the bar")}"
-                aria-pressed="${String(state.pinned)}"><span class="i-pin" aria-hidden="true"></span></button>
         <button type="button" class="icon-btn" id="btn-more" title="${t("Sort and filter")}"
                 aria-label="${t("Sort and filter")}" aria-haspopup="dialog"><span class="i-more" aria-hidden="true"></span></button>
         <!--
@@ -612,6 +600,16 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
                 aria-label="${t("Add the card")}"><span aria-hidden="true">+</span></button>
         <button type="button" class="btn-scan" id="btn-scan" title="${t("Scan the set code")}"
                 aria-label="${t("Scan")}"><span class="i-scan" aria-hidden="true"></span></button>
+        <!--
+          The pin sits on this row, not on the search one — Ange's idea, and the
+          measurements agree. It acts on the whole rail, both rows, so either
+          would be honest; but at 393 px the search field has 145 px where the
+          set code field has 235. The 44 px this button costs come from the one
+          that can spare them.
+        -->
+        <button type="button" class="icon-btn${state.pinned ? " is-active" : ""}" id="btn-pin"
+                data-pin title="${t("Pin the bar")}" aria-label="${t("Pin the bar")}"
+                aria-pressed="${String(state.pinned)}"><span class="i-pin" aria-hidden="true"></span></button>
       </div>
 
       <div id="advanced-fields" class="add-advanced" hidden>

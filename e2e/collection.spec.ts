@@ -15,11 +15,13 @@ test.describe("Collection", () => {
      * on a phone because the band follows the scroll; measuring says the
      * opposite, and this test is what says it out loud.
      *
-     * The button itself cannot return to the rail — at 320 px the four other
-     * controls leave 64 px for the search field — so the setting lives in the
-     * “⋯” panel, next to columns and density.
+     * Where the 44 px come from was Ange's answer, not mine: the button sits on
+     * the **set code row**, not the search one. Both are the same rail, so
+     * either would be honest — but at 393 px the search field has 145 px and
+     * the set code field 235. Measured after the move: search untouched at 145,
+     * set code 189, still the wider of the two.
      */
-    test.skip(test.info().project.name !== "mobile", "the rail keeps its button on a wide screen");
+    test.skip(test.info().project.name !== "mobile", "a wide screen has room for both rows");
 
     await signUp(page);
     for (const code of ["SDCR-FR010", "SDCR-FR011", "SDCR-FR012", "SDCR-FR013"]) {
@@ -47,9 +49,7 @@ test.describe("Collection", () => {
     await toBottom();
     expect(await clearTiles(), "pinned, the rail covers the first row").toBe(2);
 
-    await page.getByRole("button", { name: "Trier et filtrer" }).click();
-    await page.locator("#pin-bar").uncheck();
-    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Épingler la barre" }).click();
     await toBottom();
 
     // Two columns, two rows — the view Ange asked for.

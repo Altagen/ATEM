@@ -219,11 +219,6 @@
   transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-/* Shown only where the rail's pin button is hidden — see the 850px block. */
-.menu-check-pin {
-  display: none;
-}
-
 .pin-rail[data-pinned="true"] {
   position: sticky;
   top: 3.25rem; /* under app-bar */
@@ -1624,24 +1619,20 @@
   .pin-rail .search input { font-size: 0.85rem; min-height: 40px; padding-block: 0; }
 
   /**
-   * The pin leaves the rail — and moves into the panel, it does not disappear.
+   * The pin stays on a phone — it just changed rows.
    *
-   * A previous note here claimed pinning “makes no sense” on a phone because the
-   * band follows the scroll. It is the opposite, and measuring said so: the rail
-   * is `sticky` at `top: 0` and **142 px tall**, so it covers 137 px of the
-   * first gallery row for as long as it stays pinned. Two cards are visible, and
-   * scrolling does not give a third. Unpinning is what gives the phone its
-   * second row back — the screen where vertical space is scarcest is the one
-   * that needs the control most.
+   * A note here used to hide it, saying pinning “makes no sense” because the
+   * band follows the scroll. It is the opposite: the rail is `sticky` at
+   * `top: 0` and 142 px tall, so while it is pinned it covers 137 px of the
+   * first gallery row. Two cards show, and scrolling never gives a third.
+   * Unpinning is what gives the phone its second row back, so the screen where
+   * vertical space is scarcest is the one that needs the control most.
    *
-   * What was true in that note is the width: at 320 px the four other controls
-   * leave 64 pixels for the search field, four letters. So the button gives up
-   * its place in the row, and the setting joins the display options in the “⋯”
-   * panel, where columns and density already live.
+   * What that note got right is that 44 px had to come from somewhere: at 393 px
+   * the search field has only 145. Ange's answer was to take them from the other
+   * row instead — the set code field has 235 px there — and that is where the
+   * button now lives, for every screen size. One control, one place.
    */
-  [data-pin] { display: none; }
-
-  .menu-check-pin { display: flex; }
 
   .add-bar { gap: 0.35rem; }
   .add-bar .add-input { font-size: 0.85rem; min-height: 36px; }
