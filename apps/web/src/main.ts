@@ -2,6 +2,7 @@ import "./design/index.css";
 
 import { t } from "./platform/i18n/index.js";
 import { closeAccountSheet, refreshServiceState, renderNavigation } from "./platform/navigation.js";
+import { installFocusTrap } from "./platform/focus-trap.js";
 import { releaseScroll } from "./platform/scroll-lock.js";
 import {
   guardWith, onAfterRender, register, registerFallback, startRouter,
@@ -82,6 +83,9 @@ async function start(): Promise<void> {
     // router does not replace.
     closeAccountSheet();
   });
+  // Installed before the first screen: a window opening on the landing route
+  // would otherwise be the one that leaks.
+  installFocusTrap();
   startRouter();
 
   // The service state is read at startup, then every minute: often enough to
