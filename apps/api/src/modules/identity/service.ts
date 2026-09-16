@@ -66,7 +66,28 @@ export async function registerUser(
     .from(users)
     .where(sql`lower(${users.email}) = lower(${email})`)
     .limit(1);
-  if (existing) throw conflict("That email address is already in use.");
+  if (existing) {
+    /**
+     * The refusal does not say **why**, the log does.
+     *
+     * “That address is already in use” hands an attacker a membership test for
+     * any address they care to try. Asked for by Ange: the screen stays vague,
+     * the operator keeps the real reason.
+     *
+     * Be clear about what this does and does not buy. It removes the plain
+     * statement; it does not close enumeration, because registering still
+     * succeeds for a free address and fails for a taken one, and that
+     * difference is the answer. Closing it for good needs an email we do not
+     * send — accept every registration, then tell the address's owner that
+     * someone tried. Until then the register ceiling is what bounds the sweep.
+     *
+     * The address is logged in full: on a self-hosted instance the operator
+     * already holds every address in the database, so this exposes nothing new
+     * and is what makes “why can this person not sign up?” answerable.
+     */
+    console.warn(`[atem] register refused: ${email} already has an account`);
+    throw conflict("An account cannot be created with this email address.");
+  }
 
   const passwordHash = await hashPassword(input.password);
 

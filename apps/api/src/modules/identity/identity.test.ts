@@ -323,3 +323,29 @@ test("sign-in attempts are capped, per address and per account", async () => {
   const other = `email:${freshEmail("rate-other").toLowerCase()}`;
   await enforceLimit(db, "login", [other], rule);
 });
+
+test("a taken address is refused without saying it is taken", async () => {
+  /**
+   * Asked for by Ange: the screen stays vague, the log keeps the reason. It
+   * removes the plain membership test — “is this address registered here?” —
+   * that the old wording answered for anyone who asked.
+   *
+   * It does not close enumeration, and the test says so rather than pretending:
+   * the attempt still fails where it would have succeeded. What is measured is
+   * only that the answer no longer spells it out.
+   */
+  const email = freshEmail("enumeration");
+  await registerUser(db, { email, displayName: "First", password: "Un-Mot-De-Passe-1!" });
+
+  const response = await post("/auth/register", {
+    email, displayName: "Second", password: "Un-Autre-Passe-2!",
+  });
+  assert.equal(response.status, 409);
+  const body = (await response.json()) as { message?: string };
+  assert.equal(body.message, "An account cannot be created with this email address.");
+  assert.doesNotMatch(
+    String(body.message),
+    /already|in use|exists|taken|déjà/i,
+    "the refusal must not hand over the answer",
+  );
+});
