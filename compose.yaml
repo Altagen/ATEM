@@ -7,6 +7,13 @@
 
 services:
   db:
+    # PostgreSQL starts as root to take ownership of its data directory, then
+    # drops to the postgres user. Those four capabilities are what that needs —
+    # everything else goes. Verified by bringing the stack up: initdb, the
+    # health check and a migration all still pass.
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
     image: docker.io/library/postgres:16-alpine
     environment:
       POSTGRES_USER: atem
@@ -27,6 +34,8 @@ services:
   # Migrations run once, to completion, before the API starts. Without this
   # ordering, the API serves requests on an incomplete schema.
   migrate:
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
     build: { context: ., dockerfile: Containerfile }
     command: ["node", "dist/db/migrate.js"]
     environment:
@@ -36,6 +45,11 @@ services:
     restart: "no"
 
   api:
+    # Node needs no capability at all: it runs as an unprivileged user and binds
+    # a port above 1024. A flaw in the application therefore has nothing to
+    # escalate to.
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
     build: { context: ., dockerfile: Containerfile }
     environment:
       DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD:-atem}@db:5432/atem
@@ -66,6 +80,11 @@ services:
       retries: 12
 
   web:
+    # nginx binds port 80 — privileged — then drops its workers to the nginx
+    # user, which is what the other three allow. Nothing more.
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, NET_BIND_SERVICE, SETGID, SETUID]
     build: { context: ., dockerfile: Containerfile.web }
     ports:
       - "${ATEM_PUBLIC_PORT:-8080}:80"

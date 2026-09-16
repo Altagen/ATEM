@@ -7,6 +7,7 @@ import {
 import { markUnidentified } from "./modules/referential/index.js";
 import { requireJwtSecret } from "./modules/identity/secret.js";
 import { installShutdownHandlers, onShutdown } from "./platform/shutdown.js";
+import { loggableError } from "./platform/errors.js";
 
 // Both configuration requirements are checked before opening the port: a
 // misconfigured instance must refuse to serve, not serve halfway.
@@ -42,7 +43,7 @@ void requeuePendingResolves(db)
   .then((count) => {
     if (count > 0) console.log(`[atem] ${count} identification(s) resumed at startup`);
   })
-  .catch((err) => console.error("[atem] could not resume identifications:", err));
+  .catch((err) => console.error("[atem] could not resume identifications:", loggableError(err)));
 
 installShutdownHandlers();
 onShutdown(async () => {

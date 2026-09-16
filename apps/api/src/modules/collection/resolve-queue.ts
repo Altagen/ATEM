@@ -9,6 +9,7 @@
  * duplicate — and B's line stayed provisional indefinitely. The work to do is
  * not “resolve this code”, it is “repair this person's line”.
  */
+import { loggableError } from "../../platform/errors.js";
 type Attempt = (userId: string, setCode: string) => Promise<boolean>;
 
 /**
@@ -114,7 +115,7 @@ async function drain(): Promise<void> {
            * non-existent card, and the line must be queued again at the next
            * startup.
            */
-          console.warn(`[atem] resolution abandoned for ${entry.setCode}:`, err);
+          console.warn(`[atem] resolution abandoned for ${entry.setCode}:`, loggableError(err));
         }
       }
     }

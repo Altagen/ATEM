@@ -35,6 +35,11 @@ wait_ready() {
 
 case "${1:-up}" in
   up)
+    # Published on the loopback only, as `compose.yaml` does for the same reason:
+    # the credentials are atem/atem, and on a laptop that joins a café's wifi
+    # `0.0.0.0` means anyone on that network. Found during the audit of
+    # 2026-09-16, when the development database answered on the machine's LAN
+    # address — blocked by the firewall that evening, which is not a design.
     if running; then echo "already up on $URL"; exit 0; fi
     # An existing container is restarted rather than recreated: the volume would
     # be the same either way, but restarting keeps its logs.
@@ -42,7 +47,7 @@ case "${1:-up}" in
       "$ENGINE" run -d --name "$NAME" \
         -e POSTGRES_USER=atem -e POSTGRES_PASSWORD=atem -e POSTGRES_DB=atem \
         -v "$VOLUME":/var/lib/postgresql/data \
-        -p 55432:5432 "$IMAGE" >/dev/null
+        -p 127.0.0.1:55432:5432 "$IMAGE" >/dev/null
     fi
     wait_ready ;;
 

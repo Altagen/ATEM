@@ -21,6 +21,7 @@
 import { randomBytes } from "node:crypto";
 import { mkdir, rename, stat, statfs, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { loggableError } from "../../platform/errors.js";
 import { retryAfterMs, throttleOutbound, withOutboundSlot } from "./outbound-rate.js";
 
 export type ImageVariant = "full" | "small";
@@ -227,7 +228,7 @@ async function download(url: string, target: string): Promise<string | null> {
     await rename(temporary, target);
     return target;
   } catch (error) {
-    console.warn(`[atem] media: download of ${url} failed:`, error);
+    console.warn(`[atem] media: download of ${url} failed:`, loggableError(error));
     failedAt.set(target, Date.now());
     await unlink(temporary).catch(() => {});
     return null;

@@ -72,3 +72,43 @@ export function violatesConstraint(error: unknown, constraint: string): boolean 
   }
   return false;
 }
+
+/**
+ * What an error may say **in the log**.
+ *
+ * Logging the error object was writing password hashes to disk. Drizzle puts
+ * the failed query *and its parameters* in the message, and the parameters are
+ * the row being written — for a registration that is the scrypt hash, beside the
+ * address it belongs to. Measured on 2026-09-16: `err.message` contained the
+ * hash, and so did `String(err)`.
+ *
+ * A hash is not a password, but it is the material an offline attack needs, and
+ * logs travel: they are rotated, shipped, read over a shoulder, pasted into an
+ * issue. Nothing about a person's credentials belongs there.
+ *
+ * What stays is what an operator actually needs: the kind of error, the failed
+ * statement, and the database's own code and constraint. The statement is
+ * schema, which the repository already publishes; the parameters are data,
+ * which it never will.
+ */
+export function loggableError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+
+  // Everything from `params:` on is the row itself.
+  const message = error.message.split(/\n\s*params:/)[0] ?? error.message;
+
+  const cause = error.cause as
+    | { code?: string; constraint_name?: string; detail?: string }
+    | undefined;
+  const from = [
+    cause?.code && `code ${cause.code}`,
+    cause?.constraint_name && `constraint ${cause.constraint_name}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  // `detail` carries the offending values — “Key (email)=(a@b.c) already
+  // exists” — so it is named, never quoted.
+  const hasDetail = cause?.detail ? " (detail withheld)" : "";
+  return `${error.name}: ${message}${from ? ` [${from}]` : ""}${hasDetail}`;
+}

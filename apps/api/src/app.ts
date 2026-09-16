@@ -8,7 +8,7 @@
 import { Hono } from "hono";
 import { ZodError } from "zod";
 import type { Database } from "./db/client.js";
-import { AppError } from "./platform/errors.js";
+import { AppError, loggableError } from "./platform/errors.js";
 import { attachCallerIp } from "./platform/caller-ip.js";
 import { bodyLimit, csrfGuard, securityHeaders } from "./platform/security.js";
 import { attachViewer, identityRoutes } from "./modules/identity/index.js";
@@ -33,7 +33,7 @@ export function createApp(db: Database) {
     if (err instanceof ZodError) {
       return c.json({ error: "invalid_input", issues: err.issues }, 400);
     }
-    console.error("[atem] unhandled error:", err);
+    console.error("[atem] unhandled error:", loggableError(err));
     return c.json({ error: "internal" }, 500);
   });
 

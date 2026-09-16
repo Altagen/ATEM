@@ -17,7 +17,22 @@ COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm --filter @atem/api build && pnpm --filter @atem/web build
+# `@atem/shared` is built too, and that is not a detail: its package points at
+# `./src/index.ts`, which suits `tsx` in development and nothing at all in this
+# image. Without this the container never started — Node loaded the TypeScript
+# entry point, then failed on its first `./set-code.js`, which existed only as
+# `.ts`. Measured on 2026-09-16 by bringing the stack up: migrate exited 1,
+# ERR_MODULE_NOT_FOUND, and the API behind it.
+RUN pnpm --filter @atem/shared build \
+ && pnpm --filter @atem/api build \
+ && pnpm --filter @atem/web build
+
+# The entry point the **image** uses, derived from the real manifest rather than
+# written a second time: a hand-kept copy would drift on the first dependency
+# added, and drift silently.
+RUN node -e "const p=require('/app/packages/shared/package.json'); \
+  p.main='./dist/index.js'; p.exports={'.':'./dist/index.js'}; \
+  require('fs').writeFileSync('/app/packages/shared/package.runtime.json', JSON.stringify(p,null,2));"
 
 # ---
 
@@ -31,7 +46,9 @@ COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 RUN pnpm install --frozen-lockfile --prod --filter @atem/api...
 
-COPY --from=build /app/packages/shared/src packages/shared/src
+# Compiled JavaScript, and the manifest that points at it — never the sources.
+COPY --from=build /app/packages/shared/dist packages/shared/dist
+COPY --from=build /app/packages/shared/package.runtime.json packages/shared/package.json
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/api/drizzle apps/api/drizzle
 COPY --from=build /app/apps/web/dist apps/web/dist

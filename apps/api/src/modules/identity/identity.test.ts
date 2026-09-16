@@ -6,7 +6,7 @@ import { deleteAccount, getPublicUser, registerUser, setLocale } from "./service
 import { authAttempts, users } from "./schema.js";
 import { clearAttempts, enforceLimit, recordAttempt } from "./rate-limit.js";
 import { resolveCallerIp } from "../../platform/caller-ip.js";
-import { violatesConstraint } from "../../platform/errors.js";
+import { loggableError, violatesConstraint } from "../../platform/errors.js";
 import { adjustQuantity, listCollection } from "../collection/service.js";
 import { createScanlist, listScanlists } from "../scanlist/service.js";
 import { resetResolveQueue } from "../collection/resolve-queue.js";
@@ -405,4 +405,41 @@ test("a display name shared by many people still registers", async () => {
     assert.equal(user.displayName, displayName);
     assert.match(user.tag, /^\d{4}$/);
   }
+});
+
+test("a password hash never reaches the log", async () => {
+  /**
+   * `console.error("…", err)` was writing them there. Drizzle puts the failed
+   * query **and its parameters** in the message, and for a registration the
+   * parameters are the scrypt hash beside the address it belongs to. Measured
+   * on 2026-09-16: `err.message` carried the hash, and so did `String(err)`.
+   *
+   * A hash is not a password, but it is the material an offline attack needs,
+   * and logs travel — rotated, shipped, pasted into an issue.
+   *
+   * The error is provoked against the real database, like the constraint test:
+   * what leaks is the shape the driver produces, and an error built by hand
+   * would prove nothing about it.
+   */
+  const marker = "scrypt$LEAK-CANARY-DO-NOT-LOG";
+  const shared = { passwordHash: marker, displayName: `Leak ${Date.now()}`, tag: "9191" };
+  await db.insert(users).values({ email: freshEmail("leak-a"), ...shared });
+
+  let captured: unknown;
+  try {
+    await db.insert(users).values({ email: freshEmail("leak-b"), ...shared });
+    assert.fail("the unique index should have refused the second row");
+  } catch (err) {
+    captured = err;
+  }
+
+  // The raw error does carry it — that is the whole danger, and it is measured
+  // rather than assumed, so this test still means something if Drizzle changes.
+  assert.ok(String((captured as Error).message).includes(marker), "the driver really does expose it");
+
+  const logged = loggableError(captured);
+  assert.doesNotMatch(logged, /LEAK-CANARY/, "what we log must not");
+  // And it still says enough to be worth logging.
+  assert.match(logged, /users_name_tag_uidx/);
+  assert.match(logged, /23505/);
 });

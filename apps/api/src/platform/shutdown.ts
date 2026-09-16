@@ -5,6 +5,7 @@
  * connection in the middle of a response, and a transaction may stay open on
  * the database side. We stop accepting, let what is running finish, then close.
  */
+import { loggableError } from "./errors.js";
 type Closer = () => Promise<void> | void;
 
 const closers: Closer[] = [];
@@ -31,7 +32,7 @@ export function installShutdownHandlers(graceMs = 10_000): void {
       try {
         await closer();
       } catch (err) {
-        console.error("[atem] failure during shutdown:", err);
+        console.error("[atem] failure during shutdown:", loggableError(err));
       }
     }
     clearTimeout(deadline);
