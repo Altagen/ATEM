@@ -30,6 +30,16 @@ const BASE_DELAY_MS = 2_000;
 
 const queue = new Map<string, Entry>();
 let running = false;
+/**
+ * Bumped by every reset, so work already in flight knows it is stale.
+ *
+ * Clearing the map does not stop a `drain` that is awaiting an attempt: it
+ * captured its entries before the reset and would carry on writing afterwards.
+ * That is what made one collection test fail about once in six runs — the
+ * resolution of a printing the test had frozen landed between two of its
+ * assertions.
+ */
+let generation = 0;
 let attemptFn: Attempt | null = null;
 let abandonFn: Abandon | null = null;
 let timer: NodeJS.Timeout | null = null;
@@ -72,8 +82,12 @@ function schedule(delayMs: number): void {
 async function drain(): Promise<void> {
   if (running || !attemptFn) return;
   running = true;
+  const mine = generation;
   try {
     for (const [key, entry] of [...queue]) {
+      // A reset happened while we were awaiting: this work belongs to a state
+      // nobody is interested in any more.
+      if (mine !== generation) return;
       if (entry.readyAt > Date.now()) continue;
       queue.delete(key);
       try {
@@ -105,17 +119,32 @@ async function drain(): Promise<void> {
       }
     }
   } finally {
-    running = false;
-    if (queue.size > 0) schedule(BASE_DELAY_MS);
+    // Only the drain that owns the current generation may hand the baton on: a
+    // stale one clearing the flag would let two drains run side by side.
+    if (mine === generation) {
+      running = false;
+      if (queue.size > 0) schedule(BASE_DELAY_MS);
+    }
   }
 }
 
-/** Tests: empties the queue. */
+/**
+ * Tests: puts the module back to the state it starts in — **handlers included**.
+ *
+ * It used to clear the queue and leave `attemptFn` armed. A test that had
+ * configured a handler therefore left it behind for every test that followed in
+ * the same file, and the next `enqueueResolve` really did resolve, against a
+ * test that had asked for nothing of the sort. Detaching costs nothing: every
+ * caller configures right after resetting.
+ */
 export function resetResolveQueue(): void {
+  generation += 1;
   queue.clear();
   if (timer) clearTimeout(timer);
   timer = null;
   running = false;
+  attemptFn = null;
+  abandonFn = null;
 }
 
 export function pendingCount(): number {

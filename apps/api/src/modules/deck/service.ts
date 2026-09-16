@@ -16,7 +16,9 @@ import {
   type DeckBlockReason, type DeckZone,
 } from "@atem/shared";
 import type { Database } from "../../db/client.js";
-import { conflict, forbidden, invalidInput, notFound } from "../../platform/errors.js";
+import {
+  conflict, forbidden, invalidInput, notFound, violatesConstraint,
+} from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { ownedByPasscode } from "../collection/index.js";
 import { cardsByPasscode, publicImageUrls } from "../referential/index.js";
@@ -309,8 +311,7 @@ export async function createDeck(
      * Two decks with the same name are impossible to tell apart in a list, and
      * the delete confirmation is typed by name.
      */
-    const cause = (err as { cause?: { constraint_name?: string } }).cause;
-    if (cause?.constraint_name === "decks_user_name_uidx") {
+    if (violatesConstraint(err, "decks_user_name_uidx")) {
       throw conflict("You already have a deck with that name.");
     }
     throw err;

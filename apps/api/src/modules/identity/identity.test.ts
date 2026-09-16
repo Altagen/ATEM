@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import { createTestApp, freshEmail, jsonPost } from "../../test-support.js";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
 import { deleteAccount, getPublicUser, registerUser, setLocale } from "./service.js";
-import { authAttempts } from "./schema.js";
+import { authAttempts, users } from "./schema.js";
 import { clearAttempts, enforceLimit, recordAttempt } from "./rate-limit.js";
 import { resolveCallerIp } from "../../platform/caller-ip.js";
+import { violatesConstraint } from "../../platform/errors.js";
 import { adjustQuantity, listCollection } from "../collection/service.js";
 import { createScanlist, listScanlists } from "../scanlist/service.js";
 import { resetResolveQueue } from "../collection/resolve-queue.js";
@@ -348,4 +349,60 @@ test("a taken address is refused without saying it is taken", async () => {
     /already|in use|exists|taken|déjà/i,
     "the refusal must not hand over the answer",
   );
+});
+
+test("a constraint violation is recognised from the cause, never from the message", async () => {
+  /**
+   * The defect this pins down cost us a fortnight of intermittent test failures
+   * and would have cost a stranger their registration.
+   *
+   * `(display name, tag)` is unique and the tag is drawn at random from ten
+   * thousand, so two people sharing a display name collide now and then — by
+   * design, and `registerUser` retries eight times for exactly that. The
+   * condition read `err.message`, which Drizzle fills with the failed query and
+   * never with the constraint's name: the retry had been dead since the wrapping
+   * was introduced, and every collision surfaced as a 500.
+   *
+   * So the error is provoked against the real database rather than shaped by
+   * hand: what regressed was the shape the driver produces, and a hand-made
+   * error would have kept passing throughout.
+   */
+  const displayName = `Shape ${Date.now()}`;
+  const shared = { passwordHash: "x", displayName, tag: "4242" };
+  await db.insert(users).values({ email: freshEmail("shape-a"), ...shared });
+
+  let captured: unknown;
+  try {
+    await db.insert(users).values({ email: freshEmail("shape-b"), ...shared });
+    assert.fail("the unique index should have refused the second row");
+  } catch (err) {
+    captured = err;
+  }
+
+  assert.equal(violatesConstraint(captured, "users_name_tag_uidx"), true);
+  assert.equal(violatesConstraint(captured, "users_email_uidx"), false, "and it does not match any constraint");
+  assert.equal(
+    String((captured as Error).message).includes("users_name_tag_uidx"),
+    false,
+    "the message really does not carry the name — that is the whole trap",
+  );
+});
+
+test("a display name shared by many people still registers", async () => {
+  /**
+   * The retry, end to end. Forty accounts under one display name: with ten
+   * thousand tags the odds of at least one collision are about one in twelve,
+   * so this does not fail on demand — but it runs on every suite, and the
+   * defect above made it fail once in six.
+   */
+  const displayName = `Crowd ${Date.now()}`;
+  for (let index = 0; index < 40; index += 1) {
+    const { user } = await registerUser(db, {
+      email: freshEmail(`crowd-${index}`),
+      displayName,
+      password: "Un-Mot-De-Passe-1!",
+    });
+    assert.equal(user.displayName, displayName);
+    assert.match(user.tag, /^\d{4}$/);
+  }
 });

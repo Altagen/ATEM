@@ -46,3 +46,29 @@ export const invalidInput = (m: string, d?: Record<string, unknown>) =>
   new AppError("invalid_input", m, d);
 export const unauthorized = (m = "Authentication required") => new AppError("unauthorized", m);
 export const forbidden = (m = "Access denied") => new AppError("forbidden", m);
+
+/**
+ * Did this error come from a given database constraint?
+ *
+ * **Never search the message.** Drizzle wraps the driver's error: the outer
+ * `message` carries the query that failed and never the constraint's name, so
+ * `err.message.includes("…_uidx")` is false for a violation that did happen.
+ * The identity module read it that way and its eight-attempt retry on a tag
+ * collision had been dead since the wrapping was introduced — every collision
+ * surfaced as a 500 instead. The deck module had already found the trap and
+ * worked around it locally; this is that workaround, in one place, so a fourth
+ * caller cannot get it wrong.
+ *
+ * The cause chain is walked rather than the first link read: a driver is free
+ * to nest one more level, and a check that silently stops matching is exactly
+ * the failure this replaces.
+ */
+export function violatesConstraint(error: unknown, constraint: string): boolean {
+  let node: unknown = error;
+  for (let depth = 0; node && depth < 5; depth += 1) {
+    const candidate = node as { constraint_name?: string; cause?: unknown };
+    if (candidate.constraint_name === constraint) return true;
+    node = candidate.cause;
+  }
+  return false;
+}

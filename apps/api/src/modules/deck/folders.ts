@@ -17,7 +17,9 @@ import {
   type FolderNode,
 } from "@atem/shared";
 import type { Database } from "../../db/client.js";
-import { conflict, invalidInput, notFound } from "../../platform/errors.js";
+import {
+  conflict, invalidInput, notFound, violatesConstraint,
+} from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { deckFolders, decks, type DeckFolderRow } from "./schema.js";
 
@@ -97,13 +99,11 @@ const cleanName = (raw: string): string => {
 /**
  * The sibling-name conflict, made readable.
  *
- * The constraint's name lives in the **cause**, never in the message: Drizzle's
- * carries the query that failed. The lesson comes from the already-taken deck
- * name, which surfaced as a 500.
+ * Why `violatesConstraint` and never the message: see it in `platform/errors`.
+ * The lesson came from the already-taken deck name, which surfaced as a 500.
  */
 function explainConflict(err: unknown): never {
-  const cause = (err as { cause?: { constraint_name?: string } }).cause;
-  if (cause?.constraint_name === "deck_folders_sibling_name_uidx") {
+  if (violatesConstraint(err, "deck_folders_sibling_name_uidx")) {
     throw conflict("A folder by that name is already filed in the same place.");
   }
   throw err;
@@ -285,8 +285,7 @@ export async function deleteFolder(
      * wrote it, and two “Meta” side by side would be their surprise, not their
      * choice.
      */
-    const cause = (err as { cause?: { constraint_name?: string } }).cause;
-    if (cause?.constraint_name === "deck_folders_sibling_name_uidx") {
+    if (violatesConstraint(err, "deck_folders_sibling_name_uidx")) {
       throw conflict("A folder inside it has the same name as a folder on the level above.");
     }
     throw err;

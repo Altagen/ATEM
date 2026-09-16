@@ -335,3 +335,34 @@ policy does not allow, or carries a `style="…"` attribute the strict `style-sr
 would silently refuse; and it checks that nginx, Vite and the web image all still
 point at the one file. Each of those was verified by planting the fault and watching
 the gate fail.
+
+---
+
+## ADR-011 — Registration says no, without saying why *(settled, do not reopen)*
+
+**Context.** Refusing a registration with “that address is already in use” answers,
+for anyone who asks, whether a given person has an account on this instance. Hiding
+it completely is a solved problem — accept the registration, write nothing, and email
+the address's owner that someone tried — but it needs SMTP, which ATEM does not have
+and is not going to grow for this.
+
+**Decision, by Ange on 2026-09-16.** The screen says “An account cannot be created
+with this email address.” The server logs the real reason, with the address, for the
+operator. We do **not** send email, and we do **not** pretend the registration
+succeeded — a success that creates nothing would break the very next step, signing
+in, and trade a disclosure for a lie.
+
+**What this accepts, stated plainly.** Enumeration is narrowed, not closed: the
+attempt still fails where it would have succeeded, and that difference is the answer.
+What it costs an attacker is a registration attempt per address, under the register
+ceiling — five an hour by default, per address and per caller — instead of a free
+membership test.
+
+**Why this is the right trade here.** ATEM is self-hosted, one instance per
+community. The value of knowing that someone has an account on a friend's instance is
+small; the cost of an SMTP dependency — configuration, deliverability, a queue, a
+failure mode on every sign-up — is paid by every host, forever.
+
+**This is settled.** It is a choice, not a gap: do not reopen it as a finding, and do
+not "fix" it by making the refusal vaguer still. Revisit only if ATEM gains email for
+another reason — then the mitigation above becomes free, and it becomes worth doing.

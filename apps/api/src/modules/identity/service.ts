@@ -5,7 +5,9 @@
  */
 import { eq, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
-import { conflict, invalidInput, notFound, unauthorized } from "../../platform/errors.js";
+import {
+  conflict, invalidInput, notFound, unauthorized, violatesConstraint,
+} from "../../platform/errors.js";
 import { checkPasswordStrength } from "@atem/shared";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
 import { authAttempts, users, type UserRow } from "./schema.js";
@@ -102,8 +104,10 @@ export async function registerUser(
       if (!row) throw new Error("insert returned nothing");
       return { user: toPublic(row), tokenVersion: row.tokenVersion };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-      if (!message.includes("users_name_tag_uidx")) throw err;
+      // Not `err.message`: Drizzle wraps the driver's error and the name is in
+      // the cause. Reading the message made this retry dead code — see
+      // `violatesConstraint`.
+      if (!violatesConstraint(err, "users_name_tag_uidx")) throw err;
     }
   }
   throw conflict("That display name is too popular, try another.");
