@@ -4,6 +4,46 @@ import {
 } from "./helpers.js";
 
 test.describe("Collection", () => {
+  test("the gallery keeps two columns on a phone, however narrow", async ({ page }) => {
+    /**
+     * Reported by Ange: in gallery view the cards were nearly fullscreen, where
+     * ATEM-old showed four — two columns, two rows.
+     *
+     * The cause was not the tile, which is identical to ATEM-old's, but the
+     * base rule: `auto-fill, minmax(150px, 1fr)` needs 316 px to fit two, and a
+     * Pixel 5 gives the grid 321. It passed by five pixels — and a narrower
+     * phone, or the same one with the text zoomed, fell to a single column.
+     *
+     * Whether two cards sit side by side must not depend on five pixels, so the
+     * narrowest phones are measured here rather than the comfortable one.
+     */
+    await signUp(page);
+    await addBySetCode(page, "SDCR-FR010");
+    await useGalleryView(page);
+
+    const columns = async () =>
+      page.evaluate(
+        () =>
+          getComputedStyle(document.querySelector(".gallery") as HTMLElement)
+            .gridTemplateColumns.split(" ").length,
+      );
+
+    const viewport = page.viewportSize();
+    if (viewport && viewport.width <= 480) {
+      expect(await columns()).toBe(2);
+      // The narrowest phones still in use, where auto-fill gave up entirely.
+      for (const width of [320, 360]) {
+        await page.setViewportSize({ width, height: viewport.height });
+        await page.waitForTimeout(150);
+        expect(await columns(), `${width}px`).toBe(2);
+      }
+      await page.setViewportSize(viewport);
+    } else {
+      // On a wide screen the grid is free to fit as many as it can.
+      expect(await columns()).toBeGreaterThan(2);
+    }
+  });
+
   test("in list view, a card's text takes the width instead of stacking", async ({ page }) => {
     /**
      * Reported by Ange on a phone: the list's rows were as tall as the

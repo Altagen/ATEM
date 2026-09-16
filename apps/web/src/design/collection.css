@@ -766,7 +766,21 @@
   }
 }
 
+/**
+ * Two columns on a phone, always — never one.
+ *
+ * The base rule is `auto-fill, minmax(150px, 1fr)`, which needs 316 px to fit
+ * two. A Pixel 5 gives the grid 321: it passes, by five pixels. A slightly
+ * narrower phone, or the same one with the text zoomed, falls to a **single**
+ * column and the card fills the screen — which is what Ange reported.
+ *
+ * Whether two cards fit side by side is not something to leave to five pixels,
+ * so the phone states it. Nothing is lost by forcing it: the column picker
+ * offers `auto, 2, 3, 4, 5, 6` — two is already the smallest anyone can choose,
+ * so this contradicts no explicit choice.
+ */
 @media (max-width: 480px) {
+  .gallery,
   .gallery[data-cols="3"],
   .gallery[data-cols="4"],
   .gallery[data-cols="5"],
