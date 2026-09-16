@@ -724,6 +724,48 @@
   grid-template-columns: repeat(6, 1fr);
 }
 
+/**
+ * On a narrow screen, the card's text takes the whole width.
+ *
+ * Reported by Ange: in list view the rows were as tall as the gallery's cards,
+ * which defeats the list. Measured on a Pixel 5: of 321 px, the three quantity
+ * buttons took 143 and the text was left with **92** — so the title wrapped in
+ * two and each attribute fell onto its own line, five of them. 215 px per card,
+ * against 123 on a wide screen with the same markup.
+ *
+ * The buttons are not the ones to give way: they are 44 px because that is the
+ * touch target size, and `adjustments.css` explains what a missed “−1” costs.
+ * So they move to their own line instead, right-aligned under the text, and the
+ * text gets the full width back: the title fits on one line and the attributes
+ * flow again.
+ */
+@media (max-width: 560px) {
+  .item-row {
+    flex-wrap: wrap;
+  }
+
+  .item-main {
+    flex: 1 1 100%;
+  }
+
+  /**
+   * The text column claims the width instead of merely fitting its content.
+   *
+   * Without this it is only as wide as its longest line — which happens to be
+   * the attributes. Measured: hide them and the column falls back to 104 px, so
+   * a long name would wrap again for a reason that has nothing to do with the
+   * name. The width must not depend on what the card happens to carry.
+   */
+  .item-text {
+    flex: 1;
+  }
+
+  /* Pushed to the right of its own line, under the text it acts on. */
+  .item-actions {
+    margin-left: auto;
+  }
+}
+
 @media (max-width: 480px) {
   .gallery[data-cols="3"],
   .gallery[data-cols="4"],

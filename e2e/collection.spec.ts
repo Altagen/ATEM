@@ -4,6 +4,82 @@ import {
 } from "./helpers.js";
 
 test.describe("Collection", () => {
+  test("in list view, a card's text takes the width instead of stacking", async ({ page }) => {
+    /**
+     * Reported by Ange on a phone: the list's rows were as tall as the
+     * gallery's cards, which defeats the list.
+     *
+     * Measured on a Pixel 5 before the fix: of 321 px, the three quantity
+     * buttons took 143 and the text was left with 92 — so the title wrapped in
+     * two and each of the five attributes fell onto its own line. 215 px per
+     * card, against 123 on a wide screen with the same markup.
+     *
+     * What is asserted is the outcome, not the rule that produces it: the title
+     * on one line, the attributes flowing rather than stacking. A later layout
+     * that keeps both is free to replace this one.
+     */
+    await signUp(page);
+    await addBySetCode(page, "SDCR-FR010");
+
+    const title = page.locator(".item-text strong").first();
+    const stats = page.locator(".item .stats-line").first();
+    await title.waitFor();
+
+    const titleBox = await title.boundingBox();
+    expect(titleBox).not.toBeNull();
+    // One line at 0.98rem is ~24 px; two would be ~47.
+    expect(titleBox!.height).toBeLessThan(32);
+
+    const statsBox = await stats.boundingBox();
+    expect(statsBox).not.toBeNull();
+    // Five attributes on five lines was ~95 px; flowing, two lines at most.
+    expect(statsBox!.height).toBeLessThan(48);
+
+    if (test.info().project.name === "mobile") {
+      // The text claims the width rather than fitting its content — the buttons
+      // moved to their own line to give it back.
+      const text = await page.locator(".item-text").first().boundingBox();
+      const row = await page.locator(".item-row").first().boundingBox();
+      expect(text!.width).toBeGreaterThan(row!.width * 0.7);
+    }
+  });
+
+  test("arriving at the collection does not raise the keyboard", async ({ page }) => {
+    /**
+     * Reported by Ange on a phone: opening the collection to *look* at it put
+     * the focus in the set code field, so the keyboard rose over half the
+     * screen for a field nobody had asked for. The same defect had already been
+     * fixed on the scanner, for the same reason.
+     *
+     * There is no way to observe a virtual keyboard from a test — so what is
+     * measured is its cause: the focus.
+     */
+    await signUp(page);
+    await expect(page.getByRole("heading", { name: "Ma collection" })).toBeVisible();
+
+    const field = page.getByLabel("Ajouter par set code");
+    await expect(field).toBeVisible();
+    await expect(field).not.toBeFocused();
+    // Nothing else grabbed it either: the page arrives with focus nowhere.
+    expect(await page.evaluate(() => document.activeElement?.tagName ?? "")).not.toBe("INPUT");
+  });
+
+  test("but the field keeps the focus once you are typing in it", async ({ page }) => {
+    /**
+     * The other half of the rule, and the reason this is not simply “never
+     * focus”: entering a pile of codes is one hand on the phone and the same
+     * field over and over. Whoever just submitted a code asked for it.
+     */
+    await signUp(page);
+    const field = page.getByLabel("Ajouter par set code");
+    await field.click();
+    await expect(field).toBeFocused();
+
+    await addBySetCode(page, "SDCR-FR010");
+    await expect(field).toBeFocused();
+    await expect(field).toHaveValue("");
+  });
+
   test("a new account lands on an empty collection", async ({ page }) => {
     await signUp(page);
     await expect(page.getByRole("heading", { name: "Ma collection" })).toBeVisible();

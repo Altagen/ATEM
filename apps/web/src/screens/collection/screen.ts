@@ -548,5 +548,15 @@ export async function collectionScreen(
 
   paint();
   await Promise.all([load(true), loadFacets(), refreshPending()]);
-  root.querySelector<HTMLInputElement>("#set-code")?.focus();
+  /**
+   * **The field does not take focus on arrival**, and that is the whole point.
+   *
+   * On a phone, focus raises the keyboard: opening the collection to *look* at
+   * it covered half the screen, over a field nobody had asked for. The same
+   * defect was fixed on the scanner, for the same reason (`scanner.ts`).
+   *
+   * The rule is not “never focus”, it is **who asked**: after a code is
+   * entered, the focus stays (a few lines above), because the person is already
+   * typing and the next code goes in the same field. Arriving is not typing.
+   */
 }
