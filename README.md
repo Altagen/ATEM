@@ -35,12 +35,20 @@ pnpm --filter @atem/api ocr:build-dict   # the scanner's prefix dictionary
 ./scripts/dev-db.sh up                   # PostgreSQL on port 55432
 pnpm install
 pnpm --filter @atem/api db:migrate
-pnpm dev                                 # API on :3000, front on :5173
+pnpm dev                                 # front on :5173, API on :3000
 ```
 
-`ATEM_API_ORIGIN` changes the front proxy's target, if another instance already
-uses the API's port. `pnpm dev:cert` makes a development certificate, so the
-scanner's camera also works from a phone on the local network.
+The database keeps its data between runs: `./scripts/dev-db.sh down` stops it without
+losing anything, and only `reset` deletes — after asking. `dump` and `restore` take and
+replay a copy.
+
+`ATEM_PORT` moves the API, and the front's proxy follows it by reading the same `.env`:
+one variable, not two to keep in step. `ATEM_API_ORIGIN` overrides the target outright,
+for when another instance already holds the port.
+
+`pnpm dev:cert` makes a development certificate, so the scanner's camera also works
+from a phone on the local network — `pnpm dev:web -- --host` then exposes the front,
+which otherwise listens on the loopback only.
 
 ```sh
 pnpm check        # every gate, then typecheck and tests — see scripts/check-all.sh

@@ -52,6 +52,32 @@ function securityHeaders(): Record<string, string> {
   return headers;
 }
 
+/**
+ * Where the API listens, according to the same file the API itself reads.
+ *
+ * `.env` sets `ATEM_PORT`, and the API is started with `--env-file`. Vite is
+ * not: its configuration only sees the shell's environment, so the proxy used
+ * to point at a hard-coded 3000 while the API listened on 3010. `pnpm dev` then
+ * served a front that could not sign anyone in, with nothing on screen saying
+ * why — the request simply reached no one.
+ *
+ * So the same file decides for both. `ATEM_API_ORIGIN` still wins, for the case
+ * the proxy exists for: another instance already holding the port.
+ */
+function apiOrigin(): string {
+  if (process.env.ATEM_API_ORIGIN) return process.env.ATEM_API_ORIGIN;
+  let port = process.env.ATEM_PORT;
+  if (!port) {
+    try {
+      const env = fs.readFileSync(path.join(rootDir, "../../.env"), "utf8");
+      port = /^\s*ATEM_PORT\s*=\s*(\d+)/m.exec(env)?.[1];
+    } catch {
+      // No `.env` at all is the normal case in CI: the default below holds.
+    }
+  }
+  return `http://127.0.0.1:${port ?? 3000}`;
+}
+
 export default defineConfig({
   build: {
     /**
@@ -71,7 +97,7 @@ export default defineConfig({
         // The target is configurable: several instances can live on the same
         // machine, and nothing is more confusing than a front silently talking
         // to another project's API.
-        target: process.env.ATEM_API_ORIGIN ?? "http://127.0.0.1:3000",
+        target: apiOrigin(),
         // `changeOrigin` stays false: the server reads the origin for the CSRF
         // guard, and rewriting it would make every write fail in development.
         changeOrigin: false,
@@ -80,7 +106,7 @@ export default defineConfig({
       // Card images, served by the API from its own disk (`referential/media.ts`).
       // Same target; no rewrite, the API mounts them on `/media` itself.
       "/media": {
-        target: process.env.ATEM_API_ORIGIN ?? "http://127.0.0.1:3000",
+        target: apiOrigin(),
         changeOrigin: false,
       },
     },
