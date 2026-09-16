@@ -47,6 +47,13 @@ services:
       # Card images live on a volume: downloading them again after every
       # restart is exactly the repeated pull YGOPRODeck blacklists for.
       ATEM_MEDIA_DIR: /app/data/media
+      # The proxy's address, so `X-Forwarded-For` is read and each visitor is
+      # rate-limited on their own address. Without it every request looks like
+      # it comes from nginx, the whole instance shares one bucket, and ten
+      # failed sign-ins lock everyone out. The range is the one fixed below —
+      # compose hands out a different address on every recreation, which is why
+      # this is a subnet and not an address.
+      ATEM_TRUSTED_PROXIES: ${ATEM_TRUSTED_PROXIES:-10.89.42.0/24}
     volumes:
       - atem_media:/app/data/media
     depends_on:
@@ -68,3 +75,12 @@ services:
 volumes:
   atem_pg_data:
   atem_media:
+
+# Fixed so `ATEM_TRUSTED_PROXIES` can name it. Compose would otherwise pick a
+# range at creation time, different on another machine — and the variable would
+# be wrong exactly where nobody looks.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.89.42.0/24

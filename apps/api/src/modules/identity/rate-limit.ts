@@ -26,18 +26,37 @@ const envInt = (name: string, fallback: number): number => {
   return Number.isFinite(raw) && raw > 0 ? raw : fallback;
 };
 
-const AUTH_LIMITS: Record<string, LimitRule> = {
-  login: { max: envInt("ATEM_LOGIN_ATTEMPTS_MAX", 10), windowMs: 15 * 60 * 1000 },
-  register: { max: envInt("ATEM_REGISTER_ATTEMPTS_MAX", 5), windowMs: 60 * 60 * 1000 },
+/**
+ * Read at each call, not once at import: a table frozen on the first import
+ * ignores an instance that changed its ceilings, and leaves the tests unable to
+ * exercise the limit at all — which is how it went untested until 2026-09-16.
+ */
+const limitFor = (action: string): LimitRule | null => {
+  if (action === "login") {
+    return { max: envInt("ATEM_LOGIN_ATTEMPTS_MAX", 10), windowMs: 15 * 60 * 1000 };
+  }
+  if (action === "register") {
+    return { max: envInt("ATEM_REGISTER_ATTEMPTS_MAX", 5), windowMs: 60 * 60 * 1000 };
+  }
+  return null;
 };
 
 export async function enforceRateLimit(
   db: Database,
-  action: keyof typeof AUTH_LIMITS,
+  action: string,
   buckets: string[],
 ): Promise<void> {
-  const rule = AUTH_LIMITS[action];
-  if (!rule) return;
+  const rule = limitFor(action);
+  if (rule) await enforceLimit(db, action, buckets, rule);
+}
+
+/** The ceiling itself, with the rule spelled out — what the tests measure. */
+export async function enforceLimit(
+  db: Database,
+  action: string,
+  buckets: string[],
+  rule: LimitRule,
+): Promise<void> {
   const since = new Date(Date.now() - rule.windowMs);
 
   for (const bucket of buckets) {

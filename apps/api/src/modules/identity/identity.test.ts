@@ -4,6 +4,8 @@ import { createTestApp, freshEmail, jsonPost } from "../../test-support.js";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
 import { deleteAccount, getPublicUser, registerUser, setLocale } from "./service.js";
 import { authAttempts } from "./schema.js";
+import { clearAttempts, enforceLimit, recordAttempt } from "./rate-limit.js";
+import { resolveCallerIp } from "../../platform/caller-ip.js";
 import { adjustQuantity, listCollection } from "../collection/service.js";
 import { createScanlist, listScanlists } from "../scanlist/service.js";
 import { resetResolveQueue } from "../collection/resolve-queue.js";
@@ -253,4 +255,71 @@ test("the catalogue survives an account deletion", async () => {
     prints: await db.select().from(m.cardPrints).where(eq(m.cardPrints.setCode, "DELX-FR001")),
   }));
   assert.equal(prints.length, 1, "the printing stays in the catalogue");
+});
+
+test("the caller's address is never taken from a header a stranger can write", async () => {
+  /**
+   * ATEM-old found this in production: `X-Forwarded-For` is written by the
+   * client, so forging a new address on every request kept its counter at zero.
+   * Here the header is read only from a declared proxy.
+   */
+  const previous = process.env.ATEM_TRUSTED_PROXIES;
+  try {
+    delete process.env.ATEM_TRUSTED_PROXIES;
+    assert.equal(resolveCallerIp("203.0.113.9", "198.51.100.7"), "203.0.113.9",
+      "no declared proxy: the header is ignored");
+
+    // Declared by range, which is the only form usable in a container: compose
+    // gives the proxy a different address on every recreation.
+    process.env.ATEM_TRUSTED_PROXIES = "10.89.42.0/24";
+    assert.equal(resolveCallerIp("10.89.42.7", "198.51.100.7"), "198.51.100.7",
+      "the declared proxy is believed");
+    assert.equal(resolveCallerIp("10.89.43.7", "198.51.100.7"), "10.89.43.7",
+      "a neighbour outside the range is not");
+
+    // Node reports an IPv4 address in its mapped form when the socket listens
+    // on both families — the normal case. Unmapped, it would match no range.
+    assert.equal(resolveCallerIp("::ffff:10.89.42.7", "198.51.100.7"), "198.51.100.7");
+
+    // A malformed declaration trusts nobody rather than everybody.
+    process.env.ATEM_TRUSTED_PROXIES = "not-an-address";
+    assert.equal(resolveCallerIp("10.89.42.7", "198.51.100.7"), "10.89.42.7");
+  } finally {
+    if (previous === undefined) delete process.env.ATEM_TRUSTED_PROXIES;
+    else process.env.ATEM_TRUSTED_PROXIES = previous;
+  }
+});
+
+test("sign-in attempts are capped, per address and per account", async () => {
+  /**
+   * The limit existed and nothing measured it — and the development `.env`
+   * raises it to a hundred thousand, so a failure would have stayed invisible
+   * here too. Both buckets are checked: counting the address alone lets a
+   * network of machines try one password each; counting the account alone lets
+   * one address sweep accounts one by one.
+   */
+  const email = freshEmail("rate-limit");
+  await registerUser(db, { email, displayName: "Limited", password: "Un-Mot-De-Passe-1!" });
+
+  const bucket = `email:${email.toLowerCase()}`;
+  const rule = { max: 3, windowMs: 15 * 60 * 1000 };
+
+  for (let attempt = 0; attempt < rule.max; attempt += 1) {
+    await enforceLimit(db, "login", [bucket], rule);
+    await recordAttempt(db, "login", [bucket]);
+  }
+  await assert.rejects(
+    () => enforceLimit(db, "login", [bucket], rule),
+    /Too many attempts/,
+    "the ceiling refuses instead of letting the sweep continue",
+  );
+
+  // A successful sign-in clears the account's attempts: ten legitimate
+  // sign-ins in fifteen minutes must not lock out a normal person.
+  await clearAttempts(db, "login", [bucket]);
+  await enforceLimit(db, "login", [bucket], rule);
+
+  // And a different account is untouched by this one's failures.
+  const other = `email:${freshEmail("rate-other").toLowerCase()}`;
+  await enforceLimit(db, "login", [other], rule);
 });
