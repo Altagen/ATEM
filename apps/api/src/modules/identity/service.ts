@@ -3,7 +3,7 @@
  *
  * No other module reads the `users` table: they go through `getPublicUser`.
  */
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
 import {
   conflict, invalidInput, notFound, unauthorized, violatesConstraint,
@@ -102,7 +102,8 @@ export async function registerUser(
     try {
       const [row] = await db
         .insert(users)
-        .values({ email, passwordHash, displayName, tag: randomTag() })
+        // Present from the first second: signing up is being there.
+        .values({ email, passwordHash, displayName, tag: randomTag(), lastSeenAt: new Date() })
         .returning();
       if (!row) throw new Error("insert returned nothing");
       return { user: toPublic(row), tokenVersion: row.tokenVersion };
@@ -137,12 +138,14 @@ export async function authenticate(
   if (!(await verifyPassword(input.password, row.passwordHash))) throw invalid;
   if (row.suspendedAt) throw unauthorized("This account is suspended.");
 
-  // The cleartext password is only available here: it is the only moment when
-  // a hash produced under an outdated cost can be recomputed.
+  const values: Partial<UserRow> = { lastSeenAt: new Date() };
   if (needsRehash(row.passwordHash)) {
-    const fresh = await hashPassword(input.password);
-    await db.update(users).set({ passwordHash: fresh }).where(eq(users.id, row.id));
+    // The cleartext password is only available here.
+    values.passwordHash = await hashPassword(input.password);
   }
+  // Signing in is presence too: without this, someone who has just arrived
+  // appears away until their next request.
+  await db.update(users).set(values).where(eq(users.id, row.id));
 
   return { user: toPublic(row), tokenVersion: row.tokenVersion };
 }
@@ -255,6 +258,74 @@ export async function getProfile(db: Database, ownerId: string): Promise<Profile
     bio: row.bio,
     createdAt: row.createdAt,
   };
+}
+
+/**
+ * A profile, plus whether the account is around.
+ *
+ * Presence is the identity module's to answer: it owns `lastSeenAt`, stamped by
+ * the session guard. Fifteen minutes is the window — long enough that someone
+ * reading a deck still counts as there, short enough that it means something.
+ */
+export type Duellist = Profile & { isOnline: boolean };
+
+const PRESENCE_WINDOW_MINUTES = 15;
+
+const toDuellist = (row: UserRow, since: number): Duellist => ({
+  id: row.id,
+  displayName: row.displayName,
+  tag: row.tag,
+  role: row.role,
+  avatar: row.avatar as Avatar,
+  bio: row.bio,
+  createdAt: row.createdAt,
+  isOnline: row.lastSeenAt !== null && row.lastSeenAt.getTime() >= since,
+});
+
+/**
+ * The accounts another duellist may be shown — suspended ones excluded.
+ *
+ * `search` matches the display name **or the number**: `Yugi#0042` is how people
+ * give themselves out, and ATEM-old searched the name alone. Who is filtered out
+ * for a relation — blocked either way — is the social module's business, not
+ * this one's: it receives the list and removes them.
+ */
+export async function listProfiles(
+  db: Database,
+  options: { search?: string; excludeId?: string; ids?: string[] } = {},
+): Promise<Duellist[]> {
+  const search = options.search?.trim().toLowerCase().replace(/^#/, "") ?? "";
+  if (options.ids && options.ids.length === 0) return [];
+
+  const rows = await db
+    .select()
+    .from(users)
+    .where(and(
+      sql`${users.suspendedAt} is null`,
+      options.excludeId ? sql`${users.id} <> ${options.excludeId}` : sql`true`,
+      options.ids ? inArray(users.id, options.ids) : sql`true`,
+      search
+        ? sql`(lower(${users.displayName}) like ${`%${search}%`} or ${users.tag} like ${`%${search}%`})`
+        : sql`true`,
+    ));
+
+  const since = Date.now() - PRESENCE_WINDOW_MINUTES * 60_000;
+  return rows.map((row) => toDuellist(row, since));
+}
+
+/**
+ * The identifier of an account someone may act on, or nothing.
+ *
+ * Suspended accounts answer like absent ones: a relation cannot be built with
+ * an account that is not there.
+ */
+export async function activePlayerId(db: Database, userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, userId), sql`${users.suspendedAt} is null`))
+    .limit(1);
+  return row?.id ?? null;
 }
 
 /**

@@ -26,6 +26,16 @@ export const users = pgTable(
      * makes signing out real rather than decorative.
      */
     tokenVersion: integer("token_version").notNull().default(0),
+    /**
+     * When this account was last seen doing something.
+     *
+     * Presence without a permanent connection: the session guard stamps it, at
+     * most once every few minutes, and the duellist list reads “active in the
+     * last quarter of an hour” from it. A live connection would be exact and
+     * would have to be held open for every visitor; this answers the only
+     * question asked — is it worth asking them for a duel right now.
+     */
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     suspendedAt: timestamp("suspended_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

@@ -546,9 +546,22 @@ collection identical. Measured by `e2e/settings.spec.ts`, desktop and mobile.
 
 ## M4 — Duellists
 
-- Player directory, search by username, friends / online filters
+- Player directory, search by username, friends / online filters — *done on
+  2026-09-18, server side*: `GET /community/duellists`, searching the name or the
+  number, with the `friends` and `online` filters. ATEM-old's third filter,
+  “master”, filtered the administrator role under a rank name; the rank it
+  suggested does not exist.
 - Preview card: username, icon, badges, link to the profile
-- Friend request (send, pending, accept, remove), block
+- Friend request (send, pending, accept, remove), block — *done on 2026-09-18,
+  server side*: one row per pair, who asked kept apart from who answers; two
+  crossing requests become a friendship; blocking severs the link and hides both
+  profiles, through the single checkpoint.
+
+**Presence without a permanent connection.** `users.last_seen_at`, stamped by the
+session guard at most once every two minutes, and read as “active in the last
+quarter of an hour”. Decided with Ange on 2026-09-18: a live connection would be
+exact, and held open for every visitor, to answer a question that only needs to be
+roughly right — is it worth asking them for a duel now.
 - Viewable public profile — *started on 2026-09-17*: your own profile (avatar,
   bio, decks, editing) and anyone's through the link it shares, read-only by
   construction. Friendship, blocking and presence come with the rest of M4.

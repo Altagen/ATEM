@@ -5,11 +5,11 @@
  * session version are read back from the database on every request. Otherwise a
  * token stays valid after a suspension, until it expires.
  */
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 import type { Database } from "../../db/client.js";
-import { unauthorized } from "../../platform/errors.js";
+import { loggableError, unauthorized } from "../../platform/errors.js";
 import { SESSION_COOKIE } from "./cookie.js";
 import { users } from "./schema.js";
 import { readToken } from "./token.js";
@@ -26,6 +26,33 @@ function extractToken(c: Context): string | null {
   const header = c.req.header("Authorization");
   if (header?.startsWith("Bearer ")) return header.slice(7);
   return getCookie(c, SESSION_COOKIE) ?? null;
+}
+
+/**
+ * Records that this account is active — at most once every few minutes.
+ *
+ * The condition is in the `WHERE`, so it costs one write per account per
+ * period rather than one per request, and no read at all. A failure here is
+ * swallowed: presence is a comfort, and must never turn a working request into
+ * an error.
+ */
+const PRESENCE_PERIOD = "2 minutes";
+
+async function touchLastSeen(db: Database, userId: string): Promise<void> {
+  try {
+    await db
+      .update(users)
+      .set({ lastSeenAt: new Date() })
+      .where(and(
+        eq(users.id, userId),
+        or(
+          isNull(users.lastSeenAt),
+          lt(users.lastSeenAt, sql`now() - interval '${sql.raw(PRESENCE_PERIOD)}'`),
+        ),
+      ));
+  } catch (error) {
+    console.warn("[atem] last seen not recorded:", loggableError(error));
+  }
 }
 
 /** Fills in `viewer` when the session is valid. Never refuses. */
@@ -50,6 +77,7 @@ export function attachViewer(db: Database): MiddlewareHandler {
 
         if (row && !row.suspendedAt && row.tokenVersion === payload.tv) {
           c.set("viewer", { id: row.id, role: row.role, locale: row.locale });
+          await touchLastSeen(db, row.id);
         }
       }
     }

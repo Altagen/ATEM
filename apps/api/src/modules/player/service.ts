@@ -10,9 +10,11 @@
  * single checkpoint (R3, `docs/05-structure.md`) and is called here.
  */
 import type { Database } from "../../db/client.js";
+import { notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { listDecks } from "../deck/index.js";
 import { getProfile, type Profile } from "../identity/index.js";
+import { canView, friendStatusWith, type FriendStatus } from "../social/index.js";
 
 /**
  * A deck, as a profile lists it: a name and its Main Deck size.
@@ -25,6 +27,8 @@ export type ProfileDeck = { id: string; name: string; main: number };
 
 export type PlayerProfile = {
   profile: Profile;
+  /** Where the relation stands, as the viewer sees it. */
+  friendStatus: FriendStatus;
   /**
    * The viewer owns what they are looking at — decided here, from the session,
    * never by the screen. The screen shows editing only when it is true; the
@@ -40,9 +44,13 @@ export async function getPlayerProfile(
   ownerId: string,
 ): Promise<PlayerProfile> {
   const profile = await getProfile(db, requireUuid(ownerId));
+  // The single checkpoint (R3): a block hides the profile, and “not found” is
+  // the answer a refused read gives — see ADR-009.
+  if (!(await canView(db, viewerId, profile.id))) throw notFound("Player not found.");
   const decks = await listDecks(db, profile.id);
   return {
     profile,
+    friendStatus: await friendStatusWith(db, viewerId, profile.id),
     isOwner: viewerId === profile.id,
     decks: decks.map((deck) => ({ id: deck.id, name: deck.name, main: deck.counts.main })),
   };

@@ -71,6 +71,13 @@
       "when": 1789656858734,
       "tag": "0009_melodic_mandrill",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789684512489,
+      "tag": "0010_warm_longshot",
+      "breakpoints": true
     }
   ]
 }

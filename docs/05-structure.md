@@ -28,6 +28,7 @@ ATEM/
 │  │     │  ├─ scanlist/     batches inventoried outside the collection
 │  │     │  ├─ deck/         folders, decks, deck cards
 │  │     │  ├─ player/       someone's profile as others see it — read-only
+│  │     │  ├─ social/       friendships, blocks, the access checkpoint
 │  │     │  ├─ social/       (planned) friendships, blocks, access control
 │  │     │  └─ data/         (planned) import, export
 │  │     ├─ platform/        errors, headers, graceful shutdown, identifiers, read-only routes
@@ -74,10 +75,11 @@ it.
 implementations of the provisional card. `collection` and `deck` do not write into
 `cards` and `card_prints`.
 
-**R3 — A single access-control point.** When `social` arrives, it exposes
-`canView(viewerId, targetId, resource)`. No friendship or block check is copied
-anywhere else. ATEM-old already had two independent copies, before other players'
-decks and collections were even viewable — the third was guaranteed.
+**R3 — A single access-control point.** `social` exposes `canView(db, viewerId,
+ownerId)`, and it is the only place a block is tested. `player` calls it before
+answering a profile; `deck` and `collection` will call it the day their reads open
+to other players. ATEM-old already had two independent copies, before other
+players' decks and collections were even viewable — the third was guaranteed.
 
 **R4 — A single dependency direction.** As the imports stand today:
 
@@ -87,6 +89,8 @@ scanlist ──▶ collection ──▶ referential
 deck ────────────┴───────────────┘
  ▲
 player ──▶ identity   (the profile)
+  │
+  └──────▶ social ──▶ identity   (the relation, and who may look)
 
 every module's routes ──▶ identity   (the session guard)
 ```
