@@ -9,6 +9,7 @@ import { requireRowId } from "../../platform/identifiers.js";
 import { requireViewer } from "../identity/index.js";
 import {
   adjustQuantity, clearCollection, collectionFacets, exportLines, importCollection, listCollection,
+  listImports,
   resolveStatus,
   setFavorite,
   setNotes,
@@ -197,9 +198,14 @@ export function collectionRoutes(db: Database) {
       throw invalidInput("The file is too large (5 MB at most).");
     }
 
+    // The name is only shown back in the history: bounded, and never trusted as a path.
+    const filename = (c.req.query("filename") ?? "").trim().slice(0, 255) || "import";
     const parsed = parseCollectionFile(text);
-    return c.json(await importCollection(db, viewerId(c), parsed, mode));
+    return c.json(await importCollection(db, viewerId(c), parsed, mode, filename));
   });
+
+  /** The recent imports, for the settings' history. */
+  app.get("/imports", async (c) => c.json({ items: await listImports(db, viewerId(c)) }));
 
   /**
    * Erases the whole collection.

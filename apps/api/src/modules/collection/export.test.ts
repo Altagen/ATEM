@@ -182,3 +182,30 @@ test("a file over five megabytes is refused, and an unknown mode too", async () 
   assert.equal((await importFile(cookie, huge)).status, 400);
   assert.equal((await importFile(cookie, "set_code\nA-FR001\n", "overwrite")).status, 400);
 });
+
+test("each import is recorded on the server, newest first, for this account only", async () => {
+  /**
+   * ATEM-old kept the history in the browser, so an import from a phone never
+   * showed on the computer. It is the account's now, read from anywhere.
+   */
+  const mine = await freshSession(app, "history-mine");
+  const theirs = await freshSession(app, "history-theirs");
+  await app.request("/collection/import?mode=merge&filename=first.csv", {
+    method: "POST", headers: { cookie: mine.cookie }, body: "set_code,quantity\nHIST-FR001,1\n",
+  });
+  await app.request("/collection/import?mode=replace&filename=second.csv", {
+    method: "POST", headers: { cookie: mine.cookie }, body: "set_code,quantity\nHIST-FR002,2\n,bad\n",
+  });
+  await app.request("/collection/import?filename=not-mine.csv", {
+    method: "POST", headers: { cookie: theirs.cookie }, body: "set_code\nHIST-FR009\n",
+  });
+
+  const { items } = (await (await jsonRequest(app, "GET", "/collection/imports", undefined, { cookie: mine.cookie })).json()) as {
+    items: { filename: string; mode: string; imported: number; removed: number; failed: number }[];
+  };
+  assert.deepEqual(items.map((i) => i.filename), ["second.csv", "first.csv"]);
+  assert.deepEqual(
+    { mode: items[0]!.mode, imported: items[0]!.imported, removed: items[0]!.removed, failed: items[0]!.failed },
+    { mode: "replace", imported: 1, removed: 1, failed: 1 },
+  );
+});

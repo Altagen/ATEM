@@ -120,6 +120,7 @@ test("without a session, every write route refuses", async () => {
     ["DELETE", "/collection"],
     ["GET", "/collection/export"],
     ["POST", "/collection/import"],
+    ["GET", "/collection/imports"],
     ["POST", "/collection/adjust"],
     ["PATCH", "/collection/1/notes"],
     ["PATCH", "/collection/1/favorite"],

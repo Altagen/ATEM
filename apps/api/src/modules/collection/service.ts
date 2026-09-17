@@ -30,7 +30,7 @@ import {
   type CardDetail, type PrintIndex,
 } from "../referential/index.js";
 import { enqueueResolve } from "./resolve-queue.js";
-import { ownedCards } from "./schema.js";
+import { collectionImports, ownedCards } from "./schema.js";
 
 export type CollectionItem = {
   id: number;
@@ -368,6 +368,7 @@ export async function importCollection(
   viewerId: string,
   parsed: ParsedImport,
   mode: "merge" | "replace",
+  filename: string,
 ): Promise<ImportResult> {
   const errors: ImportLineError[] = [...parsed.errors];
   let imported = 0;
@@ -428,7 +429,45 @@ export async function importCollection(
   }
 
   errors.sort((a, b) => a.line - b.line);
-  return { mode, imported, removed, failed: errors.length, errors };
+  const result = { mode, imported, removed, failed: errors.length, errors };
+
+  // The history keeps the summary, not the file: its cards are in the collection.
+  await db.insert(collectionImports).values({
+    userId: viewerId, filename, mode, imported, removed, failed: result.failed,
+  });
+  return result;
+}
+
+export type ImportRecord = {
+  filename: string;
+  mode: "merge" | "replace";
+  imported: number;
+  removed: number;
+  failed: number;
+  createdAt: string;
+};
+
+/**
+ * One person's recent imports, newest first.
+ *
+ * Fifty is a screen's worth and more: the history answers “what did I import
+ * lately?”, not an audit of every file ever read.
+ */
+export async function listImports(db: Database, ownerId: string): Promise<ImportRecord[]> {
+  const rows = await db
+    .select()
+    .from(collectionImports)
+    .where(eq(collectionImports.userId, ownerId))
+    .orderBy(desc(collectionImports.createdAt), desc(collectionImports.id))
+    .limit(50);
+  return rows.map((row) => ({
+    filename: row.filename,
+    mode: row.mode as "merge" | "replace",
+    imported: row.imported,
+    removed: row.removed,
+    failed: row.failed,
+    createdAt: row.createdAt.toISOString(),
+  }));
 }
 
 /**
