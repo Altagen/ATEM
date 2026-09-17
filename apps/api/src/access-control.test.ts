@@ -129,6 +129,7 @@ test("without a session, every write route refuses", async () => {
     ["POST", "/scanlists"],
     ["GET", "/catalogue/cards/89631139"],
     ["GET", "/media/cards/89631139.jpg"],
+    ["GET", "/auth/me/account"],
     ["PATCH", "/auth/me"],
     ["POST", "/auth/me/password"],
   ];

@@ -8,7 +8,7 @@ import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js"
 import { LIMITS } from "@atem/shared";
 import {
   authenticate, changePassword, deleteAccount, getPublicUser, registerUser, revokeSessions,
-  setLocale, updateAccount,
+  getAccount, setLocale, updateAccount,
 } from "./service.js";
 import { issueToken } from "./token.js";
 
@@ -136,6 +136,13 @@ export function identityRoutes(db: Database) {
     if (!parsed.success) throw invalidInput("Unknown language.");
 
     return c.json({ user: await setLocale(db, viewer.id, parsed.data.locale) });
+  });
+
+  /** Your own details, email included — never someone else's. */
+  app.get("/me/account", requireViewer, async (c) => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("No session.");
+    return c.json({ account: await getAccount(db, viewer.id) });
   });
 
   /** The name you are known by and the address you sign in with. */

@@ -556,3 +556,21 @@ test("a weak new password is refused, and says which rule is unmet", async () =>
   const body = (await response.json()) as { details?: { hasMinLength?: boolean } };
   assert.equal(body.details?.hasMinLength, false, "the screen can point at what is missing");
 });
+
+test("your own details include your email, and the public shape never does", async () => {
+  /**
+   * `PublicUser` is what other people will see once the duellist list exists.
+   * The email lives in a separate shape, on a route that only ever answers
+   * about the caller — so that screen cannot publish every address by accident.
+   */
+  const session = await freshSession(app, "own-details");
+  const account = await jsonRequest(app, "GET", "/auth/me/account", undefined, { cookie: session.cookie });
+  assert.equal(account.status, 200);
+  const { account: details } = (await account.json()) as { account: { email: string } };
+  assert.equal(details.email, session.email.toLowerCase());
+
+  const me = (await (await jsonRequest(app, "GET", "/auth/me", undefined, { cookie: session.cookie })).json()) as {
+    user: Record<string, unknown>;
+  };
+  assert.equal("email" in me.user, false, "the public shape carries no email");
+});

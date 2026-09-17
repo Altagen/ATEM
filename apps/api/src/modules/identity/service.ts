@@ -358,3 +358,20 @@ export async function changePassword(
 
   return { user: toPublic(updated), tokenVersion: updated.tokenVersion };
 }
+
+/**
+ * The account's private details — only ever about yourself.
+ *
+ * Kept apart from `PublicUser` on purpose. `PublicUser` is the shape other people
+ * will see once the duellist list exists; putting the email in it would publish
+ * every address on the instance the day that screen ships, with nothing in the
+ * diff that led there to say so. What only its owner may read has its own type,
+ * and its own route.
+ */
+export type AccountDetails = PublicUser & { email: string };
+
+export async function getAccount(db: Database, userId: string): Promise<AccountDetails> {
+  const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!row) throw notFound("Account not found.");
+  return { ...toPublic(row), email: row.email };
+}
