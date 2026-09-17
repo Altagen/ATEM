@@ -20,7 +20,9 @@
  * that ignored one another.
  */
 import { and, asc, desc, eq, gt, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import { LIMITS, normalizeSetCode, type CsvExportLine } from "@atem/shared";
+import {
+  LIMITS, normalizeSetCode, type CsvExportLine, type ImportLineError, type ParsedImport,
+} from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { invalidInput, notFound } from "../../platform/errors.js";
 import {
@@ -332,6 +334,101 @@ export async function exportLines(db: Database, ownerId: string): Promise<CsvExp
     passcode: item.card?.passcode ?? null,
     notes: item.notes,
   }));
+}
+
+/** What an import did, line by line — the summary the screen reports. */
+export type ImportResult = {
+  mode: "merge" | "replace";
+  imported: number;
+  removed: number;
+  failed: number;
+  errors: ImportLineError[];
+};
+
+/**
+ * Applies a parsed collection file.
+ *
+ * **`merge` does not add up** — the reference's least intuitive rule, and the
+ * one that makes importing the same file twice harmless: each row's quantity is
+ * *aligned* on the file's, so the delta written is `file − owned`. A row whose
+ * quantity already matches writes nothing; if only its note differs, only the
+ * note is written. Rows the file does not mention are left as they are.
+ *
+ * **`replace`** does the same, then brings to zero every owned printing whose set
+ * code the file does not mention. To zero, not deleted: a row at zero keeps its
+ * note and favourite for the day the card comes back (R9), which is the same
+ * reason “−1” does not delete. A line that **failed** to read still counts as
+ * mentioned — a partly unreadable file must not make cards disappear.
+ *
+ * Each row stands alone: one that fails is reported with its file line and the
+ * others carry on.
+ */
+export async function importCollection(
+  db: Database,
+  viewerId: string,
+  parsed: ParsedImport,
+  mode: "merge" | "replace",
+): Promise<ImportResult> {
+  const errors: ImportLineError[] = [...parsed.errors];
+  let imported = 0;
+
+  const ownedRows = await db
+    .select({ id: ownedCards.id, setCode: ownedCards.setCode, quantity: ownedCards.quantity, notes: ownedCards.notes })
+    .from(ownedCards)
+    .where(eq(ownedCards.userId, viewerId));
+  const owned = new Map<string, { id: number; quantity: number; notes: string | null }>();
+  for (const row of ownedRows) {
+    const known = owned.get(row.setCode);
+    // A code on two printings — two languages, say — is one line of the file:
+    // its owned quantity is their sum.
+    owned.set(row.setCode, known
+      ? { id: known.id, quantity: known.quantity + row.quantity, notes: known.notes ?? row.notes }
+      : { id: row.id, quantity: row.quantity, notes: row.notes });
+  }
+
+  for (const row of parsed.rows) {
+    try {
+      const current = owned.get(row.setCode);
+      const delta = row.quantity - (current?.quantity ?? 0);
+      let id = current?.id;
+      if (delta !== 0) {
+        const item = await adjustQuantity(db, viewerId, {
+          setCode: row.setCode, delta, language: row.language, passcode: row.passcode,
+        });
+        id = item.id;
+      }
+      if (row.notes !== null && row.notes !== (current?.notes ?? null) && id !== undefined) {
+        await setNotes(db, viewerId, id, row.notes);
+      }
+      imported += 1;
+    } catch (err) {
+      errors.push({
+        line: row.line,
+        setCode: row.setCode,
+        error: err instanceof Error ? err.message : "import_failed",
+      });
+    }
+  }
+
+  let removed = 0;
+  if (mode === "replace") {
+    const mentioned = new Set<string>([
+      ...parsed.rows.map((row) => row.setCode),
+      ...parsed.errors.flatMap((error) => (error.setCode ? [error.setCode] : [])),
+    ]);
+    for (const [setCode, current] of owned) {
+      if (mentioned.has(setCode) || current.quantity === 0) continue;
+      try {
+        await adjustQuantity(db, viewerId, { setCode, delta: -current.quantity });
+        removed += 1;
+      } catch (err) {
+        errors.push({ line: 0, setCode, error: err instanceof Error ? err.message : "remove_failed" });
+      }
+    }
+  }
+
+  errors.sort((a, b) => a.line - b.line);
+  return { mode, imported, removed, failed: errors.length, errors };
 }
 
 /**

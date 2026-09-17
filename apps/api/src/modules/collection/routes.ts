@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { buildCollectionCsv, CSV_EXPORT_FORMATS, isCsvExportFormat, LIMITS } from "@atem/shared";
+import {
+  buildCollectionCsv, CSV_EXPORT_FORMATS, isCsvExportFormat, LIMITS, parseCollectionFile,
+} from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { invalidInput } from "../../platform/errors.js";
 import { requireRowId } from "../../platform/identifiers.js";
 import { requireViewer } from "../identity/index.js";
 import {
-  adjustQuantity, clearCollection, collectionFacets, exportLines, listCollection, resolveStatus,
+  adjustQuantity, clearCollection, collectionFacets, exportLines, importCollection, listCollection,
+  resolveStatus,
   setFavorite,
   setNotes,
 } from "./service.js";
@@ -170,6 +173,32 @@ export function collectionRoutes(db: Database) {
       // A collection is personal: no shared cache may keep a copy of it.
       "Cache-Control": "private, no-store",
     });
+  });
+
+  /**
+   * Imports a collection file — CSV or a JSON scanlist export — as the raw body.
+   *
+   * The size is checked **twice**, as the reference requires: on the announced
+   * `Content-Length` to refuse early, then on the text actually read, because the
+   * header can lie, or be absent with a chunked body. The application-wide limit
+   * is 6 MB, so a 5 MB file reaches this route rather than dying before it.
+   *
+   * The body is text rather than JSON wrapping the file: wrapping would escape
+   * every quote and line break in a CSV for nothing.
+   */
+  app.post("/import", async (c) => {
+    const mode = c.req.query("mode") ?? "merge";
+    if (mode !== "merge" && mode !== "replace") throw invalidInput("Unknown import mode.");
+
+    const announced = Number(c.req.header("Content-Length") ?? "0");
+    if (announced > LIMITS.csvImport.maxBytes) throw invalidInput("The file is too large (5 MB at most).");
+    const text = await c.req.text();
+    if (new TextEncoder().encode(text).length > LIMITS.csvImport.maxBytes) {
+      throw invalidInput("The file is too large (5 MB at most).");
+    }
+
+    const parsed = parseCollectionFile(text);
+    return c.json(await importCollection(db, viewerId(c), parsed, mode));
   });
 
   /**

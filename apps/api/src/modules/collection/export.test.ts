@@ -91,3 +91,94 @@ test("an unknown format is refused rather than guessed", async () => {
   const response = await exportAs(cookie, "excel");
   assert.equal(response.status, 400);
 });
+
+// ── Import ────────────────────────────────────────────────────────────────
+
+const importFile = (cookie: string, text: string, mode?: string) =>
+  app.request(`/collection/import${mode ? `?mode=${mode}` : ""}`, {
+    method: "POST",
+    headers: { "Content-Type": "text/csv", cookie },
+    body: text,
+  });
+
+type Result = { mode: string; imported: number; removed: number; failed: number; errors: { line: number; error: string }[] };
+
+async function quantities(cookie: string): Promise<Record<string, number>> {
+  const text = (await (await exportAs(cookie)).text()).replace(/^﻿/, "");
+  return Object.fromEntries(
+    text.trimEnd().split("\n").slice(1).map((line) => {
+      const [setCode, , quantity] = line.split(",");
+      return [setCode!, Number(quantity)];
+    }),
+  );
+}
+
+test("merging the same file twice aligns quantities, it does not add them up", async () => {
+  /**
+   * The reference's least intuitive rule, and the one that makes a repeated
+   * import harmless: each row is brought to the file's quantity.
+   */
+  const { cookie } = await freshSession(app, "import-merge");
+  const file = "set_code,quantity\nIMPM-FR001,3\nIMPM-FR002,1\n";
+
+  const first = (await (await importFile(cookie, file)).json()) as Result;
+  assert.equal(first.imported, 2);
+  await importFile(cookie, file);
+
+  assert.deepEqual(await quantities(cookie), { "IMPM-FR001": 3, "IMPM-FR002": 1 });
+});
+
+test("merge leaves the cards the file does not mention", async () => {
+  const { cookie, userId } = await freshSession(app, "import-keep");
+  await owned(userId, "IMPK-FR009", 5);
+  await importFile(cookie, "set_code,quantity\nIMPK-FR001,2\n");
+  assert.deepEqual(await quantities(cookie), { "IMPK-FR001": 2, "IMPK-FR009": 5 });
+});
+
+test("replace brings the unmentioned to zero, but a failed line spares its card", async () => {
+  /**
+   * To zero rather than deleted, as “−1” does (R9). And a line that failed to
+   * read still counts as mentioned: a partly unreadable file must not make cards
+   * disappear.
+   */
+  const { cookie, userId } = await freshSession(app, "import-replace");
+  await owned(userId, "IMPR-FR001", 4); // mentioned, kept at the file's 2
+  await owned(userId, "IMPR-FR002", 3); // not mentioned: goes
+  await owned(userId, "IMPR-FR003", 6); // mentioned on a line that fails: spared
+
+  const result = (await (await importFile(
+    cookie, "set_code,quantity\nIMPR-FR001,2\nIMPR-FR003,5000\n", "replace",
+  )).json()) as Result;
+
+  assert.equal(result.mode, "replace");
+  assert.equal(result.removed, 1);
+  assert.equal(result.failed, 1);
+  assert.deepEqual(result.errors.map((e) => e.error), ["quantity_too_large"]);
+  assert.deepEqual(await quantities(cookie), { "IMPR-FR001": 2, "IMPR-FR003": 6 });
+});
+
+test("an exported collection imports back identically on another account", async () => {
+  const source = await freshSession(app, "import-source");
+  await owned(source.userId, "IMPT-FR001", 3, 76000020);
+  await owned(source.userId, "IMPT-FR002", 1);
+  const file = await (await exportAs(source.cookie, "atem")).text();
+
+  const target = await freshSession(app, "import-target");
+  const result = (await (await importFile(target.cookie, file)).json()) as Result;
+  assert.equal(result.failed, 0);
+  assert.deepEqual(await quantities(target.cookie), await quantities(source.cookie));
+});
+
+test("a bad line is reported with its line, and the others are imported", async () => {
+  const { cookie } = await freshSession(app, "import-partial");
+  const result = (await (await importFile(cookie, "set_code,quantity\nIMPP-FR001,2\n,3\nIMPP-FR002,1\n")).json()) as Result;
+  assert.equal(result.imported, 2);
+  assert.deepEqual(result.errors, [{ line: 3, error: "empty_set_code" }]);
+});
+
+test("a file over five megabytes is refused, and an unknown mode too", async () => {
+  const { cookie } = await freshSession(app, "import-limits");
+  const huge = `set_code\n${"IMPL-FR001\n".repeat(500_000)}`;
+  assert.equal((await importFile(cookie, huge)).status, 400);
+  assert.equal((await importFile(cookie, "set_code\nA-FR001\n", "overwrite")).status, 400);
+});
