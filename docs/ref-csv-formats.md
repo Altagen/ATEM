@@ -113,8 +113,8 @@ integer, never a string.** Bug lived through: the first version emitted it as a
 string, and every line was rejected by the server schema, silently.
 
 The import detects JSON by itself (first non-blank character `[` or `{`), with no
-format parameter. Accepted shapes: bare array, or an envelope `{lignes:[…]}` or
-`{rows:[…]}` — other keys are ignored without error. Any other shape →
+format parameter. Accepted shapes: bare array, or an envelope `{lignes:[…]}`,
+`{rows:[…]}` or `{lines:[…]}` — other keys are ignored without error. Any other shape →
 `expected_array_or_lignes`. Invalid JSON → `invalid_json`.
 
 ### What ATEM exports today
@@ -135,9 +135,8 @@ English keys, and **does not follow the rule above** for unidentified cards:
 }
 ```
 
-No import exists yet, so nothing breaks today. **When import arrives, it must
-accept both shapes** — ATEM-old's files, and this one — and treat a `null` passcode
-as absent.
+The import accepts both shapes — ATEM-old's files, and this one — and treats a
+`null` passcode as absent.
 
 ## Import modes
 
@@ -146,14 +145,20 @@ as absent.
 - **`merge`** (default): the existing row's quantity is **aligned** on the file's
   (`delta = file − existing`), not added. Rows owned but absent from the file are
   kept intact. If only the note changes, only the note is written.
-- **`replace`**: same treatment, then **deletion** of every owned row whose
-  `set_code` does not appear in the file. A **failed** file line **still counts as
+- **`replace`**: same treatment, then every owned row whose `set_code` does not
+  appear in the file is **brought to zero**. ATEM-old deleted it; a row at zero is
+  kept for its note and favourite (R9, `docs/01-domain-model.md`), exactly as
+  removing the last copy by hand does. Rows at zero are not exported. A **failed** file line **still counts as
   present** and spares the matching row — deliberate behaviour, to keep: a partly
   unreadable file must not cause a deletion.
 
 **Per-line failures**: each line is processed independently. A failure adds an entry
 to the report (`{line, set_code, error}`) without interrupting the following ones.
 Returned summary: `mode`, `imported`, `removed`, `failed`, `errors[]`.
+
+**History**: each import records its file name, mode and the three counts on the
+server (`GET /collection/imports`, 50 newest). ATEM-old kept it in the browser's
+`localStorage`, lost with the browser and invisible from another device.
 
 **Duplicate `set_code` in the same file**: ATEM-old did “last line wins”, with no
 test or specification, while scanlist creation merges.
@@ -163,3 +168,12 @@ name.
 **Maximum size**: 5 MB, checked **twice** — first on `Content-Length` to reject
 early, then on the real size of the text read, because the header can lie or be
 absent with `chunked`.
+
+## Where it lives
+
+- Export: `packages/shared/src/collection-csv.ts`, served by
+  `GET /collection/export?format=atem|scanflip|cardmarket`.
+- Import: `packages/shared/src/collection-import.ts` — the same parser runs in the
+  browser for the preview and on the server for `POST /collection/import`.
+- The round trip (export, erase, import, identical) is measured end to end in
+  `e2e/settings.spec.ts`.

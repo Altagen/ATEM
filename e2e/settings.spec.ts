@@ -255,3 +255,42 @@ test("replace warns before it runs, and the history keeps the import across relo
   await expect(table).toContainText("Remplacer");
   expect(await expectNoHorizontalOverflow(page)).toBe(0);
 });
+
+test("M3 done: export, erase everything, import back, and the collection is identical", async ({ page }) => {
+  /**
+   * The milestone's own definition of done (docs/03-roadmap.md), taken literally
+   * and on one account, through the screens a person uses.
+   */
+  await signUp(page);
+  for (const code of ["SDCR-FR010", "SDCR-FR011", "SDCR-FR012"]) await addBySetCode(page, code);
+  await addBySetCode(page, "SDCR-FR010"); // a second copy: quantities must survive too
+
+  const snapshot = async () => {
+    const response = await page.request.get("/api/collection/export?format=atem");
+    return (await response.text()).replace(/^﻿/, "");
+  };
+  const before = await snapshot();
+  expect(before).toContain("SDCR-FR010,");
+
+  // 1. Export — the file a person keeps.
+  const exported = Buffer.from(await (await page.request.get("/api/collection/export?format=atem")).body());
+
+  // 2. Erase everything, through the danger zone.
+  await openSettings(page);
+  await page.locator('[data-target-view="danger"]').click();
+  await page.locator("#btn-open-clear").click();
+  await page.locator("#input-clear-word").fill("collection");
+  await page.locator("#form-clear button[type=submit]").click();
+  await expect(page.getByText(/effacées? de votre collection/)).toBeVisible({ timeout: 10_000 });
+  expect((await snapshot()).trim().split("\n")).toHaveLength(1); // header only
+
+  // 3. Import the file back.
+  await page.goto("/settings");
+  await page.locator('[data-target-view="import"]').click();
+  await page.locator("#import-file").setInputFiles({ name: "collection.csv", mimeType: "text/csv", buffer: exported });
+  await page.locator("#btn-import-run").click();
+  await expect(page.locator("#import-report")).toContainText("3 importées");
+
+  // 4. Identical.
+  expect(await snapshot()).toBe(before);
+});

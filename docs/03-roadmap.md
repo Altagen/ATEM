@@ -522,21 +522,25 @@ Translating meant rereading everything, and the rereading found what no gate saw
 
 ---
 
-## M3 — Settings & data sovereignty
+## M3 — Settings & data sovereignty  ✅ *finished on 2026-09-17*
 
-- Account: email, UUID, creation date, status
-- Password change
-- FR/EN language and card inspection mode
+- Account: display name (tag kept), email, creation date
+- Password change — signs out other sessions, keeps this one
 - CSV export: ATEM, ScanFlip, Cardmarket formats
-- CSV import: same formats, merge / replace modes
-- Import history with a report of failed rows
-- Danger zone: collection reset, full account deletion
+- CSV / JSON import: same formats, merge / replace modes, previewed in the
+  browser before sending
+- Import history, kept on the server
+- Danger zone: collection reset (typed word, 5 s undo), full account deletion
+
+Not carried over, deliberately: the UUID (an internal identifier, of no use to the
+person), the status line, the FR/EN switch in settings (the navigation already
+holds it) and the card inspection mode (removed earlier with its screen).
 
 **Targeted archaeology.** Exact specifications of the ScanFlip and Cardmarket columns
 — format knowledge, not code: to be recovered as is.
 
 **Done when.** A user exports, erases everything, re-imports, and finds their
-collection identical.
+collection identical. Measured by `e2e/settings.spec.ts`, desktop and mobile.
 
 ---
 
