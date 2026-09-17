@@ -27,15 +27,16 @@ ATEM/
 │  │     │  ├─ collection/   owned copies, deferred resolution queue
 │  │     │  ├─ scanlist/     batches inventoried outside the collection
 │  │     │  ├─ deck/         folders, decks, deck cards
+│  │     │  ├─ player/       someone's profile as others see it — read-only
 │  │     │  ├─ social/       (planned) friendships, blocks, access control
 │  │     │  └─ data/         (planned) import, export
-│  │     ├─ platform/        errors, headers, graceful shutdown, identifiers
+│  │     ├─ platform/        errors, headers, graceful shutdown, identifiers, read-only routes
 │  │     ├─ db/              client, migrations, schema aggregator
 │  │     └─ app.ts
 │  └─ web/
 │     └─ src/
 │        ├─ design/          tokens, base, page and component sheets
-│        ├─ screens/         auth/, collection/, scanlist/, deck/, shared/
+│        ├─ screens/         auth/, collection/, scanlist/, deck/, settings/, profile/, shared/
 │        ├─ platform/        router, API client, i18n, session, scroll lock
 │        └─ main.ts
 ├─ packages/
@@ -84,9 +85,14 @@ decks and collections were even viewable — the third was guaranteed.
 scanlist ──▶ collection ──▶ referential
                  ▲               ▲
 deck ────────────┴───────────────┘
+ ▲
+player ──▶ identity   (the profile)
 
 every module's routes ──▶ identity   (the session guard)
 ```
+
+`player` owns no table: it gathers `identity`'s `getProfile` and `deck`'s
+`listDecks`, and only reads.
 
 `identity` depends on nothing, and `referential` only on its session guard, for its
 routes. When they arrive, `data` will sit above `collection` and `social` above

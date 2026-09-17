@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { AVATARS } from "@atem/shared";
 import {
   check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid,
 } from "drizzle-orm/pg-core";
@@ -14,6 +15,10 @@ export const users = pgTable(
     tag: text("tag").notNull(),
     role: text("role").notNull().default("member"),
     locale: text("locale").notNull().default("fr"),
+    /** What the profile shows about the person, in their words. Empty until written. */
+    bio: text("bio").notNull().default(""),
+    /** One of the product's presets (`AVATARS`), never an uploaded image. */
+    avatar: text("avatar").notNull().default("dragon"),
     /**
      * Incremented on every sign-out, password change or suspension. The token
      * carries this value; we read it back from the database on every request,
@@ -31,6 +36,9 @@ export const users = pgTable(
     uniqueIndex("users_name_tag_uidx").on(t.displayName, t.tag),
     check("users_role_vocab", sql`${t.role} in ('member', 'admin')`),
     check("users_locale_vocab", sql`${t.locale} in ('fr', 'en')`),
+    // The vocabulary comes from `@atem/shared`, the list the screen offers: one
+    // list, so the picker and the database cannot disagree.
+    check("users_avatar_vocab", sql`${t.avatar} in (${sql.raw(AVATARS.map((a) => `'${a}'`).join(", "))})`),
   ],
 );
 

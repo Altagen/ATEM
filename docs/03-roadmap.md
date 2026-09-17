@@ -549,7 +549,9 @@ collection identical. Measured by `e2e/settings.spec.ts`, desktop and mobile.
 - Player directory, search by username, friends / online filters
 - Preview card: username, icon, badges, link to the profile
 - Friend request (send, pending, accept, remove), block
-- Viewable public profile
+- Viewable public profile — *started on 2026-09-17*: your own profile (avatar,
+  bio, decks, editing) and anyone's through the link it shares, read-only by
+  construction. Friendship, blocking and presence come with the rest of M4.
 - **Viewing another player's collection and decks**, through the single access
   checkpoint described in “Module boundaries” (02-architecture.md)
 

@@ -19,6 +19,8 @@
 @import "./components/table.css";
 @import "./navigation.css";
 @import "./settings.css";
+@import "./components/identity.css";
+@import "./pages/profile.css";
 
 /* Our deliberate departures, last so that they win. */
 @import "./adjustments.css";

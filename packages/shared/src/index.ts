@@ -5,7 +5,8 @@ export {
   parseSetCode,
   toEnglishLookupSetCode,
 } from "./set-code.js";
-export { LIMITS } from "./limits.js";
+export { LIMITS, textLengthStatus, type TextLengthStatus } from "./limits.js";
+export { AVATARS, type Avatar } from "./avatars.js";
 export {
   banlistMaxCopies,
   checkDeckAdd,

@@ -5,7 +5,7 @@ import { invalidInput } from "../../platform/errors.js";
 import { clearSessionCookie, setSessionCookie } from "./cookie.js";
 import { requireViewer } from "./middleware.js";
 import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js";
-import { LIMITS } from "@atem/shared";
+import { AVATARS, LIMITS } from "@atem/shared";
 import {
   authenticate, changePassword, deleteAccount, getPublicUser, registerUser, revokeSessions,
   getAccount, setLocale, updateAccount,
@@ -29,9 +29,12 @@ const AccountBody = z
   .object({
     displayName: z.string().min(2).max(32).optional(),
     email: z.string().email().max(254).optional(),
+    // Measured before trimming, as the screen's counter measures it.
+    bio: z.string().max(LIMITS.bio.max).optional(),
+    avatar: z.enum(AVATARS).optional(),
   })
   // An empty body is a request for nothing, which is a mistake, not a no-op.
-  .refine((body) => body.displayName !== undefined || body.email !== undefined, {
+  .refine((body) => Object.values(body).some((value) => value !== undefined), {
     message: "Nothing to change.",
   });
 
@@ -145,7 +148,7 @@ export function identityRoutes(db: Database) {
     return c.json({ account: await getAccount(db, viewer.id) });
   });
 
-  /** The name you are known by and the address you sign in with. */
+  /** The name you are known by, the address you sign in with, bio and avatar. */
   app.patch("/me", requireViewer, async (c) => {
     const viewer = c.get("viewer");
     if (!viewer) throw invalidInput("No session.");

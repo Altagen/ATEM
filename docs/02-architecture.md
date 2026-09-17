@@ -270,6 +270,14 @@ will be mounted on a subset that structurally refuses anything but `GET`, rather
 than relying on review vigilance. The gate will be born with its first consumer —
 setting up a guard that guards nothing right now would be dead code.
 
+**Addendum of 2026-09-17 — the first consumer.** `GET /players/:id`, a profile as
+anyone signed in sees it, is the first route carrying someone else's identity. It is
+mounted on `readOnlyRoutes()` (`platform/read-only.ts`), which refuses every method
+but `GET` and `HEAD` with a 405 **before** any route runs — so a write added to that
+tree later is refused whatever it does. Tested with a path that has no handler at
+all. The profile itself is written through `PATCH /auth/me`, which takes the
+session's identity and nothing from the path.
+
 **Addendum of 2026-09-13 — 404 on read, 403 on write.** Asked for by Ange: “even if
 you try to go to the route to edit it, in the end you get a 403”.
 

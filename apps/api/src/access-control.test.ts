@@ -135,6 +135,7 @@ test("without a session, every write route refuses", async () => {
     ["GET", "/auth/me/account"],
     ["PATCH", "/auth/me"],
     ["POST", "/auth/me/password"],
+    ["GET", "/players/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d"],
   ];
 
   for (const [method, path] of attempts) {

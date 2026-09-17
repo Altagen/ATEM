@@ -14,6 +14,7 @@ import { collectionScreen } from "./screens/collection/screen.js";
 import { deckScreen } from "./screens/deck/screen.js";
 import { scanlistScreen } from "./screens/scanlist/screen.js";
 import { settingsScreen } from "./screens/settings/screen.js";
+import { profileScreen } from "./screens/profile/screen.js";
 
 register("/login", authScreen("login"));
 register("/register", authScreen("register"));
@@ -42,12 +43,16 @@ register("/decks", deckScreen, {
   nav: { label: "Decks", icon: "🃏", group: "main" },
 });
 /**
- * The account group's first destination.
+ * The account group: your profile, then your settings — in that order, which is
+ * the order the account sheet and the top bar's menu list them.
  *
- * The navigation read `destinations("account")` from the start and found nothing,
- * so the account sheet hid its list. Registering the screen here is the whole of
- * the wiring: the sheet and the top bar already know where to show it.
+ * Registering a screen here is the whole of the wiring: the sheet and the menu
+ * read `destinations("account")` and already know where to show it.
  */
+register("/profile", profileScreen, {
+  requiresSession: true,
+  nav: { label: "My profile", icon: "👤", group: "account" },
+});
 register("/settings", settingsScreen, {
   requiresSession: true,
   nav: { label: "Settings", icon: "⚙️", group: "account" },

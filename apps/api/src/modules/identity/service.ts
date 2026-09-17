@@ -8,7 +8,7 @@ import type { Database } from "../../db/client.js";
 import {
   conflict, invalidInput, notFound, unauthorized, violatesConstraint,
 } from "../../platform/errors.js";
-import { checkPasswordStrength } from "@atem/shared";
+import { checkPasswordStrength, type Avatar } from "@atem/shared";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
 import { authAttempts, users, type UserRow } from "./schema.js";
 
@@ -220,6 +220,41 @@ export async function getPublicUser(db: Database, userId: string): Promise<Publi
 }
 
 /**
+ * What a profile shows — to its owner and to any other signed-in duellist.
+ *
+ * No email and no locale: those are the account's, not the profile's.
+ */
+export type Profile = {
+  id: string;
+  displayName: string;
+  tag: string;
+  role: string;
+  avatar: Avatar;
+  bio: string;
+  createdAt: Date;
+};
+
+/**
+ * A profile by its owner's identifier.
+ *
+ * A suspended account has no profile to show: “not found”, like an account that
+ * does not exist, so the answer does not tell the two apart.
+ */
+export async function getProfile(db: Database, ownerId: string): Promise<Profile> {
+  const [row] = await db.select().from(users).where(eq(users.id, ownerId)).limit(1);
+  if (!row || row.suspendedAt) throw notFound("Player not found.");
+  return {
+    id: row.id,
+    displayName: row.displayName,
+    tag: row.tag,
+    role: row.role,
+    avatar: row.avatar as Avatar,
+    bio: row.bio,
+    createdAt: row.createdAt,
+  };
+}
+
+/**
  * Renaming keeps your number when it can.
  *
  * `(display name, tag)` is unique, not the name alone: two people may both be
@@ -245,19 +280,24 @@ async function tagForRename(
 }
 
 /**
- * The account's own details: the name you are known by, and the address you
- * sign in with.
+ * The account's own details: the name you are known by, the address you sign in
+ * with, and what the profile shows — bio and avatar.
  *
- * Both are optional and independent — a request that carries one changes one.
+ * All optional and independent — a request that carries one changes one. The
+ * profile's edit window sends name, bio and avatar together, so they land in one
+ * write: ATEM-old sent two requests, and a failed second one left the profile
+ * half saved behind a success message.
  * Nothing here touches the password, which has its own route and its own
  * refusals.
  */
 export async function updateAccount(
   db: Database,
   userId: string,
-  input: { displayName?: string; email?: string },
+  input: { displayName?: string; email?: string; bio?: string; avatar?: Avatar },
 ): Promise<PublicUser> {
-  const values: Partial<{ displayName: string; tag: string; email: string }> = {};
+  const values: Partial<{
+    displayName: string; tag: string; email: string; bio: string; avatar: Avatar;
+  }> = {};
 
   if (input.displayName !== undefined) {
     const displayName = input.displayName.trim();
@@ -291,6 +331,9 @@ export async function updateAccount(
     }
     values.email = email;
   }
+
+  if (input.bio !== undefined) values.bio = input.bio.trim();
+  if (input.avatar !== undefined) values.avatar = input.avatar;
 
   if (Object.keys(values).length === 0) throw invalidInput("Nothing to change.");
 

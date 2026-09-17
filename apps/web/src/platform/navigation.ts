@@ -59,10 +59,10 @@ export async function refreshServiceState(): Promise<void> {
 /**
  * The language choice.
  *
- * It lives here, in the top bar and in the account sheet, because it is the
- * only account setting the application carries today — the settings screen
- * comes in M3. Two buttons rather than a menu: there are only two languages,
- * and a dropdown would ask two gestures for the same thing.
+ * It lives here, in the top bar and in the account sheet, rather than in the
+ * settings screen: it is changed from anywhere, in one gesture. Two buttons
+ * rather than a menu: there are only two languages, and a dropdown would ask two
+ * gestures for the same thing.
  */
 function languageSwitch(): HTMLElement {
   const user = knownUser()!;

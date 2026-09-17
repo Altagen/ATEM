@@ -3,5 +3,5 @@
  * imports `./schema.js` or `./service.js` directly.
  */
 export { attachViewer, requireViewer } from "./middleware.js";
-export { getPublicUser, type PublicUser } from "./service.js";
+export { getProfile, getPublicUser, type Profile, type PublicUser } from "./service.js";
 export { identityRoutes } from "./routes.js";

@@ -12,6 +12,8 @@
 export const LIMITS = {
   password: { min: 16, max: 512 },
   displayName: { min: 2, max: 32 },
+  /** The profile's bio — ATEM-old's 255, which its counter and its schema agreed on. */
+  bio: { max: 255 },
   email: { max: 254 },
   setCode: { max: 32 },
   deckName: { max: 60 },
@@ -29,3 +31,35 @@ export const LIMITS = {
   scanlist: { maxLines: 2000 },
   scanlistName: { min: 1, max: 60 },
 } as const;
+
+/**
+ * A free text field against its bound, as its counter shows it.
+ *
+ * Four states, not three: `full` is reached exactly at the bound — the field
+ * turns red, one more character overflows — yet saving is still allowed,
+ * because the server accepts that length. Only `over` blocks. `warn` starts at
+ * 90 % of the bound.
+ *
+ * The length is `String.length`, UTF-16 units — an emoji outside the basic
+ * plane counts two. That is also what `z.string().max()` counts, and the only
+ * measure that holds here: a counter in graphemes would show 248 while the
+ * server refused 256. Taken from ATEM-old's `textLengthStatus`.
+ */
+export type TextLengthStatus = {
+  length: number;
+  limit: number;
+  /** Negative past the bound: the number of characters to remove. */
+  remaining: number;
+  state: "ok" | "warn" | "full" | "over";
+};
+
+export function textLengthStatus(value: string, limit: number): TextLengthStatus {
+  const length = value.length;
+  const remaining = limit - length;
+  const state: TextLengthStatus["state"] =
+    length > limit ? "over"
+      : length === limit ? "full"
+        : length >= Math.ceil(limit * 0.9) ? "warn"
+          : "ok";
+  return { length, limit, remaining, state };
+}

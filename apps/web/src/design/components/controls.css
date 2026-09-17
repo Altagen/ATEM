@@ -122,3 +122,49 @@
 a.btn-showcase-primary-full {
   text-decoration: none;
 }
+
+
+/**
+ * A bounded text field, with its counter (`textLengthStatus` in `@atem/shared`).
+ *
+ * Calm, warning from 90 % of the bound, full at the bound, over beyond it. The
+ * frame changes colour with the counter: two signals for the same thing, one of
+ * which does not rest on reading a number. Only `over` shows its sentence — at
+ * the bound exactly, the server still accepts the text.
+ */
+.counted-field .counted-count {
+  float: right;
+  font-weight: 900;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s ease;
+}
+.counted-field textarea {
+  /* A textarea does not inherit the page's font on its own: it came out monospace. */
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  resize: vertical;
+}
+.counted-field .counted-over {
+  margin: 0.35rem 0 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--danger);
+  display: none;
+}
+
+.counted-field.is-warn .counted-count { color: var(--caution); }
+.counted-field.is-warn textarea {
+  border-color: var(--caution);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--caution) 15%, transparent);
+}
+
+/* Full and over share the red: the field is full in both cases. */
+.counted-field.is-full .counted-count,
+.counted-field.is-over .counted-count { color: var(--danger); }
+.counted-field.is-full textarea,
+.counted-field.is-over textarea {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
+}
+.counted-field.is-over .counted-over { display: block; }
