@@ -1,0 +1,27 @@
+/**
+ * Rules removed from `design/components/table.css`.
+ *
+ * Nothing set them in the shipped markup: they styled screens that do not
+ * exist here yet (guilds, settings, administration, landing page).
+ * Kept as they were — when their screen arrives, they move back up.
+ */
+
+/* Le cadre du tableau rogne son contenu pour tenir ses coins arrondis, ce qui
+   coupait le menu en deux dès la dernière ligne. Il ne rogne plus le temps
+   qu'un menu est ouvert — et lui seul est concerné. */
+.admin-table-container:has(.member-menu) { overflow: visible; }
+
+
+/* Sur les dernières lignes, le menu s'ouvre vers le haut plutôt que de sortir
+   sous le tableau. */
+.guild-roster-row:nth-last-child(-n + 2) .member-menu,
+.admin-table tbody tr:nth-last-child(-n + 2) .admin-row-popup { top: auto; bottom: calc(100% - 0.35rem); }
+
+
+/* Le cadre rogne son contenu pour tenir ses coins arrondis — ce qui coupait le
+   menu d'actions dès que la table était courte : trois lignes filtrées, et 22px
+   du menu passaient sous le bord. Il ne rogne plus le temps qu'un menu est
+   ouvert. La règle doit vivre ici, et non dans components.css : à spécificité
+   égale, c'est la feuille chargée en dernier qui l'emporte, et l'override y
+   perdait en silence. */
+.admin-table-container:has(.admin-row-popup) { overflow: visible; }

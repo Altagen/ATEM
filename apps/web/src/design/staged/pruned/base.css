@@ -374,18 +374,6 @@
 
 
 
-.etat.is-ok {
-  color: var(--success);
-}
-
-
-
-.etat.is-attention {
-  color: var(--gold);
-}
-
-
-
 .emblemette.is-grande {
   font-size: 1.8rem;
 }
@@ -832,13 +820,6 @@
 
 
 
-/* L'état d'une chose : bon, ou méritant l'œil. Jamais une couleur en ligne. */
-.etat {
-  font-weight: 800;
-}
-
-
-
 /*
  * Deux cartes, un surtitre, une case à cocher.
  *
@@ -1244,4 +1225,12 @@
   margin-top: 2px;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+
+
+
+
+.etat.is-attention {
+  color: var(--gold);
 }

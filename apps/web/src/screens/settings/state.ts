@@ -1,11 +1,12 @@
 /**
  * What the settings screen holds between two paints.
  */
-import type { CsvExportFormat } from "@atem/shared";
+import type { CsvExportFormat, ImportLineError, ParsedImport } from "@atem/shared";
 import type { PublicUser } from "../../platform/api.js";
 
 /** The panels, and the menu they are reached from. */
-export type SettingsView = "root" | "account" | "security" | "export" | "danger";
+export type SettingsView =
+  | "root" | "account" | "security" | "export" | "import" | "history" | "danger";
 
 /**
  * The account as its owner sees it — the public shape plus the email.
@@ -14,6 +15,18 @@ export type SettingsView = "root" | "account" | "security" | "export" | "danger"
  * `/auth/me/account`, which answers about the caller and nobody else.
  */
 export type AccountDetails = PublicUser & { email: string };
+
+/** What `POST /collection/import` answers — mirrors the server's `ImportResult`. */
+export type ImportResult = {
+  mode: "merge" | "replace";
+  imported: number;
+  removed: number;
+  failed: number;
+  errors: ImportLineError[];
+};
+
+/** One line of the history — mirrors the server's `ImportRecord`. */
+export type ImportRecord = Omit<ImportResult, "errors"> & { filename: string; createdAt: string };
 
 export type SettingsState = {
   view: SettingsView;
@@ -28,6 +41,13 @@ export type SettingsState = {
   clearCountdown: number | null;
   deletion: { phrase: string; password: string; acknowledged: boolean };
   exportFormat: CsvExportFormat;
+  /** The file chosen, read in the browser, and what reading it found — before anything is sent. */
+  importFile: { name: string; text: string; preview: ParsedImport } | null;
+  importMode: "merge" | "replace";
+  importBusy: boolean;
+  importResult: ImportResult | null;
+  /** `null` until the history panel has been opened and answered. */
+  history: ImportRecord[] | null;
 };
 
 export const settingsState = (): SettingsState => ({
@@ -39,4 +59,9 @@ export const settingsState = (): SettingsState => ({
   clearCountdown: null,
   deletion: { phrase: "", password: "", acknowledged: false },
   exportFormat: "atem",
+  importFile: null,
+  importMode: "merge",
+  importBusy: false,
+  importResult: null,
+  history: null,
 });

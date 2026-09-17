@@ -17,13 +17,28 @@ export class ApiError extends Error {
   }
 }
 
-type Options = { method?: string; body?: unknown; signal?: AbortSignal };
+/**
+ * `body` is sent as JSON; `text` as it is.
+ *
+ * `text` exists for the collection import, which takes the file as the raw body:
+ * wrapping a CSV in JSON would escape every quote and line break for nothing.
+ * Going through here rather than a second `fetch` keeps one place that reads the
+ * server's errors.
+ */
+type Options = {
+  method?: string;
+  body?: unknown;
+  text?: { content: string; contentType: string };
+  signal?: AbortSignal;
+};
 
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const response = await fetch(`/api${path}`, {
     method: options.method ?? "GET",
-    headers: options.body ? { "Content-Type": "application/json" } : undefined,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    headers: options.text
+      ? { "Content-Type": options.text.contentType }
+      : options.body ? { "Content-Type": "application/json" } : undefined,
+    body: options.text ? options.text.content : options.body ? JSON.stringify(options.body) : undefined,
     // The token travels in an `httpOnly` cookie: no script can read it, so no
     // script can leak it.
     credentials: "same-origin",

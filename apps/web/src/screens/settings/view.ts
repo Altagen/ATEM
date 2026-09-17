@@ -19,6 +19,7 @@
 import { CSV_EXPORT_FORMATS, type CsvExportFormat } from "@atem/shared";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import { locale, t } from "../../platform/i18n/index.js";
+import type { ImportLineError } from "@atem/shared";
 import type { SettingsState, SettingsView } from "./state.js";
 
 /** The phrase to type before deleting the account, in the interface's language. */
@@ -75,6 +76,8 @@ function rootPanel(state: SettingsState): SafeHtml {
       ${menuRow("account", "👤", t("Account"), t("Display name, email address and account details"))}
       ${menuRow("security", "🔐", t("Password"), t("Change the password you sign in with"))}
       ${menuRow("export", "⬇️", t("Export my collection"), t("Every card in a CSV file — ATEM, ScanFlip or Cardmarket"))}
+      ${menuRow("import", "⬆️", t("Import a collection"), t("Read a file from ATEM, ScanFlip or Cardmarket — merging or replacing"))}
+      ${menuRow("history", "📜", t("Import history"), t("The files you imported lately, and what each one did"))}
       ${menuRow("danger", "⚠️", t("Danger zone"), t("Erase your collection, or delete your account"), true)}
     </div>
   </div>`;
@@ -234,6 +237,165 @@ function exportPanel(state: SettingsState): SafeHtml {
   </div>`;
 }
 
+/**
+ * A line's error, in the reader's words.
+ *
+ * The file reader reports codes, the server's collection service reports
+ * sentences; both reach the same list, so both are translated here. An unknown
+ * code is shown as it is rather than hidden behind a vague sentence.
+ */
+function importErrorText(error: ImportLineError): string {
+  switch (error.error) {
+    case "empty_file": return t("The file is empty.");
+    case "missing_column_set_code": return t("No set code column was found in the header.");
+    case "empty_set_code": return t("This line has no set code.");
+    case "set_code_too_long": return t("This set code is too long.");
+    case "quantity_too_large": return t("The quantity is above 1000.");
+    case "note_too_long": return t("The note is too long.");
+    case "invalid_json": return t("The file is not valid JSON.");
+    case "expected_array_or_lignes": return t("The JSON holds no list of cards.");
+    default: return t(error.error);
+  }
+}
+
+function errorList(errors: ImportLineError[]): SafeHtml {
+  return when(
+    errors.length > 0,
+    html`<ul class="import-errors">
+      ${errors.slice(0, 50).map(
+        (error) => html`<li>
+          ${error.line > 0 ? t("Line {n}", { n: error.line }) : t("Collection")}${error.setCode ? html` · <code>${error.setCode}</code>` : ""}
+          — ${importErrorText(error)}
+        </li>`,
+      )}
+    </ul>`,
+  );
+}
+
+/**
+ * The import panel.
+ *
+ * The file is **read in the browser first**, with the very parser the server
+ * uses, so the panel says how many lines it will import and which it cannot read
+ * before anything is sent. ATEM-old counted the lines by splitting on line breaks,
+ * which miscounts as soon as a note spans two — and showed nothing of the errors
+ * until after the import.
+ *
+ * Not carried over: its progress line (“sending x / y lines”), which described
+ * sending line by line — the file goes in one request here — and the route's URL
+ * printed at the bottom.
+ */
+function importPanel(state: SettingsState): SafeHtml {
+  const file = state.importFile;
+  return html`<div class="${panelClass(state, "import")}">
+    ${backButton()}
+    <div class="bloc-champ">
+      <h2 class="titre-section">⬆️ ${t("Import a collection")}</h2>
+      <p class="legende">${t("A CSV file made by ATEM, ScanFlip or Cardmarket, or a JSON scanlist export.")}</p>
+    </div>
+
+    <div class="bloc-champ">
+      <span class="champ-libelle">${t("File")}</span>
+      <!--
+        The browser's own file field is kept — it is what opens the picker and what
+        a keyboard reaches — but not shown: it writes “Choose File / No file
+        chosen” in the browser's language, and after a repaint it claimed no file
+        was chosen right above the summary naming it. The label is ours.
+      -->
+      <input type="file" id="import-file" class="import-file-input"
+             accept=".csv,.json,text/csv,application/json,text/plain"
+             ${state.importBusy ? raw("disabled") : raw("")} />
+      <label for="import-file" class="btn import-file-button">
+        📄 ${file ? t("Choose another file") : t("Choose a file")}
+      </label>
+      <p class="legende">${t("Headers are recognised by their usual names — set_code, Card Number, QTY… Only the set code column is required.")}</p>
+    </div>
+
+    <div class="bloc-champ">
+      <span class="champ-libelle">${t("What to do with the cards you already own")}</span>
+      <div class="radio-cards">
+        <label class="radio-card${state.importMode === "merge" ? " is-selected" : ""}">
+          <input type="radio" name="import-mode" value="merge" ${state.importMode === "merge" ? raw("checked") : raw("")} />
+          <span>
+            <span class="radio-card-label">${t("Merge")}</span>
+            <span class="radio-card-hint">${t("The file's cards take the quantity it gives. The ones it does not mention stay as they are.")}</span>
+          </span>
+        </label>
+        <label class="radio-card${state.importMode === "replace" ? " is-selected" : ""}">
+          <input type="radio" name="import-mode" value="replace" ${state.importMode === "replace" ? raw("checked") : raw("")} />
+          <span>
+            <span class="radio-card-label">${t("Replace")}</span>
+            <span class="radio-card-hint">${t("The collection becomes the file. Everything it does not mention goes back to zero copies.")}</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="import-summary">
+      ${file
+        ? html`<p class="export-lead">
+            <strong>${file.name}</strong> ·
+            ${(file.preview.rows.length) === 1 ? t("1 card to import") : t("{n} cards to import", { n: file.preview.rows.length })}
+            ${when(file.preview.errors.length > 0, html` · ${(file.preview.errors.length) === 1 ? t("1 unreadable") : t("{n} unreadable", { n: file.preview.errors.length })}`)}
+          </p>
+          ${errorList(file.preview.errors)}
+          ${when(state.importMode === "replace",
+            html`<p class="legende-danger">${t("In Replace mode, every card this file does not mention goes back to zero copies.")}</p>`)}`
+        : html`<p class="legende">${t("No file read yet.")}</p>`}
+    </div>
+
+    <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-import-run"
+            ${file && file.preview.rows.length > 0 && !state.importBusy ? raw("") : raw("disabled")}>
+      ${state.importBusy ? t("Importing…") : html`⬆️ ${t("Import")}`}
+    </button>
+
+    ${when(state.importResult !== null, html`<div class="import-summary" id="import-report" role="status">
+      <p class="export-lead">
+        <strong>${(state.importResult?.imported ?? 0) === 1 ? t("1 imported") : t("{n} imported", { n: state.importResult?.imported ?? 0 })}</strong>
+        ${when((state.importResult?.removed ?? 0) > 0, html` · ${(state.importResult?.removed ?? 0) === 1 ? t("1 back to zero") : t("{n} back to zero", { n: state.importResult?.removed ?? 0 })}`)}
+        ${when((state.importResult?.failed ?? 0) > 0, html` · ${(state.importResult?.failed ?? 0) === 1 ? t("1 in error") : t("{n} in error", { n: state.importResult?.failed ?? 0 })}`)}
+      </p>
+      ${errorList(state.importResult?.errors ?? [])}
+    </div>`)}
+  </div>`;
+}
+
+/** The history panel — the server's record, so the same on every device. */
+function historyPanel(state: SettingsState): SafeHtml {
+  const items = state.history;
+  return html`<div class="${panelClass(state, "history")}">
+    ${backButton()}
+    <div class="bloc-champ">
+      <h2 class="titre-section">📜 ${t("Import history")}</h2>
+      <p class="legende">${t("Your latest imports, whichever device you made them from.")}</p>
+    </div>
+    ${items === null
+      ? html`<p class="legende">${t("Loading…")}</p>`
+      : items.length === 0
+        ? html`<p class="legende">${t("No import yet. This history fills up with the first file you import.")}</p>`
+        : html`<div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr><th>${t("File")}</th><th>${t("Mode")}</th><th>${t("Date")}</th><th>${t("Result")}</th></tr>
+              </thead>
+              <tbody>
+                ${items.map((item) => html`<tr>
+                  <td data-col="${t("File")}"><strong>${item.filename}</strong></td>
+                  <td data-col="${t("Mode")}">${item.mode === "merge" ? t("Merge") : t("Replace")}</td>
+                  <td data-col="${t("Date")}">${new Date(item.createdAt).toLocaleString(locale())}</td>
+                  <td data-col="${t("Result")}">
+                    <span>
+                    <span class="etat is-ok">${(item.imported) === 1 ? t("1 imported") : t("{n} imported", { n: item.imported })}</span>
+                    ${when(item.removed > 0, html` · ${(item.removed) === 1 ? t("1 back to zero") : t("{n} back to zero", { n: item.removed })}`)}
+                    ${when(item.failed > 0, html` · ${(item.failed) === 1 ? t("1 in error") : t("{n} in error", { n: item.failed })}`)}</span>
+                  </td>
+                </tr>`)}
+              </tbody>
+            </table>
+          </div>`}
+  </div>`;
+}
+
 function dangerPanel(state: SettingsState): SafeHtml {
   const count = state.ownedCount === null ? "—" : String(state.ownedCount);
   return html`<div class="${panelClass(state, "danger")}">
@@ -357,6 +519,8 @@ export function settingsHtml(state: SettingsState): SafeHtml {
     ${accountPanel(state)}
     ${securityPanel(state)}
     ${exportPanel(state)}
+    ${importPanel(state)}
+    ${historyPanel(state)}
     ${dangerPanel(state)}
     ${clearModal(state)}
     ${deleteModal(state)}

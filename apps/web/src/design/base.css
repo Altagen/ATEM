@@ -360,16 +360,10 @@ h2 {
   margin: 0;
 }
 
-
-
-
 /** Le bloc d'un champ de formulaire, et l'écart qui le sépare du suivant. */
 .bloc-champ {
   margin-bottom: 1.25rem;
 }
-
-
-
 
 /*
  * Le champ de recherche sans son icône.
@@ -381,4 +375,13 @@ h2 {
  */
 .search-input-gaming.is-nue {
   padding-left: 1.2rem;
+}
+
+.etat.is-ok {
+  color: var(--success);
+}
+
+/* L'état d'une chose : bon, ou méritant l'œil. Jamais une couleur en ligne. */
+.etat {
+  font-weight: 800;
 }

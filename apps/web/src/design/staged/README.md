@@ -8,12 +8,11 @@ They wait for the screen they style:
 | Sheet | Screen | Milestone |
 |---|---|---|
 | `pages/profile.css` | A player's public profile | M4 |
-| `components.css` | The mock-up's component library — taken so far: `.pwd-*` in `design/password-meter.css`, the buttons and fields in `design/components/controls.css` | — |
+| `components.css` | The mock-up's component library — taken so far: `.pwd-*` in `design/password-meter.css`, the buttons and fields in `design/components/controls.css`, the data table in `design/components/table.css` | — |
 | `shared-nav.css` | Inbox, mobile account panel, pager | M3–M4 |
 
-`settings.css` went up on 2026-09-17 with the settings screen. The rules its
-export, import and history panels need wait in `pruned/settings.css` for those
-panels.
+`settings.css` went up on 2026-09-17 with the settings screen, and its export,
+import and history panels since.
 
 `pruned/` holds the rules the dead-CSS purge removed from the shipped sheets,
 one file per sheet. When a screen brings back the markup such a rule styles,

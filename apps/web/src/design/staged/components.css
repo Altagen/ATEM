@@ -1865,49 +1865,6 @@
 .btn-member-menu-toggle:hover { color: #fff; border-color: color-mix(in srgb, var(--gold) 40%, transparent); }
 .btn-member-menu-toggle[aria-expanded="true"] { color: var(--gold); border-color: var(--gold); }
 
-/* Le cadre du tableau rogne son contenu pour tenir ses coins arrondis, ce qui
-   coupait le menu en deux dès la dernière ligne. Il ne rogne plus le temps
-   qu'un menu est ouvert — et lui seul est concerné. */
-.admin-table-container:has(.member-menu) { overflow: visible; }
-/* Sur les dernières lignes, le menu s'ouvre vers le haut plutôt que de sortir
-   sous le tableau. */
-.guild-roster-row:nth-last-child(-n + 2) .member-menu,
-.admin-table tbody tr:nth-last-child(-n + 2) .admin-row-popup { top: auto; bottom: calc(100% - 0.35rem); }
-
-/* ── Table de données, partagée ────────────────────────────────────────────
- * La page Guilde, la Console d'Administration et les Scanlistes rendent la même
- * table. Ces règles étaient enfermées derrière `.admin-console-container`, si
- * bien que la table des scanlistes s'affichait sans cadre ni séparateurs :
- * c'est le même défaut que `.perm-list`, `.radio-card` et la carte d'aperçu
- * avant elle — un composant partagé dont la feuille ne l'était pas.
- */
-.admin-table-container {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-/* Le cadre rogne son contenu pour tenir ses coins arrondis — ce qui coupait le
-   menu d'actions dès que la table était courte : trois lignes filtrées, et 22px
-   du menu passaient sous le bord. Il ne rogne plus le temps qu'un menu est
-   ouvert. La règle doit vivre ici, et non dans components.css : à spécificité
-   égale, c'est la feuille chargée en dernier qui l'emporte, et l'override y
-   perdait en silence. */
-.admin-table-container:has(.admin-row-popup) { overflow: visible; }
-.admin-table { width: 100%; border-collapse: collapse; }
-.admin-table th {
-  text-align: left;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-.admin-table td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; vertical-align: top; }
-.admin-table tr:last-child td { border-bottom: 0; }
-.admin-table strong { color: #fff; }
-
 /* ── Bouton de retour, partagé ─────────────────────────────────────────────
  * Quatre pages s'en servent — Paramètres, Profil, Decks, Scanlistes — mais il
  * était défini dans settings.css, que trois d'entre elles ne chargent pas. Le

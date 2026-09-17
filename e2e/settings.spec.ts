@@ -200,3 +200,58 @@ test("the collection downloads as CSV, in the format chosen", async ({ page }) =
 
   expect(await expectNoHorizontalOverflow(page)).toBe(0);
 });
+
+test("a file is read before sending, then imported, and the report says what happened", async ({ page }) => {
+  /**
+   * The file is read in the browser with the server's own parser, so the panel
+   * counts what it will import and names the unreadable lines before anything is
+   * sent. ATEM-old counted by splitting on line breaks and showed no error first.
+   */
+  await signUp(page);
+  await openSettings(page);
+  await page.locator('[data-target-view="import"]').click();
+
+  const run = page.locator("#btn-import-run");
+  await expect(run).toBeDisabled();
+
+  await page.locator("#import-file").setInputFiles({
+    name: "ma-collection.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from('set_code,quantity,notes\nSDCR-FR010,2,"deux\nlignes"\n,5,\nSDCR-FR011,1,\n'),
+  });
+
+  // Two cards to import; the line without a set code is named before sending.
+  await expect(page.locator(".import-summary").first()).toContainText("ma-collection.csv");
+  await expect(page.locator(".import-summary").first()).toContainText("2 cartes à importer");
+  await expect(page.locator(".import-errors").first()).toContainText("Ligne 4");
+  await expect(run).toBeEnabled();
+
+  await run.click();
+  await expect(page.locator("#import-report")).toContainText("2 importées");
+
+  await page.goto("/collection");
+  await expect(page.locator(".content").getByText("SDCR-FR010").first()).toBeVisible();
+  await expect(page.locator(".content").getByText("SDCR-FR011").first()).toBeVisible();
+});
+
+test("replace warns before it runs, and the history keeps the import across reloads", async ({ page }) => {
+  await signUp(page);
+  await openSettings(page);
+  await page.locator('[data-target-view="import"]').click();
+
+  await page.locator('input[name="import-mode"][value="replace"]').check();
+  await page.locator("#import-file").setInputFiles({
+    name: "remplacement.csv", mimeType: "text/csv", buffer: Buffer.from("set_code\nSDCR-FR012\n"),
+  });
+  await expect(page.getByText(/En mode Remplacer, toutes les cartes/)).toBeVisible();
+  await page.locator("#btn-import-run").click();
+  await expect(page.locator("#import-report")).toContainText("1 importée");
+
+  // The history is the server's: it is still there after a reload.
+  await page.reload();
+  await page.locator('[data-target-view="history"]').click();
+  const table = page.locator(".admin-table");
+  await expect(table).toContainText("remplacement.csv");
+  await expect(table).toContainText("Remplacer");
+  expect(await expectNoHorizontalOverflow(page)).toBe(0);
+});

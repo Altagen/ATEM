@@ -13,9 +13,13 @@ import { navigate } from "../../platform/router.js";
 import { knownUser, setUser } from "../../platform/session.js";
 import { toast } from "../../platform/ui.js";
 import { mountPasswordMeter } from "../shared/password-meter.js";
-import { settingsState, type AccountDetails, type SettingsView } from "./state.js";
+import {
+  settingsState, type AccountDetails, type ImportRecord, type ImportResult, type SettingsView,
+} from "./state.js";
 import { deletionReady, settingsHtml } from "./view.js";
-import { checkPasswordStrength, isCsvExportFormat } from "@atem/shared";
+import {
+  checkPasswordStrength, isCsvExportFormat, LIMITS, parseCollectionFile,
+} from "@atem/shared";
 
 /** How long an erase can still be cancelled. ATEM-old's five seconds, kept. */
 const CLEAR_DELAY_S = 5;
@@ -56,8 +60,25 @@ export async function settingsScreen(
     }
   }
 
+  async function loadHistory(): Promise<void> {
+    try {
+      const { items } = await api<{ items: ImportRecord[] }>("/collection/imports");
+      state.history = items;
+    } catch (err) {
+      state.history = [];
+      toast(reason(err, t("The import history could not be loaded.")), "error");
+    }
+  }
+
   function show(view: SettingsView): void {
     state.view = view;
+    // The history is read when it is opened, so it includes an import just made.
+    if (view === "history") {
+      state.history = null;
+      void loadHistory().then(() => {
+        if (!signal.aborted && state.view === "history") paint();
+      });
+    }
     paint();
     // A panel opened from the menu starts at its top, not where the menu was.
     window.scrollTo({ top: 0 });
@@ -197,6 +218,51 @@ export async function settingsScreen(
         if (isCsvExportFormat(radio.value)) state.exportFormat = radio.value;
         paint();
       });
+    });
+
+    // ── Import ────────────────────────────────────────────────────────────
+    const fileInput = root.querySelector<HTMLInputElement>("#import-file");
+    fileInput?.addEventListener("change", async () => {
+      const chosen = fileInput.files?.[0];
+      if (!chosen) return;
+      // Refused before reading: the server refuses it too, and reading five
+      // megabytes into the page only to be told so is a slow answer.
+      if (chosen.size > LIMITS.csvImport.maxBytes) {
+        toast(t("The file is too large (5 MB at most)."), "error");
+        return;
+      }
+      const text = await chosen.text();
+      state.importFile = { name: chosen.name, text, preview: parseCollectionFile(text) };
+      state.importResult = null;
+      paint();
+    });
+
+    root.querySelectorAll<HTMLInputElement>('input[name="import-mode"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        state.importMode = radio.value === "replace" ? "replace" : "merge";
+        paint();
+      });
+    });
+
+    root.querySelector("#btn-import-run")?.addEventListener("click", async () => {
+      const file = state.importFile;
+      if (!file || state.importBusy) return;
+      state.importBusy = true;
+      paint();
+      try {
+        const query = new URLSearchParams({ mode: state.importMode, filename: file.name });
+        state.importResult = await api<ImportResult>(`/collection/import?${query}`, {
+          method: "POST",
+          text: { content: file.text, contentType: "text/plain; charset=utf-8" },
+        });
+        state.importFile = null;
+        await loadOwnedCount();
+        toast(t("Import finished."), "success");
+      } catch (err) {
+        toast(reason(err, t("The import failed.")), "error");
+      }
+      state.importBusy = false;
+      paint();
     });
 
     // ── Danger zone ───────────────────────────────────────────────────────
