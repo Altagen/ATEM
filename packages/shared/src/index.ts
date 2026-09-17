@@ -53,3 +53,9 @@ export {
   type CsvExportFormat,
   type CsvExportLine,
 } from "./collection-csv.js";
+export {
+  parseCollectionFile,
+  type ImportLineError,
+  type ImportRow,
+  type ParsedImport,
+} from "./collection-import.js";
