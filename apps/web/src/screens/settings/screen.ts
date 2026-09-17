@@ -15,7 +15,7 @@ import { toast } from "../../platform/ui.js";
 import { mountPasswordMeter } from "../shared/password-meter.js";
 import { settingsState, type AccountDetails, type SettingsView } from "./state.js";
 import { deletionReady, settingsHtml } from "./view.js";
-import { checkPasswordStrength } from "@atem/shared";
+import { checkPasswordStrength, isCsvExportFormat } from "@atem/shared";
 
 /** How long an erase can still be cancelled. ATEM-old's five seconds, kept. */
 const CLEAR_DELAY_S = 5;
@@ -99,7 +99,12 @@ export async function settingsScreen(
         try {
           const { removed } = await api<{ removed: number }>("/collection", { method: "DELETE" });
           state.ownedCount = 0;
-          toast(t("{n} printings erased from your collection.", { n: removed }), "success");
+          toast(
+            removed === 1
+              ? t("1 printing erased from your collection.")
+              : t("{n} printings erased from your collection.", { n: removed }),
+            "success",
+          );
         } catch (err) {
           toast(reason(err, t("The collection could not be erased.")), "error");
         }
@@ -183,6 +188,15 @@ export async function settingsScreen(
       } catch (err) {
         toast(reason(err, t("The password could not be changed.")), "error");
       }
+    });
+
+    // ── Export ────────────────────────────────────────────────────────────
+    // A radio button, not a field: repainting on change loses no typing.
+    root.querySelectorAll<HTMLInputElement>('input[name="export-format"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (isCsvExportFormat(radio.value)) state.exportFormat = radio.value;
+        paint();
+      });
     });
 
     // ── Danger zone ───────────────────────────────────────────────────────

@@ -111,3 +111,14 @@
   gap: 0.5rem;
   white-space: nowrap;
 }
+
+/*
+ * A button that is a link reads like the buttons beside it.
+ *
+ * The export's “Download” is an `<a href download>` — a link is what lets the
+ * server's BOM through and survives “save link as” — and a link carries the
+ * browser's underline, which ATEM-old's `<button>`s never had.
+ */
+a.btn-showcase-primary-full {
+  text-decoration: none;
+}

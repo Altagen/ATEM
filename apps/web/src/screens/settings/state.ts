@@ -1,10 +1,11 @@
 /**
  * What the settings screen holds between two paints.
  */
+import type { CsvExportFormat } from "@atem/shared";
 import type { PublicUser } from "../../platform/api.js";
 
 /** The panels, and the menu they are reached from. */
-export type SettingsView = "root" | "account" | "security" | "danger";
+export type SettingsView = "root" | "account" | "security" | "export" | "danger";
 
 /**
  * The account as its owner sees it — the public shape plus the email.
@@ -26,6 +27,7 @@ export type SettingsState = {
   /** Seconds left before the erase is sent, or `null` when none is pending. */
   clearCountdown: number | null;
   deletion: { phrase: string; password: string; acknowledged: boolean };
+  exportFormat: CsvExportFormat;
 };
 
 export const settingsState = (): SettingsState => ({
@@ -36,4 +38,5 @@ export const settingsState = (): SettingsState => ({
   clearWord: "",
   clearCountdown: null,
   deletion: { phrase: "", password: "", acknowledged: false },
+  exportFormat: "atem",
 });

@@ -122,7 +122,8 @@ test("letting the countdown run erases the collection", async ({ page }) => {
   await page.locator("#input-clear-word").fill("collection");
   await page.locator("#form-clear button[type=submit]").click();
 
-  await expect(page.getByText(/éditions effacées de votre collection/)).toBeVisible({ timeout: 10_000 });
+  // One card was added, so the sentence is the singular one — measured exactly.
+  await expect(page.getByText("1 édition effacée de votre collection.")).toBeVisible({ timeout: 10_000 });
   await page.goto("/collection");
   await expect(page.getByText(/Aucune carte/)).toBeVisible();
 });
@@ -153,4 +154,49 @@ test("deleting the account waits for all three guards, then signs you out for go
   await page.getByLabel("Mot de passe").fill(account.password);
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page).toHaveURL(/\/login/);
+});
+
+test("the collection downloads as CSV, in the format chosen", async ({ page }) => {
+  /**
+   * The download is a real link to the route, so this measures what a person
+   * gets: a file with a BOM, named for its format, holding their card.
+   */
+  await signUp(page);
+  await addBySetCode(page, "SDCR-FR012");
+  await openSettings(page);
+  await page.locator('[data-target-view="export"]').click();
+
+  // Choosing Cardmarket changes the preview to its semicolon header.
+  await page.locator('input[name="export-format"][value="cardmarket"]').check();
+  await expect(page.locator(".export-preview")).toHaveText(
+    "Card Name;Card Number;Quantity;Rarity;Language;Comments",
+  );
+
+  // Clicking starts a download, named for the format.
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.locator("#btn-export-run").click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("cardmarket_collection.csv");
+
+  /**
+   * The bytes are read from the link's own address, with this page's session.
+   *
+   * Reading them from the downloaded file was tried first: in this harness the
+   * browser cancelled that download before it was written, in this spec file
+   * only, and an identical copy of the test elsewhere did not reproduce it. The
+   * cause was not found, so it is stated here rather than guessed. What a person
+   * receives is what the link serves, and that is measured directly.
+   */
+  const href = await page.locator("#btn-export-run").getAttribute("href");
+  expect(href).toBe("/api/collection/export?format=cardmarket");
+  const response = await page.request.get(href!);
+  expect(response.status()).toBe(200);
+  const bytes = await response.body();
+  expect([...bytes.subarray(0, 3)], "UTF-8 BOM").toEqual([0xef, 0xbb, 0xbf]);
+  const text = bytes.toString("utf8").replace(/^\uFEFF/, "");
+  expect(text.split("\n")[0]).toBe("Card Name;Card Number;Quantity;Rarity;Language;Comments");
+  expect(text).toContain("SDCR-FR012");
+
+  expect(await expectNoHorizontalOverflow(page)).toBe(0);
 });

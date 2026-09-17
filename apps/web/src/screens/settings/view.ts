@@ -16,6 +16,7 @@
  * leading to a panel that cannot do anything yet is the hollow affordance this
  * project refuses.
  */
+import { CSV_EXPORT_FORMATS, type CsvExportFormat } from "@atem/shared";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import { locale, t } from "../../platform/i18n/index.js";
 import type { SettingsState, SettingsView } from "./state.js";
@@ -73,6 +74,7 @@ function rootPanel(state: SettingsState): SafeHtml {
     <div class="settings-menu-card-list">
       ${menuRow("account", "👤", t("Account"), t("Display name, email address and account details"))}
       ${menuRow("security", "🔐", t("Password"), t("Change the password you sign in with"))}
+      ${menuRow("export", "⬇️", t("Export my collection"), t("Every card in a CSV file — ATEM, ScanFlip or Cardmarket"))}
       ${menuRow("danger", "⚠️", t("Danger zone"), t("Erase your collection, or delete your account"), true)}
     </div>
   </div>`;
@@ -161,6 +163,77 @@ function securityPanel(state: SettingsState): SafeHtml {
   </div>`;
 }
 
+/**
+ * What each format is for — ATEM-old's descriptions, as dictionary phrases.
+ *
+ * Read at display time rather than at module load: declared once, they would
+ * freeze the language of the first render.
+ */
+function formatHint(format: CsvExportFormat): string {
+  switch (format) {
+    case "atem":
+      return t("The native format. ATEM imports it back without loss: the set code comes first because it identifies the printed copy.");
+    case "scanflip":
+      return t("Same data, ScanFlip headers. The passcode is kept, so a card is found even when its set code differs between printings.");
+    case "cardmarket":
+      return t("For listing cards for sale. The language is spelled out and the passcode is dropped: Cardmarket identifies cards by set number.");
+  }
+}
+
+/**
+ * The export panel.
+ *
+ * The download is a plain link to the route, not a script building a blob: the
+ * server writes the BOM a spreadsheet needs, and a link is also what survives a
+ * right-click “save as”. ATEM-old ended the panel by printing the route's URL —
+ * developer plumbing on a player's screen, and a wrong URL at that — which is
+ * not carried over.
+ */
+function exportPanel(state: SettingsState): SafeHtml {
+  const spec = CSV_EXPORT_FORMATS.find((format) => format.id === state.exportFormat)!;
+  return html`<div class="${panelClass(state, "export")}">
+    ${backButton()}
+    <div class="bloc-champ">
+      <h2 class="titre-section">⬇️ ${t("Export my collection")}</h2>
+      <p class="legende">${t("Every card, with its quantity, in a file other tools can read.")}</p>
+    </div>
+
+    <p class="export-lead">
+      ${state.ownedCount === null
+        ? html`<span class="legende">${t("Reading the collection…")}</span>`
+        : html`<strong>${state.ownedCount === 1
+            ? t("1 printing")
+            : t("{n} printings", { n: state.ownedCount })}</strong>`}
+    </p>
+
+    <div class="bloc-champ">
+      <span class="champ-libelle">${t("File format")}</span>
+      <div class="radio-cards">
+        ${CSV_EXPORT_FORMATS.map(
+          (format) => html`<label class="radio-card${state.exportFormat === format.id ? " is-selected" : ""}">
+            <input type="radio" name="export-format" value="${format.id}"
+                   ${state.exportFormat === format.id ? raw("checked") : raw("")} />
+            <span>
+              <span class="radio-card-label">${format.label}</span>
+              <span class="radio-card-hint">${formatHint(format.id)}</span>
+            </span>
+          </label>`,
+        )}
+      </div>
+    </div>
+
+    <div class="bloc-champ">
+      <span class="champ-libelle">${t("Columns")} — <code>${spec.filename}</code></span>
+      <pre class="export-preview">${spec.columns.join(spec.separator)}</pre>
+    </div>
+
+    <a class="btn-showcase-primary-full is-moyen is-auto" id="btn-export-run"
+       href="/api/collection/export?format=${state.exportFormat}" download="${spec.filename}">
+      ⬇️ ${t("Download")}
+    </a>
+  </div>`;
+}
+
 function dangerPanel(state: SettingsState): SafeHtml {
   const count = state.ownedCount === null ? "—" : String(state.ownedCount);
   return html`<div class="${panelClass(state, "danger")}">
@@ -172,7 +245,9 @@ function dangerPanel(state: SettingsState): SafeHtml {
       <div class="bloc-champ">
         <h3 class="titre-menu">🗑️ ${t("Erase my collection")}</h3>
         <p class="legende-danger">
-          ${t("Removes all {n} printings from your collection. Your decks are kept, and will say what they can no longer field.", { n: count })}
+          ${state.ownedCount === 1
+            ? t("Removes the only printing in your collection. Your decks are kept, and will say what they can no longer field.")
+            : t("Removes all {n} printings from your collection. Your decks are kept, and will say what they can no longer field.", { n: count })}
         </p>
         <button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-open-clear"
                 ${state.ownedCount === 0 ? raw("disabled") : raw("")}>
@@ -210,9 +285,11 @@ function clearModal(state: SettingsState): SafeHtml {
       <h2 class="titre-section" id="clear-title">${t("Erase the collection")}</h2>
     </div>
     <p class="modal-danger-intro">
-      ${t("This erases all {n} printings in your collection.", {
-        n: state.ownedCount === null ? "—" : String(state.ownedCount),
-      })}
+      ${state.ownedCount === 1
+        ? t("This erases the only printing in your collection.")
+        : t("This erases all {n} printings in your collection.", {
+            n: state.ownedCount === null ? "—" : String(state.ownedCount),
+          })}
     </p>
     <form id="form-clear" class="encadre-recopie">
       <label for="input-clear-word">${t("Type “collection” to confirm")}</label>
@@ -279,6 +356,7 @@ export function settingsHtml(state: SettingsState): SafeHtml {
     ${rootPanel(state)}
     ${accountPanel(state)}
     ${securityPanel(state)}
+    ${exportPanel(state)}
     ${dangerPanel(state)}
     ${clearModal(state)}
     ${deleteModal(state)}
