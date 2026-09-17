@@ -118,6 +118,7 @@ test("without a session, every write route refuses", async () => {
   const attempts: [string, string][] = [
     ["GET", "/collection"],
     ["DELETE", "/collection"],
+    ["GET", "/collection/export"],
     ["POST", "/collection/adjust"],
     ["PATCH", "/collection/1/notes"],
     ["PATCH", "/collection/1/favorite"],

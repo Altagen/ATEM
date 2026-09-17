@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { LIMITS } from "@atem/shared";
+import { buildCollectionCsv, CSV_EXPORT_FORMATS, isCsvExportFormat, LIMITS } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { invalidInput } from "../../platform/errors.js";
 import { requireRowId } from "../../platform/identifiers.js";
 import { requireViewer } from "../identity/index.js";
 import {
-  adjustQuantity, clearCollection, collectionFacets, listCollection, resolveStatus, setFavorite,
+  adjustQuantity, clearCollection, collectionFacets, exportLines, listCollection, resolveStatus,
+  setFavorite,
   setNotes,
 } from "./service.js";
 
@@ -146,6 +147,29 @@ export function collectionRoutes(db: Database) {
 
     await setFavorite(db, viewerId(c), id, parsed.data.isFavorite);
     return c.json({ ok: true });
+  });
+
+  /**
+   * The collection as a CSV file, in one of the three formats.
+   *
+   * The BOM is written **here**, by the server, not by the page that links to
+   * it. ATEM-old added it in the browser, so a direct link to the export gave a
+   * file that Excel in a French locale read as latin-1, accents mangled
+   * (`docs/ref-csv-formats.md`). The builder writes content only, so a preview
+   * does not show one; the download is what needs it.
+   */
+  app.get("/export", async (c) => {
+    const format = c.req.query("format") ?? "atem";
+    if (!isCsvExportFormat(format)) throw invalidInput("Unknown export format.");
+    const spec = CSV_EXPORT_FORMATS.find((candidate) => candidate.id === format)!;
+
+    const csv = buildCollectionCsv(format, await exportLines(db, viewerId(c)));
+    return c.body(`\uFEFF${csv}`, 200, {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${spec.filename}"`,
+      // A collection is personal: no shared cache may keep a copy of it.
+      "Cache-Control": "private, no-store",
+    });
   });
 
   /**

@@ -20,7 +20,7 @@
  * that ignored one another.
  */
 import { and, asc, desc, eq, gt, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import { LIMITS, normalizeSetCode } from "@atem/shared";
+import { LIMITS, normalizeSetCode, type CsvExportLine } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { invalidInput, notFound } from "../../platform/errors.js";
 import {
@@ -303,6 +303,35 @@ export async function listCollection(
     .where(and(...clauses));
 
   return { items: rows.map(toItem), total: counted?.total ?? 0 };
+}
+
+/**
+ * Every owned printing, as the CSV formats write it — all of them, not a page.
+ *
+ * `listCollection` stops at two hundred rows, which is right for a screen and
+ * wrong for an export: a file that silently holds the first two hundred cards of
+ * a two-thousand-card collection looks complete and is not. So this reads the
+ * same rows through the same filters, without the limit, and in set-code order
+ * so that two exports of an unchanged collection are the same file.
+ *
+ * Rows at zero stay out, as they do on screen (R9): they are kept for their note
+ * and favourite, not owned.
+ */
+export async function exportLines(db: Database, ownerId: string): Promise<CsvExportLine[]> {
+  const idx = printIndex(db);
+  const rows = await rowsQuery(db, idx)
+    .where(and(...buildFilters(ownerId, {}, idx)))
+    .orderBy(asc(ownedCards.setCode));
+
+  return rows.map(toItem).map((item) => ({
+    setCode: item.setCode,
+    name: item.card?.name ?? null,
+    quantity: item.quantity,
+    rarity: item.print.rarity || null,
+    language: item.print.language || null,
+    passcode: item.card?.passcode ?? null,
+    notes: item.notes,
+  }));
 }
 
 /**

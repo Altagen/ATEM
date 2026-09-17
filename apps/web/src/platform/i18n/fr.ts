@@ -369,6 +369,7 @@ export const FR: Record<string, string> = {
   "Unidentified card": "Carte non identifiée",
   "Unique name…": "Nom unique…",
   "Unknown card.": "Carte inconnue.",
+  "Unknown export format.": "Format d'export inconnu.",
   "Unknown language.": "Langue inconnue.",
   "Unknown type": "Type inconnu",
   "Unreachable": "Injoignable",
