@@ -107,7 +107,8 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
 
   const shutter = el(
     "button",
-    { type: "button", class: "btn-scan-shutter", "aria-label": t("Read the card") },
+    // Inert until the camera answers: there is nothing to photograph before.
+    { type: "button", class: "btn-scan-shutter", disabled: "", "aria-label": t("Read the card") },
     [
       el("span", { class: "btn-scan-shutter-ring", "aria-hidden": "true" }),
       el("span", { class: "btn-scan-shutter-core", "aria-hidden": "true" }),
@@ -215,25 +216,6 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
    */
   window.addEventListener("popstate", dismiss);
   document.addEventListener("atem:navigated", dismiss);
-
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      // `environment`: the rear camera. Without that constraint a phone opens
-      // the front one, which will never see the card lying in front of it.
-      video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } },
-      audio: false,
-    });
-    video.srcObject = stream;
-    await video.play();
-  } catch (err) {
-    placeholder.hidden = false;
-    video.hidden = true;
-    errorLine.textContent =
-      err instanceof DOMException && err.name === "NotAllowedError"
-        ? t("Camera access was denied. You can type the set code by hand.")
-        : t("No camera available. You can type the set code by hand.");
-    shutter.disabled = true;
-  }
 
   function setLocked(code: string | null, strong: boolean): void {
     lockedCode.textContent = code ?? "";
@@ -379,4 +361,36 @@ export async function openScanner(options: ScannerOptions): Promise<void> {
     status.textContent = t("Line the set code up inside the band.");
   });
   codeInput.addEventListener("input", () => setLocked(codeInput.value.trim(), false));
+
+  /**
+   * The camera comes **last**, and that order matters.
+   *
+   * `getUserMedia` waits for the permission prompt to be answered, and returns
+   * in its own time. Asked for before the buttons were wired, it left the modal
+   * on screen with “Start over”, “+1” and “−1” inert for as long as it took —
+   * silently, since they looked exactly the same. Typing a code by hand while
+   * the camera is being granted is a normal thing to do.
+   *
+   * Measured on 2026-09-18: an end-to-end test clicking “Start over” as soon as
+   * the modal appeared saw nothing happen.
+   */
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      // `environment`: the rear camera. Without that constraint a phone opens
+      // the front one, which will never see the card lying in front of it.
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } },
+      audio: false,
+    });
+    video.srcObject = stream;
+    await video.play();
+    shutter.disabled = false;
+  } catch (err) {
+    placeholder.hidden = false;
+    video.hidden = true;
+    errorLine.textContent =
+      err instanceof DOMException && err.name === "NotAllowedError"
+        ? t("Camera access was denied. You can type the set code by hand.")
+        : t("No camera available. You can type the set code by hand.");
+    shutter.disabled = true;
+  }
 }
