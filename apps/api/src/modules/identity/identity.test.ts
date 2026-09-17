@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createTestApp, freshEmail, jsonPost } from "../../test-support.js";
+import { createTestApp, freshEmail, freshSession, jsonPost, jsonRequest } from "../../test-support.js";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
 import { deleteAccount, getPublicUser, registerUser, setLocale } from "./service.js";
 import { authAttempts, users } from "./schema.js";
@@ -442,4 +442,117 @@ test("a password hash never reaches the log", async () => {
   // And it still says enough to be worth logging.
   assert.match(logged, /users_name_tag_uidx/);
   assert.match(logged, /23505/);
+});
+
+const patch = (path: string, body: unknown, cookie: string) =>
+  jsonRequest(app, "PATCH", path, body, { cookie });
+
+test("renaming keeps your number when it is free under the new name", async () => {
+  /**
+   * `(display name, tag)` is unique, not the name. `Yugi#0042` becoming
+   * `YugiMaster` stays `#0042` — the number people give out.
+   */
+  const session = await freshSession(app, "rename");
+  const before = (await (await jsonRequest(app, "GET", "/auth/me", undefined, { cookie: session.cookie })).json()) as {
+    user: { tag: string };
+  };
+
+  const name = `Renamed ${Date.now()}`;
+  const response = await patch("/auth/me", { displayName: name }, session.cookie);
+  assert.equal(response.status, 200);
+  const { user } = (await response.json()) as { user: { displayName: string; tag: string } };
+  assert.equal(user.displayName, name);
+  assert.equal(user.tag, before.user.tag, "the number follows the person");
+});
+
+test("renaming onto a taken name and number draws a new number", async () => {
+  const name = `Clash ${Date.now()}`;
+  const holder = await registerUser(db, {
+    email: freshEmail("clash-holder"), displayName: name, password: "Un-Mot-De-Passe-1!",
+  });
+  // Give the second account the holder's number under another name first.
+  const mover = await freshSession(app, "clash-mover");
+  await db.update(users).set({ tag: holder.user.tag }).where(eq(users.id, mover.userId));
+
+  const response = await patch("/auth/me", { displayName: name }, mover.cookie);
+  assert.equal(response.status, 200);
+  const { user } = (await response.json()) as { user: { tag: string } };
+  assert.notEqual(user.tag, holder.user.tag, "two people cannot share a name and a number");
+});
+
+test("an email already in use is refused without saying so", async () => {
+  // ADR-011 applies here exactly as at registration.
+  const taken = freshEmail("taken-by-other");
+  await registerUser(db, { email: taken, displayName: "Owner", password: "Un-Mot-De-Passe-1!" });
+  const session = await freshSession(app, "wants-it");
+
+  const response = await patch("/auth/me", { email: taken }, session.cookie);
+  assert.equal(response.status, 409);
+  const body = (await response.json()) as { message: string };
+  assert.doesNotMatch(body.message, /already|in use|exists|taken|déjà/i);
+});
+
+test("an empty change is refused rather than silently ignored", async () => {
+  const session = await freshSession(app, "empty-change");
+  const response = await patch("/auth/me", {}, session.cookie);
+  assert.equal(response.status, 400);
+});
+
+test("changing the password signs out everywhere else, and not here", async () => {
+  /**
+   * The gesture exists because a password may have leaked, so every session
+   * issued before it must stop — except the one doing the change, which would
+   * otherwise be signed out on the very screen where it happened.
+   */
+  const email = freshEmail("pw-change");
+  const oldPassword = "Un-Mot-De-Passe-1!";
+  const newPassword = "Un-Autre-Passe-2!!";
+  await registerUser(db, { email, displayName: "Changer", password: oldPassword });
+
+  // Two sessions, as if signed in on a phone and a computer.
+  const signIn = async () =>
+    (await post("/auth/login", { email, password: oldPassword })).headers.get("set-cookie")!.split(";")[0]!;
+  const phone = await signIn();
+  const computer = await signIn();
+
+  const response = await jsonRequest(app, "POST", "/auth/me/password", {
+    currentPassword: oldPassword, newPassword,
+  }, { cookie: computer });
+  assert.equal(response.status, 200);
+  const renewed = response.headers.get("set-cookie")!.split(";")[0]!;
+
+  const me = (cookie: string) => jsonRequest(app, "GET", "/auth/me", undefined, { cookie });
+  assert.equal((await me(phone)).status, 401, "the other device is signed out");
+  assert.equal((await me(renewed)).status, 200, "the device that changed it stays in");
+
+  assert.equal((await post("/auth/login", { email, password: oldPassword })).status, 401);
+  assert.equal((await post("/auth/login", { email, password: newPassword })).status, 200);
+});
+
+test("the current password is required, and a wrong one changes nothing", async () => {
+  // Otherwise an unlocked screen is enough to lock the owner out of their account.
+  const email = freshEmail("pw-wrong");
+  const password = "Un-Mot-De-Passe-1!";
+  await registerUser(db, { email, displayName: "Wrong", password });
+  const cookie = (await post("/auth/login", { email, password })).headers.get("set-cookie")!.split(";")[0]!;
+
+  const response = await jsonRequest(app, "POST", "/auth/me/password", {
+    currentPassword: "not-the-password", newPassword: "Un-Autre-Passe-2!!",
+  }, { cookie });
+  assert.equal(response.status, 401);
+  assert.equal((await post("/auth/login", { email, password })).status, 200, "the old one still works");
+});
+
+test("a weak new password is refused, and says which rule is unmet", async () => {
+  const email = freshEmail("pw-weak");
+  const password = "Un-Mot-De-Passe-1!";
+  await registerUser(db, { email, displayName: "Weak", password });
+  const cookie = (await post("/auth/login", { email, password })).headers.get("set-cookie")!.split(";")[0]!;
+
+  const response = await jsonRequest(app, "POST", "/auth/me/password", {
+    currentPassword: password, newPassword: "short",
+  }, { cookie });
+  assert.equal(response.status, 400);
+  const body = (await response.json()) as { details?: { hasMinLength?: boolean } };
+  assert.equal(body.details?.hasMinLength, false, "the screen can point at what is missing");
 });

@@ -7,7 +7,8 @@ import { requireViewer } from "./middleware.js";
 import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js";
 import { LIMITS } from "@atem/shared";
 import {
-  authenticate, deleteAccount, getPublicUser, registerUser, revokeSessions, setLocale,
+  authenticate, changePassword, deleteAccount, getPublicUser, registerUser, revokeSessions,
+  setLocale, updateAccount,
 } from "./service.js";
 import { issueToken } from "./token.js";
 
@@ -22,6 +23,22 @@ const RegisterBody = z.object({
 const LoginBody = z.object({
   email: z.string().max(254),
   password: z.string().max(512),
+});
+
+const AccountBody = z
+  .object({
+    displayName: z.string().min(2).max(32).optional(),
+    email: z.string().email().max(254).optional(),
+  })
+  // An empty body is a request for nothing, which is a mistake, not a no-op.
+  .refine((body) => body.displayName !== undefined || body.email !== undefined, {
+    message: "Nothing to change.",
+  });
+
+const PasswordBody = z.object({
+  currentPassword: z.string().min(1).max(LIMITS.password.max),
+  // The strength rule lives in the service, which returns what is missing.
+  newPassword: z.string().min(1).max(LIMITS.password.max),
 });
 
 async function readBody<T>(c: { req: { json: () => Promise<unknown> } }, schema: z.ZodType<T>) {
@@ -119,6 +136,40 @@ export function identityRoutes(db: Database) {
     if (!parsed.success) throw invalidInput("Unknown language.");
 
     return c.json({ user: await setLocale(db, viewer.id, parsed.data.locale) });
+  });
+
+  /** The name you are known by and the address you sign in with. */
+  app.patch("/me", requireViewer, async (c) => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("No session.");
+    const body = await readBody(c, AccountBody);
+    return c.json({ user: await updateAccount(db, viewer.id, body) });
+  });
+
+  /**
+   * Changing the password — rate-limited like signing in.
+   *
+   * It verifies the current password, so it is a guessing oracle for anyone
+   * holding a stolen session: without a ceiling, a cookie lifted from an
+   * unlocked browser becomes an unlimited attempt at the real password. The
+   * buckets are the same two as signing in — the caller's address and the
+   * account — so a failure here and a failure at the door count together.
+   */
+  app.post("/me/password", requireViewer, async (c) => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("No session.");
+    const body = await readBody(c, PasswordBody);
+
+    const buckets = [`ip:${c.get("callerIp")}`, `account:${viewer.id}`];
+    await enforceRateLimit(db, "login", buckets);
+    await recordAttempt(db, "login", buckets);
+
+    const { user, tokenVersion } = await changePassword(db, viewer.id, body);
+    await clearAttempts(db, "login", buckets);
+    // Every other session was just revoked; this one is handed a fresh token,
+    // or the person would be signed out on the screen where they did it.
+    setSessionCookie(c, issueToken(user.id, tokenVersion));
+    return c.json({ user });
   });
 
   return app;

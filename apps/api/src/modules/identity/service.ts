@@ -3,7 +3,7 @@
  *
  * No other module reads the `users` table: they go through `getPublicUser`.
  */
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
 import {
   conflict, invalidInput, notFound, unauthorized, violatesConstraint,
@@ -217,4 +217,144 @@ export async function getPublicUser(db: Database, userId: string): Promise<Publi
   const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!row) throw notFound("User not found.");
   return toPublic(row);
+}
+
+/**
+ * Renaming keeps your number when it can.
+ *
+ * `(display name, tag)` is unique, not the name alone: two people may both be
+ * called Yugi. So a rename only needs a new number if the one you carry is
+ * already taken under the new name — `Yugi#0042` becoming `YugiMaster` stays
+ * `#0042`, which is what people give out and write on a deck box.
+ *
+ * Taken from ATEM-old's `tagForRename`, whose reasoning was right.
+ */
+async function tagForRename(
+  db: Database,
+  userId: string,
+  currentTag: string,
+  newDisplayName: string,
+): Promise<string> {
+  const [clash] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.displayName, newDisplayName), eq(users.tag, currentTag)))
+    .limit(1);
+
+  return clash && clash.id !== userId ? randomTag() : currentTag;
+}
+
+/**
+ * The account's own details: the name you are known by, and the address you
+ * sign in with.
+ *
+ * Both are optional and independent — a request that carries one changes one.
+ * Nothing here touches the password, which has its own route and its own
+ * refusals.
+ */
+export async function updateAccount(
+  db: Database,
+  userId: string,
+  input: { displayName?: string; email?: string },
+): Promise<PublicUser> {
+  const values: Partial<{ displayName: string; tag: string; email: string }> = {};
+
+  if (input.displayName !== undefined) {
+    const displayName = input.displayName.trim();
+    if (displayName.length < 2) {
+      throw invalidInput("The display name must be at least 2 characters long.");
+    }
+    const [self] = await db
+      .select({ tag: users.tag })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!self) throw notFound("Account not found.");
+    values.displayName = displayName;
+    values.tag = await tagForRename(db, userId, self.tag, displayName);
+  }
+
+  if (input.email !== undefined) {
+    const email = input.email.trim().toLowerCase();
+    if (!email.includes("@")) throw invalidInput("Invalid email address.");
+    const [taken] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(sql`lower(${users.email}) = lower(${email})`)
+      .limit(1);
+    if (taken && taken.id !== userId) {
+      // Same rule as registration (ADR-011): the refusal does not say why, the
+      // log does. Telling the person their new address “is already in use”
+      // answers, for anyone who asks, whether it has an account here.
+      console.warn(`[atem] email change refused: ${email} already has an account`);
+      throw conflict("This email address cannot be used for this account.");
+    }
+    values.email = email;
+  }
+
+  if (Object.keys(values).length === 0) throw invalidInput("Nothing to change.");
+
+  // The retry is the same as registration's, and for the same reason: a rename
+  // can land on a taken number between the check above and this write.
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      const [row] = await db.update(users).set(values).where(eq(users.id, userId)).returning();
+      if (!row) throw notFound("Account not found.");
+      return toPublic(row);
+    } catch (err) {
+      if (!violatesConstraint(err, "users_name_tag_uidx")) throw err;
+      values.tag = randomTag();
+    }
+  }
+  throw conflict("That display name is too popular, try another.");
+}
+
+/**
+ * Changing the password signs out everywhere **else**.
+ *
+ * That is the whole point of the gesture: you change it because a password may
+ * have leaked, so every session issued with the old one has to stop. The caller
+ * is handed a fresh token for the session it is holding — otherwise the person
+ * changing their password would be the first one signed out, on the very screen
+ * where they did it.
+ *
+ * The old password is required and verified. Without that, anyone finding an
+ * unlocked screen could lock its owner out of their own account.
+ */
+export async function changePassword(
+  db: Database,
+  userId: string,
+  input: { currentPassword: string; newPassword: string },
+): Promise<{ user: PublicUser; tokenVersion: number }> {
+  const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!row) throw notFound("Account not found.");
+
+  if (!(await verifyPassword(input.currentPassword, row.passwordHash))) {
+    throw unauthorized("The current password is incorrect.");
+  }
+
+  const strength = checkPasswordStrength(input.newPassword);
+  if (!strength.isValid) {
+    // The details say **which** rule is unmet, so the screen can point at it —
+    // the same shape the registration form already reads.
+    throw invalidInput("The password does not meet the required criteria.", {
+      hasMinLength: strength.hasMinLength,
+      hasUpper: strength.hasUpper,
+      hasLower: strength.hasLower,
+      hasDigit: strength.hasDigit,
+      hasSpecial: strength.hasSpecial,
+    });
+  }
+
+  const [updated] = await db
+    .update(users)
+    .set({
+      passwordHash: await hashPassword(input.newPassword),
+      tokenVersion: sql`${users.tokenVersion} + 1`,
+    })
+    .where(eq(users.id, userId))
+    .returning();
+  if (!updated) throw notFound("Account not found.");
+
+  return { user: toPublic(updated), tokenVersion: updated.tokenVersion };
 }
