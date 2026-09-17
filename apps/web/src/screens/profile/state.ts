@@ -14,7 +14,7 @@ export type PlayerProfile = {
     bio: string;
     createdAt: string;
   };
-  isSelf: boolean;
+  isOwner: boolean;
   decks: { id: string; name: string; main: number }[];
 };
 

@@ -25,8 +25,12 @@ export type ProfileDeck = { id: string; name: string; main: number };
 
 export type PlayerProfile = {
   profile: Profile;
-  /** The viewer is looking at their own profile: the screen offers editing. */
-  isSelf: boolean;
+  /**
+   * The viewer owns what they are looking at — decided here, from the session,
+   * never by the screen. The screen shows editing only when it is true; the
+   * write routes refuse anyone else whatever the screen shows (ADR-009).
+   */
+  isOwner: boolean;
   decks: ProfileDeck[];
 };
 
@@ -39,7 +43,7 @@ export async function getPlayerProfile(
   const decks = await listDecks(db, profile.id);
   return {
     profile,
-    isSelf: viewerId === profile.id,
+    isOwner: viewerId === profile.id,
     decks: decks.map((deck) => ({ id: deck.id, name: deck.name, main: deck.counts.main })),
   };
 }

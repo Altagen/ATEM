@@ -56,7 +56,7 @@ export function profileHtml(state: ProfileState): SafeHtml {
 }
 
 function heroHtml(player: PlayerProfile): SafeHtml {
-  const { profile, isSelf } = player;
+  const { profile, isOwner } = player;
   const look = avatarLooks()[profile.avatar];
   return html`<div class="profile-hero-card">
     <div class="profile-banner-hero"><div class="profile-banner-pattern"></div></div>
@@ -74,7 +74,7 @@ function heroHtml(player: PlayerProfile): SafeHtml {
         </h1>
         <div class="profile-status-row">
           <div class="profile-actions">
-            ${when(isSelf, html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-edit-profile">
+            ${when(isOwner, html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-edit-profile">
               <span aria-hidden="true">✏️</span><span>${t("Edit profile")}</span>
             </button>`)}
             <button type="button" class="btn" id="btn-share-profile">
@@ -85,13 +85,13 @@ function heroHtml(player: PlayerProfile): SafeHtml {
       </div>
       ${profile.bio
         ? html`<p class="showcase-bio">${profile.bio}</p>`
-        : when(isSelf, html`<p class="showcase-bio muted">${t("No bio yet — “Edit profile” lets you write one.")}</p>`)}
+        : when(isOwner, html`<p class="showcase-bio muted">${t("No bio yet — “Edit profile” lets you write one.")}</p>`)}
     </div>
   </div>`;
 }
 
 function decksHtml(player: PlayerProfile): SafeHtml {
-  const empty = player.isSelf
+  const empty = player.isOwner
     ? t("You have no deck yet.")
     : t("This duellist has no deck yet.");
   return html`<section class="profile-section-card">

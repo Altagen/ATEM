@@ -278,6 +278,26 @@ tree later is refused whatever it does. Tested with a path that has no handler a
 all. The profile itself is written through `PATCH /auth/me`, which takes the
 session's identity and nothing from the path.
 
+**The owner and the visitor on screen — one rule for every resource.** Asked for by
+Ange on 2026-09-17: “only a player can modify their own information”, for the
+profile now and for decks and collections the day they are shown to others. Three
+layers, always the same:
+
+1. **The server says who is looking.** A read of anything that can be someone
+   else's carries `isOwner`, computed from the session against the owner — never
+   guessed by the screen from an identifier in the address.
+2. **The screen shows editing only to the owner.** Every edit control sits in a
+   `when(isOwner, …)`, and its handler checks `isOwner` again before opening
+   anything. A visitor sees the resource, not the pencil.
+3. **The write refuses anyone else**, whatever the screen shows: writes take the
+   session's identity (`viewerId`), never the path's.
+
+Layers 1 and 2 are courtesy; layer 3 is the protection, and it is already in place
+for decks, folders, collection and profile. The profile is the first screen with a
+visitor, and follows the rule (`GET /players/:id`). Decks and collections follow it
+when their reads open to others (M4) — adding an `isOwner` to them before then would
+be the always-true field described above.
+
 **Addendum of 2026-09-13 — 404 on read, 403 on write.** Asked for by Ange: “even if
 you try to go to the route to edit it, in the end you get a 403”.
 

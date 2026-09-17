@@ -2,7 +2,7 @@
  * The profile screen — wiring.
  *
  * `/profile` is your own; `/profile?user=<id>` is anyone's, which is the address
- * “Share profile” copies. The server says whether it is yours (`isSelf`), so the
+ * “Share profile” copies. The server says whether it is yours (`isOwner`), so the
  * edit button never depends on the screen guessing.
  *
  * Saving sends name, bio and avatar in **one** `PATCH /auth/me`: ATEM-old sent two
@@ -120,7 +120,7 @@ export async function profileScreen(
     root.querySelector("#btn-share-profile")?.addEventListener("click", () => void share());
 
     root.querySelector("#btn-edit-profile")?.addEventListener("click", () => {
-      if (!state.player) return;
+      if (!state.player?.isOwner) return;
       const { displayName, bio, avatar } = state.player.profile;
       state.draft = { displayName, bio, avatar };
       paint();

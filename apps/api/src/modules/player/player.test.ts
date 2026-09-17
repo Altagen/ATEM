@@ -18,7 +18,7 @@ const req = (method: string, path: string, body?: unknown, cookie?: string) =>
 
 type PlayerAnswer = {
   profile: Record<string, unknown> & { displayName: string; bio: string; avatar: string };
-  isSelf: boolean;
+  isOwner: boolean;
   decks: Record<string, unknown>[];
 };
 
@@ -33,7 +33,7 @@ test("the owner writes bio and avatar in one request, and reads them back as the
   const response = await req("GET", `/players/${owner.userId}`, undefined, owner.cookie);
   assert.equal(response.status, 200);
   const body = (await response.json()) as PlayerAnswer;
-  assert.equal(body.isSelf, true);
+  assert.equal(body.isOwner, true);
   assert.equal(body.profile.displayName, "Profile Owner");
   assert.equal(body.profile.bio, "Blue-Eyes, always.", "trimmed");
   assert.equal(body.profile.avatar, "occult");
@@ -48,7 +48,7 @@ test("another duellist reads the profile and its decks — and nothing private",
   assert.equal(response.status, 200);
   const body = (await response.json()) as PlayerAnswer;
 
-  assert.equal(body.isSelf, false);
+  assert.equal(body.isOwner, false);
   assert.equal(body.profile.avatar, "dragon", "the default avatar");
   assert.equal(body.profile.bio, "");
   // What is the account's, not the profile's, never leaves.
