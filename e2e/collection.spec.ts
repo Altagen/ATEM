@@ -643,9 +643,9 @@ test.describe("Navigation", () => {
     await signUp(page);
     if (testInfo.project.name === "mobile") {
       await page.getByRole("button", { name: "Mon compte" }).click();
-      await expect(page.locator("#account-sheet .api-pill")).toHaveText("En ligne");
+      await expect(page.locator("#account-sheet .api-pill")).toHaveText("API en ligne");
     } else {
-      await expect(page.locator(".app-bar .api-pill")).toHaveText("En ligne");
+      await expect(page.locator(".app-bar .api-pill")).toHaveText("API en ligne");
     }
   });
 

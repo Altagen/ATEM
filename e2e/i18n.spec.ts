@@ -11,17 +11,22 @@ import { addBySetCode, signUp } from "./helpers.js";
  */
 
 /**
- * The switch exists in two places — the top bar and the account sheet — and
- * only one is visible at a time. On a phone, the sheet has to be opened to reach
- * it, then closed.
+ * The switch exists in two places — a pill in the top bar, two buttons in the
+ * account sheet — and only one is visible at a time. On a phone, the sheet has
+ * to be opened to reach it, then closed.
  */
 const switchLanguage = async (page: import("@playwright/test").Page, code: "FR" | "EN") => {
   const onPhone = await page.locator(".global-mobile-bottom-nav").isVisible();
-  if (onPhone) await page.getByRole("button", { name: /Mon compte|My account/ }).click();
-
-  const scope = onPhone ? "#account-sheet" : ".app-bar";
-  await page.locator(`${scope} .lang-switch-item`, { hasText: code }).click();
-  await expect(page.locator(`${scope} .lang-switch-item.is-active`)).toHaveText(code);
+  if (!onPhone) {
+    // The pill shows the current language and switches to the other one.
+    const pill = page.locator(".app-bar .lang-pill");
+    if (!(await pill.textContent())?.includes(code)) await pill.click();
+    await expect(pill).toContainText(code);
+    return;
+  }
+  await page.getByRole("button", { name: /Mon compte|My account/ }).click();
+  await page.locator("#account-sheet .lang-switch-item", { hasText: code }).click();
+  await expect(page.locator("#account-sheet .lang-switch-item.is-active")).toHaveText(code);
 
   /**
    * On a phone, the sheet closes by itself: changing language rebuilds the whole
@@ -43,7 +48,7 @@ test("the collection switches to English, and stays there", async ({ page }) => 
   // The choice is carried by the account: it survives a full reload.
   await page.reload();
   await expect(page.getByRole("heading", { name: "My collection" })).toBeVisible();
-  await expect(page.locator(".app-bar .lang-switch-item.is-active, #account-sheet .lang-switch-item.is-active").first()).toHaveText("EN");
+  await expect(page.locator(".app-bar .lang-pill, #account-sheet .lang-switch-item.is-active").first()).toContainText("EN");
 });
 
 test("the scanlists too", async ({ page }) => {

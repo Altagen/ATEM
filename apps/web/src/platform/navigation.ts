@@ -35,8 +35,9 @@ let serviceState: ServiceState = "unknown";
  * calling `t()` here would freeze one language for the whole session.
  */
 const SERVICE_LABELS: Record<ServiceState, { text: string; className: string }> = {
-  ok: { text: "Online", className: "api-ok" },
-  unreachable: { text: "Unreachable", className: "api-err" },
+  // “API”, as ATEM-old wrote it: a bare “Online” reads as the person's presence.
+  ok: { text: "API online", className: "api-ok" },
+  unreachable: { text: "API unreachable", className: "api-err" },
   unknown: { text: "…", className: "api-warn" },
 };
 
@@ -58,12 +59,35 @@ export async function refreshServiceState(): Promise<void> {
 }
 
 /**
- * The language choice.
+ * The language choice, in the top bar: ATEM-old's pill.
  *
- * It lives here, in the top bar and in the account sheet, rather than in the
- * settings screen: it is changed from anywhere, in one gesture. Two buttons
- * rather than a menu: there are only two languages, and a dropdown would ask two
- * gestures for the same thing.
+ * It lives in the navigation rather than in the settings screen: it is changed
+ * from anywhere, in one gesture, and it is the only preference there is — a
+ * settings tab holding it alone would be an empty room. The pill shows the
+ * current language and switches to the other one: with two languages, one
+ * button is the whole choice.
+ */
+function languagePill(): HTMLElement {
+  const user = knownUser()!;
+  const current = user.locale === "en"
+    ? { flag: "🇬🇧", code: "EN", other: "fr" as const }
+    : { flag: "🇫🇷", code: "FR", other: "en" as const };
+  const pill = el("button", {
+    type: "button",
+    class: "lang-pill",
+    "aria-label": t("Change language (FR / EN)"),
+    title: t("Change language (FR / EN)"),
+  }, [
+    el("span", { "aria-hidden": "true" }, [current.flag]),
+    el("span", {}, [current.code]),
+  ]);
+  pill.addEventListener("click", () => void switchLanguage(current.other));
+  return pill;
+}
+
+/**
+ * The language choice, in the phone's account sheet: two finger-sized buttons,
+ * where the choice has the room and the thumb needs a target.
  */
 function languageSwitch(): HTMLElement {
   const user = knownUser()!;
@@ -135,7 +159,7 @@ function appBar(signal: AbortSignal): HTMLElement {
       nav,
     ]),
     el("div", { class: "app-bar-right" }, [
-      languageSwitch(),
+      languagePill(),
       el("span", { class: `api-pill ${service.className}` }, [t(service.text)]),
       userMenu(user, signal),
     ]),
