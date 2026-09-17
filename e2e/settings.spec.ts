@@ -269,8 +269,10 @@ test("M3 done: export, erase everything, import back, and the collection is iden
     const response = await page.request.get("/api/collection/export?format=atem");
     return (await response.text()).replace(/^﻿/, "");
   };
+  // The second copy is written after the row is already on screen: wait for the
+  // server to hold it, or the reference export is taken one copy short.
+  await expect.poll(snapshot).toMatch(/^SDCR-FR010,[^,]*,2,/m);
   const before = await snapshot();
-  expect(before).toContain("SDCR-FR010,");
 
   // 1. Export — the file a person keeps.
   const exported = Buffer.from(await (await page.request.get("/api/collection/export?format=atem")).body());
