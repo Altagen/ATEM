@@ -534,24 +534,33 @@ function emailModal(state: SettingsState): SafeHtml {
   if (state.modal !== "email") return html``;
   const draft = state.emailChange;
   return html`<div class="deck-modal-backdrop" id="settings-modal-backdrop"></div>
-  <div class="deck-modal modal-carte" role="dialog" aria-modal="true" aria-labelledby="email-title">
-    <h2 class="titre-section" id="email-title">✉️ ${t("Change email address")}</h2>
-    <form id="form-email" class="encadre-recopie">
-      <span class="champ-libelle">${t("Current email address")}</span>
-      <span class="valeur">${state.account?.email ?? "—"}</span>
-
-      <label for="input-new-email">${t("New email address")}</label>
-      <input type="email" id="input-new-email" class="search-input-gaming is-nue" maxlength="254"
-             autocomplete="email" value="${draft.email}" required />
-      <label for="input-confirm-email">${t("Confirm the new email address")}</label>
-      <input type="email" id="input-confirm-email" class="search-input-gaming is-nue" maxlength="254"
-             autocomplete="off" value="${draft.confirm}" required />
-      <p class="legende" id="email-mismatch" role="alert"${emailMismatch(state) ? raw("") : raw(" hidden")}>
-        ${t("The two addresses do not match.")}
-      </p>
-      <label for="input-email-password">${t("Your password")}</label>
-      <input type="password" id="input-email-password" class="search-input-gaming is-nue"
-             autocomplete="current-password" value="${draft.password}" required />
+  <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="email-title">
+    <div class="deck-modal-head">
+      <h2 id="email-title">✉️ ${t("Change email address")}</h2>
+    </div>
+    <form id="form-email" class="deck-modal-body">
+      <div class="bloc-champ">
+        <span class="champ-libelle">${t("Current email address")}</span>
+        <span class="valeur">${state.account?.email ?? "—"}</span>
+      </div>
+      <div class="bloc-champ">
+        <label class="champ-libelle" for="input-new-email">${t("New email address")}</label>
+        <input type="email" id="input-new-email" class="search-input-gaming is-nue" maxlength="254"
+               autocomplete="email" value="${draft.email}" required />
+      </div>
+      <div class="bloc-champ">
+        <label class="champ-libelle" for="input-confirm-email">${t("Confirm the new email address")}</label>
+        <input type="email" id="input-confirm-email" class="search-input-gaming is-nue" maxlength="254"
+               autocomplete="off" value="${draft.confirm}" required />
+        <p class="legende" id="email-mismatch" role="alert"${emailMismatch(state) ? raw("") : raw(" hidden")}>
+          ${t("The two addresses do not match.")}
+        </p>
+      </div>
+      <div class="bloc-champ">
+        <label class="champ-libelle" for="input-email-password">${t("Your password")}</label>
+        <input type="password" id="input-email-password" class="search-input-gaming is-nue"
+               autocomplete="current-password" value="${draft.password}" required />
+      </div>
 
       <div class="deck-modal-foot">
         <button type="button" class="btn" id="settings-modal-cancel">${t("Cancel")}</button>

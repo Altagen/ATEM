@@ -61,7 +61,14 @@ test("editing counts the bio, refuses the overflow, and saves name, bio and avat
   await expect(page.getByRole("heading", { level: 1 })).toContainText(renamed);
   await expect(page.getByText(/Blue-Eyes, always\./)).toBeVisible();
   await expect(page.getByRole("img", { name: "Occulte" })).toBeVisible();
-  if (!isPhone()) await expect(page.locator("#user-menu-button")).toContainText(renamed);
+  if (!isPhone()) {
+    // The navigation's avatar button follows the choice, and its menu names you.
+    const avatar = page.locator("#user-menu-button");
+    await expect(avatar).toHaveText("🔮");
+    await expect(avatar).toHaveAttribute("title", new RegExp(`^${renamed} #`));
+    await avatar.click();
+    await expect(page.locator("#user-menu")).toContainText(renamed);
+  }
   expect(await expectNoHorizontalOverflow(page)).toBe(0);
 });
 

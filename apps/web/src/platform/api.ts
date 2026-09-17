@@ -4,6 +4,7 @@
  * One function knows how to talk to the server: the day authentication, error
  * handling or the prefix change, they change here.
  */
+import type { Avatar } from "@atem/shared";
 import { t, tServer } from "./i18n/index.js";
 
 export class ApiError extends Error {
@@ -82,6 +83,7 @@ export type PublicUser = {
   tag: string;
   locale: "fr" | "en";
   role: string;
+  avatar: Avatar;
   createdAt: string;
 };
 

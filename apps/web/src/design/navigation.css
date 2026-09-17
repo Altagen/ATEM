@@ -288,3 +288,39 @@ a.menu-item {
   text-decoration: none;
   color: inherit;
 }
+
+/**
+ * The account menu's avatar button and head — from the design's `shell.js`,
+ * brought up from `staged/components.css`.
+ */
+
+/* The avatar keeps its gold ring at all times, as in the mock-up. */
+.app-avatar {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: linear-gradient(135deg, #1e1b4b 0%, #311b92 100%);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.app-avatar:hover { transform: scale(1.05); box-shadow: 0 0 16px color-mix(in srgb, var(--gold) 40%, transparent); }
+
+.app-user-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--fg);
+}
+.app-user-menu-head .user-avatar-badge { width: 34px; height: 34px; font-size: 17px; }
+.app-user-menu-name { display: block; font-weight: 800; font-size: 0.88rem; color: #fff; }
+.app-user-menu-mail { display: block; font-size: 0.75rem; }

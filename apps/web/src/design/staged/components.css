@@ -210,23 +210,6 @@
   border: 1px solid color-mix(in srgb, var(--err) 40%, transparent);
 }
 .menu-item.danger { color: #ef4444; }
-/* L'avatar porte son anneau doré en permanence, comme dans le mock. */
-.app-avatar {
-  appearance: none;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 50%;
-  border: 2px solid var(--gold);
-  background: linear-gradient(135deg, #1e1b4b 0%, #311b92 100%);
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.app-avatar:hover { transform: scale(1.05); box-shadow: 0 0 16px color-mix(in srgb, var(--gold) 40%, transparent); }
 
 .app-inbox-dot {
   position: absolute;
@@ -1191,19 +1174,6 @@
   transition: all 0.2s ease;
 }
 .lang-pill:hover { background: rgba(255, 255, 255, 0.12); }
-
-/* ── Menu de l'avatar ────────────────────────────────────────────────────── */
-.app-user-menu-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  text-decoration: none;
-  color: var(--fg);
-}
-.app-user-menu-name { display: block; font-weight: 800; font-size: 0.88rem; color: #fff; }
-.app-user-menu-mail { display: block; font-size: 0.75rem; }
 
 /* ── Modales ─────────────────────────────────────────────────────────────── */
 .modal-backdrop {

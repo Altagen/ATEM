@@ -36,6 +36,7 @@ export const FR: Record<string, string> = {
   "A deck may hold no more than 3 copies of a card.": "Un deck ne porte pas plus de 3 exemplaires d'une carte.",
   "A digit (0-9)": "Un chiffre (0-9)",
   "Account created": "Compte créé le",
+  "Account menu — {name}": "Menu du compte — {name}",
   "Account not found.": "Compte introuvable.",
   "Apply": "Appliquer",
   "A folder by that name is already filed in the same place.": "Un dossier de ce nom est déjà rangé au même endroit.",

@@ -17,6 +17,7 @@
  * entry leading nowhere becomes impossible to write.
  */
 import { api, ApiError, type PublicUser } from "./api.js";
+import { avatarLooks } from "./avatar.js";
 import { t } from "./i18n/index.js";
 import { destinations, navigate, render } from "./router.js";
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
@@ -142,21 +143,30 @@ function appBar(signal: AbortSignal): HTMLElement {
 }
 
 /**
- * The account, on a wide screen: your name opens a menu.
+ * The account, on a wide screen: your avatar opens a menu.
  *
- * The top bar used to show the name as plain text beside a sign-out button, and
- * nothing more — so the settings screen, reachable from the phone's account
- * sheet, could not be reached at all from a computer. This is ATEM-old's user
- * menu (`header-nav.ts`), which put “Settings…” and “Sign out” behind the
- * identity; the avatar it opened on waits for the profile, and the inbox bell and
- * “Refresh” have nothing here to act on.
+ * ATEM-old's user menu (`header-nav.ts` and the design's `shell.js`): a round
+ * avatar in the bar, and behind it who you are, then your destinations and
+ * signing out. The name is in the menu's head rather than in the bar, where it
+ * took the room of a button. Not carried over: the inbox bell, which has nothing
+ * to deliver yet, and “Refresh”, which the browser already does.
  *
  * The entries are the account group's destinations, read from the router — the
  * same list the phone's sheet reads, so a new account screen appears in both
  * without either being edited.
  */
 function userMenu(user: NonNullable<ReturnType<typeof knownUser>>, signal: AbortSignal): HTMLElement {
-  const menu = el("div", { class: "menu", role: "menu", id: "user-menu" });
+  const look = avatarLooks()[user.avatar];
+  const identity = `${user.displayName} #${user.tag}`;
+  const menu = el("div", { class: "menu", role: "menu", id: "user-menu" }, [
+    el("div", { class: "app-user-menu-head" }, [
+      el("span", { class: "user-avatar-badge", "aria-hidden": "true" }, [look.icon]),
+      el("span", {}, [
+        el("span", { class: "app-user-menu-name" }, [user.displayName]),
+        el("span", { class: "muted app-user-menu-mail" }, [`#${user.tag}`]),
+      ]),
+    ]),
+  ]);
   for (const { path, nav: destination } of destinations("account")) {
     menu.append(
       el("a", { class: "menu-item", role: "menuitem", href: path }, [
@@ -176,12 +186,15 @@ function userMenu(user: NonNullable<ReturnType<typeof knownUser>>, signal: Abort
 
   const trigger = el("button", {
     type: "button",
-    class: "btn",
+    class: "app-avatar",
     id: "user-menu-button",
     "aria-haspopup": "menu",
     "aria-expanded": "false",
     "aria-controls": "user-menu",
-  }, [`${user.displayName} #${user.tag}`, el("span", { "aria-hidden": "true" }, [" ▾"])]);
+    // The picture says nothing to a screen reader: the button says whose it is.
+    "aria-label": t("Account menu — {name}", { name: identity }),
+    title: identity,
+  }, [look.icon]);
 
   // `.menu` is `display: none` until `.is-open` — the sheet's contract, which
   // ATEM-old's menus already followed. Toggling `hidden` instead opens nothing.

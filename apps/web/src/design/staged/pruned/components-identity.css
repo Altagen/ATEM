@@ -1,13 +1,9 @@
 /**
  * Rules removed from `design/components/identity.css`.
  *
- * Nothing set them in the shipped markup: they styled screens that do not
- * exist here yet (guilds, settings, administration, landing page).
- * Kept as they were — when their screen arrives, they move back up.
+ * Nothing sets them in the shipped markup yet. Kept as they were — when their
+ * screen arrives, they move back up.
  */
-
-
-.app-user-menu-head .user-avatar-badge { width: 34px; height: 34px; font-size: 17px; }
 
 .settings-role-badge.user {
   background: rgba(255, 255, 255, 0.08);

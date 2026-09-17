@@ -18,6 +18,8 @@ export type PublicUser = {
   tag: string;
   locale: string;
   role: string;
+  /** Shown by the navigation, on the button that opens the account menu. */
+  avatar: Avatar;
   createdAt: Date;
 };
 
@@ -27,6 +29,7 @@ const toPublic = (row: UserRow): PublicUser => ({
   tag: row.tag,
   locale: row.locale,
   role: row.role,
+  avatar: row.avatar as Avatar,
   createdAt: row.createdAt,
 });
 

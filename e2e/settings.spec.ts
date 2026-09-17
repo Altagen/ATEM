@@ -49,7 +49,7 @@ test("renaming shows the new name everywhere, and keeps the number", async ({ pa
   expect(account.displayName).not.toBe(renamed);
 
   // The navigation carries the name too, and must not keep the old one.
-  if (!isPhone()) await expect(page.locator("#user-menu-button")).toContainText(renamed);
+  if (!isPhone()) await expect(page.locator("#user-menu-button")).toHaveAttribute("title", new RegExp(`^${renamed} #`));
 });
 
 test("a password change keeps you signed in, and the new one opens the door", async ({ page, browser }) => {

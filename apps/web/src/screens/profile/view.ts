@@ -13,24 +13,11 @@
  * - **the guild strip, friend and block buttons** — they arrive with guilds and
  *   duellists, with the routes they need.
  */
-import { AVATARS, LIMITS, textLengthStatus, type Avatar, type TextLengthStatus } from "@atem/shared";
+import { AVATARS, LIMITS, textLengthStatus, type TextLengthStatus } from "@atem/shared";
+import { avatarLooks } from "../../platform/avatar.js";
 import { t } from "../../platform/i18n/index.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import type { PlayerProfile, ProfileState } from "./state.js";
-
-/**
- * The picture and the name of each avatar the product offers.
- *
- * A function, so the names are translated in the language of the moment — and
- * written as literal `t()` calls the translation gate can see.
- */
-const avatarLooks = (): Record<Avatar, { icon: string; label: string }> => ({
-  dragon: { icon: "🐉", label: t("Dragon") },
-  spellcaster: { icon: "🧙", label: t("Spellcaster") },
-  warrior: { icon: "⚔️", label: t("Warrior") },
-  harpie: { icon: "🦅", label: t("Harpie") },
-  occult: { icon: "🔮", label: t("Occult") },
-});
 
 /** The sentence under a counted field — only when it overflows. */
 export function overMessage(status: TextLengthStatus): string {
