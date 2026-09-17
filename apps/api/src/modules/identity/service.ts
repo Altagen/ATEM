@@ -280,24 +280,21 @@ async function tagForRename(
 }
 
 /**
- * The account's own details: the name you are known by, the address you sign in
- * with, and what the profile shows — bio and avatar.
+ * What the profile shows: the name you are known by, bio and avatar.
  *
  * All optional and independent — a request that carries one changes one. The
- * profile's edit window sends name, bio and avatar together, so they land in one
- * write: ATEM-old sent two requests, and a failed second one left the profile
- * half saved behind a success message.
+ * profile's edit window sends them together, so they land in one write: ATEM-old
+ * sent two requests, and a failed second one left the profile half saved behind a
+ * success message.
  * Nothing here touches the password, which has its own route and its own
  * refusals.
  */
 export async function updateAccount(
   db: Database,
   userId: string,
-  input: { displayName?: string; email?: string; bio?: string; avatar?: Avatar },
+  input: { displayName?: string; bio?: string; avatar?: Avatar },
 ): Promise<PublicUser> {
-  const values: Partial<{
-    displayName: string; tag: string; email: string; bio: string; avatar: Avatar;
-  }> = {};
+  const values: Partial<{ displayName: string; tag: string; bio: string; avatar: Avatar }> = {};
 
   if (input.displayName !== undefined) {
     const displayName = input.displayName.trim();
@@ -312,24 +309,6 @@ export async function updateAccount(
     if (!self) throw notFound("Account not found.");
     values.displayName = displayName;
     values.tag = await tagForRename(db, userId, self.tag, displayName);
-  }
-
-  if (input.email !== undefined) {
-    const email = input.email.trim().toLowerCase();
-    if (!email.includes("@")) throw invalidInput("Invalid email address.");
-    const [taken] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(sql`lower(${users.email}) = lower(${email})`)
-      .limit(1);
-    if (taken && taken.id !== userId) {
-      // Same rule as registration (ADR-011): the refusal does not say why, the
-      // log does. Telling the person their new address “is already in use”
-      // answers, for anyone who asks, whether it has an account here.
-      console.warn(`[atem] email change refused: ${email} already has an account`);
-      throw conflict("This email address cannot be used for this account.");
-    }
-    values.email = email;
   }
 
   if (input.bio !== undefined) values.bio = input.bio.trim();
@@ -400,6 +379,58 @@ export async function changePassword(
   if (!updated) throw notFound("Account not found.");
 
   return { user: toPublic(updated), tokenVersion: updated.tokenVersion };
+}
+
+/**
+ * Changing the address you sign in with — behind your password.
+ *
+ * The address is what a password reset would go to the day there is one, and
+ * what signing in asks for: whoever changes it takes the account. So a session
+ * alone is not enough — an unlocked screen would do. ATEM-old's window asked for
+ * the password and its server never read it; this one checks it, **before**
+ * looking at the address, so a stolen session cannot use this route to find out
+ * which addresses have an account.
+ *
+ * Other sessions are kept: the password has not changed, and a session is not
+ * tied to the address.
+ */
+export async function changeEmail(
+  db: Database,
+  userId: string,
+  input: { email: string; password: string },
+): Promise<PublicUser> {
+  const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!row) throw notFound("Account not found.");
+  if (!(await verifyPassword(input.password, row.passwordHash))) {
+    throw unauthorized("The current password is incorrect.");
+  }
+
+  const email = input.email.trim().toLowerCase();
+  if (!email.includes("@")) throw invalidInput("Invalid email address.");
+  const [taken] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(sql`lower(${users.email}) = lower(${email})`)
+    .limit(1);
+  if (taken && taken.id !== userId) {
+    // Same rule as registration (ADR-011): the refusal does not say why, the
+    // log does. Telling the person their new address “is already in use”
+    // answers, for anyone who asks, whether it has an account here.
+    console.warn(`[atem] email change refused: ${email} already has an account`);
+    throw conflict("This email address cannot be used for this account.");
+  }
+
+  try {
+    const [updated] = await db.update(users).set({ email }).where(eq(users.id, userId)).returning();
+    if (!updated) throw notFound("Account not found.");
+    return toPublic(updated);
+  } catch (err) {
+    // Taken between the check and the write: the same refusal, for the same reason.
+    if (violatesConstraint(err, "users_email_uidx")) {
+      throw conflict("This email address cannot be used for this account.");
+    }
+    throw err;
+  }
 }
 
 /**

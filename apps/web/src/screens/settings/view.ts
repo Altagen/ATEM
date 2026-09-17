@@ -114,14 +114,15 @@ function accountPanel(state: SettingsState): SafeHtml {
         <p class="legende">${t("Your number stays the same unless someone already has it under the new name.")}</p>
       </form>
 
-      <form class="bloc-champ" id="form-email">
-        <label class="champ-libelle" for="input-email">${t("Email address")}</label>
+      <div class="bloc-champ">
+        <span class="champ-libelle">${t("Email address")}</span>
         <div class="settings-detail-row">
-          <input type="email" id="input-email" class="search-input-gaming is-nue" maxlength="254"
-                 autocomplete="email" value="${account?.email ?? ""}" required />
-          <button type="submit" class="btn-showcase-primary-full is-moyen is-auto">${t("Change")}</button>
+          <span class="valeur" id="current-email">${account?.email ?? "—"}</span>
+          <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-open-email">
+            ${t("Change email address")}
+          </button>
         </div>
-      </form>
+      </div>
 
       <div class="bloc-champ">
         <span class="champ-libelle">${t("Account created")}</span>
@@ -501,6 +502,68 @@ function deleteModal(state: SettingsState): SafeHtml {
   </div>`;
 }
 
+/**
+ * Are the new address, its confirmation and the password all there?
+ *
+ * The server checks the password and the address; this only keeps the button
+ * inert while the request could not succeed.
+ */
+export function emailChangeReady(state: SettingsState): boolean {
+  const { email, confirm, password } = state.emailChange;
+  const next = email.trim().toLowerCase();
+  return next.includes("@")
+    && next === confirm.trim().toLowerCase()
+    && next !== state.account?.email.toLowerCase()
+    && password.length > 0;
+}
+
+/** Both addresses typed, and they differ — said before anything is sent. */
+export function emailMismatch(state: SettingsState): boolean {
+  const { email, confirm } = state.emailChange;
+  return confirm.length > 0 && email.trim().toLowerCase() !== confirm.trim().toLowerCase();
+}
+
+/**
+ * Changing the email address — ATEM-old's window.
+ *
+ * It asked for the password too, and its server never read it. Here the server
+ * refuses without it (`POST /auth/me/email`): whoever changes the address takes
+ * the account.
+ */
+function emailModal(state: SettingsState): SafeHtml {
+  if (state.modal !== "email") return html``;
+  const draft = state.emailChange;
+  return html`<div class="deck-modal-backdrop" id="settings-modal-backdrop"></div>
+  <div class="deck-modal modal-carte" role="dialog" aria-modal="true" aria-labelledby="email-title">
+    <h2 class="titre-section" id="email-title">✉️ ${t("Change email address")}</h2>
+    <form id="form-email" class="encadre-recopie">
+      <span class="champ-libelle">${t("Current email address")}</span>
+      <span class="valeur">${state.account?.email ?? "—"}</span>
+
+      <label for="input-new-email">${t("New email address")}</label>
+      <input type="email" id="input-new-email" class="search-input-gaming is-nue" maxlength="254"
+             autocomplete="email" value="${draft.email}" required />
+      <label for="input-confirm-email">${t("Confirm the new email address")}</label>
+      <input type="email" id="input-confirm-email" class="search-input-gaming is-nue" maxlength="254"
+             autocomplete="off" value="${draft.confirm}" required />
+      <p class="legende" id="email-mismatch" role="alert"${emailMismatch(state) ? raw("") : raw(" hidden")}>
+        ${t("The two addresses do not match.")}
+      </p>
+      <label for="input-email-password">${t("Your password")}</label>
+      <input type="password" id="input-email-password" class="search-input-gaming is-nue"
+             autocomplete="current-password" value="${draft.password}" required />
+
+      <div class="deck-modal-foot">
+        <button type="button" class="btn" id="settings-modal-cancel">${t("Cancel")}</button>
+        <button type="submit" class="btn-showcase-primary-full is-moyen is-auto"
+                ${emailChangeReady(state) ? raw("") : raw("disabled")}>
+          ${t("Change email address")}
+        </button>
+      </div>
+    </form>
+  </div>`;
+}
+
 /** The pending erase, with its countdown and the way back. */
 function undoBanner(state: SettingsState): SafeHtml {
   return when(
@@ -524,5 +587,6 @@ export function settingsHtml(state: SettingsState): SafeHtml {
     ${dangerPanel(state)}
     ${clearModal(state)}
     ${deleteModal(state)}
+    ${emailModal(state)}
   </main>`;
 }

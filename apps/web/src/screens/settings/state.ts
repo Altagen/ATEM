@@ -34,12 +34,14 @@ export type SettingsState = {
   account: AccountDetails | null;
   /** How many printings the collection holds, for the danger zone's sentences. */
   ownedCount: number | null;
-  modal: "clear" | "delete" | null;
+  modal: "clear" | "delete" | "email" | null;
   /** The word typed to confirm erasing the collection. */
   clearWord: string;
   /** Seconds left before the erase is sent, or `null` when none is pending. */
   clearCountdown: number | null;
   deletion: { phrase: string; password: string; acknowledged: boolean };
+  /** The email window's fields: the new address twice, and the password. */
+  emailChange: { email: string; confirm: string; password: string };
   exportFormat: CsvExportFormat;
   /** The file chosen, read in the browser, and what reading it found — before anything is sent. */
   importFile: { name: string; text: string; preview: ParsedImport } | null;
@@ -58,6 +60,7 @@ export const settingsState = (): SettingsState => ({
   clearWord: "",
   clearCountdown: null,
   deletion: { phrase: "", password: "", acknowledged: false },
+  emailChange: { email: "", confirm: "", password: "" },
   exportFormat: "atem",
   importFile: null,
   importMode: "merge",

@@ -84,6 +84,48 @@ test("a password change keeps you signed in, and the new one opens the door", as
   await fresh.close();
 });
 
+test("the email address changes only with the password", async ({ page, browser }) => {
+  /**
+   * Asked for by Ange: ATEM-old's window asked for the password — and its server
+   * never read it. Here a wrong password changes nothing.
+   */
+  const account = await signUp(page);
+  await openSettings(page);
+  await page.locator('[data-target-view="account"]').click();
+  await page.getByRole("button", { name: "Modifier l'adresse e-mail" }).click();
+
+  const dialog = page.getByRole("dialog");
+  const submit = dialog.getByRole("button", { name: "Modifier l'adresse e-mail" });
+  const next = `moved-${Date.now()}@example.test`;
+
+  await dialog.getByLabel("Nouvelle adresse e-mail", { exact: true }).fill(next);
+  await dialog.getByLabel("Confirmer la nouvelle adresse e-mail").fill(`x${next}`);
+  await dialog.getByLabel("Votre mot de passe").fill(account.password);
+  await expect(dialog.getByText("Les deux adresses ne correspondent pas.")).toBeVisible();
+  await expect(submit).toBeDisabled();
+
+  await dialog.getByLabel("Confirmer la nouvelle adresse e-mail").fill(next);
+  await dialog.getByLabel("Votre mot de passe").fill("not-the-password");
+  await submit.click();
+  await expect(page.getByText("Le mot de passe actuel est incorrect.")).toBeVisible();
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByLabel("Votre mot de passe").fill(account.password);
+  await submit.click();
+  await expect(page.getByText("Adresse e-mail mise à jour.")).toBeVisible();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator("#current-email")).toHaveText(next);
+
+  // Signing in now takes the new address.
+  const fresh = await browser.newPage();
+  await fresh.goto("/login");
+  await fresh.getByLabel("Adresse e-mail").fill(next);
+  await fresh.getByLabel("Mot de passe").fill(account.password);
+  await fresh.getByRole("button", { name: "Se connecter" }).click();
+  await fresh.waitForURL("**/collection");
+  await fresh.close();
+});
+
 test("erasing the collection can be cancelled until the last second", async ({ page }) => {
   /**
    * ATEM-old's gesture: type “collection”, then five seconds to change your

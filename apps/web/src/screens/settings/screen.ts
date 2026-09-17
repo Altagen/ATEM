@@ -2,7 +2,8 @@
  * The settings screen — wiring.
  *
  * Behaviour taken from ATEM-old's `settings/app.ts`, onto routes built for it:
- * rename and email change (`PATCH /auth/me`), password change
+ * rename (`PATCH /auth/me`), email change behind the password
+ * (`POST /auth/me/email`), password change
  * (`POST /auth/me/password`), erasing the collection (`DELETE /collection`) and
  * deleting the account (`DELETE /auth/me`).
  */
@@ -16,7 +17,7 @@ import { mountPasswordMeter } from "../shared/password-meter.js";
 import {
   settingsState, type AccountDetails, type ImportRecord, type ImportResult, type SettingsView,
 } from "./state.js";
-import { deletionReady, settingsHtml } from "./view.js";
+import { deletionReady, emailChangeReady, emailMismatch, settingsHtml } from "./view.js";
 import {
   checkPasswordStrength, isCsvExportFormat, LIMITS, parseCollectionFile,
 } from "@atem/shared";
@@ -88,6 +89,7 @@ export async function settingsScreen(
     state.modal = null;
     state.clearWord = "";
     state.deletion = { phrase: "", password: "", acknowledged: false };
+    state.emailChange = { email: "", confirm: "", password: "" };
     paint();
   }
 
@@ -164,18 +166,42 @@ export async function settingsScreen(
       paint();
     });
 
+    root.querySelector("#btn-open-email")?.addEventListener("click", () => {
+      state.modal = "email";
+      paint();
+      root.querySelector<HTMLInputElement>("#input-new-email")?.focus();
+    });
+
+    const refreshEmail = (): void => {
+      const submit = root.querySelector<HTMLButtonElement>("#form-email button[type=submit]");
+      if (submit) submit.disabled = !emailChangeReady(state);
+      const mismatch = root.querySelector<HTMLElement>("#email-mismatch");
+      if (mismatch) mismatch.hidden = !emailMismatch(state);
+    };
+    for (const [id, field] of [
+      ["#input-new-email", "email"], ["#input-confirm-email", "confirm"], ["#input-email-password", "password"],
+    ] as const) {
+      const input = root.querySelector<HTMLInputElement>(id);
+      input?.addEventListener("input", () => {
+        state.emailChange[field] = input.value;
+        refreshEmail();
+      });
+    }
+
     root.querySelector("#form-email")?.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const email = root.querySelector<HTMLInputElement>("#input-email")?.value.trim() ?? "";
-      if (email.toLowerCase() === state.account?.email) return;
+      if (!emailChangeReady(state)) return;
       try {
-        await api("/auth/me", { method: "PATCH", body: { email } });
+        await api("/auth/me/email", {
+          method: "POST",
+          body: { email: state.emailChange.email.trim(), password: state.emailChange.password },
+        });
         await loadAccount();
+        closeModal();
         toast(t("Email address updated."), "success");
       } catch (err) {
         toast(reason(err, t("The email address could not be changed.")), "error");
       }
-      paint();
     });
 
     // ── Password ──────────────────────────────────────────────────────────

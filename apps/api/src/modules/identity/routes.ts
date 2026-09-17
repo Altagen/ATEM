@@ -8,7 +8,7 @@ import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js"
 import { AVATARS, LIMITS } from "@atem/shared";
 import {
   authenticate, changePassword, deleteAccount, getPublicUser, registerUser, revokeSessions,
-  getAccount, setLocale, updateAccount,
+  changeEmail, getAccount, setLocale, updateAccount,
 } from "./service.js";
 import { issueToken } from "./token.js";
 
@@ -28,7 +28,6 @@ const LoginBody = z.object({
 const AccountBody = z
   .object({
     displayName: z.string().min(2).max(32).optional(),
-    email: z.string().email().max(254).optional(),
     // Measured before trimming, as the screen's counter measures it.
     bio: z.string().max(LIMITS.bio.max).optional(),
     avatar: z.enum(AVATARS).optional(),
@@ -37,6 +36,11 @@ const AccountBody = z
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
     message: "Nothing to change.",
   });
+
+const EmailBody = z.object({
+  email: z.string().email().max(LIMITS.email.max),
+  password: z.string().min(1).max(LIMITS.password.max),
+});
 
 const PasswordBody = z.object({
   currentPassword: z.string().min(1).max(LIMITS.password.max),
@@ -148,12 +152,31 @@ export function identityRoutes(db: Database) {
     return c.json({ account: await getAccount(db, viewer.id) });
   });
 
-  /** The name you are known by, the address you sign in with, bio and avatar. */
+  /** What the profile shows: the name you are known by, bio and avatar. */
   app.patch("/me", requireViewer, async (c) => {
     const viewer = c.get("viewer");
     if (!viewer) throw invalidInput("No session.");
     const body = await readBody(c, AccountBody);
     return c.json({ user: await updateAccount(db, viewer.id, body) });
+  });
+
+  /**
+   * Changing the email address — behind the password, and rate-limited like
+   * signing in for the same reason as the password change: it verifies the
+   * password, so without a ceiling it is a guessing oracle for a stolen session.
+   */
+  app.post("/me/email", requireViewer, async (c) => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("No session.");
+    const body = await readBody(c, EmailBody);
+
+    const buckets = [`ip:${c.get("callerIp")}`, `account:${viewer.id}`];
+    await enforceRateLimit(db, "login", buckets);
+    await recordAttempt(db, "login", buckets);
+
+    const user = await changeEmail(db, viewer.id, body);
+    await clearAttempts(db, "login", buckets);
+    return c.json({ user });
   });
 
   /**

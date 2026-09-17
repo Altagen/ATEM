@@ -486,10 +486,45 @@ test("an email already in use is refused without saying so", async () => {
   await registerUser(db, { email: taken, displayName: "Owner", password: "Un-Mot-De-Passe-1!" });
   const session = await freshSession(app, "wants-it");
 
-  const response = await patch("/auth/me", { email: taken }, session.cookie);
+  const response = await post("/auth/me/email", { email: taken, password: "Un-Mot-De-Passe-1!" }, { cookie: session.cookie });
   assert.equal(response.status, 409);
   const body = (await response.json()) as { message: string };
   assert.doesNotMatch(body.message, /already|in use|exists|taken|déjà/i);
+});
+
+test("the email changes only with the password, and signing in follows it", async () => {
+  /**
+   * Whoever changes the address takes the account, so a session is not enough.
+   * ATEM-old's window asked for the password and its server never read it.
+   */
+  const session = await freshSession(app, "email-change");
+  const next = freshEmail("email-changed");
+
+  const wrong = await post("/auth/me/email", { email: next, password: "not-the-password" }, { cookie: session.cookie });
+  assert.equal(wrong.status, 401);
+  const missing = await post("/auth/me/email", { email: next }, { cookie: session.cookie });
+  assert.equal(missing.status, 400);
+  // The profile route no longer takes an address at all.
+  const sideDoor = await patch("/auth/me", { email: next }, session.cookie);
+  assert.equal(sideDoor.status, 400);
+  assert.equal((await post("/auth/login", { email: session.email, password: "Un-Mot-De-Passe-1!" })).status, 200, "nothing moved");
+
+  const done = await post("/auth/me/email", { email: next.toUpperCase(), password: "Un-Mot-De-Passe-1!" }, { cookie: session.cookie });
+  assert.equal(done.status, 200);
+  assert.equal((await post("/auth/login", { email: next, password: "Un-Mot-De-Passe-1!" })).status, 200);
+  assert.equal((await post("/auth/login", { email: session.email, password: "Un-Mot-De-Passe-1!" })).status, 401);
+  // The session that changed it is still valid: the password did not change.
+  assert.equal((await jsonRequest(app, "GET", "/auth/me", undefined, { cookie: session.cookie })).status, 200);
+});
+
+test("a wrong password is refused before the address is looked at", async () => {
+  // Otherwise a stolen session could tell, address by address, which have an account.
+  const taken = freshEmail("probe-target");
+  await registerUser(db, { email: taken, displayName: "Target", password: "Un-Mot-De-Passe-1!" });
+  const session = await freshSession(app, "prober");
+
+  const response = await post("/auth/me/email", { email: taken, password: "guessing" }, { cookie: session.cookie });
+  assert.equal(response.status, 401, "the same answer as for a free address");
 });
 
 test("an empty change is refused rather than silently ignored", async () => {
