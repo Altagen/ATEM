@@ -423,6 +423,29 @@ export async function setFavorite(
 }
 
 /** How many rows are still waiting to be identified. */
+/**
+ * Empties one person's collection, in a single statement.
+ *
+ * ATEM-old did this from the browser, one `DELETE /:id` per card: two thousand
+ * requests for a two-thousand-card collection, and a failure halfway through left
+ * it half erased with nothing to say so. Here it is one `DELETE … WHERE user_id`,
+ * so it happens entirely or not at all.
+ *
+ * Only the collection: decks, folders and batches are left alone, because that is
+ * what the person asked to erase. A deck then reports what it can no longer field,
+ * which is exactly the “missing” state it already knows how to show.
+ *
+ * Returns how many printings were removed, so the screen can say so rather than
+ * announce a success it did not measure.
+ */
+export async function clearCollection(db: Database, viewerId: string): Promise<number> {
+  const removed = await db
+    .delete(ownedCards)
+    .where(eq(ownedCards.userId, viewerId))
+    .returning({ id: ownedCards.id });
+  return removed.length;
+}
+
 export async function resolveStatus(
   db: Database,
   ownerId: string,

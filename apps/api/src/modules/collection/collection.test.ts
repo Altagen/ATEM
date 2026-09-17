@@ -7,8 +7,7 @@ import { cardPrints, cards } from "../referential/schema.js";
 import { markUnidentified, upsertCard, upsertPrint } from "../referential/index.js";
 import {
   adjustQuantity, listCollection, requeuePendingResolves, reresolve, resolveStatus,
-  setFavorite, setNotes,
-} from "./service.js";
+  setFavorite, setNotes, clearCollection } from "./service.js";
 import { configureResolveQueue, drainNow, resetResolveQueue } from "./resolve-queue.js";
 import { ownedCards } from "./schema.js";
 
@@ -705,4 +704,32 @@ test("a passcode identifies a printing that was still waiting", async () => {
   );
   assert.equal(after.items[0]?.card?.name, "Nommée");
   assert.equal(after.items[0]?.quantity, 2);
+});
+
+test("clearing a collection empties it in one go, and only it", async () => {
+  /**
+   * ATEM-old looped `DELETE /:id` from the browser, one request per card, and a
+   * failure halfway left the collection half erased. One statement here — and it
+   * touches only this person's printings: another collection, and this person's
+   * decks, are left exactly as they were.
+   */
+  const owner = await newUser();
+  const neighbour = await newUser();
+  await seedCard(88000401, "CLRC-FR401", { en: "Clear A", fr: "Effacer A" });
+  await seedCard(88000402, "CLRC-FR402", { en: "Clear B", fr: "Effacer B" });
+
+  await adjustQuantity(db, owner.id, { setCode: "CLRC-FR401", delta: 3 });
+  await adjustQuantity(db, owner.id, { setCode: "CLRC-FR402", delta: 1 });
+  await adjustQuantity(db, neighbour.id, { setCode: "CLRC-FR401", delta: 2 });
+
+  const removed = await clearCollection(db, owner.id);
+  assert.equal(removed, 2, "it reports what it removed, not a success it did not measure");
+
+  assert.equal((await listCollection(db, owner.id, {})).total, 0);
+  const theirs = await listCollection(db, neighbour.id, {});
+  assert.equal(theirs.total, 1, "someone else's collection is untouched");
+  assert.equal(theirs.items[0]?.quantity, 2);
+
+  // Clearing an empty collection is not an error — it is already the state asked for.
+  assert.equal(await clearCollection(db, owner.id), 0);
 });

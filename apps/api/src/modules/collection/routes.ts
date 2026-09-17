@@ -6,7 +6,8 @@ import { invalidInput } from "../../platform/errors.js";
 import { requireRowId } from "../../platform/identifiers.js";
 import { requireViewer } from "../identity/index.js";
 import {
-  adjustQuantity, collectionFacets, listCollection, resolveStatus, setFavorite, setNotes,
+  adjustQuantity, clearCollection, collectionFacets, listCollection, resolveStatus, setFavorite,
+  setNotes,
 } from "./service.js";
 
 /** A list sent as `?type=a&type=b` or `?type=a,b` — both are accepted. */
@@ -145,6 +146,19 @@ export function collectionRoutes(db: Database) {
 
     await setFavorite(db, viewerId(c), id, parsed.data.isFavorite);
     return c.json({ ok: true });
+  });
+
+  /**
+   * Erases the whole collection.
+   *
+   * A `DELETE` on the collection itself rather than a loop of `DELETE /:id`:
+   * see `clearCollection`. The confirmation is the screen's job — a typed word
+   * and a delay to cancel — because by the time this is called, the person has
+   * already been asked twice.
+   */
+  app.delete("/", async (c) => {
+    const removed = await clearCollection(db, viewerId(c));
+    return c.json({ removed });
   });
 
   return app;
