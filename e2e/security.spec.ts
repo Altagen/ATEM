@@ -74,7 +74,7 @@ test("the screens run under the policy, scanner included", async ({ page }) => {
   await signUp(page);
   await addBySetCode(page, "LOB-FR001");
   await page.getByRole("button", { name: "Trier et filtrer" }).click();
-  await page.getByRole("button", { name: "OK" }).click();
+  await page.getByRole("button", { name: "OK", exact: true }).click();
   await page.locator("a[href='/decks']").first().dispatchEvent("click");
   await page.getByRole("button", { name: "Construire un deck" }).click();
   await page.keyboard.press("Escape");

@@ -1,0 +1,39 @@
+/**
+ * What the settings screen holds between two paints.
+ */
+import type { PublicUser } from "../../platform/api.js";
+
+/** The panels, and the menu they are reached from. */
+export type SettingsView = "root" | "account" | "security" | "danger";
+
+/**
+ * The account as its owner sees it — the public shape plus the email.
+ *
+ * Mirrors the server's `AccountDetails`: the email only ever arrives through
+ * `/auth/me/account`, which answers about the caller and nobody else.
+ */
+export type AccountDetails = PublicUser & { email: string };
+
+export type SettingsState = {
+  view: SettingsView;
+  /** `null` until the server has answered — the screen then shows dashes, never a guess. */
+  account: AccountDetails | null;
+  /** How many printings the collection holds, for the danger zone's sentences. */
+  ownedCount: number | null;
+  modal: "clear" | "delete" | null;
+  /** The word typed to confirm erasing the collection. */
+  clearWord: string;
+  /** Seconds left before the erase is sent, or `null` when none is pending. */
+  clearCountdown: number | null;
+  deletion: { phrase: string; password: string; acknowledged: boolean };
+};
+
+export const settingsState = (): SettingsState => ({
+  view: "root",
+  account: null,
+  ownedCount: null,
+  modal: null,
+  clearWord: "",
+  clearCountdown: null,
+  deletion: { phrase: "", password: "", acknowledged: false },
+});

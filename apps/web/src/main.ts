@@ -13,6 +13,7 @@ import { authScreen } from "./screens/auth/screen.js";
 import { collectionScreen } from "./screens/collection/screen.js";
 import { deckScreen } from "./screens/deck/screen.js";
 import { scanlistScreen } from "./screens/scanlist/screen.js";
+import { settingsScreen } from "./screens/settings/screen.js";
 
 register("/login", authScreen("login"));
 register("/register", authScreen("register"));
@@ -39,6 +40,17 @@ register("/scanlists", scanlistScreen, { requiresSession: true });
 register("/decks", deckScreen, {
   requiresSession: true,
   nav: { label: "Decks", icon: "🃏", group: "main" },
+});
+/**
+ * The account group's first destination.
+ *
+ * The navigation read `destinations("account")` from the start and found nothing,
+ * so the account sheet hid its list. Registering the screen here is the whole of
+ * the wiring: the sheet and the top bar already know where to show it.
+ */
+register("/settings", settingsScreen, {
+  requiresSession: true,
+  nav: { label: "Settings", icon: "⚙️", group: "account" },
 });
 
 registerFallback((root) => {

@@ -276,3 +276,15 @@
   min-width: 56px;
   font-size: 0.85rem;
 }
+
+/*
+ * A menu entry that is a link reads like the buttons beside it.
+ *
+ * ATEM-old's user menu used `<button>` for “Settings…”. It is an `<a href>` here
+ * because it navigates — so middle-click and “open in a new tab” work — and a
+ * link carries the browser's underline and colour, which the buttons do not.
+ */
+a.menu-item {
+  text-decoration: none;
+  color: inherit;
+}

@@ -359,26 +359,6 @@
 
 
 
-.legende.is-fine {
-  font-size: 0.75rem;
-}
-
-
-
-.rangee {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-}
-
-
-
-.rangee.is-serree {
-  gap: 0.75rem;
-}
-
-
-
 .colonne {
   display: flex;
   flex-direction: column;
@@ -390,25 +370,6 @@
 /* L'emblème d'une ligne : une émoticône qui tient lieu d'illustration. */
 .emblemette {
   font-size: 1.4rem;
-}
-
-
-
-.emblemette.is-discrete {
-  font-size: 1.2rem;
-  color: var(--muted);
-}
-
-
-
-.valeur.is-discrete {
-  color: inherit;
-}
-
-
-
-.valeur.is-fine {
-  font-size: 0.9rem;
 }
 
 
@@ -479,28 +440,6 @@
 
 
 
-.legende.is-sous {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.82rem;
-}
-
-
-
-.legende.is-forte {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-
-
-.rangee.is-etalee {
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-
-
 .toast-err {
   background: color-mix(in srgb, var(--danger) 14%, var(--card));
   border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
@@ -524,32 +463,12 @@
 }
 
 
-/** Une section qui prévient plutôt qu'elle n'informe. */
-.titre-section.is-danger {
-  color: var(--danger);
-}
-
-
-.titre-section.is-danger.is-souligne {
-  border-bottom-color: color-mix(in srgb, var(--danger) 40%, transparent);
-}
-
-
 
 /** Le titre d'un bloc à l'intérieur d'une section. */
 .titre-bloc {
   margin: 0 0 0.5rem;
   font-size: 1.15rem;
   font-weight: 900;
-  color: var(--fg-fort);
-}
-
-
-/** Le titre d'une rangée de menu ou d'une carte de choix. */
-.titre-menu {
-  margin: 0 0 0.25rem;
-  font-size: 0.95rem;
-  font-weight: 800;
   color: var(--fg-fort);
 }
 
@@ -569,12 +488,6 @@
 }
 
 
-/** Une rangée qui se replie plutôt que de déborder. */
-.rangee.is-souple {
-  flex-wrap: wrap;
-}
-
-
 
 .colonne.is-serree {
   gap: 0.5rem;
@@ -590,35 +503,6 @@
 /** Un état vide qui occupe toute la largeur d'une grille. */
 .empty-state.is-pleine-largeur {
   grid-column: 1 / -1;
-}
-
-
-
-/** Une valeur qui porte la couleur de ce qu'elle dit. */
-.valeur.is-success {
-  color: var(--success);
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-
-.valeur.is-doree {
-  color: var(--gold);
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-
-.valeur.is-info {
-  color: var(--info);
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-
-.valeur.is-danger {
-  color: var(--danger);
-  font-weight: 800;
 }
 
 
@@ -948,60 +832,6 @@
 
 
 
-/*
- * L'étiquette d'un champ, hors d'un `.field`.
- *
- * Elle existait en trois écritures presque identiques — 0.45rem, 0.35rem,
- * 0.4rem de marge, 800 ou 700 de graisse — répétées vingt-deux fois dans quatre
- * écrans. Trois façons de dire la même chose, qu'aucun regard ne distingue et
- * qu'aucune retouche ne changera ensemble.
- *
- * La maquette a `.field label` pour les formulaires structurés ; ceci est pour
- * les étiquettes qui vivent hors d'un champ — au-dessus d'un groupe de cases, ou
- * d'une liste de permissions.
- */
-.champ-libelle {
-  display: block;
-  margin-bottom: 0.4rem;
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
-
-
-/*
- * Quatre rôles qui revenaient sans nom.
- *
- * Une légende sous une valeur, une rangée d'éléments alignés, une colonne
- * espacée, un emblème d'une ligne : chacun était réécrit à l'identique entre
- * six et quatorze fois dans les cinq écrans. Ce ne sont pas des utilitaires —
- * ils disent un rôle, et c'est pour ça qu'ils portent un nom plutôt qu'une
- * mesure.
- */
-.legende {
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-
-
-/*
- * Une valeur, son état, et l'emblème qui l'accompagne.
- *
- * Une fiche affiche partout la même chose : un libellé discret, la valeur en
- * dessous, parfois un état coloré à côté. C'était écrit à la main trente-huit
- * fois, avec quatre nuances de taille que rien ne justifiait.
- */
-.valeur {
-  display: block;
-  font-size: 0.98rem;
-  color: var(--fg-fort);
-}
-
-
-
 /* L'état d'une chose : bon, ou méritant l'œil. Jamais une couleur en ligne. */
 .etat {
   font-weight: 800;
@@ -1031,20 +861,6 @@
   accent-color: var(--gold);
   width: 18px;
   height: 18px;
-}
-
-
-
-/*
- * Le champ de recherche sans son icône.
- *
- * `.search-input-gaming` réserve 2.8rem à gauche pour la loupe. Les champs qui
- * n'en portent pas — l'adresse d'un nouveau compte, le titre d'une annonce —
- * annulaient ce retrait à la main, chacun avec sa valeur. Le retrait devient
- * symétrique du droit, qui est de 1.2rem.
- */
-.search-input-gaming.is-nue {
-  padding-left: 1.2rem;
 }
 
 
@@ -1095,50 +911,6 @@
 
 
 
-/* ── Titres, intitulés et champs ───────────────────────────────────────────
- *
- * Les mêmes objets s'écrivaient balise par balise, avec une mesure différente
- * à chaque fois : cinq tailles de titre de section — 1.25, 1.35, 1.4, 1.45 et
- * 1.5rem — pour un seul rôle, et trois façons d'écrire l'intitulé d'un champ.
- */
-
-
-
-/** Souligné d'un filet, quand la section ouvre un panneau encadré. */
-.titre-section.is-souligne {
-  margin: 0 0 1.25rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid var(--border);
-}
-
-
-/** Porté par un emblème, qui se pose à hauteur du texte. */
-.titre-section.is-emblemee {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  line-height: 1.2;
-}
-
-
-
-/** L'intitulé d'un champ, en petites capitales. */
-.champ-libelle.is-espacee {
-  letter-spacing: 0.04em;
-  margin-bottom: 0.5rem;
-}
-
-
-/** L'intitulé d'un champ, sans capitales — plus proche d'une phrase. */
-.champ-libelle.is-douce {
-  font-size: 0.83rem;
-  font-weight: 700;
-  text-transform: none;
-  margin-bottom: 0.4rem;
-}
-
-
-
 /**
  * Une option qu'on choisit en cliquant sa carte entière, et non sa seule case.
  * La cible fait toute la largeur : au doigt, une case à cocher de 18px ne se
@@ -1185,41 +957,6 @@
   min-height: 75px;
   line-height: 1.5;
   font-weight: 600;
-}
-
-
-
-/* ── Dispositions et espacements ───────────────────────────────────────────
- *
- * Les rangées, les colonnes et les blocs de formulaire s'écrivaient en clair
- * sur chaque `<div>`, avec des écarts pris au hasard : 0.35, 0.4, 0.45, 0.5,
- * 0.65, 0.9, 1.1, 1.2, 1.25 et 1.5rem pour trois rôles distincts. Ces
- * modificateurs figent les trois.
- */
-
-/** Une rangée très serrée — un emblème et son mot. */
-.rangee.is-menue {
-  gap: 0.5rem;
-}
-
-
-/** Une rangée dont les blocs s'alignent par le haut, pas par le milieu. */
-.rangee.is-haute {
-  align-items: flex-start;
-}
-
-
-
-/** Le bloc d'un champ de formulaire, et l'écart qui le sépare du suivant. */
-.bloc-champ {
-  margin-bottom: 1.25rem;
-}
-
-
-
-/** La plus petite légende : une date, un identifiant technique. */
-.legende.is-menue {
-  font-size: 0.72rem;
 }
 
 
@@ -1282,25 +1019,6 @@
 
 
 
-/** Une légende sans marge propre, quand son parent l'espace déjà. */
-.legende.is-collee {
-  margin: 0;
-}
-
-
-/** Une légende appuyée, sans pour autant changer de taille. */
-.legende.is-appuyee {
-  font-weight: 700;
-}
-
-
-/** Une rangée aérée, quand ses blocs sont larges. */
-.rangee.is-aeree {
-  gap: 1rem;
-}
-
-
-
 /** Un écran qui n'a rien à montrer, centré dans sa page. */
 .page-centree {
   display: flex;
@@ -1316,6 +1034,207 @@
   max-width: 540px;
   padding: 1.75rem;
 }
+
+
+
+
+
+
+.legende.is-fine {
+  font-size: 0.75rem;
+}
+
+
+
+
+
+.rangee.is-serree {
+  gap: 0.75rem;
+}
+
+
+
+
+
+.valeur.is-fine {
+  font-size: 0.9rem;
+}
+
+
+
+
+
+.legende.is-sous {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+}
+
+
+
+
+
+.legende.is-forte {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+
+
+
+
+.rangee.is-etalee {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+
+
+
+.titre-section.is-danger.is-souligne {
+  border-bottom-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+
+
+
+/** Une rangée qui se replie plutôt que de déborder. */
+.rangee.is-souple {
+  flex-wrap: wrap;
+}
+
+
+
+
+
+/** Une valeur qui porte la couleur de ce qu'elle dit. */
+.valeur.is-success {
+  color: var(--success);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+
+
+
+.valeur.is-doree {
+  color: var(--gold);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+
+
+
+.valeur.is-info {
+  color: var(--info);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+
+
+
+
+/* ── Titres, intitulés et champs ───────────────────────────────────────────
+ *
+ * Les mêmes objets s'écrivaient balise par balise, avec une mesure différente
+ * à chaque fois : cinq tailles de titre de section — 1.25, 1.35, 1.4, 1.45 et
+ * 1.5rem — pour un seul rôle, et trois façons d'écrire l'intitulé d'un champ.
+ */
+
+
+
+/** Souligné d'un filet, quand la section ouvre un panneau encadré. */
+.titre-section.is-souligne {
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+
+
+
+/** Porté par un emblème, qui se pose à hauteur du texte. */
+.titre-section.is-emblemee {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  line-height: 1.2;
+}
+
+
+
+
+
+/** L'intitulé d'un champ, en petites capitales. */
+.champ-libelle.is-espacee {
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+
+
+
+
+/** L'intitulé d'un champ, sans capitales — plus proche d'une phrase. */
+.champ-libelle.is-douce {
+  font-size: 0.83rem;
+  font-weight: 700;
+  text-transform: none;
+  margin-bottom: 0.4rem;
+}
+
+
+
+
+
+/* ── Dispositions et espacements ───────────────────────────────────────────
+ *
+ * Les rangées, les colonnes et les blocs de formulaire s'écrivaient en clair
+ * sur chaque `<div>`, avec des écarts pris au hasard : 0.35, 0.4, 0.45, 0.5,
+ * 0.65, 0.9, 1.1, 1.2, 1.25 et 1.5rem pour trois rôles distincts. Ces
+ * modificateurs figent les trois.
+ */
+
+/** Une rangée très serrée — un emblème et son mot. */
+.rangee.is-menue {
+  gap: 0.5rem;
+}
+
+
+
+
+/** Une rangée dont les blocs s'alignent par le haut, pas par le milieu. */
+.rangee.is-haute {
+  align-items: flex-start;
+}
+
+
+
+
+
+/** La plus petite légende : une date, un identifiant technique. */
+.legende.is-menue {
+  font-size: 0.72rem;
+}
+
+
+
+
+/** Une légende appuyée, sans pour autant changer de taille. */
+.legende.is-appuyee {
+  font-weight: 700;
+}
+
+
+
+
+/** Une rangée aérée, quand ses blocs sont larges. */
+.rangee.is-aeree {
+  gap: 1rem;
+}
+
+
 
 
 

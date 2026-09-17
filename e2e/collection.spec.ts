@@ -743,13 +743,13 @@ test.describe("Parity with ATEM-old", () => {
     await page.getByRole("button", { name: "Trier et filtrer" }).click();
     await page.locator("#sort").selectOption("setCode");
     await page.locator("#sort-dir").selectOption("asc");
-    await page.getByRole("button", { name: "OK" }).click();
+    await page.getByRole("button", { name: "OK", exact: true }).click();
 
     await expect(page.locator(".item-text code").first()).toHaveText("LOB-FR001");
 
     await page.getByRole("button", { name: "Trier et filtrer" }).click();
     await page.locator("#sort-dir").selectOption("desc");
-    await page.getByRole("button", { name: "OK" }).click();
+    await page.getByRole("button", { name: "OK", exact: true }).click();
 
     await expect(page.locator(".item-text code").first()).toHaveText("LTGY-FR008");
   });
@@ -783,7 +783,7 @@ test.describe("Parity with ATEM-old", () => {
 
     await page.getByRole("button", { name: "Trier et filtrer" }).click();
     await page.locator("#group-monster").check();
-    await page.getByRole("button", { name: "OK" }).click();
+    await page.getByRole("button", { name: "OK", exact: true }).click();
 
     await expect(page.locator(".group-header").first()).toContainText("Poisson");
   });
@@ -831,17 +831,30 @@ test.describe("Parity with ATEM-old", () => {
 });
 
 test("the account block does not overlap itself", async ({ page }, testInfo) => {
-  // The username touched the sign-out button: the right-hand block's layout
-  // lived in a `style` attribute in ATEM-old, not in its sheet — so it was not
-  // taken along with it.
+  /**
+   * The username once touched the sign-out button: the right-hand block's layout
+   * lived in a `style` attribute in ATEM-old, not in its sheet.
+   *
+   * On 2026-09-17 the two merged into the user menu, so that exact collision can
+   * no longer happen — and this test, which aimed at those two elements, timed
+   * out looking for them. What it protected still matters, so it now asks the
+   * broader question for every item in the block: the language switch, the
+   * service state and the user menu, each clear of the next.
+   */
   test.skip(testInfo.project.name !== "desktop", "top bar: desktop profile");
   await signUp(page);
 
-  const username = (await page.locator(".app-bar-right .muted").boundingBox())!;
-  // The bar now also carries the language switch: aim at the sign-out button,
-  // which is the one next to the username.
-  const button = (await page.locator(".app-bar-right .btn").boundingBox())!;
-  expect(username.x + username.width).toBeLessThanOrEqual(button.x);
+  const boxes = await page.locator(".app-bar-right > *").evaluateAll((items) =>
+    items.map((item) => {
+      const box = item.getBoundingClientRect();
+      return { left: box.left, right: box.right };
+    }),
+  );
+  expect(boxes.length, "the block holds its items").toBeGreaterThanOrEqual(3);
+  for (let index = 1; index < boxes.length; index += 1) {
+    expect(boxes[index - 1]!.right, `item ${index} overlaps the one before it`)
+      .toBeLessThanOrEqual(boxes[index]!.left);
+  }
 });
 
 test.describe("Scroll lock", () => {
@@ -919,7 +932,7 @@ test.describe("Scroll lock", () => {
     await page.waitForTimeout(150);
     expect(Math.abs((await row.boundingBox())!.y - positionBefore)).toBeLessThanOrEqual(1);
 
-    await page.getByRole("button", { name: "OK" }).dispatchEvent("click");
+    await page.getByRole("button", { name: "OK", exact: true }).dispatchEvent("click");
     expect(
       await page.evaluate(() => window.scrollY),
       "the position is given back on closing",
@@ -934,7 +947,7 @@ test.describe("Scroll lock", () => {
     await page.getByRole("button", { name: "Trier et filtrer" }).click();
     await page.locator('[data-filter-kind="monster"]').click();
     await page.locator('[data-filter-kind=""]').click();
-    await page.getByRole("button", { name: "OK" }).click();
+    await page.getByRole("button", { name: "OK", exact: true }).click();
 
     await page.evaluate(() => window.scrollTo(0, 200));
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);

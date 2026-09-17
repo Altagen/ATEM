@@ -273,3 +273,112 @@ h2 {
   border: 1px solid color-mix(in srgb, var(--err) 35%, var(--border));
   color: var(--err);
 }
+
+.rangee {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.emblemette.is-discrete {
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+.valeur.is-discrete {
+  color: inherit;
+}
+
+/** Une section qui prévient plutôt qu'elle n'informe. */
+.titre-section.is-danger {
+  color: var(--danger);
+}
+
+/** Le titre d'une rangée de menu ou d'une carte de choix. */
+.titre-menu {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--fg-fort);
+}
+
+.valeur.is-danger {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+/*
+ * L'étiquette d'un champ, hors d'un `.field`.
+ *
+ * Elle existait en trois écritures presque identiques — 0.45rem, 0.35rem,
+ * 0.4rem de marge, 800 ou 700 de graisse — répétées vingt-deux fois dans quatre
+ * écrans. Trois façons de dire la même chose, qu'aucun regard ne distingue et
+ * qu'aucune retouche ne changera ensemble.
+ *
+ * La maquette a `.field label` pour les formulaires structurés ; ceci est pour
+ * les étiquettes qui vivent hors d'un champ — au-dessus d'un groupe de cases, ou
+ * d'une liste de permissions.
+ */
+.champ-libelle {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/*
+ * Quatre rôles qui revenaient sans nom.
+ *
+ * Une légende sous une valeur, une rangée d'éléments alignés, une colonne
+ * espacée, un emblème d'une ligne : chacun était réécrit à l'identique entre
+ * six et quatorze fois dans les cinq écrans. Ce ne sont pas des utilitaires —
+ * ils disent un rôle, et c'est pour ça qu'ils portent un nom plutôt qu'une
+ * mesure.
+ */
+.legende {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/*
+ * Une valeur, son état, et l'emblème qui l'accompagne.
+ *
+ * Une fiche affiche partout la même chose : un libellé discret, la valeur en
+ * dessous, parfois un état coloré à côté. C'était écrit à la main trente-huit
+ * fois, avec quatre nuances de taille que rien ne justifiait.
+ */
+.valeur {
+  display: block;
+  font-size: 0.98rem;
+  color: var(--fg-fort);
+}
+
+/** Une légende sans marge propre, quand son parent l'espace déjà. */
+.legende.is-collee {
+  margin: 0;
+}
+
+
+
+
+/** Le bloc d'un champ de formulaire, et l'écart qui le sépare du suivant. */
+.bloc-champ {
+  margin-bottom: 1.25rem;
+}
+
+
+
+
+/*
+ * Le champ de recherche sans son icône.
+ *
+ * `.search-input-gaming` réserve 2.8rem à gauche pour la loupe. Les champs qui
+ * n'en portent pas — l'adresse d'un nouveau compte, le titre d'une annonce —
+ * annulaient ce retrait à la main, chacun avec sa valeur. Le retrait devient
+ * symétrique du droit, qui est de 1.2rem.
+ */
+.search-input-gaming.is-nue {
+  padding-left: 1.2rem;
+}

@@ -2027,3 +2027,45 @@ body.density-compact .thumb {
 body.density-compact .gallery {
   gap: 0.65rem;
 }
+
+
+
+
+/* —— Menus (closed by default; only .is-open shows) —— */
+.menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 15rem;
+  max-width: min(92vw, 18rem);
+  padding: 0.45rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  z-index: var(--z-row-menu);
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+
+
+.menu.is-open {
+  display: flex;
+}
+
+
+
+.menu-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+
+
+.menu-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+}

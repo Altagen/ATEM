@@ -119,7 +119,7 @@ function link(path: string, label: string, className: string, icon?: string): HT
   return node;
 }
 
-function appBar(): HTMLElement {
+function appBar(signal: AbortSignal): HTMLElement {
   const user = knownUser()!;
   const nav = el("nav", { class: "app-nav" });
   for (const { path, nav: destination } of destinations("main")) {
@@ -127,8 +127,6 @@ function appBar(): HTMLElement {
   }
 
   const service = SERVICE_LABELS[serviceState];
-  const signOut = el("button", { type: "button", class: "btn" }, [t("Sign out")]);
-  signOut.addEventListener("click", () => void signOutNow());
 
   return el("header", { class: "app-bar" }, [
     el("div", { class: "app-bar-left" }, [
@@ -138,10 +136,79 @@ function appBar(): HTMLElement {
     el("div", { class: "app-bar-right" }, [
       languageSwitch(),
       el("span", { class: `api-pill ${service.className}` }, [t(service.text)]),
-      el("span", { class: "muted" }, [`${user.displayName} #${user.tag}`]),
-      signOut,
+      userMenu(user, signal),
     ]),
   ]);
+}
+
+/**
+ * The account, on a wide screen: your name opens a menu.
+ *
+ * The top bar used to show the name as plain text beside a sign-out button, and
+ * nothing more — so the settings screen, reachable from the phone's account
+ * sheet, could not be reached at all from a computer. This is ATEM-old's user
+ * menu (`header-nav.ts`), which put “Settings…” and “Sign out” behind the
+ * identity; the avatar it opened on waits for the profile, and the inbox bell and
+ * “Refresh” have nothing here to act on.
+ *
+ * The entries are the account group's destinations, read from the router — the
+ * same list the phone's sheet reads, so a new account screen appears in both
+ * without either being edited.
+ */
+function userMenu(user: NonNullable<ReturnType<typeof knownUser>>, signal: AbortSignal): HTMLElement {
+  const menu = el("div", { class: "menu", role: "menu", id: "user-menu" });
+  for (const { path, nav: destination } of destinations("account")) {
+    menu.append(
+      el("a", { class: "menu-item", role: "menuitem", href: path }, [
+        el("span", { "aria-hidden": "true" }, [destination.icon]),
+        " ",
+        t(destination.label),
+      ]),
+    );
+  }
+  if (menu.childElementCount > 0) menu.append(el("div", { class: "menu-sep", role: "separator" }));
+
+  const signOut = el("button", { type: "button", class: "menu-item menu-item-danger", role: "menuitem" }, [
+    t("Sign out"),
+  ]);
+  signOut.addEventListener("click", () => void signOutNow());
+  menu.append(signOut);
+
+  const trigger = el("button", {
+    type: "button",
+    class: "btn",
+    id: "user-menu-button",
+    "aria-haspopup": "menu",
+    "aria-expanded": "false",
+    "aria-controls": "user-menu",
+  }, [`${user.displayName} #${user.tag}`, el("span", { "aria-hidden": "true" }, [" ▾"])]);
+
+  // `.menu` is `display: none` until `.is-open` — the sheet's contract, which
+  // ATEM-old's menus already followed. Toggling `hidden` instead opens nothing.
+  const isOpen = (): boolean => menu.classList.contains("is-open");
+  const setOpen = (open: boolean): void => {
+    menu.classList.toggle("is-open", open);
+    trigger.setAttribute("aria-expanded", String(open));
+  };
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setOpen(!isOpen());
+  });
+  // Choosing an entry navigates; the menu must not stay open over the next screen.
+  menu.addEventListener("click", () => setOpen(false));
+  // Bound to the bar's lifetime: see `navigationListeners`.
+  document.addEventListener("click", (event) => {
+    if (isOpen() && !anchor.contains(event.target as Node)) setOpen(false);
+  }, { signal });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && isOpen()) {
+      setOpen(false);
+      trigger.focus();
+    }
+  }, { signal });
+
+  const anchor = el("div", { class: "menu-anchor" }, [trigger, menu]);
+  return anchor;
 }
 
 function bottomNav(): HTMLElement {
@@ -266,7 +333,20 @@ async function signOutNow(): Promise<void> {
  * the identity and the service state change together, and synchronising them by
  * hand is the kind of detail one ends up forgetting somewhere.
  */
+/**
+ * The listeners the current bar put on `document`, withdrawn when it is rebuilt.
+ *
+ * The bar is rebuilt on every screen change **and every minute**, by the
+ * service-state poll. A listener added on `document` survives the removal of the
+ * element that added it, so without this each rebuild would leave its pair
+ * behind — about sixty an hour, each closing over a menu no longer on the page.
+ */
+let navigationListeners: AbortController | null = null;
+
 export function renderNavigation(): void {
+  navigationListeners?.abort();
+  navigationListeners = new AbortController();
+
   /**
    * The sheet is closed properly before being rebuilt.
    *
@@ -285,6 +365,6 @@ export function renderNavigation(): void {
   if (!knownUser()) return;
 
   const { backdrop, sheet } = accountSheet();
-  document.body.prepend(appBar());
+  document.body.prepend(appBar(navigationListeners.signal));
   document.body.append(bottomNav(), backdrop, sheet);
 }

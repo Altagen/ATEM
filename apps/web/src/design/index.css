@@ -15,7 +15,9 @@
 @import "./pages/decks.css";
 @import "./collection.css";
 @import "./components/scanner.css";
+@import "./components/controls.css";
 @import "./navigation.css";
+@import "./settings.css";
 
 /* Our deliberate departures, last so that they win. */
 @import "./adjustments.css";

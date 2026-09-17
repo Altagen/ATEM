@@ -922,23 +922,6 @@
   position: relative;
   width: 100%;
 }
-.search-input-gaming {
-  width: 100%;
-  box-sizing: border-box;
-  background: #1c1c2b;
-  border: 1px solid var(--border);
-  color: #fff;
-  padding: 0.95rem 1.2rem 0.95rem 2.8rem;
-  border-radius: 14px;
-  font-size: 0.98rem;
-  font-weight: 600;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.search-input-gaming:focus {
-  outline: none;
-  border-color: #f5c542;
-  box-shadow: 0 0 0 3px rgba(245, 197, 66, 0.15);
-}
 .search-icon-inside {
   position: absolute;
   left: 1rem;
@@ -1082,31 +1065,6 @@
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
   transform: translateY(-1px);
 }
-/* FULL WIDTH Glowing Gold Primary 'Lancer un Duel' Button */
-.btn-showcase-primary-full {
-  width: 100%;
-  background: #f5c542;
-  color: #000;
-  border: none;
-  font-weight: 900;
-  font-size: 1.02rem;
-  padding: 0.85rem 1.4rem;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(245, 197, 66, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-top: 0.85rem;
-  box-sizing: border-box;
-}
-.btn-showcase-primary-full:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(245, 197, 66, 0.5);
-  background: var(--gold-clair);
-}
 @keyframes slideToastIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
@@ -1167,29 +1125,6 @@
   cursor: not-allowed !important;
   pointer-events: none;
   filter: grayscale(0.7);
-}
-/* ── Danger Gaming Button (Red) ─────────────────────────────────────────── */
-.btn-action-danger-red {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.45);
-  color: #f87171;
-  font-size: 0.85rem;
-  font-weight: 800;
-  padding: 0.55rem 1.15rem;
-  border-radius: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
-}
-.btn-action-danger-red:hover {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45);
 }
 .toast-undo-bar {
   position: absolute;
@@ -1793,19 +1728,6 @@
 
 .showcase-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.65rem; flex-wrap: nowrap; }
 .showcase-actions > * { white-space: nowrap; }
-.showcase-actions .btn-showcase-primary-full,
-.showcase-actions .btn-showcase-secondary,
-.showcase-actions .btn-friend-header-toggle,
-.showcase-actions .btn-modal-block-toggle {
-  width: auto;
-  margin: 0;
-  text-decoration: none;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.82rem;
-  font-weight: 900;
-  border-radius: 9px;
-  line-height: 1.2;
-}
 
 /* La bio est une boîte, pas du texte nu : elle avait perdu son fond, son cadre
    et ses arrondis en route. */
@@ -3534,72 +3456,6 @@ img.is-card-back { background-image: none; object-fit: contain; }
   font-variant-numeric: tabular-nums;
   border-radius: var(--radius-sm);
   background: var(--input);
-}
-
-/* ── L'échelle des boutons ─────────────────────────────────────────────────
- *
- * Portée depuis l'application, où quatre-vingt-quatorze boutons portaient leur
- * habillage en `style=`, en soixante-dix-neuf combinaisons. La maquette avait
- * le même défaut sous une autre forme : le rembourrage se réglait par le
- * contexte — `.guild-dir-actions .btn-showcase-secondary`, `.recruit-actions
- * .btn-showcase-secondary` — donc trois tailles écrites à trois endroits, et
- * un bouton déplacé changeait de taille sans que personne l'ait voulu.
- *
- * Trois tailles nommées, et quatre modificateurs. Les deux dépôts emploient
- * désormais les mêmes mots.
- */
-.btn-showcase-primary-full.is-petit,
-.btn-showcase-secondary.is-petit,
-.btn-action-danger-red.is-petit {
-  padding: 0.4rem 0.85rem;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.btn-showcase-primary-full.is-moyen,
-.btn-showcase-secondary.is-moyen,
-.btn-action-danger-red.is-moyen {
-  padding: 0.55rem 1.15rem;
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-.btn-showcase-primary-full.is-grand,
-.btn-showcase-secondary.is-grand,
-.btn-action-danger-red.is-grand {
-  padding: 0.75rem 1.4rem;
-  font-size: 0.95rem;
-  font-weight: 900;
-}
-
-/*
- * `.btn-showcase-primary-full` porte sa largeur dans son nom. Le modificateur
- * dit l'exception une fois, au lieu de la reprendre à chaque contexte.
- */
-.btn-showcase-primary-full.is-auto,
-.btn-showcase-secondary.is-auto,
-.btn-action-danger-red.is-auto {
-  width: auto;
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-}
-
-
-
-/*
- * L'état désactivé, que le navigateur connaît déjà. Il se disait à la main,
- * avec une opacité différente à chaque bouton.
- */
-.btn-showcase-primary-full:disabled,
-.btn-showcase-secondary:disabled,
-.btn-action-danger-red:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
 }
 
 /* ── Les formes que plusieurs pages partageaient ───────────────────────────
