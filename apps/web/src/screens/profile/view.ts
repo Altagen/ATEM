@@ -10,8 +10,10 @@
  *   honorary title”) — invented by the server from the role alone;
  * - **the presence** — this application has no live connection to measure it;
  * - **the tournament banner**, invented news;
- * - **the guild strip, friend and block buttons** — they arrive with guilds and
- *   duellists, with the routes they need.
+ * - **the guild strip** — guilds have no module yet.
+ *
+ * The friend and block buttons are here, on someone else's profile: it is where
+ * you are when you decide either.
  */
 import { AVATARS, LIMITS, textLengthStatus, type TextLengthStatus } from "@atem/shared";
 import { avatarLooks } from "../../platform/avatar.js";
@@ -77,9 +79,13 @@ function heroHtml(player: PlayerProfile): SafeHtml {
             ${when(isOwner, html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-edit-profile">
               <span aria-hidden="true">✏️</span><span>${t("Edit profile")}</span>
             </button>`)}
+            ${when(!isOwner, friendButton(player.friendStatus))}
             <button type="button" class="btn" id="btn-share-profile">
               <span aria-hidden="true">🔗</span><span>${t("Share profile")}</span>
             </button>
+            ${when(!isOwner, html`<button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-block">
+              <span aria-hidden="true">⛔</span><span>${t("Block")}</span>
+            </button>`)}
           </div>
         </div>
       </div>
@@ -88,6 +94,34 @@ function heroHtml(player: PlayerProfile): SafeHtml {
         : when(isOwner, html`<p class="showcase-bio muted">${t("No bio yet — “Edit profile” lets you write one.")}</p>`)}
     </div>
   </div>`;
+}
+
+/**
+ * The relation gesture, in the state the relation is in.
+ *
+ * The same four states as the directory's rows, and the same routes: a sent
+ * request can be cancelled, a received one accepted or declined.
+ */
+function friendButton(status: PlayerProfile["friendStatus"]): SafeHtml {
+  if (status === "friends") {
+    return html`<button type="button" class="btn" id="btn-friend-remove">
+      <span aria-hidden="true">⭐</span><span>${t("Remove friend")}</span>
+    </button>`;
+  }
+  if (status === "pending_sent") {
+    return html`<button type="button" class="btn" id="btn-friend-remove">
+      <span aria-hidden="true">⌛</span><span>${t("⌛ Cancel request")}</span>
+    </button>`;
+  }
+  if (status === "pending_received") {
+    return html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-friend-accept">
+      <span aria-hidden="true">🤝</span><span>${t("Accept")}</span>
+    </button>
+    <button type="button" class="btn" id="btn-friend-remove">${t("Decline")}</button>`;
+  }
+  return html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-friend-add">
+    <span aria-hidden="true">➕</span><span>${t("Add friend")}</span>
+  </button>`;
 }
 
 function decksHtml(player: PlayerProfile): SafeHtml {

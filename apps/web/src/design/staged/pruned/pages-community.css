@@ -1,0 +1,497 @@
+/**
+ * Rules removed from `design/pages/community.css`.
+ *
+ * Nothing set them in the shipped markup: they styled screens that do not
+ * exist here yet (guilds, settings, administration, landing page).
+ * Kept as they were — when their screen arrives, they move back up.
+ */
+
+
+/* ── Centered Navigation Header ──────────────────────────────────────── */
+.community-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+
+.community-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+
+.community-title {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+
+.community-subtitle {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+
+/* Unified 2-Pill Navigation Switcher */
+.community-tabs-nav {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  padding: 5px;
+  border-radius: 30px;
+  gap: 5px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+
+.community-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 800;
+  padding: 0.65rem 1.6rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+
+.community-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+
+.community-tab-btn.is-active {
+  background: #f5c542 !important;
+  color: #000 !important;
+  box-shadow: 0 4px 16px rgba(245, 197, 66, 0.35);
+}
+
+
+/**
+ * Sa propre ligne, dans l'annuaire.
+ *
+ * `is-current-user` était posée par la maquette, par `apps/web` et par le mock,
+ * et habillée par aucun des trois : on cherchait son propre nom dans une liste
+ * où rien ne le distinguait. Un filet dans l'or de la page suffit — la ligne ne
+ * change ni de taille ni de place, elle se laisse seulement trouver.
+ */
+.player-card-row-full.is-current-user {
+  border-left: 3px solid var(--gold);
+}
+
+
+.player-card-row-full:hover .btn-row-inspect-hint {
+  border-color: #f5c542;
+  color: #f5c542;
+}
+
+
+/* ── Annuaire des guildes ────────────────────────────────────────────────── */
+/* L'annuaire vit à même le fond de page — pas de panneau enveloppant, à la
+   différence de l'onglet Duellistes. Les rangs sont espacés par la colonne
+   flex, ce que faisait jusqu'ici le `gap` du panneau supprimé. */
+.guild-dir-view { display: flex; flex-direction: column; gap: 1.2rem; }
+
+
+
+.guild-dir-topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+
+.guild-dir-title { margin: 0; font-size: 1.45rem; font-weight: 900; color: #fff; }
+
+
+.guild-dir-topactions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+
+
+/* « Ma Guilde » : bouton d'accueil doré, cerclé d'or, qui s'allume au survol. */
+.btn-my-guild-hero {
+  background: linear-gradient(135deg, rgba(245, 197, 66, 0.18) 0%, rgba(180, 83, 9, 0.22) 100%);
+  border: 1.5px solid var(--gold);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 900;
+  padding: 0.75rem 1.4rem;
+  border-radius: 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  box-shadow: 0 8px 24px rgba(245, 197, 66, 0.22);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+
+.btn-my-guild-hero:hover {
+  background: linear-gradient(135deg, #f5c542 0%, #d97706 100%);
+  color: #0b0b14;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(245, 197, 66, 0.4);
+}
+
+
+
+.guild-dir-filters { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+
+.btn-view-mode {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+
+.btn-view-mode.is-active { background: color-mix(in srgb, var(--gold) 14%, transparent); border-color: color-mix(in srgb, var(--gold) 40%, transparent); color: var(--gold); }
+
+
+
+/* Deux colonnes en galerie, comme le mock : `minmax(370px, …)` ne laisse pas
+   la place à une troisième dans le panneau, et les cartes gagnent 176px de
+   large. `auto-fill` plutôt que `auto-fit` — les colonnes vides se conservent,
+   donc une guilde seule après filtrage garde sa largeur au lieu de s'étirer
+   sur toute la rangée. */
+.guild-dir-grid { display: grid; gap: 1.25rem; }
+
+
+/* `min()` plutôt que 370px seuls : une colonne à largeur plancher ne descend
+   jamais en dessous, et sur un cadre de 358px elle débordait de 12 — assez
+   pour rendre la page défilable latéralement sans qu'on voie quoi que ce
+   soit dépasser. */
+.guild-dir-grid.is-gallery { grid-template-columns: repeat(auto-fill, minmax(min(370px, 100%), 1fr)); }
+
+
+.guild-dir-grid.is-list { grid-template-columns: 1fr; gap: 0.85rem; }
+
+
+
+/* En liste, la carte devient une grille de deux colonnes : l'identité tient
+   toute la hauteur à gauche, le pied et l'avertissement s'empilent à droite.
+   Elle restait empilée en colonne, donc trois fois trop haute — 182px contre
+   les 111 du mock. */
+.guild-dir-grid.is-list .guild-dir-card {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.35rem;
+}
+
+
+.guild-dir-grid.is-list .guild-dir-grid.is-list .guild-dir-desc { --lines: 1; margin-top: 0.25rem; }
+
+
+.guild-dir-grid.is-list .guild-dir-tail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: 1.5rem;
+}
+
+
+.guild-dir-grid.is-list .guild-dir-foot {
+  order: -1;
+  border-top: none;
+  padding-top: 0;
+  margin: 0;
+  gap: 1rem;
+}
+
+
+
+/* Seule carte de la page, donc elle doit se détacher du fond : #151522 se lit
+   au-dessus du #0a0a12 du corps, ce que ne faisait plus --card une fois le
+   panneau enveloppant retiré. */
+.guild-dir-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #151522;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s, box-shadow 0.25s;
+  cursor: pointer;
+}
+
+
+.guild-dir-card:hover {
+  transform: translateY(-3px);
+  cursor: pointer;
+  border-color: rgba(245, 197, 66, 0.45);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 20px rgba(245, 197, 66, 0.15);
+}
+
+
+.guild-dir-head { display: flex; align-items: center; gap: 0.85rem; }
+
+
+/* Le dégradé part du doré, pas du brun : inversé, l'emblème virait à l'orange
+   sombre au lieu du jaune du mock. */
+.guild-dir-emblem {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, #f5c542 0%, #b45309 100%);
+  box-shadow: 0 6px 16px rgba(245, 197, 66, 0.25);
+  flex-shrink: 0;
+}
+
+
+.guild-dir-head { align-items: flex-start; }
+
+
+.guild-dir-ident { flex: 1; min-width: 0; }
+
+
+.guild-dir-name-row { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+
+
+.guild-dir-name { font-size: 1.15rem; font-weight: 900; color: #fff; }
+
+
+.guild-dir-mine { color: var(--gold); font-size: 0.76rem; font-weight: 900; }
+
+
+.guild-dir-count { font-size: 0.8rem; margin-top: 0.2rem; }
+
+
+/* Deux lignes en galerie, et deux lignes réservées : la coupe seule empêchait
+   la carte de grandir, pas de rétrécir. Une guilde à la description courte
+   produisait donc une carte plus basse que sa voisine. */
+.guild-dir-desc {
+  margin: 0.5rem 0 0;
+  font-size: 0.84rem;
+  --lines: 2;
+}
+
+
+
+.guild-dir-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+
+
+/* En galerie, la queue s'efface : `display: contents` fait remonter
+   l'avertissement et le pied au rang d'enfants directs de la carte, qui les
+   empile comme avant. En liste elle redevient une vraie colonne, à droite de
+   l'identité — c'est le seul moyen d'obtenir les deux dispositions du mock
+   sans écrire l'avertissement deux fois dans le balisage. */
+.guild-dir-tail { display: contents; }
+
+
+.guild-dir-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+
+.guild-dir-foot > * { white-space: nowrap; }
+
+
+/* Bleu pour ce qui se consulte, doré pour l'action qui engage — la règle du
+   mock, qui distingue « Aperçu » de « Espace Guilde ». */
+.guild-dir-actions .btn-showcase-secondary,
+.guild-dir-actions .btn-showcase-primary-full { text-decoration: none; }
+
+
+.guild-dir-actions .btn-showcase-primary-full { color: #0b0b14; }
+
+
+.guild-access-chip {
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+
+.guild-access-chip.is-public_open { color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, transparent); }
+
+
+.guild-access-chip.is-public_apply { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+
+
+.guild-access-chip.is-private_invite { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); }
+
+
+/* L'aperçu de guilde réserve quatre lignes : assez pour lire l'essentiel d'une
+   description de 320 caractères, et toujours la même hauteur de carte. Le texte
+   entier se lit sur la page de guilde, où mène « Voir Profil de Guilde ». */
+.preview-bio { margin-top: 0.85rem; --lines: 4; }
+
+
+.player-row-you { color: var(--muted); font-size: 0.78rem; }
+
+
+.player-guild-badge {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 1px dotted color-mix(in srgb, var(--gold) 50%, transparent);
+}
+
+
+.player-guild-badge:hover { color: var(--gold); }
+
+
+.player-guild-badge.is-none { color: var(--muted); border-bottom: 0; }
+
+@media (max-width: 850px) {
+
+
+  /* Le badge de guilde est un lien : à 20px de haut, on le vise mal. */
+  .player-guild-badge { min-height: 32px; padding-block: 0.35rem; }
+}
+
+@media (max-width: 850px) {
+
+
+  /* Carte de guilde de l'annuaire : même traitement. */
+  .guild-dir-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+    padding: 0.85rem 0.95rem;
+  }
+}
+
+@media (max-width: 850px) {
+
+  .guild-dir-actions,
+  .guild-dir-actions > * { width: 100%; }
+}
+
+@media (max-width: 850px) {
+
+  .guild-dir-topactions { flex-direction: column; align-items: stretch; }
+}
+
+@media (max-width: 850px) {
+
+  .guild-dir-topactions > * { width: 100%; justify-content: center; }
+}
+
+
+/*
+ * Taken out of `design/pages/community.css` by hand, not by the purge, on
+ * 2026-09-18.
+ *
+ * `#gaming-custom-toast` is an identifier no markup sets — this application's
+ * toast is `.toast`, styled in `base.css`. The `.admin-table` block is a second,
+ * different version of the table in `design/components/table.css`; loaded after
+ * it, it silently redressed the settings' import history. `.btn.is-friend`
+ * styled a button ATEM-old's row had and this one does not.
+ */
+/* Custom Gaming Toast Notification Popup */
+#gaming-custom-toast {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: var(--z-toast);
+  background: #181826;
+  border: 1px solid #f5c542;
+  color: #fff;
+  padding: 0.9rem 1.4rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.92rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideToastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* ── REUSABLE GAMING TABLES (Admin & Settings ISO) ────────────────────────── */
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  font-size: 0.88rem;
+}
+.admin-table th {
+  background: #1b1b2a;
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.04em;
+}
+.admin-table th:first-child {
+  border-top-left-radius: 17px;
+}
+.admin-table th:last-child {
+  border-top-right-radius: 17px;
+}
+.admin-table td {
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #fff;
+  vertical-align: middle;
+}
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+.admin-table tr:last-child td:first-child {
+  border-bottom-left-radius: 17px;
+}
+.admin-table tr:last-child td:last-child {
+  border-bottom-right-radius: 17px;
+}
+.admin-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+.btn.is-friend { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 40%, transparent); }
+

@@ -856,48 +856,6 @@
   display: inline-block;
   flex-shrink: 0;
 }
-
-.friend-star-fixed { color: var(--gold); font-size: 0.95rem; line-height: 1; }
-
-/* ── Chrome extrait de la version app de community.css ───────────────────── */
-.search-box-wrap {
-  position: relative;
-  width: 100%;
-}
-.search-icon-inside {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--muted);
-  font-size: 1.1rem;
-  pointer-events: none;
-}
-.chip-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 800;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-}
-.chip-btn:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
-}
-.chip-btn.is-active {
-  background: rgba(245, 197, 66, 0.15);
-  border-color: #f5c542;
-  color: #f5c542;
-}
 .btn-row-inspect-hint {
   font-size: 0.82rem;
   font-weight: 800;
@@ -1119,17 +1077,6 @@
   padding: 2px 8px;
   border-radius: 6px;
 }
-
-/* .status-dot sert à Communauté, Ma Guilde et Profil : elle appartient au chrome. */
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
-}
-.status-dot.online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
-.status-dot.offline { background: #64748b; }
 
 /* Tuile d'indicateur, utilisée par le tableau de bord d'administration. */
 .admin-kpi {
@@ -2684,18 +2631,6 @@ img.is-card-back { background-image: none; object-fit: contain; }
   border-radius: 7px;
   padding: 0.2rem 0.5rem;
   white-space: nowrap;
-}
-
-/* — de community.css — */
-/* ── CARD 1: Full-Width Global Outer Frame ─────────────────────────────────── */
-.directory-unified-frame {
-  background: #141420;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 1.75rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-  width: 100%;
-  box-sizing: border-box;
 }
 
 /* — de scanlist.css — */

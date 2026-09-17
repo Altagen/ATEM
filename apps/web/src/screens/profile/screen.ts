@@ -12,6 +12,7 @@ import { LIMITS, textLengthStatus, type Avatar } from "@atem/shared";
 import { api, ApiError, type PublicUser } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { renderNavigation } from "../../platform/navigation.js";
+import { navigate } from "../../platform/router.js";
 import { knownUser, setUser } from "../../platform/session.js";
 import { toast } from "../../platform/ui.js";
 import { profileState, type PlayerProfile } from "./state.js";
@@ -116,8 +117,45 @@ export async function profileScreen(
     }
   }
 
+  /** A relation gesture, then the profile as the server now describes it. */
+  async function relate(path: string, method: "POST" | "DELETE", done: string): Promise<void> {
+    try {
+      await api(path, { method });
+      await load();
+      if (signal.aborted) return;
+      paint();
+      toast(done, "success");
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : t("The request failed."), "error");
+    }
+  }
+
   function bind(): void {
     root.querySelector("#btn-share-profile")?.addEventListener("click", () => void share());
+
+    const other = state.player && !state.player.isOwner ? state.player.profile : null;
+    if (other) {
+      const name = other.displayName;
+      root.querySelector("#btn-friend-add")?.addEventListener("click", () => void relate(
+        `/community/friends/${other.id}`, "POST", t("Friend request sent to {name}.", { name })));
+      root.querySelector("#btn-friend-accept")?.addEventListener("click", () => void relate(
+        `/community/friends/${other.id}/accept`, "POST", t("You are now friends with {name}.", { name })));
+      root.querySelector("#btn-friend-remove")?.addEventListener("click", () => void relate(
+        `/community/friends/${other.id}`, "DELETE", t("Nothing links you to {name} any more.", { name })));
+      root.querySelector("#btn-block")?.addEventListener("click", () => {
+        void (async () => {
+          try {
+            await api(`/community/blocks/${other.id}`, { method: "POST" });
+            toast(t("{name} is blocked.", { name }), "success");
+            // Their profile is out of reach now: staying on it would show
+            // “not found” to someone who has just arrived from it.
+            navigate("/community");
+          } catch (err) {
+            toast(err instanceof ApiError ? err.message : t("The request failed."), "error");
+          }
+        })();
+      });
+    }
 
     root.querySelector("#btn-edit-profile")?.addEventListener("click", () => {
       if (!state.player?.isOwner) return;

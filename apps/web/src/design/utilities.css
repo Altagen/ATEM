@@ -1,1 +1,21 @@
 
+
+
+
+
+/**
+ * Masque un élément à l'écran en le laissant lisible par les lecteurs d'écran.
+ * La page Collection n'affiche pas de titre — sa barre d'outils occupe le haut —
+ * mais une page sans titre accessible est un défaut, pas un choix de design.
+ */
+.u-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

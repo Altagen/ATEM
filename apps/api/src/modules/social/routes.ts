@@ -7,7 +7,6 @@
  * that person, and there is no route to write someone else's relations.
  */
 import { Hono } from "hono";
-import { z } from "zod";
 import type { Database } from "../../db/client.js";
 import { invalidInput } from "../../platform/errors.js";
 import { requireViewer } from "../identity/index.js";
@@ -15,8 +14,6 @@ import {
   acceptFriend, blockPlayer, listBlocked, listDuellists, removeFriend, requestFriend,
   unblockPlayer,
 } from "./service.js";
-
-const Filter = z.enum(["all", "friends", "online"]);
 
 export function socialRoutes(db: Database) {
   const app = new Hono();
@@ -29,11 +26,9 @@ export function socialRoutes(db: Database) {
   };
 
   app.get("/duellists", async (c) => {
-    const filter = Filter.safeParse(c.req.query("filter") ?? "all");
-    if (!filter.success) throw invalidInput("Unknown filter.");
     const search = c.req.query("q") ?? undefined;
     if (search !== undefined && search.length > 64) throw invalidInput("Search too long.");
-    return c.json({ items: await listDuellists(db, viewerId(c), { search, filter: filter.data }) });
+    return c.json(await listDuellists(db, viewerId(c), { search }));
   });
 
   app.post("/friends/:id", async (c) =>

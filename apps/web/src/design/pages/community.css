@@ -1,0 +1,174 @@
+/**
+ * The community page — the duellist directory.
+ *
+ * Taken as it was from ATEM-old's `design/styles/pages/community.css`, the
+ * reference. What styled the guild tab and the rank badges went to
+ * `staged/pruned/pages-community.css` with the dead-CSS purge: no markup sets
+ * them here, and guilds have no module yet.
+ */
+/* tokens et base sont importés par ../app.css : ne pas les réimporter ici. */
+
+/* ATEM Community — AAA Video Game UI Design System */
+.community-app-container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem var(--fond-de-page);
+  position: relative;
+}
+/* Full Width Directory Panel */
+.directory-full-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  width: 100%;
+}
+/* Filter Chips Bar */
+/* Full Width Player Card Rows */
+.player-cards-list-full {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.player-cards-list-full::-webkit-scrollbar {
+  width: 6px;
+}
+.player-cards-list-full::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+.player-cards-list-full::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+.player-card-row-full {
+  background: #1b1b2a;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.player-card-row-full:hover {
+  border-color: rgba(245, 197, 66, 0.5);
+  background: #1f1f32;
+  transform: translateX(4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.player-row-main-info {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: 0;
+  flex: 1;
+}
+.player-row-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.player-row-title-line {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.player-row-name {
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: #fff;
+  white-space: nowrap;
+}
+.player-row-subtitle {
+  font-size: 0.84rem;
+  color: var(--muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.player-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+/* ── Ligne de duelliste ──────────────────────────────────────────────────── */
+.player-row-tag { color: var(--muted); font-size: 0.85rem; }
+
+/* Hauteur de ligne alignée sur celle du mock : 88px contre 63 chez moi. */
+.player-card-row-full { min-height: 88px; }
+.player-row-meta { display: flex; flex-direction: column; gap: 0.3rem; }
+
+/* La liste ne défile pas dans son propre cadre : c'est la page qui défile.
+   La règle héritée (max-height: 600px + overflow) ne se déclenchait jamais dans
+   le mock, dont la liste est plus courte ; avec huit duellistes elle enfermait
+   la liste derrière une barre de défilement. */
+.player-cards-list-full { max-height: none; overflow: visible; padding-right: 0; }
+
+/* ── Communauté, sur téléphone ─────────────────────────────────────────────
+ * Les cartes de duelliste et de guilde sont des rangées : identité à gauche,
+ * actions à droite. La partie droite ne se comprimait pas, si bien qu'à 390px
+ * l'identité tombait à 130px — le titre « Président du Conseil & PDG » y
+ * descendait en colonne, un mot par ligne, et le rang sortait du cadre.
+ *
+ * Empilées, elles retrouvent la largeur : l'identité prend la ligne, les
+ * actions passent dessous.
+ */
+@media (max-width: 850px) {
+  .player-card-row-full {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+    padding: 0.85rem 0.95rem;
+  }
+  .player-row-main-info { gap: 0.7rem; align-items: flex-start; }
+  .player-row-meta { min-width: 0; flex: 1; }
+  /* Le nom, le tag et les badges se replient au lieu de filer hors du cadre. */
+  .player-row-title-line { flex-wrap: wrap; gap: 0.35rem 0.45rem; }
+  .player-row-subtitle { gap: 0.3rem 0.45rem; font-size: 0.78rem; }
+  .player-row-actions { width: 100%; }
+  .player-row-actions > * { flex: 1; justify-content: center; }
+  /* Les séparateurs « • » n'ont plus de sens une fois la ligne repliée : ils
+     se retrouvent en tête de ligne, orphelins. */
+  .player-row-sep { display: none; }
+
+  /* Les rangées de puces défilent au lieu de sortir du cadre. */
+  .filter-chips-row,
+  .guild-dir-filters { flex-wrap: wrap; }
+}
+
+/* — de community.css — */
+/* ── CARD 1: Full-Width Global Outer Frame ─────────────────────────────────── */
+.directory-unified-frame {
+  background: #141420;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* The bio on a row: one line, whatever its length — the profile shows it whole. */
+.player-row-bio {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 28rem;
+}
+
+/* The name opens the profile; a link's underline would cut the row in two. */
+a.player-row-name { text-decoration: none; color: inherit; }
+a.player-row-name:hover { color: var(--gold); }
+
+.player-row-more { margin: 0.9rem 0 0; text-align: center; font-size: 0.82rem; }

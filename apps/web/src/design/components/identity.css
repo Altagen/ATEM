@@ -53,3 +53,17 @@
 .avatar-choice.is-selected { border-color: var(--gold); color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, transparent); }
 .avatar-choice-ico { font-size: 1.5rem; }
 .avatar-choice-label { font-size: 0.78rem; font-weight: 800; }
+
+
+.friend-star-fixed { color: var(--gold); font-size: 0.95rem; line-height: 1; }
+
+/* .status-dot sert à Communauté, Ma Guilde et Profil : elle appartient au chrome. */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.status-dot.online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+.status-dot.offline { background: #64748b; }

@@ -23,28 +23,6 @@
 
 
 
-/* ── L'échelle des boutons ─────────────────────────────────────────────────
- *
- * Portée depuis l'application, où quatre-vingt-quatorze boutons portaient leur
- * habillage en `style=`, en soixante-dix-neuf combinaisons. La maquette avait
- * le même défaut sous une autre forme : le rembourrage se réglait par le
- * contexte — `.guild-dir-actions .btn-showcase-secondary`, `.recruit-actions
- * .btn-showcase-secondary` — donc trois tailles écrites à trois endroits, et
- * un bouton déplacé changeait de taille sans que personne l'ait voulu.
- *
- * Trois tailles nommées, et quatre modificateurs. Les deux dépôts emploient
- * désormais les mêmes mots.
- */
-.btn-showcase-primary-full.is-petit,
-.btn-showcase-secondary.is-petit,
-.btn-action-danger-red.is-petit {
-  padding: 0.4rem 0.85rem;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-
-
 .btn-showcase-primary-full.is-grand,
 .btn-showcase-secondary.is-grand,
 .btn-action-danger-red.is-grand {

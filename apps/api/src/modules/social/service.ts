@@ -28,6 +28,16 @@ export type FriendStatus = "none" | "pending_sent" | "pending_received" | "frien
 /** A duellist as the directory lists them: their profile, and where we stand. */
 export type DuellistCard = Duellist & { friendStatus: FriendStatus };
 
+/**
+ * How many the directory answers at once.
+ *
+ * The screen holds the whole list to count its chips, so this is also what it
+ * renders. Beyond it the answer says so and the search narrows it down — an
+ * instance with more duellists than this is not one where you scroll to find
+ * someone.
+ */
+const DIRECTORY_LIMIT = 200;
+
 /** The pair, in the order the `friend_edges_ordered` constraint imposes. */
 const orderedPair = (x: string, y: string): [string, string] => (x < y ? [x, y] : [y, x]);
 
@@ -87,15 +97,19 @@ export async function friendStatusWith(
 /**
  * The duellists, everyone but the viewer and those either side has blocked.
  *
- * `friends` and `online` are the two filters ATEM-old offered that rest on
- * something real. Its third, “master”, filtered on the administrator role under
- * a rank name, and the rank it suggested does not exist.
+ * Friends first, then by name: the list is read to find someone you know.
+ *
+ * **No filter parameter.** ATEM-old had `friends`, `online` and a third that
+ * filtered the administrator role under a rank name the product does not have.
+ * The screen writes the count on each of its chips, so it holds the whole list
+ * whatever is selected, and filtering it again on the server would be a
+ * parameter nothing needs to call.
  */
 export async function listDuellists(
   db: Database,
   viewerId: string,
-  options: { search?: string; filter?: "all" | "friends" | "online" } = {},
-): Promise<DuellistCard[]> {
+  options: { search?: string } = {},
+): Promise<{ items: DuellistCard[]; truncated: boolean }> {
   const edges = await db
     .select()
     .from(friendEdges)
@@ -115,22 +129,19 @@ export async function listDuellists(
     blockRows.map((row) => (row.userId === viewerId ? row.blockedUserId : row.userId)),
   );
 
-  const rows = await listProfiles(db, { search: options.search, excludeId: viewerId });
+  // One more than we keep: that is how we know the list was cut.
+  const rows = await listProfiles(db, {
+    search: options.search, excludeId: viewerId, limit: DIRECTORY_LIMIT + 1,
+  });
   const items = rows
     .filter((row) => !hidden.has(row.id))
     .map((row) => ({ ...row, friendStatus: relation.get(row.id) ?? "none" }));
 
-  const kept = options.filter === "friends"
-    ? items.filter((item) => item.friendStatus === "friends")
-    : options.filter === "online"
-      ? items.filter((item) => item.isOnline)
-      : items;
-
-  // Friends first, then by name: the list is read to find someone you know.
-  return kept.sort((a, b) => {
+  const sorted = items.sort((a, b) => {
     const mine = Number(b.friendStatus === "friends") - Number(a.friendStatus === "friends");
     return mine !== 0 ? mine : a.displayName.localeCompare(b.displayName);
   });
+  return { items: sorted.slice(0, DIRECTORY_LIMIT), truncated: sorted.length > DIRECTORY_LIMIT };
 }
 
 /** The person a relation gesture targets — never suspended, never yourself. */

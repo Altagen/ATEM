@@ -24,6 +24,18 @@ const duellists = async (cookie: string, query = ""): Promise<Card[]> => {
   return ((await response.json()) as { items: Card[] }).items;
 };
 
+test("the directory answers a bounded list, and says when it cut it", async () => {
+  /**
+   * The screen holds the whole answer to count its chips, so an instance with
+   * thousands of accounts must not send them all — the search narrows instead.
+   */
+  const viewer = await freshSession(app, "bound-viewer");
+  const response = await req("GET", "/community/duellists", viewer.cookie);
+  const body = (await response.json()) as { items: Card[]; truncated: boolean };
+  assert.ok(body.items.length <= 200, `answered ${body.items.length}`);
+  assert.equal(typeof body.truncated, "boolean");
+});
+
 const statusOf = (items: Card[], id: string) => items.find((item) => item.id === id)?.friendStatus;
 
 test("a request is pending on both sides, and accepting makes it mutual", async () => {
@@ -110,7 +122,7 @@ test("a block works both ways, severs the link, and hides the profile", async ()
     "unblocking does not bring the friendship back");
 });
 
-test("the directory searches by name and by number, and filters on friends", async () => {
+test("the directory searches by name and by number, and puts friends first", async () => {
   const viewer = await freshSession(app, "dir-viewer");
   const friend = await freshSession(app, "dir-friend");
   const stranger = await freshSession(app, "dir-stranger");
@@ -120,9 +132,6 @@ test("the directory searches by name and by number, and filters on friends", asy
   const all = await duellists(viewer.cookie);
   assert.equal(all.some((item) => item.id === viewer.userId), false, "you are not in your own list");
   assert.equal(all[0]?.id, friend.userId, "friends come first");
-
-  const friendsOnly = await duellists(viewer.cookie, "?filter=friends");
-  assert.deepEqual(friendsOnly.map((item) => item.id), [friend.userId]);
 
   // By name…
   const byName = await duellists(viewer.cookie, "?q=Tester%20dir-stranger");
@@ -134,7 +143,7 @@ test("the directory searches by name and by number, and filters on friends", asy
   const byTag = await duellists(viewer.cookie, `?q=%23${tag}`);
   assert.equal(byTag.some((item) => item.id === stranger.userId), true);
 
-  assert.equal((await req("GET", "/community/duellists?filter=nonsense", viewer.cookie)).status, 400);
+  assert.equal((await req("GET", `/community/duellists?q=${"x".repeat(65)}`, viewer.cookie)).status, 400);
 });
 
 test("presence is read from the last request, and the online filter follows it", async () => {
@@ -143,12 +152,10 @@ test("presence is read from the last request, and the online filter follows it",
 
   // Registering was a request: they are around.
   assert.equal((await duellists(viewer.cookie)).find((item) => item.id === seen.userId)?.isOnline, true);
-  assert.equal((await duellists(viewer.cookie, "?filter=online")).some((item) => item.id === seen.userId), true);
 
   // An hour without a request, and they are not.
   await db.execute(sql`update users set last_seen_at = now() - interval '1 hour' where id = ${seen.userId}`);
   assert.equal((await duellists(viewer.cookie)).find((item) => item.id === seen.userId)?.isOnline, false);
-  assert.equal((await duellists(viewer.cookie, "?filter=online")).some((item) => item.id === seen.userId), false);
 });
 
 test("a relation needs two real accounts", async () => {

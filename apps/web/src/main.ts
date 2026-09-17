@@ -11,6 +11,7 @@ import { knownUser, loadUser, setUser } from "./platform/session.js";
 import { el, toast } from "./platform/ui.js";
 import { authScreen } from "./screens/auth/screen.js";
 import { collectionScreen } from "./screens/collection/screen.js";
+import { communityScreen } from "./screens/community/screen.js";
 import { deckScreen } from "./screens/deck/screen.js";
 import { scanlistScreen } from "./screens/scanlist/screen.js";
 import { settingsScreen } from "./screens/settings/screen.js";
@@ -41,6 +42,10 @@ register("/scanlists", scanlistScreen, { requiresSession: true });
 register("/decks", deckScreen, {
   requiresSession: true,
   nav: { label: "Decks", icon: "🃏", group: "main" },
+});
+register("/community", communityScreen, {
+  requiresSession: true,
+  nav: { label: "Community", icon: "🌐", group: "main" },
 });
 /**
  * The account group: your profile, then your settings — in that order, which is

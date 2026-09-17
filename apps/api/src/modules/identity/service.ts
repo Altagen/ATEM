@@ -292,7 +292,7 @@ const toDuellist = (row: UserRow, since: number): Duellist => ({
  */
 export async function listProfiles(
   db: Database,
-  options: { search?: string; excludeId?: string; ids?: string[] } = {},
+  options: { search?: string; excludeId?: string; ids?: string[]; limit?: number } = {},
 ): Promise<Duellist[]> {
   const search = options.search?.trim().toLowerCase().replace(/^#/, "") ?? "";
   if (options.ids && options.ids.length === 0) return [];
@@ -307,7 +307,9 @@ export async function listProfiles(
       search
         ? sql`(lower(${users.displayName}) like ${`%${search}%`} or ${users.tag} like ${`%${search}%`})`
         : sql`true`,
-    ));
+    ))
+    .orderBy(users.displayName)
+    .limit(options.limit ?? 500);
 
   const since = Date.now() - PRESENCE_WINDOW_MINUTES * 60_000;
   return rows.map((row) => toDuellist(row, since));

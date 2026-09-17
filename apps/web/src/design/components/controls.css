@@ -168,3 +168,67 @@ a.btn-showcase-primary-full {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
 }
 .counted-field.is-over .counted-over { display: block; }
+
+
+/* ── Chrome extrait de la version app de community.css ───────────────────── */
+.search-box-wrap {
+  position: relative;
+  width: 100%;
+}
+.search-icon-inside {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+.chip-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+.chip-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.chip-btn.is-active {
+  background: rgba(245, 197, 66, 0.15);
+  border-color: #f5c542;
+  color: #f5c542;
+}
+
+
+
+
+/* ── L'échelle des boutons ─────────────────────────────────────────────────
+ *
+ * Portée depuis l'application, où quatre-vingt-quatorze boutons portaient leur
+ * habillage en `style=`, en soixante-dix-neuf combinaisons. La maquette avait
+ * le même défaut sous une autre forme : le rembourrage se réglait par le
+ * contexte — `.guild-dir-actions .btn-showcase-secondary`, `.recruit-actions
+ * .btn-showcase-secondary` — donc trois tailles écrites à trois endroits, et
+ * un bouton déplacé changeait de taille sans que personne l'ait voulu.
+ *
+ * Trois tailles nommées, et quatre modificateurs. Les deux dépôts emploient
+ * désormais les mêmes mots.
+ */
+.btn-showcase-primary-full.is-petit,
+.btn-showcase-secondary.is-petit,
+.btn-action-danger-red.is-petit {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}

@@ -2,6 +2,7 @@
  * What the profile screen holds between two paints.
  */
 import type { Avatar } from "@atem/shared";
+import type { FriendStatus } from "../community/state.js";
 
 /** Mirrors the server's `PlayerProfile` (`GET /players/:id`). */
 export type PlayerProfile = {
@@ -15,6 +16,8 @@ export type PlayerProfile = {
     createdAt: string;
   };
   isOwner: boolean;
+  /** Where the relation stands, as the viewer sees it — mirrors the server. */
+  friendStatus: FriendStatus;
   decks: { id: string; name: string; main: number }[];
 };
 
