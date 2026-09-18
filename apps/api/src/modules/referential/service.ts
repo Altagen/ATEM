@@ -476,11 +476,44 @@ export async function getCard(
 }
 
 /** A card's printings, to pick the edition one owns. */
+/**
+ * Every printing of this card — **by name, not by passcode**.
+ *
+ * “Do I already have it, and in which printing?” is asked about a card, not
+ * about a registration number. YGOPRODeck registers an alternate artwork as its
+ * own card with its own passcode, and files printings under it: on 2026-09-19,
+ * with the real catalogue, `LOB-FR001` — the 2002 French Blue-Eyes — sat alone
+ * under passcode 89631146 while the other 78 printings sat under 89631139. Keyed
+ * on the passcode, the sheet told a player who owns the French one that it has
+ * no other printing.
+ *
+ * The English name is the key: it is what the source makes stable between two
+ * registrations of the same card, and two genuinely different cards never share
+ * it — “Blue-Eyes White Dragon, the White Phantom Beast” is its own name.
+ */
 export async function listPrintsForCard(db: Database, passcode: number) {
+  const [card] = await db
+    .select({ nameEn: cards.nameEn })
+    .from(cards)
+    .where(eq(cards.passcode, passcode))
+    .limit(1);
+  if (!card) return [];
+
   return db
-    .select()
+    .select({
+      id: cardPrints.id,
+      setCode: cardPrints.setCode,
+      canonicalSetCode: cardPrints.canonicalSetCode,
+      cardPasscode: cardPrints.cardPasscode,
+      setName: cardPrints.setName,
+      rarity: cardPrints.rarity,
+      language: cardPrints.language,
+      resolveStatus: cardPrints.resolveStatus,
+      updatedAt: cardPrints.updatedAt,
+    })
     .from(cardPrints)
-    .where(and(eq(cardPrints.cardPasscode, passcode), eq(cardPrints.resolveStatus, "resolved")))
+    .innerJoin(cards, eq(cards.passcode, cardPrints.cardPasscode))
+    .where(and(eq(cards.nameEn, card.nameEn), eq(cardPrints.resolveStatus, "resolved")))
     .orderBy(cardPrints.setCode);
 }
 

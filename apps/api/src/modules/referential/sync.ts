@@ -14,7 +14,7 @@ import type { Database } from "../../db/client.js";
 import { createDatabase } from "../../db/client.js";
 import { cardPrints, cards } from "./schema.js";
 import { cardFromYgo } from "./service.js";
-import { fetchAllCards } from "./ygoprodeck.js";
+import { fetchAllCards, type YgoCard } from "./ygoprodeck.js";
 
 const BATCH = 500;
 
@@ -31,6 +31,59 @@ const excluded = (column: string) => sql.raw(`excluded.${column}`);
  */
 const keepKnown = (column: string) =>
   sql.raw(`coalesce(excluded.${column}, "cards".${column})`);
+
+/**
+ * The printings of the dump, de-duplicated — and **contested ones settled**.
+ *
+ * Two things make a printing appear twice:
+ *
+ * - the same `(set_code, rarity, language)` listed twice, which PostgreSQL
+ *   refuses inside one `ON CONFLICT` batch;
+ * - **two different cards claiming the same printing**. YGOPRODeck registers an
+ *   alternate artwork as its own card with its own passcode, and both entries
+ *   carry the set codes of the original print. Taking the last one seen made the
+ *   result depend on the dump's order: on 2026-09-19 `LOB-FR001` — the 2002
+ *   Blue-Eyes — ended up on passcode 89631146, the alternate art, whose single
+ *   printing then hid the sheet's “other printings” block.
+ *
+ * The lowest passcode wins: a re-registration is always given a higher one than
+ * the card it re-registers. That is a rule of the source's making, not of ours,
+ * but it is stable and it can be read here.
+ */
+export function printRowsFrom(cards: YgoCard[]): {
+  rows: (typeof cardPrints.$inferInsert)[];
+  malformed: number;
+} {
+  const rows = new Map<string, typeof cardPrints.$inferInsert>();
+  let malformed = 0;
+
+  for (const card of cards) {
+    for (const set of card.card_sets ?? []) {
+      const setCode = normalizeSetCode(set.set_code);
+      // 12 entries out of 44,517 have no dash (`DB13`, `DB5`). They are
+      // malformed on YGOPRODeck's side: we count them and leave them.
+      if (!parseSetCode(setCode)) {
+        malformed += 1;
+        continue;
+      }
+      const rarity = set.set_rarity?.trim() ?? "";
+      const language = languageFromSetCode(setCode);
+      const key = `${setCode}|${rarity}|${language}`;
+      const held = rows.get(key);
+      if (held && (held.cardPasscode ?? Number.MAX_SAFE_INTEGER) <= card.id) continue;
+      rows.set(key, {
+        setCode,
+        canonicalSetCode: canonicalSetCode(setCode),
+        cardPasscode: card.id,
+        setName: set.set_name ?? null,
+        rarity,
+        language,
+        resolveStatus: "resolved",
+      });
+    }
+  }
+  return { rows: [...rows.values()], malformed };
+}
 
 export async function syncCatalogue(db: Database): Promise<void> {
   console.log("[atem] downloading the catalogue…");
@@ -76,38 +129,7 @@ export async function syncCatalogue(db: Database): Promise<void> {
   }
   console.log(`[atem] ${cardRows.length} cards saved`);
 
-  /**
-   * The same `(set_code, rarity, language)` identity can appear twice in the
-   * dump. We de-duplicate before inserting: PostgreSQL refuses an `ON CONFLICT`
-   * whose batch itself contains the same key twice.
-   */
-  const printRows = new Map<string, typeof cardPrints.$inferInsert>();
-  let malformed = 0;
-
-  for (const card of en) {
-    for (const set of card.card_sets ?? []) {
-      const setCode = normalizeSetCode(set.set_code);
-      // 12 entries out of 44,517 have no dash (`DB13`, `DB5`). They are
-      // malformed on YGOPRODeck's side: we count them and leave them.
-      if (!parseSetCode(setCode)) {
-        malformed += 1;
-        continue;
-      }
-      const rarity = set.set_rarity?.trim() ?? "";
-      const language = languageFromSetCode(setCode);
-      printRows.set(`${setCode}|${rarity}|${language}`, {
-        setCode,
-        canonicalSetCode: canonicalSetCode(setCode),
-        cardPasscode: card.id,
-        setName: set.set_name ?? null,
-        rarity,
-        language,
-        resolveStatus: "resolved",
-      });
-    }
-  }
-
-  const prints = [...printRows.values()];
+  const { rows: prints, malformed } = printRowsFrom(en);
   for (let i = 0; i < prints.length; i += BATCH) {
     await db
       .insert(cardPrints)
