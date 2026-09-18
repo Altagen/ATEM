@@ -10,14 +10,10 @@ import { api, ApiError } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { refreshInbox } from "../../platform/navigation.js";
 import { navigate } from "../../platform/router.js";
-import { knownUser } from "../../platform/session.js";
 import { toast } from "../../platform/ui.js";
 import type { Duellist } from "../community/state.js";
 import { duelState, type DeckChoice, type Duel, type DuelDetail } from "./state.js";
 import { detailHtml, listHtml } from "./view.js";
-
-/** Life points both duellists start on, unless a turn says otherwise. */
-const STARTING_LIFE = 8000;
 
 export async function duelScreen(
   root: HTMLElement,
@@ -82,7 +78,7 @@ export async function duelScreen(
   function closeModals(): void {
     state.invite = null;
     state.result = null;
-    state.turn = null;
+    state.life = null;
     state.deckPick = null;
     state.busy = false;
     paint();
@@ -102,7 +98,7 @@ export async function duelScreen(
     paint();
     try {
       await run();
-      toast(done, "success");
+      if (done) toast(done, "success");
     } catch (err) {
       toast(reason(err, t("The request failed.")), "error");
     } finally {
@@ -158,23 +154,42 @@ export async function duelScreen(
       }, t("Result recorded."));
     });
 
-    root.querySelector("#form-turn")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const turn = state.turn;
-      if (!turn) return;
-      const written = {
-        number: turn.number,
-        playerId: value("turn-player"),
-        hostLife: Number(value("turn-host")),
-        guestLife: Number(value("turn-guest")),
-        note: value("turn-note") || null,
-      };
+    /**
+     * Life points: the quick amounts fill the field rather than sending on
+     * their own — one taps “−1000”, sees it, and confirms. A tap that took
+     * life points straight away would have no way back.
+     */
+    for (const chip of root.querySelectorAll<HTMLButtonElement>("[data-amount]")) {
+      chip.addEventListener("click", () => {
+        const field = root.querySelector<HTMLInputElement>("#life-amount");
+        if (field) field.value = chip.dataset.amount ?? "";
+      });
+    }
+
+    const sendLife = (sign: 1 | -1): void => {
+      const life = state.life;
+      if (!life) return;
+      const amount = Number(value("life-amount"));
+      const note = value("life-note") || null;
+      if (!Number.isInteger(amount) || amount <= 0) {
+        toast(t("Life points are a whole number."), "error");
+        return;
+      }
       void act(async () => {
-        await api(`/duels/${duelId}/turns`, { method: "PUT", body: written });
-        state.turn = null;
+        await api(`/duels/${duelId}/life`, {
+          method: "POST",
+          body: { playerId: life.playerId, delta: sign * amount, note },
+        });
+        state.life = null;
         await loadDuel();
-      }, t("Turn written."));
+      }, sign < 0 ? t("Life points taken.") : t("Life points given back."));
+    };
+
+    root.querySelector("#form-life")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      sendLife(-1);
     });
+    root.querySelector("#btn-life-give")?.addEventListener("click", () => sendLife(1));
 
     root.querySelector("#form-duel-deck")?.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -222,6 +237,38 @@ export async function duelScreen(
       paint();
     });
 
+    root.querySelector("#btn-start")?.addEventListener("click", () => {
+      void act(async () => {
+        const started = await api<DuelDetail>(`/duels/${duelId}/start`, { method: "POST" });
+        state.open = started;
+        const first = started.currentPlayerId === started.host.player?.id
+          ? started.host.player
+          : started.guest.player;
+        toast(t("{name} won the coin flip and begins.", { name: first?.displayName ?? "" }), "success");
+      }, "");
+    });
+
+    root.querySelector("#btn-phase")?.addEventListener("click", () => {
+      void act(async () => {
+        state.open = await api<DuelDetail>(`/duels/${duelId}/phase`, { method: "POST" });
+      }, t("Next phase."));
+    });
+
+    root.querySelector("#btn-end-turn")?.addEventListener("click", () => {
+      void act(async () => {
+        state.open = await api<DuelDetail>(`/duels/${duelId}/turn`, { method: "POST" });
+      }, t("The turn passes."));
+    });
+
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-life]")) {
+      const playerId = button.dataset.life!;
+      button.addEventListener("click", () => {
+        state.life = { playerId, amount: "", note: "" };
+        paint();
+        root.querySelector<HTMLInputElement>("#life-amount")?.focus();
+      });
+    }
+
     root.querySelector("#btn-deck")?.addEventListener("click", () => {
       void (async () => {
         await loadChoices();
@@ -233,23 +280,6 @@ export async function duelScreen(
       })();
     });
 
-    root.querySelector("#btn-turn")?.addEventListener("click", () => {
-      const duel = state.open;
-      if (!duel) return;
-      const last = duel.turns.at(-1);
-      state.turn = {
-        number: (last?.number ?? 0) + 1,
-        // Turns alternate: the next one is the other player's, unless it is the
-        // first — which the person writing it can change anyway.
-        playerId: last
-          ? (last.playerId === duel.host.player?.id ? duel.guest.player?.id : duel.host.player?.id) ?? ""
-          : knownUser()?.id ?? "",
-        hostLife: String(last?.hostLife ?? STARTING_LIFE),
-        guestLife: String(last?.guestLife ?? STARTING_LIFE),
-        note: "",
-      };
-      paint();
-    });
   }
 
   document.addEventListener("keydown", (event) => {

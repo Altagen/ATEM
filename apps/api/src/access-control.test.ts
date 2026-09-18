@@ -153,6 +153,10 @@ test("without a session, every write route refuses", async () => {
     ["POST", "/duels"],
     ["GET", "/duels/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d"],
     ["POST", "/duels/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d/accept"],
+    ["POST", "/duels/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d/start"],
+    ["POST", "/duels/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d/phase"],
+    ["POST", "/duels/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d/turn"],
+    ["POST", "/duels/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d/life"],
     ["DELETE", "/duels/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d"],
   ];
 

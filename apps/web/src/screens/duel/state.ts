@@ -1,25 +1,33 @@
 /**
  * What the duels screen holds between two paints.
  */
+import type { DuelPhase } from "@atem/shared";
 import type { Duellist } from "../community/state.js";
 
-export type DuelStatus = "proposed" | "open" | "recorded";
+export type DuelStatus = "proposed" | "accepted" | "playing" | "recorded";
 
 /** Mirrors the server's `DuelSide`. */
 export type DuelSide = {
   player: Duellist | null;
   deck: { id: string | null; name: string | null };
+  life: number;
   score: number | null;
 };
 
-export type DuelTurn = {
+/** Mirrors the server's `DuelEvent`. */
+export type DuelEvent = {
   id: string;
-  number: number;
-  playerId: string;
+  seq: number;
+  kind: "start" | "phase" | "turn" | "life";
+  turnNumber: number;
+  phase: DuelPhase;
   authorId: string;
+  playerId: string | null;
+  delta: number | null;
   hostLife: number;
   guestLife: number;
   note: string | null;
+  createdAt: string;
 };
 
 /** Mirrors the server's `Duel`. */
@@ -29,6 +37,9 @@ export type Duel = {
   playedOn: string;
   host: DuelSide;
   guest: DuelSide;
+  turnNumber: number | null;
+  phase: DuelPhase | null;
+  currentPlayerId: string | null;
   note: string | null;
   winnerId: string | null;
   isHost: boolean;
@@ -36,9 +47,9 @@ export type Duel = {
   recordedAt: string | null;
 };
 
-export type DuelDetail = Duel & { turns: DuelTurn[] };
+export type DuelDetail = Duel & { events: DuelEvent[] };
 
-/** A deck of one's own, as the pickers list them. */
+/** A deck of one's own, as the picker lists them. */
 export type DeckChoice = { id: string; name: string };
 
 export type DuelState = {
@@ -53,10 +64,10 @@ export type DuelState = {
   decks: DeckChoice[] | null;
   /** The result window's fields — scores as typed, checked before sending. */
   result: { hostScore: string; guestScore: string; note: string } | null;
-  /** Naming the deck one brought, on an open duel. */
+  /** Naming the deck one brought, before the coin. */
   deckPick: { deckId: string } | null;
-  /** The next turn being written. */
-  turn: { number: number; playerId: string; hostLife: string; guestLife: string; note: string } | null;
+  /** Taking life points: from whom, how many. */
+  life: { playerId: string; amount: string; note: string } | null;
   busy: boolean;
 };
 
@@ -69,6 +80,6 @@ export const duelState = (): DuelState => ({
   decks: null,
   result: null,
   deckPick: null,
-  turn: null,
+  life: null,
   busy: false,
 });

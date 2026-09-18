@@ -91,3 +91,68 @@
   .duel-versus { text-align: center; }
   .duel-actions > * { flex: 1 1 10rem; }
 }
+
+/* ── The board ─────────────────────────────────────────────────────────────
+ * Where the duel is, while it is played: the turn, the phase under way, both
+ * life totals. Read at arm's length on a table, so the figures are large and
+ * the targets are finger-sized.
+ */
+/* The board is a card of its own, a little tighter than the rest: it is looked
+   at between two gestures, not read. */
+.duel-board { padding-block: 1.25rem; }
+
+.duel-board-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+.duel-turn { font-size: 1.05rem; color: #fff; }
+
+/* The phases as a path: the one under way is named and marked, the others stay
+   legible — one has to see what comes next. */
+.duel-phases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0 0 1.1rem;
+  padding: 0;
+}
+.duel-phase {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+.duel-phase.is-current {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  color: var(--gold);
+}
+
+.duel-lives { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.duel-life {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.85rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--fg-fort) 3%, transparent);
+}
+.duel-life-value { font-size: 2.1rem; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+.duel-life .btn { min-height: 44px; }
+
+/* The amounts a duel deals in, one tap away — they fill the field rather than
+   sending, so a mistap costs nothing. */
+.duel-quick-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+@media (max-width: 650px) {
+  .duel-lives { grid-template-columns: 1fr; }
+}

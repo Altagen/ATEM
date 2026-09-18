@@ -10,7 +10,9 @@
  *   honorary title”) — invented by the server from the role alone;
  * - **the presence** — this application has no live connection to measure it;
  * - **the tournament banner**, invented news;
- * - **the guild strip** — guilds have no module yet.
+ * - **the guild strip** — guilds have no module yet;
+ * - **the deck list** — a profile is not a shelf: decided with Ange on
+ *   2026-09-18, with the rest of what a profile does not need to carry.
  *
  * The friend and block buttons are here, on someone else's profile: it is where
  * you are when you decide either.
@@ -52,7 +54,6 @@ export function profileHtml(state: ProfileState): SafeHtml {
   }
   return html`<main class="profile-full-page-container">
     ${heroHtml(state.player)}
-    ${decksHtml(state.player)}
   </main>
   ${editModalHtml(state)}`;
 }
@@ -136,24 +137,6 @@ function tally(duels: PlayerProfile["duels"]): string {
     : t("{n} duels played", { n: String(duels.played) });
   const won = duels.won === 1 ? t("1 won") : t("{n} won", { n: String(duels.won) });
   return `${played}, ${won}`;
-}
-
-function decksHtml(player: PlayerProfile): SafeHtml {
-  const empty = player.isOwner
-    ? t("You have no deck yet.")
-    : t("This duellist has no deck yet.");
-  return html`<section class="profile-section-card">
-    <h2 class="profile-section-title"><span aria-hidden="true">🃏</span><span>${t("Decks")}</span></h2>
-    ${player.decks.length === 0
-      ? html`<div class="empty-state is-encadre"><p class="empty-title">${empty}</p></div>`
-      : player.decks.map((deck) => html`<div class="profile-deck-item">
-          <div class="profile-deck-ico" aria-hidden="true">🃏</div>
-          <strong>${deck.name}</strong>
-          <div class="muted">${deck.main === 1
-            ? t("1 card in the Main Deck")
-            : t("{n} cards in the Main Deck", { n: String(deck.main) })}</div>
-        </div>`)}
-  </section>`;
 }
 
 function editModalHtml(state: ProfileState): SafeHtml {

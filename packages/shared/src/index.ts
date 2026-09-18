@@ -8,6 +8,9 @@ export {
 export { LIMITS, textLengthStatus, type TextLengthStatus } from "./limits.js";
 export { AVATARS, type Avatar } from "./avatars.js";
 export {
+  DUEL_PHASES, LIFE_BOUNDS, nextPhase, STARTING_LIFE, type DuelPhase,
+} from "./duel.js";
+export {
   banlistMaxCopies,
   checkDeckAdd,
   DECK_MAIN_TARGET_DEFAULT,

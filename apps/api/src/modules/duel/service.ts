@@ -1,12 +1,16 @@
 /**
  * Duels — `docs/ref-duels.md` is the reference, rule by rule.
  *
- * ATEM records a duel played in person; it does not referee one. Every function
- * here takes the session's identity and refuses anything that is not about the
- * caller's own duels (ADR-009).
+ * ATEM records a duel played in person; it does not referee one. The row holds
+ * **where the duel is** — turn, phase, life totals — because two people follow
+ * one duel from two devices and each must find it as the other left it. It holds
+ * no rule of the game: no legality, no effects, no timer.
+ *
+ * Every function takes the session's identity and refuses anything that is not
+ * about the caller's own duels (ADR-009).
  */
-import { and, desc, eq, or, sql } from "drizzle-orm";
-import { LIMITS } from "@atem/shared";
+import { and, asc, desc, eq, or, sql } from "drizzle-orm";
+import { DUEL_PHASES, LIFE_BOUNDS, LIMITS, nextPhase, STARTING_LIFE, type DuelPhase } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { conflict, forbidden, invalidInput, notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
@@ -14,25 +18,31 @@ import { deckNameOf } from "../deck/index.js";
 import { listProfiles, type Duellist } from "../identity/index.js";
 import { notify, withdraw } from "../inbox/index.js";
 import { friendStatusWith } from "../social/index.js";
-import { duels, duelTurns } from "./schema.js";
+import { duelEvents, duels } from "./schema.js";
 
-export type DuelStatus = "proposed" | "open" | "recorded";
+export type DuelStatus = "proposed" | "accepted" | "playing" | "recorded";
 
 /** One side of a duel, as the screens read it. */
 export type DuelSide = {
   player: Duellist | null;
   deck: { id: string | null; name: string | null };
+  life: number;
   score: number | null;
 };
 
-export type DuelTurn = {
+export type DuelEvent = {
   id: string;
-  number: number;
-  playerId: string;
+  seq: number;
+  kind: "start" | "phase" | "turn" | "life";
+  turnNumber: number;
+  phase: DuelPhase;
   authorId: string;
+  playerId: string | null;
+  delta: number | null;
   hostLife: number;
   guestLife: number;
   note: string | null;
+  createdAt: Date;
 };
 
 export type Duel = {
@@ -41,6 +51,10 @@ export type Duel = {
   playedOn: Date;
   host: DuelSide;
   guest: DuelSide;
+  /** Where the duel is, once the coin has been flipped. */
+  turnNumber: number | null;
+  phase: DuelPhase | null;
+  currentPlayerId: string | null;
   note: string | null;
   /** `null` on a draw or before the result — the score decides, nothing else. */
   winnerId: string | null;
@@ -50,13 +64,10 @@ export type Duel = {
   recordedAt: Date | null;
 };
 
-export type DuelDetail = Duel & { turns: DuelTurn[] };
+export type DuelDetail = Duel & { events: DuelEvent[] };
 
-/** Life totals are bounded, never checked against the rules of any format. */
-const LIFE_MAX = 99_999;
 const SCORE_MAX = 99;
-const TURN_MAX = 999;
-const TURN_NOTE_MAX = 280;
+const EVENT_NOTE_MAX = 280;
 
 type DuelRow = typeof duels.$inferSelect;
 
@@ -74,13 +85,18 @@ function toDuel(row: DuelRow, viewerId: string, players: Map<string, Duellist>):
     host: {
       player: players.get(row.hostId) ?? null,
       deck: { id: row.hostDeckId, name: row.hostDeckName },
+      life: row.hostLife,
       score: row.hostScore,
     },
     guest: {
       player: players.get(row.guestId) ?? null,
       deck: { id: row.guestDeckId, name: row.guestDeckName },
+      life: row.guestLife,
       score: row.guestScore,
     },
+    turnNumber: row.turnNumber,
+    phase: row.phase as DuelPhase | null,
+    currentPlayerId: row.currentPlayerId,
     note: row.note,
     winnerId: winnerOf(row),
     isHost: row.hostId === viewerId,
@@ -108,6 +124,86 @@ async function own(db: Database, viewerId: string, duelId: string): Promise<Duel
   if (!row) throw notFound("Duel not found.");
   return row;
 }
+
+/** A duel being played, of the caller's. */
+async function playing(db: Database, viewerId: string, duelId: string): Promise<DuelRow> {
+  const row = await own(db, viewerId, duelId);
+  if (row.status === "recorded") throw conflict("A recorded duel stays.");
+  if (row.status !== "playing") throw conflict("This duel has not started yet.");
+  return row;
+}
+
+/**
+ * Writes one event, numbered after the last.
+ *
+ * The number comes from the duel's own count rather than from a shared
+ * sequence: two devices writing at the same instant collide on the unique
+ * index, and the loser is told to read and try again — which is truer than
+ * silently interleaving.
+ */
+async function writeEvent(
+  db: Database,
+  row: DuelRow,
+  event: {
+    kind: DuelEvent["kind"];
+    authorId: string;
+    turnNumber: number;
+    phase: DuelPhase;
+    playerId?: string | null;
+    delta?: number | null;
+    hostLife: number;
+    guestLife: number;
+    note?: string | null;
+  },
+): Promise<void> {
+  const [last] = await db
+    .select({ seq: duelEvents.seq })
+    .from(duelEvents)
+    .where(eq(duelEvents.duelId, row.id))
+    .orderBy(desc(duelEvents.seq))
+    .limit(1);
+
+  await db.insert(duelEvents).values({
+    duelId: row.id,
+    seq: (last?.seq ?? 0) + 1,
+    kind: event.kind,
+    turnNumber: event.turnNumber,
+    phase: event.phase,
+    authorId: event.authorId,
+    playerId: event.playerId ?? null,
+    delta: event.delta ?? null,
+    hostLife: event.hostLife,
+    guestLife: event.guestLife,
+    note: event.note ?? null,
+  });
+}
+
+async function listEvents(db: Database, duelId: string): Promise<DuelEvent[]> {
+  const rows = await db
+    .select()
+    .from(duelEvents)
+    .where(eq(duelEvents.duelId, duelId))
+    .orderBy(asc(duelEvents.seq));
+  return rows.map((row) => ({
+    id: row.id,
+    seq: row.seq,
+    kind: row.kind as DuelEvent["kind"],
+    turnNumber: row.turnNumber,
+    phase: row.phase as DuelPhase,
+    authorId: row.authorId,
+    playerId: row.playerId,
+    delta: row.delta,
+    hostLife: row.hostLife,
+    guestLife: row.guestLife,
+    note: row.note,
+    createdAt: row.createdAt,
+  }));
+}
+
+const detailOf = async (db: Database, row: DuelRow, viewerId: string): Promise<DuelDetail> => ({
+  ...toDuel(row, viewerId, await playersOf(db, [row])),
+  events: await listEvents(db, row.id),
+});
 
 /**
  * The deck a player brings, checked to be theirs.
@@ -162,7 +258,7 @@ export async function proposeDuel(
   return toDuel(row, viewerId, await playersOf(db, [row]));
 }
 
-/** Accepting: only the invited player, and only while it is proposed. */
+/** Accepting: only the invited player, and only while it is an invitation. */
 export async function acceptDuel(db: Database, viewerId: string, duelId: string): Promise<Duel> {
   const row = await own(db, viewerId, duelId);
   if (row.guestId !== viewerId) throw forbidden("Only the invited duellist can accept.");
@@ -170,7 +266,7 @@ export async function acceptDuel(db: Database, viewerId: string, duelId: string)
 
   const [updated] = await db
     .update(duels)
-    .set({ status: "open" })
+    .set({ status: "accepted" })
     .where(eq(duels.id, row.id))
     .returning();
   if (!updated) throw notFound("Duel not found.");
@@ -178,6 +274,183 @@ export async function acceptDuel(db: Database, viewerId: string, duelId: string)
   await withdraw(db, { userId: viewerId, kind: "duel_invite", actorId: row.hostId });
   await notify(db, { userId: row.hostId, kind: "duel_accepted", actorId: viewerId });
   return toDuel(updated, viewerId, await playersOf(db, [updated]));
+}
+
+/** The deck one brings, chosen among one's own before the duel starts. */
+export async function setDuelDeck(
+  db: Database,
+  viewerId: string,
+  duelId: string,
+  deckId: string | null,
+): Promise<Duel> {
+  const row = await own(db, viewerId, duelId);
+  if (row.status === "recorded") throw conflict("A recorded duel stays.");
+  if (row.status === "playing") throw conflict("The duel has started: the decks are set.");
+  const deck = await deckBrought(db, viewerId, deckId);
+  const mine = row.hostId === viewerId;
+
+  const [updated] = await db
+    .update(duels)
+    .set(mine
+      ? { hostDeckId: deck.id, hostDeckName: deck.name }
+      : { guestDeckId: deck.id, guestDeckName: deck.name })
+    .where(eq(duels.id, row.id))
+    .returning();
+  if (!updated) throw notFound("Duel not found.");
+  return toDuel(updated, viewerId, await playersOf(db, [updated]));
+}
+
+/**
+ * Starting: the decks are set, and **the server flips the coin**.
+ *
+ * Drawn here rather than in the browser: on the client it would be a number the
+ * other player has to take on trust, which is the one thing a coin flip must not
+ * be. Either player may start the duel — both are at the table.
+ */
+export async function startDuel(db: Database, viewerId: string, duelId: string): Promise<DuelDetail> {
+  const row = await own(db, viewerId, duelId);
+  if (row.status === "proposed") throw conflict("This duel has not been accepted yet.");
+  if (row.status !== "accepted") throw conflict("This duel has already started.");
+  if (!row.hostDeckId || !row.guestDeckId) {
+    throw conflict("Both duellists choose a deck before the coin is flipped.");
+  }
+
+  const first = Math.random() < 0.5 ? row.hostId : row.guestId;
+  const [updated] = await db
+    .update(duels)
+    .set({
+      status: "playing",
+      turnNumber: 1,
+      phase: "draw",
+      currentPlayerId: first,
+      hostLife: STARTING_LIFE,
+      guestLife: STARTING_LIFE,
+      startedAt: new Date(),
+    })
+    .where(eq(duels.id, row.id))
+    .returning();
+  if (!updated) throw notFound("Duel not found.");
+
+  await writeEvent(db, updated, {
+    kind: "start",
+    authorId: viewerId,
+    turnNumber: 1,
+    phase: "draw",
+    playerId: first,
+    hostLife: STARTING_LIFE,
+    guestLife: STARTING_LIFE,
+  });
+  return detailOf(db, updated, viewerId);
+}
+
+/** The next phase, one at a time, never backwards. */
+export async function advancePhase(
+  db: Database,
+  viewerId: string,
+  duelId: string,
+): Promise<DuelDetail> {
+  const row = await playing(db, viewerId, duelId);
+  const phase = nextPhase(row.phase as DuelPhase);
+  if (!phase) throw conflict("The End Phase is the last: end the turn.");
+
+  const [updated] = await db
+    .update(duels)
+    .set({ phase })
+    .where(eq(duels.id, row.id))
+    .returning();
+  if (!updated) throw notFound("Duel not found.");
+
+  await writeEvent(db, updated, {
+    kind: "phase",
+    authorId: viewerId,
+    turnNumber: updated.turnNumber ?? 1,
+    phase,
+    playerId: updated.currentPlayerId,
+    hostLife: updated.hostLife,
+    guestLife: updated.guestLife,
+  });
+  return detailOf(db, updated, viewerId);
+}
+
+/**
+ * Ending the turn: the other player, a new turn, back to the Draw Phase.
+ *
+ * From any phase — a duel ends its turn when the players say so, not when the
+ * application decides.
+ */
+export async function endTurn(db: Database, viewerId: string, duelId: string): Promise<DuelDetail> {
+  const row = await playing(db, viewerId, duelId);
+  const turnNumber = (row.turnNumber ?? 1) + 1;
+  if (turnNumber > 999) throw conflict("This duel has run out of turns.");
+  const currentPlayerId = row.currentPlayerId === row.hostId ? row.guestId : row.hostId;
+
+  const [updated] = await db
+    .update(duels)
+    .set({ turnNumber, phase: "draw", currentPlayerId })
+    .where(eq(duels.id, row.id))
+    .returning();
+  if (!updated) throw notFound("Duel not found.");
+
+  await writeEvent(db, updated, {
+    kind: "turn",
+    authorId: viewerId,
+    turnNumber,
+    phase: "draw",
+    playerId: currentPlayerId,
+    hostLife: updated.hostLife,
+    guestLife: updated.guestLife,
+  });
+  return detailOf(db, updated, viewerId);
+}
+
+/**
+ * Life points taken or given back, to either player, in the phase under way.
+ *
+ * The phase is not asked for: it is where the duel is. That is what makes the
+ * history read like a duel — “turn 4, Battle Phase, −1800”.
+ */
+export async function changeLife(
+  db: Database,
+  viewerId: string,
+  duelId: string,
+  input: { playerId: string; delta: number; note?: string | null },
+): Promise<DuelDetail> {
+  const row = await playing(db, viewerId, duelId);
+  const playerId = requireUuid(input.playerId);
+  if (playerId !== row.hostId && playerId !== row.guestId) {
+    throw invalidInput("Life points belong to one of the two duellists.");
+  }
+  if (!Number.isInteger(input.delta) || input.delta === 0) {
+    throw invalidInput("Life points are a whole number.");
+  }
+  const note = input.note?.trim() ?? null;
+  if (note && note.length > EVENT_NOTE_MAX) throw invalidInput("The note is too long.");
+
+  const mine = playerId === row.hostId;
+  const current = mine ? row.hostLife : row.guestLife;
+  // Clamped rather than refused: a player brought to zero by more damage than
+  // they had left is the normal end of a duel, not a mistake to reject.
+  const after = Math.min(LIFE_BOUNDS.max, Math.max(LIFE_BOUNDS.min, current + input.delta));
+
+  const [updated] = await db
+    .update(duels)
+    .set(mine ? { hostLife: after } : { guestLife: after })
+    .where(eq(duels.id, row.id))
+    .returning();
+  if (!updated) throw notFound("Duel not found.");
+
+  await writeEvent(db, updated, {
+    kind: "life",
+    authorId: viewerId,
+    turnNumber: updated.turnNumber ?? 1,
+    phase: updated.phase as DuelPhase,
+    playerId,
+    delta: after - current,
+    hostLife: updated.hostLife,
+    guestLife: updated.guestLife,
+    note,
+  });
+  return detailOf(db, updated, viewerId);
 }
 
 /**
@@ -206,7 +479,7 @@ export async function recordDuel(
   db: Database,
   viewerId: string,
   duelId: string,
-  input: { hostScore: number; guestScore: number; note?: string | null; deckId?: string | null },
+  input: { hostScore: number; guestScore: number; note?: string | null },
 ): Promise<Duel> {
   const row = await own(db, viewerId, duelId);
   if (row.status === "proposed") throw conflict("This duel has not been accepted yet.");
@@ -220,13 +493,6 @@ export async function recordDuel(
   const note = input.note?.trim() ?? null;
   if (note && note.length > LIMITS.note.max) throw invalidInput("The note is too long.");
 
-  // The deck can still be named when recording: one does not always say
-  // beforehand what will be played.
-  const deck = input.deckId === undefined
-    ? null
-    : await deckBrought(db, viewerId, input.deckId);
-  const mine = row.hostId === viewerId;
-
   const [updated] = await db
     .update(duels)
     .set({
@@ -235,121 +501,19 @@ export async function recordDuel(
       hostScore: input.hostScore,
       guestScore: input.guestScore,
       note,
-      ...(deck === null
-        ? {}
-        : mine
-          ? { hostDeckId: deck.id, hostDeckName: deck.name }
-          : { guestDeckId: deck.id, guestDeckName: deck.name }),
+      // Where the duel was has no meaning once it is over, and the history keeps
+      // every turn it went through.
+      turnNumber: null,
+      phase: null,
+      currentPlayerId: null,
     })
     .where(eq(duels.id, row.id))
     .returning();
   if (!updated) throw notFound("Duel not found.");
 
-  const other = mine ? row.guestId : row.hostId;
+  const other = row.hostId === viewerId ? row.guestId : row.hostId;
   await notify(db, { userId: other, kind: "duel_recorded", actorId: viewerId });
   return toDuel(updated, viewerId, await playersOf(db, [updated]));
-}
-
-/** The deck one brings, said or changed while the duel is open. */
-export async function setDuelDeck(
-  db: Database,
-  viewerId: string,
-  duelId: string,
-  deckId: string | null,
-): Promise<Duel> {
-  const row = await own(db, viewerId, duelId);
-  if (row.status === "recorded") throw conflict("A recorded duel stays.");
-  const deck = await deckBrought(db, viewerId, deckId);
-  const mine = row.hostId === viewerId;
-
-  const [updated] = await db
-    .update(duels)
-    .set(mine
-      ? { hostDeckId: deck.id, hostDeckName: deck.name }
-      : { guestDeckId: deck.id, guestDeckName: deck.name })
-    .where(eq(duels.id, row.id))
-    .returning();
-  if (!updated) throw notFound("Duel not found.");
-  return toDuel(updated, viewerId, await playersOf(db, [updated]));
-}
-
-/**
- * Writing a turn.
- *
- * Append-only while the duel is open: correcting the **last** turn is allowed —
- * a mistyped life total is common — rewriting turn 3 after turn 12 is not.
- */
-export async function writeTurn(
-  db: Database,
-  viewerId: string,
-  duelId: string,
-  input: { number: number; playerId: string; hostLife: number; guestLife: number; note?: string | null },
-): Promise<DuelTurn[]> {
-  const row = await own(db, viewerId, duelId);
-  if (row.status === "proposed") throw conflict("This duel has not been accepted yet.");
-  if (row.status === "recorded") throw conflict("A recorded duel stays.");
-
-  const playerId = requireUuid(input.playerId);
-  if (playerId !== row.hostId && playerId !== row.guestId) {
-    throw invalidInput("A turn belongs to one of the two duellists.");
-  }
-  if (!Number.isInteger(input.number) || input.number < 1 || input.number > TURN_MAX) {
-    throw invalidInput("A turn number is between 1 and 999.");
-  }
-  for (const life of [input.hostLife, input.guestLife]) {
-    if (!Number.isInteger(life) || life < 0 || life > LIFE_MAX) {
-      throw invalidInput("Life points are a whole number.");
-    }
-  }
-  const note = input.note?.trim() ?? null;
-  if (note && note.length > TURN_NOTE_MAX) throw invalidInput("The turn note is too long.");
-
-  const [last] = await db
-    .select({ number: duelTurns.number })
-    .from(duelTurns)
-    .where(eq(duelTurns.duelId, row.id))
-    .orderBy(desc(duelTurns.number))
-    .limit(1);
-  const highest = last?.number ?? 0;
-  if (input.number !== highest && input.number !== highest + 1) {
-    throw conflict("Only the last turn can be corrected.");
-  }
-
-  const values = {
-    duelId: row.id,
-    number: input.number,
-    playerId,
-    authorId: viewerId,
-    hostLife: input.hostLife,
-    guestLife: input.guestLife,
-    note,
-  };
-  await db
-    .insert(duelTurns)
-    .values(values)
-    .onConflictDoUpdate({
-      target: [duelTurns.duelId, duelTurns.number],
-      set: { playerId, authorId: viewerId, hostLife: input.hostLife, guestLife: input.guestLife, note },
-    });
-
-  return listTurns(db, row.id);
-}
-
-async function listTurns(db: Database, duelId: string): Promise<DuelTurn[]> {
-  const rows = await db
-    .select()
-    .from(duelTurns)
-    .where(eq(duelTurns.duelId, duelId))
-    .orderBy(duelTurns.number);
-  return rows.map((row) => ({
-    id: row.id,
-    number: row.number,
-    playerId: row.playerId,
-    authorId: row.authorId,
-    hostLife: row.hostLife,
-    guestLife: row.guestLife,
-    note: row.note,
-  }));
 }
 
 /** The duels one is in, newest first. */
@@ -365,9 +529,7 @@ export async function listDuels(db: Database, viewerId: string): Promise<Duel[]>
 }
 
 export async function getDuel(db: Database, viewerId: string, duelId: string): Promise<DuelDetail> {
-  const row = await own(db, viewerId, duelId);
-  const players = await playersOf(db, [row]);
-  return { ...toDuel(row, viewerId, players), turns: await listTurns(db, row.id) };
+  return detailOf(db, await own(db, viewerId, duelId), viewerId);
 }
 
 /** How many duels one has recorded, and how many of those one won. */
@@ -389,3 +551,5 @@ export async function duelTally(
     ));
   return { played: row?.played ?? 0, won: row?.won ?? 0 };
 }
+
+export { DUEL_PHASES };

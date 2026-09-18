@@ -27,7 +27,7 @@ test("my profile is reachable from the navigation, and says what is empty", asyn
 
   await expect(page.getByRole("heading", { level: 1 })).toContainText(account.displayName);
   await expect(page.getByText(/Pas encore de bio/)).toBeVisible();
-  await expect(page.getByText("Vous n'avez pas encore de deck.")).toBeVisible();
+  await expect(page.getByText("Aucun duel enregistré")).toBeVisible();
   expect(await expectNoHorizontalOverflow(page)).toBe(0);
 });
 
@@ -92,16 +92,6 @@ test("cancelling or pressing Escape leaves the profile as it was", async ({ page
 test("the shared link opens the profile for another duellist, who cannot edit it", async ({ page, browser }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   const owner = await signUp(page);
-  // A deck, created as the screen would, to see it listed on the profile.
-  await page.evaluate(async () => {
-    const response = await fetch("/api/decks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Shared deck" }),
-    });
-    if (!response.ok) throw new Error(`deck: ${response.status}`);
-  });
-
   await page.goto("/profile");
   await page.getByRole("button", { name: "Partager le profil" }).click();
   await expect(page.getByText("Lien du profil copié.")).toBeVisible();
@@ -117,8 +107,9 @@ test("the shared link opens the profile for another duellist, who cannot edit it
   await visitor.goto(new URL(link).pathname + new URL(link).search);
 
   await expect(visitor.getByRole("heading", { level: 1 })).toContainText(owner.displayName);
-  await expect(visitor.getByText("Shared deck")).toBeVisible();
-  await expect(visitor.getByText("0 cartes dans le Main Deck")).toBeVisible();
+  // A profile carries no deck list: decided with Ange on 2026-09-18.
+  // …“Decks” in the navigation bar is not the profile's doing, hence `main`.
+  await expect(visitor.locator("main").getByText("Decks", { exact: true })).toHaveCount(0);
   await expect(visitor.getByRole("button", { name: "Modifier le profil" })).toHaveCount(0);
   // An empty bio is not announced to someone else: the hint is for the owner.
   await expect(visitor.getByText(/Pas encore de bio/)).toHaveCount(0);

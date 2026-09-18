@@ -11,7 +11,8 @@ import type { Database } from "../../db/client.js";
 import { invalidInput } from "../../platform/errors.js";
 import { requireViewer } from "../identity/index.js";
 import {
-  acceptDuel, dropDuel, getDuel, listDuels, proposeDuel, recordDuel, setDuelDeck, writeTurn,
+  acceptDuel, advancePhase, changeLife, dropDuel, endTurn, getDuel, listDuels, proposeDuel,
+  recordDuel, setDuelDeck, startDuel,
 } from "./service.js";
 
 const ProposeBody = z.object({
@@ -25,16 +26,14 @@ const RecordBody = z.object({
   hostScore: z.number().int().min(0).max(99),
   guestScore: z.number().int().min(0).max(99),
   note: z.string().max(LIMITS.note.max).nullable().optional(),
-  deckId: z.string().nullable().optional(),
 });
 
 const DeckBody = z.object({ deckId: z.string().nullable() });
 
-const TurnBody = z.object({
-  number: z.number().int().min(1).max(999),
+const LifeBody = z.object({
   playerId: z.string(),
-  hostLife: z.number().int().min(0).max(99_999),
-  guestLife: z.number().int().min(0).max(99_999),
+  /** Negative takes life points, positive gives them back. Never zero. */
+  delta: z.number().int().min(-99_999).max(99_999),
   note: z.string().max(280).nullable().optional(),
 });
 
@@ -91,8 +90,18 @@ export function duelRoutes(db: Database) {
   app.put("/:id/deck", async (c) =>
     c.json(await setDuelDeck(db, viewerId(c), c.req.param("id"), (await body(c, DeckBody)).deckId)));
 
-  app.put("/:id/turns", async (c) =>
-    c.json({ turns: await writeTurn(db, viewerId(c), c.req.param("id"), await body(c, TurnBody)) }));
+  /** The coin is flipped on the server: see `docs/ref-duels.md`. */
+  app.post("/:id/start", async (c) =>
+    c.json(await startDuel(db, viewerId(c), c.req.param("id"))));
+
+  app.post("/:id/phase", async (c) =>
+    c.json(await advancePhase(db, viewerId(c), c.req.param("id"))));
+
+  app.post("/:id/turn", async (c) =>
+    c.json(await endTurn(db, viewerId(c), c.req.param("id"))));
+
+  app.post("/:id/life", async (c) =>
+    c.json(await changeLife(db, viewerId(c), c.req.param("id"), await body(c, LifeBody))));
 
   return app;
 }

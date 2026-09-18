@@ -19,7 +19,7 @@ const req = (method: string, path: string, body?: unknown, cookie?: string) =>
 type PlayerAnswer = {
   profile: Record<string, unknown> & { displayName: string; bio: string; avatar: string };
   isOwner: boolean;
-  decks: Record<string, unknown>[];
+  duels: { played: number; won: number };
 };
 
 test("the owner writes bio and avatar in one request, and reads them back as their own", async () => {
@@ -39,10 +39,10 @@ test("the owner writes bio and avatar in one request, and reads them back as the
   assert.equal(body.profile.avatar, "occult");
 });
 
-test("another duellist reads the profile and its decks — and nothing private", async () => {
+test("another duellist reads the profile — and nothing private", async () => {
   const owner = await freshSession(app, "profile-read-owner");
   const visitor = await freshSession(app, "profile-read-visitor");
-  await createDeck(db, owner.userId, "Shown deck");
+  await createDeck(db, owner.userId, "Filed deck");
 
   const response = await req("GET", `/players/${owner.userId}`, undefined, visitor.cookie);
   assert.equal(response.status, 200);
@@ -55,9 +55,14 @@ test("another duellist reads the profile and its decks — and nothing private",
   for (const key of ["email", "locale", "passwordHash", "tokenVersion", "suspendedAt"]) {
     assert.equal(key in body.profile, false, `${key} is not part of a profile`);
   }
-  assert.deepEqual(body.decks.map((d) => d.name), ["Shown deck"]);
-  // Only what the profile shows: not the missing copies, the folder or the cover.
-  assert.deepEqual(Object.keys(body.decks[0]!).sort(), ["id", "main", "name"]);
+  /**
+   * A profile carries no deck list.
+   *
+   * Decided with Ange on 2026-09-18: nothing goes on a profile for the sake of
+   * filling it, and one does not look a duellist up to read their shelf.
+   */
+  assert.equal("decks" in body, false, "a profile is not a shelf");
+  assert.deepEqual(Object.keys(body).sort(), ["duels", "friendStatus", "isOwner", "profile"]);
 });
 
 test("a profile route refuses every write, whoever asks", async () => {

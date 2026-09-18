@@ -5,7 +5,7 @@ import { expectNoHorizontalOverflow, signUp } from "./helpers.js";
  * A duel, from the invitation to the result, between two accounts.
  *
  * ATEM records a duel played in person (`docs/ref-duels.md`): what these tests
- * measure is the notebook — who may write what, and when.
+ * measure is the notebook — the decks, the coin, the phases, the life points.
  */
 
 async function duellist(browser: import("@playwright/test").Browser) {
@@ -21,7 +21,17 @@ async function duellist(browser: import("@playwright/test").Browser) {
   return { context, page, account, id };
 }
 
-/** Two accounts that are already friends, which is what a duel needs. */
+/** A deck to bring: a duel does not start without one on each side. */
+async function deck(page: Page, name: string) {
+  await page.evaluate(async (deckName) => {
+    await fetch("/api/decks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: deckName }),
+    });
+  }, name);
+}
+
 async function befriend(page: Page, other: { page: Page; id: string }) {
   const mine = await page.evaluate(async () =>
     ((await (await fetch("/api/auth/me")).json()) as { user: { id: string } }).user.id);
@@ -33,42 +43,68 @@ async function befriend(page: Page, other: { page: Page; id: string }) {
   }, mine);
 }
 
-test("a duel: invited, accepted, played turn by turn, then recorded", async ({ page, browser }) => {
+test("a duel: decks, coin flip, phases, life points, result", async ({ page, browser }) => {
   const me = await signUp(page);
+  await deck(page, "Blue-Eyes");
   const friend = await duellist(browser);
+  await deck(friend.page, "Harpies");
   await befriend(page, friend);
 
-  // The invitation, from the duels screen.
+  // The invitation, with the deck brought along.
   await page.goto("/duels");
   await expect(page.getByText("Aucun duel pour l'instant")).toBeVisible();
   await page.getByRole("button", { name: "Inviter un ami" }).click();
+  await page.getByRole("dialog").locator("#invite-deck").selectOption({ label: "Blue-Eyes" });
   await page.getByRole("dialog").getByRole("button", { name: "Envoyer l'invitation" }).click();
   await expect(page.getByText("Invitation envoyée.")).toBeVisible();
-  await expect(page.getByText("Invitation envoyée", { exact: true })).toBeVisible();
 
-  // The other side finds it in their inbox and accepts from the duel.
+  // The other side answers from their inbox, then chooses their own deck.
   await friend.page.goto("/inbox");
   await expect(friend.page.getByText(`${me.displayName} vous invite en duel.`)).toBeVisible();
   await friend.page.goto("/duels");
   await friend.page.locator(".duel-row").first().click();
   await friend.page.getByRole("button", { name: "Accepter le duel" }).click();
-  await expect(friend.page.getByText("Le duel est lancé.")).toBeVisible();
+  await expect(friend.page.getByText("Prêt à commencer")).toBeVisible();
 
-  // Both write into the same history.
-  await friend.page.getByRole("button", { name: "Écrire un tour" }).click();
-  await friend.page.locator("#turn-guest").fill("5000");
-  await friend.page.locator("#turn-note").fill("Attaque directe.");
-  await friend.page.getByRole("button", { name: "Écrire le tour" }).click();
-  await expect(friend.page.getByText("Tour écrit.")).toBeVisible();
+  // Nothing starts before both decks are named.
+  await expect(friend.page.getByRole("button", { name: /Lancer la pièce/ })).toBeDisabled();
+  await friend.page.getByRole("button", { name: "Choisir mon deck" }).click();
+  await friend.page.locator("#duel-deck").selectOption({ label: "Harpies" });
+  await friend.page.getByRole("dialog").getByRole("button", { name: "Enregistrer" }).click();
+  await expect(friend.page.getByText("Deck enregistré.")).toBeVisible();
 
-  // Sending the invitation opened the duel, so the list is asked for by name.
+  // The coin is flipped by the server: one of the two begins.
+  await friend.page.getByRole("button", { name: /Lancer la pièce/ }).click();
+  // The history says who the coin chose — a durable line, not the passing toast.
+  await expect(friend.page.locator(".admin-table")).toContainText(/gagne le lancer de pièce et commence/);
+  await expect(friend.page.locator(".duel-turn")).toHaveText("Tour 1");
+  await expect(friend.page.locator(".duel-phase.is-current")).toHaveText("Draw Phase");
+
+  // The phases follow one another, and life points are taken in the one under way.
+  for (const phase of ["Standby Phase", "Main Phase 1", "Battle Phase"]) {
+    await friend.page.getByRole("button", { name: "Phase suivante" }).click();
+    await expect(friend.page.locator(".duel-phase.is-current")).toHaveText(phase);
+  }
+  await friend.page.locator(".duel-life", { hasText: me.displayName })
+    .getByRole("button", { name: "Points de vie" }).click();
+  await friend.page.getByRole("button", { name: "−1500" }).click();
+  await friend.page.locator("#life-note").fill("Harpie attaque.");
+  await friend.page.getByRole("button", { name: "Les retirer" }).click();
+  await expect(friend.page.getByText("Points de vie retirés.")).toBeVisible();
+  await expect(friend.page.locator(".duel-life", { hasText: me.displayName }).locator(".duel-life-value"))
+    .toHaveText("6500");
+
+  // The other device finds the duel where it was left.
   await page.goto("/duels");
   await page.locator(".duel-row").first().click();
-  await expect(page.getByText("Attaque directe.")).toBeVisible();
-  await page.getByRole("button", { name: "Écrire un tour" }).click();
-  await page.locator("#turn-host").fill("4000");
-  await page.getByRole("button", { name: "Écrire le tour" }).click();
-  await expect(page.locator(".admin-table tbody tr")).toHaveCount(2);
+  await expect(page.locator(".duel-phase.is-current")).toHaveText("Battle Phase");
+  await expect(page.getByText("Harpie attaque.")).toBeVisible();
+
+  // The turn passes, and the history keeps both.
+  await page.getByRole("button", { name: "Finir le tour" }).click();
+  await expect(page.getByText("Le tour passe.")).toBeVisible();
+  await expect(page.locator(".duel-turn")).toHaveText("Tour 2");
+  await expect(page.locator(".admin-table tbody tr").first()).toContainText("Draw Phase");
 
   // The result, recorded by either: the score says who won.
   await page.getByRole("button", { name: "Enregistrer le résultat" }).first().click();
@@ -78,8 +114,8 @@ test("a duel: invited, accepted, played turn by turn, then recorded", async ({ p
   await expect(page.getByText("Résultat enregistré.")).toBeVisible();
   await expect(page.getByText("Enregistré", { exact: true })).toBeVisible();
 
-  // Recorded means read-only, and counted on the profile.
-  await expect(page.getByRole("button", { name: "Écrire un tour" })).toHaveCount(0);
+  // Recorded means nothing more is played, and counted on the profile.
+  await expect(page.getByRole("button", { name: "Phase suivante" })).toHaveCount(0);
   await page.goto("/profile");
   await expect(page.getByText("1 duel joué, 1 gagné")).toBeVisible();
 

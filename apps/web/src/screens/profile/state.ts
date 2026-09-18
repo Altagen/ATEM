@@ -20,7 +20,6 @@ export type PlayerProfile = {
   friendStatus: FriendStatus;
   /** Duels recorded and won — counted by the server, never invented here. */
   duels: { played: number; won: number };
-  decks: { id: string; name: string; main: number }[];
 };
 
 export type ProfileState = {
