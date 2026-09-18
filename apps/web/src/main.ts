@@ -131,10 +131,19 @@ async function start(): Promise<void> {
   // signal an outage, rarely enough to cost nothing.
   void refreshServiceState();
   void refreshInbox();
+  // The service state changes rarely; what is waiting for you changes while you
+  // are looking at another screen. A hidden tab asks for neither: a phone in a
+  // pocket polling every five seconds is a battery bill for nothing.
   window.setInterval(() => {
-    void refreshServiceState();
-    void refreshInbox();
+    if (!document.hidden) void refreshServiceState();
   }, 60_000);
+  window.setInterval(() => {
+    if (!document.hidden) void refreshInbox();
+  }, 5_000);
+  // Coming back to the tab is the moment one wants it to be up to date.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) void refreshInbox();
+  });
 }
 
 void start();

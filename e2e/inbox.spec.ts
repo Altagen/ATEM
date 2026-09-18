@@ -83,6 +83,37 @@ test("declining leaves nothing behind, on either side", async ({ page, browser }
   await asker.context.close();
 });
 
+test("the badge appears on its own, without reloading the page", async ({ page, browser }) => {
+  /**
+   * Ange, on 2026-09-19: he was on another screen when a request arrived and
+   * had to refresh to see it. The count is asked for every five seconds now.
+   */
+  await signUp(page);
+  await page.goto("/collection");
+  await expect(page.locator(".app-inbox-dot")).toHaveCount(0);
+
+  const asker = await otherDuellist(browser);
+  const mine = await page.evaluate(async () =>
+    ((await (await fetch("/api/auth/me")).json()) as { user: { id: string } }).user.id);
+  await asker.page.evaluate(async (target) => {
+    await fetch(`/api/community/friends/${target}`, { method: "POST" });
+  }, mine);
+
+  if (isPhone()) {
+    // On a phone the count is in the account sheet; the bar has no bell.
+    await expect.poll(async () => {
+      await page.getByRole("button", { name: "Mon compte" }).click();
+      const seen = await page.locator(".account-sheet-count").count();
+      await page.locator("#account-sheet .icon-btn").click();
+      return seen;
+    }, { timeout: 15_000 }).toBe(1);
+  } else {
+    // No reload, no navigation: the page was left alone.
+    await expect(page.locator(".app-inbox-dot")).toHaveText("1", { timeout: 15_000 });
+  }
+  await asker.context.close();
+});
+
 test("an empty inbox says so, and a read one stops claiming to be waiting", async ({ page, browser }) => {
   await signUp(page);
   await page.goto("/inbox");

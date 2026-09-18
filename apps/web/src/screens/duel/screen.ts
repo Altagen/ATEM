@@ -290,4 +290,24 @@ export async function duelScreen(
   await (duelId ? loadDuel() : loadList());
   if (signal.aborted) return;
   paint();
+
+  /**
+   * A duel is followed from two devices, so this one asks what the other did.
+   *
+   * Every five seconds, and **only when there is nothing under way here**: a
+   * repaint while a window is open would rebuild its fields and lose what is
+   * being typed — the defect measured on the turn window on 2026-09-18. A
+   * hidden tab asks for nothing, and a finished duel has nothing left to learn.
+   */
+  if (duelId) {
+    const timer = window.setInterval(() => {
+      if (document.hidden || state.busy) return;
+      if (state.invite || state.result || state.life || state.deckPick) return;
+      if (state.open?.status === "recorded") return;
+      void loadDuel().then(() => {
+        if (!signal.aborted && !state.busy) paint();
+      });
+    }, 5_000);
+    signal.addEventListener("abort", () => window.clearInterval(timer));
+  }
 }

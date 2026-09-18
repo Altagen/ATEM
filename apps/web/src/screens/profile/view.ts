@@ -112,7 +112,7 @@ function friendButton(status: PlayerProfile["friendStatus"]): SafeHtml {
   }
   if (status === "pending_sent") {
     return html`<button type="button" class="btn" id="btn-friend-remove">
-      <span aria-hidden="true">⌛</span><span>${t("⌛ Cancel request")}</span>
+      <span aria-hidden="true">⌛</span><span>${t("Cancel request")}</span>
     </button>`;
   }
   if (status === "pending_received") {

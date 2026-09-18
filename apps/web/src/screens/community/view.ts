@@ -42,7 +42,7 @@ function actions(one: Duellist, busy: boolean): SafeHtml {
   }
   if (one.friendStatus === "pending_sent") {
     return html`<button type="button" class="btn-showcase-secondary is-petit is-auto"
-            data-remove="${one.id}"${inert}>${t("⌛ Cancel request")}</button>`;
+            data-remove="${one.id}"${inert}>⌛ ${t("Cancel request")}</button>`;
   }
   if (one.friendStatus === "pending_received") {
     return html`<button type="button" class="btn-showcase-primary-full is-petit is-auto"

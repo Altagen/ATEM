@@ -63,22 +63,29 @@ export async function refreshServiceState(): Promise<void> {
 /**
  * How many notifications are waiting.
  *
- * Read on arrival and after anything that could change it, rather than held
- * open on a live connection: a number that is a minute old is no worse than one
- * that costs a permanent socket per visitor.
+ * Asked for every few seconds rather than held open on a live connection: the
+ * question is one integer behind a partial index, and a socket per visitor is a
+ * lot of machinery for a badge. Ange, on 2026-09-19: “il devrait y avoir un
+ * polling toutes les 5 secondes pour éviter d'avoir à refresh une page”.
+ *
+ * **The bar is rebuilt only when the number changes.** Rebuilding it every few
+ * seconds would close an open menu under the pointer, which is the defect the
+ * account sheet already taught us.
  */
 export async function refreshInbox(): Promise<void> {
   if (!knownUser()) {
     unread = 0;
     return;
   }
+  let answer: { unread: number };
   try {
-    const answer = await api<{ unread: number }>("/inbox/unread");
-    unread = answer.unread;
+    answer = await api<{ unread: number }>("/inbox/unread");
   } catch {
     // A badge is not worth a message: it stays as it was.
     return;
   }
+  if (answer.unread === unread) return;
+  unread = answer.unread;
   renderNavigation();
 }
 
