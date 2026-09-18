@@ -16,6 +16,7 @@ import { collectionScreen } from "./screens/collection/screen.js";
 import { inboxScreen } from "./screens/inbox/screen.js";
 import { communityScreen } from "./screens/community/screen.js";
 import { deckScreen } from "./screens/deck/screen.js";
+import { duelScreen } from "./screens/duel/screen.js";
 import { scanlistScreen } from "./screens/scanlist/screen.js";
 import { settingsScreen } from "./screens/settings/screen.js";
 import { profileScreen } from "./screens/profile/screen.js";
@@ -58,6 +59,10 @@ register("/community", communityScreen, {
  * “My profile” would say nothing about what is waiting, and there would be two
  * ways in on the same screen.
  */
+register("/duels", duelScreen, {
+  requiresSession: true,
+  nav: { label: "Duels", icon: "⚔️", group: "main" },
+});
 register("/inbox", inboxScreen, { requiresSession: true });
 /**
  * The account group: your profile, then your settings — in that order, which is

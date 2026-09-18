@@ -18,6 +18,8 @@ export type PlayerProfile = {
   isOwner: boolean;
   /** Where the relation stands, as the viewer sees it — mirrors the server. */
   friendStatus: FriendStatus;
+  /** Duels recorded and won — counted by the server, never invented here. */
+  duels: { played: number; won: number };
   decks: { id: string; name: string; main: number }[];
 };
 

@@ -89,6 +89,7 @@ function heroHtml(player: PlayerProfile): SafeHtml {
           </div>
         </div>
       </div>
+      <p class="profile-tally">${tally(player.duels)}</p>
       ${profile.bio
         ? html`<p class="showcase-bio">${profile.bio}</p>`
         : when(isOwner, html`<p class="showcase-bio muted">${t("No bio yet — “Edit profile” lets you write one.")}</p>`)}
@@ -122,6 +123,19 @@ function friendButton(status: PlayerProfile["friendStatus"]): SafeHtml {
   return html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-friend-add">
     <span aria-hidden="true">➕</span><span>${t("Add friend")}</span>
   </button>`;
+}
+
+/**
+ * What this duellist has played — counted, where ATEM-old showed trophies it
+ * derived from the role. Nothing is said when nothing has been recorded.
+ */
+function tally(duels: PlayerProfile["duels"]): string {
+  if (duels.played === 0) return t("No duel recorded yet");
+  const played = duels.played === 1
+    ? t("1 duel played")
+    : t("{n} duels played", { n: String(duels.played) });
+  const won = duels.won === 1 ? t("1 won") : t("{n} won", { n: String(duels.won) });
+  return `${played}, ${won}`;
 }
 
 function decksHtml(player: PlayerProfile): SafeHtml {

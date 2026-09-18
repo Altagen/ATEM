@@ -4,7 +4,9 @@
 import type { Duellist } from "../community/state.js";
 
 /** Mirrors the server's `NotificationKind`. */
-export type NotificationKind = "friend_request" | "friend_accepted";
+export type NotificationKind =
+  | "friend_request" | "friend_accepted"
+  | "duel_invite" | "duel_accepted" | "duel_recorded";
 
 /** Mirrors the server's `InboxItem`. */
 export type InboxItem = {

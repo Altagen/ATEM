@@ -544,6 +544,24 @@ collection identical. Measured by `e2e/settings.spec.ts`, desktop and mobile.
 
 ---
 
+## M5 — Duels  ✅ *first version on 2026-09-18*
+
+`docs/ref-duels.md` is the reference, written before the code: ATEM records a duel
+played in person, it does not referee one.
+
+- Invitation to a friend, accepted by the invited player alone
+- A result either player records once — the score says who won, equal is a draw
+- A turn-by-turn history both write into: append-only, last turn correctable,
+  frozen once the result is in
+- Each deck kept by identifier **and** by name, so the history reads after a
+  deletion (settles R14 without a soft delete)
+- Duels played and won, counted on the profile
+
+**Done when.** Two friends record a duel from their two devices, and each finds it
+on their profile. ✅ Measured by `e2e/duels.spec.ts`, desktop and mobile.
+
+---
+
 ## M4 — Duellists
 
 - Player directory, search by username, friends / online filters — *done on

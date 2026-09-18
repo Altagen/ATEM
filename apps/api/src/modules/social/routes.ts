@@ -11,8 +11,8 @@ import type { Database } from "../../db/client.js";
 import { invalidInput } from "../../platform/errors.js";
 import { requireViewer } from "../identity/index.js";
 import {
-  acceptFriend, blockPlayer, listBlocked, listDuellists, removeFriend, requestFriend,
-  unblockPlayer,
+  acceptFriend, blockPlayer, listBlocked, listDuellists, listFriends, removeFriend,
+  requestFriend, unblockPlayer,
 } from "./service.js";
 
 export function socialRoutes(db: Database) {
@@ -30,6 +30,9 @@ export function socialRoutes(db: Database) {
     if (search !== undefined && search.length > 64) throw invalidInput("Search too long.");
     return c.json(await listDuellists(db, viewerId(c), { search }));
   });
+
+  /** One's friends — all of them, unlike the bounded directory. */
+  app.get("/friends", async (c) => c.json({ items: await listFriends(db, viewerId(c)) }));
 
   app.post("/friends/:id", async (c) =>
     c.json({ friendStatus: await requestFriend(db, viewerId(c), c.req.param("id")) }));

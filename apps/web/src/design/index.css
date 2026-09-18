@@ -23,6 +23,7 @@
 @import "./pages/profile.css";
 @import "./pages/community.css";
 @import "./pages/inbox.css";
+@import "./pages/duels.css";
 
 /* Our deliberate departures, last so that they win. */
 @import "./adjustments.css";

@@ -94,6 +94,31 @@ test("removing, refusing and cancelling all leave both at the start", async () =
   assert.equal(statusOf(await duellists(two.cookie), one.userId), "none");
 });
 
+test("one's friends are answered in full, not filtered out of a bounded page", async () => {
+  /**
+   * The directory answers at most 200 of everyone on the instance; on a busy
+   * one, a friend is not necessarily among them. Whoever needs “my friends” —
+   * the duel invitation — asks this route, bounded by how many friends one has.
+   */
+  const viewer = await freshSession(app, "friends-list");
+  const friend = await freshSession(app, "friends-listed");
+  const other = await freshSession(app, "friends-not");
+
+  await req("POST", `/community/friends/${friend.userId}`, viewer.cookie);
+  // A pending request is not a friend.
+  await req("POST", `/community/friends/${other.userId}`, viewer.cookie);
+
+  const pending = await req("GET", "/community/friends", viewer.cookie);
+  assert.deepEqual(((await pending.json()) as { items: Card[] }).items.map((item) => item.id), []);
+
+  await req("POST", `/community/friends/${viewer.userId}/accept`, friend.cookie);
+  const accepted = await req("GET", "/community/friends", viewer.cookie);
+  assert.deepEqual(((await accepted.json()) as { items: Card[] }).items.map((item) => item.id), [friend.userId]);
+  // And symmetrically.
+  const theirs = await req("GET", "/community/friends", friend.cookie);
+  assert.deepEqual(((await theirs.json()) as { items: Card[] }).items.map((item) => item.id), [viewer.userId]);
+});
+
 test("a block works both ways, severs the link, and hides the profile", async () => {
   const blocker = await freshSession(app, "blocker");
   const blocked = await freshSession(app, "blocked");

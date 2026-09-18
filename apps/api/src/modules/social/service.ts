@@ -86,6 +86,27 @@ export async function canView(db: Database, viewerId: string, ownerId: string): 
   return !(await blockedBetween(db, viewerId, ownerId));
 }
 
+/**
+ * One's friends, all of them.
+ *
+ * Not the directory filtered on `friends`: the directory answers a bounded page
+ * of everyone on the instance, so on a busy one a friend can simply not be in
+ * it. Whoever needs “my friends” — the duel invitation, tomorrow the guild —
+ * asks this, which is bounded by how many friends one has.
+ */
+export async function listFriends(db: Database, viewerId: string): Promise<Duellist[]> {
+  const edges = await db
+    .select()
+    .from(friendEdges)
+    .where(and(
+      or(eq(friendEdges.userA, viewerId), eq(friendEdges.userB, viewerId)),
+      eq(friendEdges.status, "accepted"),
+    ));
+  const ids = edges.map((edge) => (edge.userA === viewerId ? edge.userB : edge.userA));
+  const friends = await listProfiles(db, { ids });
+  return friends.sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
 /** The relation as the viewer sees it, for a single person. */
 export async function friendStatusWith(
   db: Database,

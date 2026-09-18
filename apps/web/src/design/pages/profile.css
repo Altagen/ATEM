@@ -143,3 +143,6 @@
   .profile-actions { width: 100%; }
   .profile-actions > * { flex: 1 1 9rem; justify-content: center; }
 }
+
+/* What has been played, under the name: a line of figures, not a badge. */
+.profile-tally { margin: 0.35rem 0 0; font-size: 0.86rem; color: var(--muted); font-weight: 700; }
