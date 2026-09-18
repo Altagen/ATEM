@@ -20,7 +20,10 @@ import { notifications } from "./schema.js";
  * not know would be a line with nothing to say. Duel invitations join it when
  * duels arrive.
  */
-export const NOTIFICATION_KINDS = ["friend_request", "friend_accepted"] as const;
+export const NOTIFICATION_KINDS = [
+  "friend_request", "friend_accepted",
+  "duel_invite", "duel_accepted", "duel_recorded",
+] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

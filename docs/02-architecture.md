@@ -124,6 +124,11 @@ be an addition to that module, not a cross-cutting overhaul.
 > **Note (2026-09-16).** No `duel` directory exists: git does not track empty
 > directories, and an empty module would be dead code. The boundary is kept by the
 > rule — no priority module writes into the duel scope — not by a folder.
+>
+> **Note (2026-09-18).** The module exists now, and the decision holds: duels are
+> pure request/response. Two phones around one mat both write to the same duel and
+> each sees the other's turns on its next read. `docs/ref-duels.md` says why that
+> is enough — ATEM records a duel played in person, it does not referee one.
 
 ---
 

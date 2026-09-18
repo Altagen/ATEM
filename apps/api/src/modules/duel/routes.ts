@@ -1,0 +1,98 @@
+/**
+ * The duel routes.
+ *
+ * Every write takes the session's identity; the path carries the duel, never
+ * whose it is (ADR-009). A duel that is not the caller's answers “not found”.
+ */
+import { Hono } from "hono";
+import { z } from "zod";
+import { LIMITS } from "@atem/shared";
+import type { Database } from "../../db/client.js";
+import { invalidInput } from "../../platform/errors.js";
+import { requireViewer } from "../identity/index.js";
+import {
+  acceptDuel, dropDuel, getDuel, listDuels, proposeDuel, recordDuel, setDuelDeck, writeTurn,
+} from "./service.js";
+
+const ProposeBody = z.object({
+  guestId: z.string(),
+  /** The day it is played: today when it is not said. */
+  playedOn: z.string().datetime().optional(),
+  deckId: z.string().nullable().optional(),
+});
+
+const RecordBody = z.object({
+  hostScore: z.number().int().min(0).max(99),
+  guestScore: z.number().int().min(0).max(99),
+  note: z.string().max(LIMITS.note.max).nullable().optional(),
+  deckId: z.string().nullable().optional(),
+});
+
+const DeckBody = z.object({ deckId: z.string().nullable() });
+
+const TurnBody = z.object({
+  number: z.number().int().min(1).max(999),
+  playerId: z.string(),
+  hostLife: z.number().int().min(0).max(99_999),
+  guestLife: z.number().int().min(0).max(99_999),
+  note: z.string().max(280).nullable().optional(),
+});
+
+export function duelRoutes(db: Database) {
+  const app = new Hono();
+  app.use("*", requireViewer);
+
+  const viewerId = (c: { get: (key: "viewer") => { id: string } | null }): string => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("No session.");
+    return viewer.id;
+  };
+
+  async function body<T>(c: { req: { json: () => Promise<unknown> } }, schema: z.ZodType<T>): Promise<T> {
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      throw invalidInput("Unreadable request body.");
+    }
+    const parsed = schema.safeParse(raw);
+    if (!parsed.success) throw invalidInput("Invalid data.", { issues: parsed.error.issues });
+    return parsed.data;
+  }
+
+  app.get("/", async (c) => c.json({ items: await listDuels(db, viewerId(c)) }));
+
+  app.get("/:id", async (c) => c.json(await getDuel(db, viewerId(c), c.req.param("id"))));
+
+  app.post("/", async (c) => {
+    const input = await body(c, ProposeBody);
+    return c.json(
+      await proposeDuel(db, viewerId(c), {
+        guestId: input.guestId,
+        playedOn: input.playedOn ? new Date(input.playedOn) : undefined,
+        deckId: input.deckId ?? null,
+      }),
+      201,
+    );
+  });
+
+  app.post("/:id/accept", async (c) =>
+    c.json(await acceptDuel(db, viewerId(c), c.req.param("id"))));
+
+  /** Declining an invitation and calling off an open duel: one gesture. */
+  app.delete("/:id", async (c) => {
+    await dropDuel(db, viewerId(c), c.req.param("id"));
+    return c.json({ ok: true });
+  });
+
+  app.post("/:id/result", async (c) =>
+    c.json(await recordDuel(db, viewerId(c), c.req.param("id"), await body(c, RecordBody))));
+
+  app.put("/:id/deck", async (c) =>
+    c.json(await setDuelDeck(db, viewerId(c), c.req.param("id"), (await body(c, DeckBody)).deckId)));
+
+  app.put("/:id/turns", async (c) =>
+    c.json({ turns: await writeTurn(db, viewerId(c), c.req.param("id"), await body(c, TurnBody)) }));
+
+  return app;
+}

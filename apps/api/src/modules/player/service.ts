@@ -13,6 +13,7 @@ import type { Database } from "../../db/client.js";
 import { notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { listDecks } from "../deck/index.js";
+import { duelTally } from "../duel/index.js";
 import { getProfile, type Profile } from "../identity/index.js";
 import { canView, friendStatusWith, type FriendStatus } from "../social/index.js";
 
@@ -27,6 +28,8 @@ export type ProfileDeck = { id: string; name: string; main: number };
 
 export type PlayerProfile = {
   profile: Profile;
+  /** Duels recorded, and how many of them were won. Counted, never invented. */
+  duels: { played: number; won: number };
   /** Where the relation stands, as the viewer sees it. */
   friendStatus: FriendStatus;
   /**
@@ -50,6 +53,7 @@ export async function getPlayerProfile(
   const decks = await listDecks(db, profile.id);
   return {
     profile,
+    duels: await duelTally(db, profile.id),
     friendStatus: await friendStatusWith(db, viewerId, profile.id),
     isOwner: viewerId === profile.id,
     decks: decks.map((deck) => ({ id: deck.id, name: deck.name, main: deck.counts.main })),

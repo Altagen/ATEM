@@ -1,5 +1,5 @@
 /** The public API of the deck module. */
 export { deckRoutes } from "./routes.js";
 export {
-  listDecks, type DeckCardEntry, type DeckDetail, type DeckSummary,
+  deckNameOf, listDecks, type DeckCardEntry, type DeckDetail, type DeckSummary,
 } from "./service.js";

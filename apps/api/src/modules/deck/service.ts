@@ -175,6 +175,26 @@ async function deckForWrite(db: Database, viewerId: string, deckId: string) {
  * The shortfall is computed here too: it is the one thing the eye looks for
  * when scanning the list — which ones are ready to take along.
  */
+/**
+ * The name of a deck, if it belongs to this owner.
+ *
+ * `null` for a deck that does not exist **and** for someone else's: the caller
+ * cannot tell the two apart, which is the read rule of ADR-009. A duel copies
+ * the name it returns, so its history still reads once the deck is deleted.
+ */
+export async function deckNameOf(
+  db: Database,
+  ownerId: string,
+  deckId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ name: decks.name })
+    .from(decks)
+    .where(and(eq(decks.id, requireUuid(deckId)), eq(decks.userId, ownerId)))
+    .limit(1);
+  return row?.name ?? null;
+}
+
 export async function listDecks(db: Database, ownerId: string): Promise<DeckSummary[]> {
   const deckRows = await db
     .select()

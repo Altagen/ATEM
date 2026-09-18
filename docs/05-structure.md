@@ -30,6 +30,7 @@ ATEM/
 │  │     │  ├─ player/       someone's profile as others see it — read-only
 │  │     │  ├─ social/       friendships, blocks, the access checkpoint
 │  │     │  ├─ inbox/        what is waiting: the event, never its sentence
+│  │     │  ├─ duel/         duels played in person, and their turn-by-turn
 │  │     │  ├─ social/       (planned) friendships, blocks, access control
 │  │     │  └─ data/         (planned) import, export
 │  │     ├─ platform/        errors, headers, graceful shutdown, identifiers, read-only routes

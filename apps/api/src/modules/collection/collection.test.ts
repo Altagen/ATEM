@@ -262,19 +262,30 @@ test("the catalogue is never written by the collection", async () => {
   // A provisional card creates no row in `cards`: that is what replaces
   // ATEM-old's negative passcodes.
   const user = await newUser();
-  const before = await db.select({ passcode: cards.passcode }).from(cards);
   await adjustQuantity(db, user.id, { setCode: "NNNN-FR777", delta: 1 });
-  const after = await db.select({ passcode: cards.passcode }).from(cards);
 
-  assert.equal(after.length, before.length, "no card fabricated");
-
+  /**
+   * The question is about **this** printing, not about the size of the table.
+   *
+   * Counting every row in `cards` before and after made the test depend on
+   * what the other test files were doing at that instant — they share one
+   * database, and node runs them in parallel. It failed on 2026-09-18 for a
+   * card another file inserted in between, which said nothing about the
+   * collection.
+   */
   const [print] = await db
     .select()
     .from(cardPrints)
     .where(eq(cardPrints.setCode, "NNNN-FR777"))
     .limit(1);
-  assert.equal(print?.cardPasscode, null);
+  assert.equal(print?.cardPasscode, null, "no card fabricated for it");
   assert.equal(print?.resolveStatus, "pending");
+
+  const fabricated = await db
+    .select({ passcode: cards.passcode })
+    .from(cards)
+    .where(eq(cards.nameEn, "NNNN-FR777"));
+  assert.equal(fabricated.length, 0, "and none named after the code either");
 });
 
 test("the player's code is materialised even if only English is in the catalogue", async () => {
