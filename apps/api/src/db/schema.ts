@@ -14,3 +14,4 @@ export * from "../modules/collection/schema.js";
 export * from "../modules/scanlist/schema.js";
 export * from "../modules/deck/schema.js";
 export * from "../modules/social/schema.js";
+export * from "../modules/inbox/schema.js";

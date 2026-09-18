@@ -343,3 +343,58 @@ a.menu-item {
   transition: all 0.2s ease;
 }
 .lang-pill:hover { background: rgba(255, 255, 255, 0.12); }
+
+
+.app-inbox-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  border: 2px solid #181824;
+  display: grid;
+  place-items: center;
+}
+
+/* The bell in the top bar, and its count. ATEM-old styled it on
+   `.app-header-right .btn-icon`; the bar is `.app-bar-right` here. */
+.app-bar-right .btn-icon {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: #fff;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.app-bar-right .btn-icon:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--gold); }
+/* The bell carries its count in a corner: it must be able to overflow it. */
+.app-inbox { overflow: visible; }
+
+.account-sheet-count {
+  margin-left: auto;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.account-sheet-count + .account-sheet-chev { margin-left: 0.5rem; }

@@ -580,7 +580,10 @@ collections while respecting their visibility settings.
 1. **Duel mechanics.** Prior decision: shared screen or two synchronised devices.
    Decides whether real time is needed (ADR-006).
 2. **Guilds.** Roles, applications, invitations, activity log.
-3. **Inbox.** Makes sense once guilds are in place.
+3. **Inbox.** ✅ *done on 2026-09-18*, brought forward: friend requests gave it
+   something real to carry, and duel invitations will land in it. A row holds the
+   event and who caused it, never the sentence — ATEM-old stored the wording, so
+   an inbox read in English kept the French of the day it arrived.
 4. **Tournaments.** Depends on duels AND guilds.
 5. **Administration.** To be reduced before being taken back — ATEM-old's area is
    judged too complex; we will start again from a host's real needs.

@@ -1,0 +1,19 @@
+/**
+ * Rules removed from `design/pages/inbox.css`.
+ *
+ * Nothing set them in the shipped markup: they styled screens that do not
+ * exist here yet (guilds, settings, administration, landing page).
+ * Kept as they were — when their screen arrives, they move back up.
+ */
+
+
+
+/* Written for a heading beside a “mark everything as read” button; opening the
+   inbox reads it, so the button went and this rule with it. */
+.inbox-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}

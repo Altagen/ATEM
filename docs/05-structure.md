@@ -29,6 +29,7 @@ ATEM/
 │  │     │  ├─ deck/         folders, decks, deck cards
 │  │     │  ├─ player/       someone's profile as others see it — read-only
 │  │     │  ├─ social/       friendships, blocks, the access checkpoint
+│  │     │  ├─ inbox/        what is waiting: the event, never its sentence
 │  │     │  ├─ social/       (planned) friendships, blocks, access control
 │  │     │  └─ data/         (planned) import, export
 │  │     ├─ platform/        errors, headers, graceful shutdown, identifiers, read-only routes
@@ -91,6 +92,8 @@ deck ────────────┴────────────
 player ──▶ identity   (the profile)
   │
   └──────▶ social ──▶ identity   (the relation, and who may look)
+              │
+              └──▶ inbox ──▶ identity   (what is waiting)
 
 every module's routes ──▶ identity   (the session guard)
 ```

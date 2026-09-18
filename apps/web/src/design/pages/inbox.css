@@ -1,0 +1,40 @@
+/**
+ * The inbox.
+ *
+ * Item rules brought up from `staged/components.css`, where ATEM-old kept them
+ * for the modal its inbox used to be.
+ */
+
+.inbox-item-ico { font-size: 1.25rem; }
+.inbox-item-text { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; }
+.inbox-item-text strong { color: #fff; font-size: 0.9rem; }
+
+.inbox-unread-dot {
+  position: absolute;
+  left: -0.35rem;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gold);
+  transform: translateY(-50%);
+}
+.inbox-item-actions { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; }
+.btn-inbox-tool,
+.btn-inbox-delete {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.45rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.btn-inbox-delete:hover { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+
+/* An unread line is marked by its left edge as well as by its dot: colour alone
+   is not a signal everyone receives. */
+.player-card-row-full.is-unread { border-left: 3px solid var(--gold); }
+
+.btn-inbox-tool { text-decoration: none; display: inline-flex; align-items: center; }

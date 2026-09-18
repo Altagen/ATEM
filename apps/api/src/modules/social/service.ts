@@ -14,6 +14,7 @@ import type { Database } from "../../db/client.js";
 import { invalidInput, notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { activePlayerId, listProfiles, type Duellist } from "../identity/index.js";
+import { notify, withdraw } from "../inbox/index.js";
 import { blocks, friendEdges } from "./schema.js";
 
 /**
@@ -176,7 +177,10 @@ export async function requestFriend(
     // settles it, and the loser reads the row back instead of failing.
     .onConflictDoNothing()
     .returning();
-  if (row) return "pending_sent";
+  if (row) {
+    await notify(db, { userId: id, kind: "friend_request", actorId: viewerId });
+    return "pending_sent";
+  }
 
   const existing = await findEdge(db, viewerId, id);
   if (!existing) throw notFound("Player not found.");
@@ -188,6 +192,10 @@ export async function requestFriend(
     .update(friendEdges)
     .set({ status: "accepted", respondedAt: new Date() })
     .where(eq(friendEdges.id, existing.id));
+  // Their request is answered: the line offering to accept it has no purpose
+  // left, and the other side learns it is done.
+  await withdraw(db, { userId: viewerId, kind: "friend_request", actorId: id });
+  await notify(db, { userId: id, kind: "friend_accepted", actorId: viewerId });
   return "friends";
 }
 
@@ -211,6 +219,8 @@ export async function acceptFriend(
     .update(friendEdges)
     .set({ status: "accepted", respondedAt: new Date() })
     .where(eq(friendEdges.id, edge.id));
+  await withdraw(db, { userId: viewerId, kind: "friend_request", actorId: id });
+  await notify(db, { userId: id, kind: "friend_accepted", actorId: viewerId });
   return "friends";
 }
 
@@ -229,6 +239,10 @@ export async function removeFriend(
   const id = await target(db, viewerId, otherId);
   const [a, b] = orderedPair(viewerId, id);
   await db.delete(friendEdges).where(and(eq(friendEdges.userA, a), eq(friendEdges.userB, b)));
+  // Whichever of the three gestures this was, no message may keep offering to
+  // answer a request that is gone — in either inbox.
+  await withdraw(db, { userId: id, kind: "friend_request", actorId: viewerId });
+  await withdraw(db, { userId: viewerId, kind: "friend_request", actorId: id });
   return "none";
 }
 
@@ -245,6 +259,8 @@ export async function blockPlayer(db: Database, viewerId: string, otherId: strin
     const [a, b] = orderedPair(viewerId, id);
     await tx.delete(friendEdges).where(and(eq(friendEdges.userA, a), eq(friendEdges.userB, b)));
   });
+  await withdraw(db, { userId: id, kind: "friend_request", actorId: viewerId });
+  await withdraw(db, { userId: viewerId, kind: "friend_request", actorId: id });
 }
 
 export async function unblockPlayer(db: Database, viewerId: string, otherId: string): Promise<void> {

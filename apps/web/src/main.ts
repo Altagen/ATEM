@@ -1,7 +1,9 @@
 import "./design/index.css";
 
 import { t } from "./platform/i18n/index.js";
-import { closeAccountSheet, refreshServiceState, renderNavigation } from "./platform/navigation.js";
+import {
+  closeAccountSheet, refreshInbox, refreshServiceState, renderNavigation,
+} from "./platform/navigation.js";
 import { installFocusTrap } from "./platform/focus-trap.js";
 import { releaseScroll } from "./platform/scroll-lock.js";
 import {
@@ -11,6 +13,7 @@ import { knownUser, loadUser, setUser } from "./platform/session.js";
 import { el, toast } from "./platform/ui.js";
 import { authScreen } from "./screens/auth/screen.js";
 import { collectionScreen } from "./screens/collection/screen.js";
+import { inboxScreen } from "./screens/inbox/screen.js";
 import { communityScreen } from "./screens/community/screen.js";
 import { deckScreen } from "./screens/deck/screen.js";
 import { scanlistScreen } from "./screens/scanlist/screen.js";
@@ -47,6 +50,15 @@ register("/community", communityScreen, {
   requiresSession: true,
   nav: { label: "Community", icon: "🌐", group: "main" },
 });
+/**
+ * The inbox has **no** navigation destination.
+ *
+ * It is reached from the bell in the top bar and from the first row of the
+ * phone's account sheet, both of which carry the count — a plain entry beside
+ * “My profile” would say nothing about what is waiting, and there would be two
+ * ways in on the same screen.
+ */
+register("/inbox", inboxScreen, { requiresSession: true });
 /**
  * The account group: your profile, then your settings — in that order, which is
  * the order the account sheet and the top bar's menu list them.
@@ -113,7 +125,11 @@ async function start(): Promise<void> {
   // The service state is read at startup, then every minute: often enough to
   // signal an outage, rarely enough to cost nothing.
   void refreshServiceState();
-  window.setInterval(() => void refreshServiceState(), 60_000);
+  void refreshInbox();
+  window.setInterval(() => {
+    void refreshServiceState();
+    void refreshInbox();
+  }, 60_000);
 }
 
 void start();

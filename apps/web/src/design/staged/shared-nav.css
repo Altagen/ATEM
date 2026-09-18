@@ -449,21 +449,6 @@
 .account-sheet-item:focus-visible { background: rgba(255, 255, 255, 0.05); }
 .account-sheet-chev { margin-left: auto; color: var(--muted); font-size: 1.15rem; }
 .account-sheet-value { margin-left: auto; font-size: 0.82rem; }
-.account-sheet-count {
-  margin-left: auto;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 0.4rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--danger);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-.account-sheet-count + .account-sheet-chev { margin-left: 0.5rem; }
 .account-sheet-foot { padding: 0.6rem 1.1rem 1.1rem; border-top: 1px solid var(--border); }
 .account-sheet-logout { width: 100%; justify-content: center; color: var(--danger); }
 

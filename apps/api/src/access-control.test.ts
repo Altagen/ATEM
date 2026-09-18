@@ -144,6 +144,10 @@ test("without a session, every write route refuses", async () => {
     ["GET", "/community/blocks"],
     ["POST", "/community/blocks/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d"],
     ["DELETE", "/community/blocks/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d"],
+    ["GET", "/inbox"],
+    ["GET", "/inbox/unread"],
+    ["POST", "/inbox/read-all"],
+    ["DELETE", "/inbox/0b6f7c1e-7a0e-4c55-9d7e-3f0a6f1b2c3d"],
   ];
 
   for (const [method, path] of attempts) {

@@ -27,6 +27,8 @@ import { el, toast } from "./ui.js";
 type ServiceState = "ok" | "unreachable" | "unknown";
 
 let serviceState: ServiceState = "unknown";
+/** How many notifications are waiting, as of the last count read. */
+let unread = 0;
 
 /**
  * The service state — translated at display time, not at declaration.
@@ -56,6 +58,45 @@ export async function refreshServiceState(): Promise<void> {
     serviceState = "unreachable";
   }
   renderNavigation();
+}
+
+/**
+ * How many notifications are waiting.
+ *
+ * Read on arrival and after anything that could change it, rather than held
+ * open on a live connection: a number that is a minute old is no worse than one
+ * that costs a permanent socket per visitor.
+ */
+export async function refreshInbox(): Promise<void> {
+  if (!knownUser()) {
+    unread = 0;
+    return;
+  }
+  try {
+    const answer = await api<{ unread: number }>("/inbox/unread");
+    unread = answer.unread;
+  } catch {
+    // A badge is not worth a message: it stays as it was.
+    return;
+  }
+  renderNavigation();
+}
+
+/**
+ * The inbox, reached from the top bar.
+ *
+ * ATEM-old's bell, with its count. The badge disappears at zero rather than
+ * showing it: a zero is a thing to read for nothing.
+ */
+function inboxBell(): HTMLElement {
+  const label = unread > 0
+    ? t("Inbox — {n} waiting", { n: String(unread) })
+    : t("Inbox");
+  const bell = el("a", { class: "btn-icon app-inbox", href: "/inbox", "aria-label": label, title: label }, ["📬"]);
+  if (unread > 0) {
+    bell.append(el("span", { class: "app-inbox-dot" }, [unread > 9 ? "9+" : String(unread)]));
+  }
+  return bell;
 }
 
 /**
@@ -160,6 +201,7 @@ function appBar(signal: AbortSignal): HTMLElement {
     ]),
     el("div", { class: "app-bar-right" }, [
       languagePill(),
+      inboxBell(),
       el("span", { class: `api-pill ${service.className}` }, [t(service.text)]),
       userMenu(user, signal),
     ]),
@@ -283,6 +325,16 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
   close.addEventListener("click", closeAccountSheet);
 
   const list = el("nav", { class: "account-sheet-list" });
+  // The inbox leads the list, as in ATEM-old: it is the one entry whose content
+  // changes on its own, and the only one that can be waiting for you.
+  list.append(
+    el("a", { class: "account-sheet-item", href: "/inbox" }, [
+      el("span", { "aria-hidden": "true" }, ["📬"]),
+      el("span", {}, [t("Inbox")]),
+      ...(unread > 0 ? [el("span", { class: "account-sheet-count" }, [unread > 9 ? "9+" : String(unread)])] : []),
+      el("span", { class: "account-sheet-chev", "aria-hidden": "true" }, ["›"]),
+    ]),
+  );
   for (const { path, nav: destination } of destinations("account")) {
     list.append(
       el("a", { class: "account-sheet-item", href: path }, [
@@ -292,10 +344,6 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
       ]),
     );
   }
-  // With no secondary destination the list has nothing to show: we do not
-  // leave an empty container that would look like loading.
-  if (list.childElementCount === 0) list.remove();
-
   const signOut = el("button", { type: "button", class: "account-sheet-logout" }, [
     t("Sign out"),
   ]);
@@ -349,6 +397,12 @@ export function closeAccountSheet(): void {
     if (node) node.hidden = true;
   }
   if (wasOpen) unlockScroll();
+
+  // A rebuild that waited for the sheet to close now has its turn.
+  if (pendingRender) {
+    pendingRender = false;
+    renderNavigation();
+  }
 }
 
 async function signOutNow(): Promise<void> {
@@ -380,7 +434,23 @@ async function signOutNow(): Promise<void> {
  */
 let navigationListeners: AbortController | null = null;
 
+/**
+ * A rebuild asked for while the account sheet was open.
+ *
+ * The bar is rebuilt every minute by the service and inbox polls, and rebuilding
+ * destroys the sheet — so a poll firing while someone had it open closed it
+ * under their finger, mid-gesture. The rebuild waits for the sheet to close,
+ * which is the only moment it costs nothing.
+ */
+let pendingRender = false;
+
 export function renderNavigation(): void {
+  const openSheet = document.querySelector<HTMLElement>("#account-sheet");
+  if (openSheet && !openSheet.hidden) {
+    pendingRender = true;
+    return;
+  }
+
   navigationListeners?.abort();
   navigationListeners = new AbortController();
 

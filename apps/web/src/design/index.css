@@ -22,6 +22,7 @@
 @import "./components/identity.css";
 @import "./pages/profile.css";
 @import "./pages/community.css";
+@import "./pages/inbox.css";
 
 /* Our deliberate departures, last so that they win. */
 @import "./adjustments.css";

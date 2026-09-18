@@ -18,6 +18,7 @@ import { scanlistRoutes } from "./modules/scanlist/index.js";
 import { deckRoutes } from "./modules/deck/index.js";
 import { playerRoutes } from "./modules/player/index.js";
 import { socialRoutes } from "./modules/social/index.js";
+import { inboxRoutes } from "./modules/inbox/index.js";
 
 export function createApp(db: Database) {
   const app = new Hono();
@@ -49,6 +50,7 @@ export function createApp(db: Database) {
   app.route("/decks", deckRoutes(db));
   app.route("/players", playerRoutes(db));
   app.route("/community", socialRoutes(db));
+  app.route("/inbox", inboxRoutes(db));
 
   return app;
 }
