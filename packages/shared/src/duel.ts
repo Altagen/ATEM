@@ -24,3 +24,12 @@ export const STARTING_LIFE = 8000;
 
 /** The bounds a life total is kept within — not the rules of any format. */
 export const LIFE_BOUNDS = { min: 0, max: 99_999 } as const;
+
+/**
+ * Half the life points, rounded **up**.
+ *
+ * “Halve your life points” leaves 2001 on 4001, not 2000: Ange's rule on
+ * 2026-09-19, and the one that favours the player being asked to pay. Shared so
+ * the button and the server agree on the figure.
+ */
+export const halvedLife = (life: number): number => Math.ceil(life / 2);

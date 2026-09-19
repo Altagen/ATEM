@@ -404,7 +404,13 @@ export async function endTurn(db: Database, viewerId: string, duelId: string): P
 }
 
 /**
- * Life points taken or given back, to either player, in the phase under way.
+ * Life points, **declared by the one who takes them**, in the phase under way.
+ *
+ * Asked for by Ange on 2026-09-19: the player who loses the points is the one
+ * who says so. It is how it goes at the table — nobody reaches across to move
+ * the other's counter — and it removes the one gesture a duel could argue
+ * about. A change aimed at the other player is refused here, whatever a screen
+ * might offer.
  *
  * The phase is not asked for: it is where the duel is. That is what makes the
  * history read like a duel — “turn 4, Battle Phase, −1800”.
@@ -413,12 +419,12 @@ export async function changeLife(
   db: Database,
   viewerId: string,
   duelId: string,
-  input: { playerId: string; delta: number; note?: string | null },
+  input: { playerId?: string; delta: number; note?: string | null },
 ): Promise<DuelDetail> {
   const row = await playing(db, viewerId, duelId);
-  const playerId = requireUuid(input.playerId);
-  if (playerId !== row.hostId && playerId !== row.guestId) {
-    throw invalidInput("Life points belong to one of the two duellists.");
+  const playerId = input.playerId === undefined ? viewerId : requireUuid(input.playerId);
+  if (playerId !== viewerId) {
+    throw forbidden("Each duellist declares their own life points.");
   }
   if (!Number.isInteger(input.delta) || input.delta === 0) {
     throw invalidInput("Life points are a whole number.");
@@ -426,7 +432,7 @@ export async function changeLife(
   const note = input.note?.trim() ?? null;
   if (note && note.length > EVENT_NOTE_MAX) throw invalidInput("The note is too long.");
 
-  const mine = playerId === row.hostId;
+  const mine = viewerId === row.hostId;
   const current = mine ? row.hostLife : row.guestLife;
   // Clamped rather than refused: a player brought to zero by more damage than
   // they had left is the normal end of a duel, not a mistake to reject.
@@ -444,7 +450,7 @@ export async function changeLife(
     authorId: viewerId,
     turnNumber: updated.turnNumber ?? 1,
     phase: updated.phase as DuelPhase,
-    playerId,
+    playerId: viewerId,
     delta: after - current,
     hostLife: updated.hostLife,
     guestLife: updated.guestLife,

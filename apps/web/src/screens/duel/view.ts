@@ -112,14 +112,58 @@ function eventLine(duel: DuelDetail, event: DuelEvent): SafeHtml {
   </tr>`;
 }
 
-/** The board: where the duel is, and what can be done from there. */
-function boardHtml(duel: DuelDetail): SafeHtml {
+/** The amounts a duel deals in, offered on one's own life card. */
+const LIFE_STEPS = [-1000, -500, -100, 100, 500, 1000] as const;
+
+/**
+ * One life card. The duellist's own carries its buttons; the other's does not.
+ *
+ * Ange's rule, on 2026-09-19: the one who takes the damage declares it. So the
+ * opposite card is a figure to read, never a counter to reach across and move.
+ */
+function lifeCard(one: DuelSide, options: { mine: boolean; playing: boolean; busy: boolean }): SafeHtml {
+  const look = one.player ? avatarLooks()[one.player.avatar] : null;
+  return html`<div class="duel-life${options.mine ? " is-mine" : ""}${options.playing ? " is-playing" : ""}">
+    <div class="duel-life-who">
+      ${look ? html`<span class="user-avatar-badge" role="img" aria-label="${look.label}">${look.icon}</span>` : raw("")}
+      <span class="duel-life-name">${one.player?.displayName ?? t("A duellist")}</span>
+      ${when(options.playing, html`<span class="duel-life-turn">${t("Playing")}</span>`)}
+    </div>
+    <strong class="duel-life-value" aria-live="polite">${String(one.life)}</strong>
+    ${options.mine
+      ? html`<div class="duel-life-steps">
+          ${LIFE_STEPS.map((step) => html`<button type="button" class="chip duel-step" data-step="${String(step)}"
+                ${options.busy ? raw("disabled") : raw("")}>${step > 0 ? `+${step}` : `−${Math.abs(step)}`}</button>`)}
+          <button type="button" class="chip duel-step" data-halve
+                  ${options.busy ? raw("disabled") : raw("")}>${t("÷2")}</button>
+          <button type="button" class="chip duel-step" id="btn-life-other"
+                  ${options.busy ? raw("disabled") : raw("")}>${t("Other…")}</button>
+        </div>`
+      : html`<p class="legende duel-life-theirs">${t("They declare their own.")}</p>`}
+  </div>`;
+}
+
+/**
+ * The board: where the duel is, and everything one does from it.
+ *
+ * Ange, on 2026-09-19: “le mieux serait que l'historique soit replié et que tout
+ * se passe sur le panneau de contrôle” — the two players arrange the rest
+ * between themselves, at the table.
+ */
+function boardHtml(duel: DuelDetail, state: DuelState): SafeHtml {
   const phase = duel.phase ?? "draw";
+  const mineIsHost = duel.isHost;
+  const mine = mineIsHost ? duel.host : duel.guest;
+  const theirs = mineIsHost ? duel.guest : duel.host;
   const playing = duel.currentPlayerId === duel.host.player?.id ? duel.host.player : duel.guest.player;
+  const myTurn = duel.currentPlayerId === mine.player?.id;
+
   return html`<section class="profile-section-card duel-board">
     <div class="duel-board-head">
       <strong class="duel-turn">${t("Turn {n}", { n: String(duel.turnNumber ?? 1) })}</strong>
-      <span class="legende">${t("{name} is playing", { name: playing?.displayName ?? t("A duellist") })}</span>
+      <span class="duel-now${myTurn ? " is-you" : ""}" aria-live="polite">
+        ${myTurn ? t("Your turn") : t("{name} is playing", { name: playing?.displayName ?? t("A duellist") })}
+      </span>
     </div>
 
     <!--
@@ -132,21 +176,37 @@ function boardHtml(duel: DuelDetail): SafeHtml {
     </ol>
 
     <div class="duel-lives">
-      ${[duel.host, duel.guest].map((one) => html`<div class="duel-life">
-        <span class="legende">${one.player?.displayName ?? t("A duellist")}</span>
-        <strong class="duel-life-value">${String(one.life)}</strong>
-        <button type="button" class="btn" data-life="${one.player?.id ?? ""}">${t("Life points")}</button>
-      </div>`)}
+      ${lifeCard(mine, { mine: true, playing: myTurn, busy: state.busy })}
+      ${lifeCard(theirs, { mine: false, playing: !myTurn, busy: state.busy })}
     </div>
 
     <div class="duel-actions">
       <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-phase"
               ${phase === "end" ? raw("disabled") : raw("")}>${t("Next phase")}</button>
-      <button type="button" class="btn" id="btn-end-turn">${t("End the turn")}</button>
+      <button type="button" class="btn duel-end-turn" id="btn-end-turn">${t("End the turn")}</button>
       <button type="button" class="btn" id="btn-result">${t("Record the result")}</button>
       <button type="button" class="btn" id="btn-drop">${t("Call it off")}</button>
     </div>
   </section>`;
+}
+
+/**
+ * The coin, while it turns.
+ *
+ * The server draws it (`docs/ref-duels.md`); this only shows the draw happening,
+ * because a result that appears instantly is a result one doubts. It stops on
+ * the name the server sent.
+ */
+function coinHtml(state: DuelState): SafeHtml {
+  const coin = state.coin;
+  if (!coin) return html``;
+  return html`<div class="deck-modal-backdrop is-coin"></div>
+  <div class="duel-coin" role="status" aria-live="assertive">
+    <span class="duel-coin-label">${coin.winner ? t("Begins") : t("Flipping the coin…")}</span>
+    <strong class="duel-coin-name${coin.winner ? " is-settled" : ""}">
+      ${coin.winner ?? coin.names[0]}
+    </strong>
+  </div>`;
 }
 
 export function detailHtml(state: DuelState): SafeHtml {
@@ -189,29 +249,33 @@ export function detailHtml(state: DuelState): SafeHtml {
         html`<p class="legende">${t("Both duellists choose a deck before the coin is flipped.")}</p>`)}
     </section>
 
-    ${when(duel.status === "playing", boardHtml(duel))}
+    ${when(duel.status === "playing", boardHtml(duel, state))}
 
-    <section class="profile-section-card">
-      <h2 class="profile-section-title"><span aria-hidden="true">📜</span><span>${t("Turn by turn")}</span></h2>
-      ${duel.events.length === 0
-        ? html`<div class="empty-state is-encadre">
-            <p class="empty-title">${t("Nothing played yet")}</p>
-            <p class="muted">${t("Both duellists write into the same history.")}</p>
-          </div>`
-        : html`<div class="admin-table-container">
-            <table class="admin-table">
-              <thead><tr>
-                <th>${t("Turn")}</th><th>${t("Phase")}</th><th>${t("What happened")}</th><th>${t("Life points")}</th>
-              </tr></thead>
-              <!-- Newest first: what one looks for is what just happened. -->
-              <tbody>${[...duel.events].reverse().map((event) => eventLine(duel, event))}</tbody>
-            </table>
-          </div>`}
-    </section>
+    <!--
+      The history is folded: a duel is played on the panel above, and the two
+      players arrange the rest between themselves at the table. It is opened to
+      settle a doubt, not to follow along.
+    -->
+    ${when(duel.events.length > 0, html`<details class="profile-section-card duel-log">
+      <summary class="duel-log-summary">
+        📜 ${t("Turn by turn")}
+        <span class="muted">${t("{n} events", { n: String(duel.events.length) })}</span>
+      </summary>
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead><tr>
+            <th>${t("Turn")}</th><th>${t("Phase")}</th><th>${t("What happened")}</th><th>${t("Life points")}</th>
+          </tr></thead>
+          <!-- Newest first: what one looks for is what just happened. -->
+          <tbody>${[...duel.events].reverse().map((event) => eventLine(duel, event))}</tbody>
+        </table>
+      </div>
+    </details>`)}
   </main>
   ${resultModal(state)}
   ${lifeModal(state)}
-  ${deckModal(state)}`;
+  ${deckModal(state)}
+  ${coinHtml(state)}`;
 }
 
 /** The deck picker, shared by the invitation and “choose my deck”. */
@@ -294,25 +358,23 @@ function resultModal(state: DuelState): SafeHtml {
   </div>`;
 }
 
+/**
+ * An amount the six buttons do not offer — and a word about it.
+ *
+ * It takes life points from **one's own** total: the card it opens from is
+ * one's own, and the server refuses anything else.
+ */
 function lifeModal(state: DuelState): SafeHtml {
   const life = state.life;
   const duel = state.open;
   if (!life || !duel) return html``;
-  const about = life.playerId === duel.host.player?.id ? duel.host : duel.guest;
   return html`<div class="deck-modal-backdrop" id="duel-modal-backdrop"></div>
   <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="life-title">
-    <div class="deck-modal-head">
-      <h2 id="life-title">${t("Life points — {name}", { name: about.player?.displayName ?? t("A duellist") })}</h2>
-    </div>
+    <div class="deck-modal-head"><h2 id="life-title">${t("My life points")}</h2></div>
     <form class="deck-modal-body" id="form-life">
       <p class="legende">${t("In the {phase}, turn {n}.", {
         phase: phaseName(duel.phase ?? "draw"), n: String(duel.turnNumber ?? 1),
       })}</p>
-      <!-- The amounts a duel actually deals in, and a field for the rest. -->
-      <div class="duel-quick-row">
-        ${[100, 500, 800, 1000, 1500, 2000, 3000].map((amount) => html`<button type="button"
-              class="chip" data-amount="${String(amount)}">−${String(amount)}</button>`)}
-      </div>
       <div class="bloc-champ">
         <label class="champ-libelle" for="life-amount">${t("How many")}</label>
         <input type="number" id="life-amount" class="search-input-gaming is-nue" min="1" max="99999"

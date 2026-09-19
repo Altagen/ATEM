@@ -385,20 +385,3 @@ h2 {
 .etat {
   font-weight: 800;
 }
-
-
-
-
-/*
- * La variante encadrée : un pointillé qui dit « ici, il n'y a rien encore ».
- *
- * Le profil l'écrivait deux fois en style en ligne, à l'identique, pour ses
- * decks et ses trophées.
- */
-.empty-state.is-encadre {
-  border: 1px dashed var(--border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--fg-fort) 1%, transparent);
-  padding: 2.5rem;
-  color: var(--muted);
-}

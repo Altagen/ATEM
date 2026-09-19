@@ -6,6 +6,7 @@
  * screen hoped: a duel is written by two people, and the other one may have
  * moved first.
  */
+import { halvedLife } from "@atem/shared";
 import { api, ApiError } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { refreshInbox } from "../../platform/navigation.js";
@@ -76,6 +77,7 @@ export async function duelScreen(
   }
 
   function closeModals(): void {
+    // The coin is not a window: it closes when it has been read.
     state.invite = null;
     state.result = null;
     state.life = null;
@@ -104,6 +106,66 @@ export async function duelScreen(
     } finally {
       state.busy = false;
       await refreshInbox();
+      if (!signal.aborted) paint();
+    }
+  }
+
+  /**
+   * The coin: it turns, then it settles on what the server drew.
+   *
+   * The draw is the server's (`docs/ref-duels.md`); this is the only part that
+   * belongs to the screen — showing it happen. A result that appears the instant
+   * one asks for it is a result one doubts, and this one decides who starts.
+   *
+   * Someone who has asked for less motion is shown the answer without the
+   * turning: the information is the same, the flourish is not.
+   */
+  const COIN_TICK_MS = 110;
+  const COIN_TURNS = 12;
+
+  async function flipCoin(duel: DuelDetail): Promise<void> {
+    const names: [string, string] = [
+      duel.host.player?.displayName ?? t("Host"),
+      duel.guest.player?.displayName ?? t("Guest"),
+    ];
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    state.coin = { names, winner: null };
+    state.busy = true;
+    paint();
+
+    let face = 0;
+    const timer = still ? null : window.setInterval(() => {
+      face += 1;
+      const node = root.querySelector<HTMLElement>(".duel-coin-name");
+      if (node) node.textContent = names[face % 2]!;
+    }, COIN_TICK_MS);
+
+    try {
+      const [started] = await Promise.all([
+        api<DuelDetail>(`/duels/${duelId}/start`, { method: "POST" }),
+        still ? Promise.resolve() : new Promise((done) => setTimeout(done, COIN_TICK_MS * COIN_TURNS)),
+      ]);
+      if (timer !== null) window.clearInterval(timer);
+      if (signal.aborted) return;
+
+      state.open = started;
+      const first = started.currentPlayerId === started.host.player?.id
+        ? started.host.player
+        : started.guest.player;
+      state.coin = { names, winner: first?.displayName ?? names[0] };
+      paint();
+
+      // Long enough to read the name, short enough not to be in the way.
+      await new Promise((done) => setTimeout(done, 900));
+      if (signal.aborted) return;
+      state.coin = null;
+      toast(t("{name} won the coin flip and begins.", { name: first?.displayName ?? "" }), "success");
+    } catch (err) {
+      if (timer !== null) window.clearInterval(timer);
+      state.coin = null;
+      toast(err instanceof ApiError ? err.message : t("The request failed."), "error");
+    } finally {
+      state.busy = false;
       if (!signal.aborted) paint();
     }
   }
@@ -155,20 +217,48 @@ export async function duelScreen(
     });
 
     /**
-     * Life points: the quick amounts fill the field rather than sending on
-     * their own — one taps “−1000”, sees it, and confirms. A tap that took
-     * life points straight away would have no way back.
+     * Life points, on one's own card.
+     *
+     * The offered amounts act straight away: they are small, the opposite
+     * button undoes one, and the history keeps what happened. Asking for a
+     * confirmation on “−500” would be three taps for a figure the two players
+     * are saying out loud anyway.
      */
-    for (const chip of root.querySelectorAll<HTMLButtonElement>("[data-amount]")) {
-      chip.addEventListener("click", () => {
-        const field = root.querySelector<HTMLInputElement>("#life-amount");
-        if (field) field.value = chip.dataset.amount ?? "";
-      });
+    const declare = (delta: number, note: string | null, done: string): void => {
+      void act(async () => {
+        state.open = await api<DuelDetail>(`/duels/${duelId}/life`, {
+          method: "POST",
+          body: { delta, note },
+        });
+      }, done);
+    };
+
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-step]")) {
+      const step = Number(button.dataset.step);
+      button.addEventListener("click", () => declare(
+        step,
+        null,
+        step < 0 ? t("Life points taken.") : t("Life points given back."),
+      ));
     }
 
+    root.querySelector("[data-halve]")?.addEventListener("click", () => {
+      const duel = state.open;
+      if (!duel) return;
+      const mine = duel.isHost ? duel.host : duel.guest;
+      // Halved, rounded up — `halvedLife` is the figure the server would reach.
+      const after = halvedLife(mine.life);
+      if (after === mine.life) return;
+      declare(after - mine.life, t("Halved."), t("Life points halved."));
+    });
+
+    root.querySelector("#btn-life-other")?.addEventListener("click", () => {
+      state.life = { amount: "", note: "" };
+      paint();
+      root.querySelector<HTMLInputElement>("#life-amount")?.focus();
+    });
+
     const sendLife = (sign: 1 | -1): void => {
-      const life = state.life;
-      if (!life) return;
       const amount = Number(value("life-amount"));
       const note = value("life-note") || null;
       if (!Number.isInteger(amount) || amount <= 0) {
@@ -176,12 +266,11 @@ export async function duelScreen(
         return;
       }
       void act(async () => {
-        await api(`/duels/${duelId}/life`, {
+        state.open = await api<DuelDetail>(`/duels/${duelId}/life`, {
           method: "POST",
-          body: { playerId: life.playerId, delta: sign * amount, note },
+          body: { delta: sign * amount, note },
         });
         state.life = null;
-        await loadDuel();
       }, sign < 0 ? t("Life points taken.") : t("Life points given back."));
     };
 
@@ -238,14 +327,9 @@ export async function duelScreen(
     });
 
     root.querySelector("#btn-start")?.addEventListener("click", () => {
-      void act(async () => {
-        const started = await api<DuelDetail>(`/duels/${duelId}/start`, { method: "POST" });
-        state.open = started;
-        const first = started.currentPlayerId === started.host.player?.id
-          ? started.host.player
-          : started.guest.player;
-        toast(t("{name} won the coin flip and begins.", { name: first?.displayName ?? "" }), "success");
-      }, "");
+      const duel = state.open;
+      if (!duel || state.busy) return;
+      void flipCoin(duel);
     });
 
     root.querySelector("#btn-phase")?.addEventListener("click", () => {
@@ -259,15 +343,6 @@ export async function duelScreen(
         state.open = await api<DuelDetail>(`/duels/${duelId}/turn`, { method: "POST" });
       }, t("The turn passes."));
     });
-
-    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-life]")) {
-      const playerId = button.dataset.life!;
-      button.addEventListener("click", () => {
-        state.life = { playerId, amount: "", note: "" };
-        paint();
-        root.querySelector<HTMLInputElement>("#life-amount")?.focus();
-      });
-    }
 
     root.querySelector("#btn-deck")?.addEventListener("click", () => {
       void (async () => {

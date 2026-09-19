@@ -75,35 +75,51 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
 
   // The coin is flipped by the server: one of the two begins.
   await friend.page.getByRole("button", { name: /Lancer la pièce/ }).click();
-  // The history says who the coin chose — a durable line, not the passing toast.
-  await expect(friend.page.locator(".admin-table")).toContainText(/gagne le lancer de pièce et commence/);
+  // The coin turns, then settles on a name.
+  await expect(friend.page.locator(".duel-coin")).toBeVisible();
+  await expect(friend.page.locator(".duel-coin-name.is-settled")).toBeVisible({ timeout: 10_000 });
+  await expect(friend.page.locator(".duel-coin")).toHaveCount(0, { timeout: 10_000 });
   await expect(friend.page.locator(".duel-turn")).toHaveText("Tour 1");
   await expect(friend.page.locator(".duel-phase.is-current")).toHaveText("Draw Phase");
 
-  // The phases follow one another, and life points are taken in the one under way.
+  // The phases follow one another; either player may advance them.
   for (const phase of ["Standby Phase", "Main Phase 1", "Battle Phase"]) {
     await friend.page.getByRole("button", { name: "Phase suivante" }).click();
     await expect(friend.page.locator(".duel-phase.is-current")).toHaveText(phase);
   }
-  await friend.page.locator(".duel-life", { hasText: me.displayName })
-    .getByRole("button", { name: "Points de vie" }).click();
-  await friend.page.getByRole("button", { name: "−1500" }).click();
-  await friend.page.locator("#life-note").fill("Harpie attaque.");
-  await friend.page.getByRole("button", { name: "Les retirer" }).click();
-  await expect(friend.page.getByText("Points de vie retirés.")).toBeVisible();
-  await expect(friend.page.locator(".duel-life", { hasText: me.displayName }).locator(".duel-life-value"))
-    .toHaveText("6500");
 
-  // The other device finds the duel where it was left.
+  /**
+   * Life points are declared by the one who takes them (Ange, 2026-09-19).
+   * The other duellist's card carries no button at all.
+   */
+  const theirOwnCard = friend.page.locator(".duel-life.is-mine");
+  await expect(theirOwnCard).toContainText(friend.account.displayName);
+  await expect(friend.page.locator(".duel-life").filter({ hasText: me.displayName }).getByRole("button"))
+    .toHaveCount(0);
+
+  await theirOwnCard.getByRole("button", { name: "−1000" }).click();
+  await expect(friend.page.getByText("Points de vie retirés.")).toBeVisible();
+  await expect(theirOwnCard.locator(".duel-life-value")).toHaveText("7000");
+
+  // Halving rounds up: 7000 → 3500.
+  await theirOwnCard.getByRole("button", { name: "÷2" }).click();
+  await expect(theirOwnCard.locator(".duel-life-value")).toHaveText("3500");
+
+  // The other device finds the duel where it was left — without a reload.
   await page.goto("/duels");
   await page.locator(".duel-row").first().click();
   await expect(page.locator(".duel-phase.is-current")).toHaveText("Battle Phase");
-  await expect(page.getByText("Harpie attaque.")).toBeVisible();
+  await expect(page.locator(".duel-life").filter({ hasText: friend.account.displayName })
+    .locator(".duel-life-value")).toHaveText("3500");
 
-  // The turn passes, and the history keeps both.
+  // The turn passes, and the panel says whose it is.
   await page.getByRole("button", { name: "Finir le tour" }).click();
   await expect(page.getByText("Le tour passe.")).toBeVisible();
   await expect(page.locator(".duel-turn")).toHaveText("Tour 2");
+  await expect(page.locator(".duel-life.is-playing")).toHaveCount(1);
+
+  // The history is folded away; it opens on demand.
+  await page.getByText(/Tour par tour/).click();
   await expect(page.locator(".admin-table tbody tr").first()).toContainText("Draw Phase");
 
   // The result, recorded by either: the score says who won.

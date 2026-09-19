@@ -159,15 +159,20 @@ test("the phases follow one another, and the turn passes to the other player", a
   assert.equal(third.currentPlayerId, opener);
 });
 
-test("life points are taken in the phase under way, by either player", async () => {
+test("each duellist declares their own life points, and only their own", async () => {
+  /**
+   * Ange's rule on 2026-09-19: the one who takes the damage says so. It is how
+   * it goes at the table, and it removes the one gesture a duel could argue
+   * about.
+   */
   const { host, guest, duel } = await accepted("duel-life");
   await req("POST", `/duels/${duel.id}/start`, host.cookie);
   await req("POST", `/duels/${duel.id}/phase`, host.cookie);
   await req("POST", `/duels/${duel.id}/phase`, host.cookie);
   await req("POST", `/duels/${duel.id}/phase`, host.cookie); // battle
 
-  const hit = (await (await req("POST", `/duels/${duel.id}/life`, guest.cookie, {
-    playerId: host.userId, delta: -1800, note: "Blue-Eyes attaque.",
+  const hit = (await (await req("POST", `/duels/${duel.id}/life`, host.cookie, {
+    delta: -1800, note: "Blue-Eyes attaque.",
   })).json()) as Duel;
   assert.equal(hit.host.life, 6200);
   assert.equal(hit.guest.life, 8000);
@@ -176,21 +181,25 @@ test("life points are taken in the phase under way, by either player", async () 
   assert.equal(written?.kind, "life");
   assert.equal(written?.phase, "battle", "the phase it happened in, without being asked");
   assert.equal(written?.delta, -1800);
-  assert.equal(written?.authorId, guest.userId, "who wrote it is kept");
+  assert.equal(written?.authorId, host.userId);
+
+  // Reaching across the table is refused, whatever a screen might offer.
+  assert.equal(
+    (await req("POST", `/duels/${duel.id}/life`, guest.cookie, { playerId: host.userId, delta: -8000 })).status,
+    403,
+  );
+  assert.equal((await duelOf(host.cookie, duel.id)).host.life, 6200, "nothing moved");
+
+  // The other declares their own, and it lands on their side.
+  const theirs = (await (await req("POST", `/duels/${duel.id}/life`, guest.cookie, { delta: -1000 })).json()) as Duel;
+  assert.equal(theirs.guest.life, 7000);
 
   // Life points can be given back, and are clamped at zero rather than refused.
-  await req("POST", `/duels/${duel.id}/life`, host.cookie, { playerId: host.userId, delta: 500 });
-  const out = (await (await req("POST", `/duels/${duel.id}/life`, host.cookie, {
-    playerId: host.userId, delta: -99_000,
-  })).json()) as Duel;
+  await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: 500 });
+  const out = (await (await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: -99_000 })).json()) as Duel;
   assert.equal(out.host.life, 0, "more damage than is left is the end of a duel, not an error");
 
-  for (const body of [
-    { playerId: host.userId, delta: 0 },
-    { playerId: (await freshSession(app, "duel-life-outsider")).userId, delta: -100 },
-  ]) {
-    assert.equal((await req("POST", `/duels/${duel.id}/life`, host.cookie, body)).status, 400);
-  }
+  assert.equal((await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: 0 })).status, 400);
 });
 
 test("nothing is played before the start, or after the result", async () => {
@@ -253,7 +262,7 @@ test("a duel is nobody else's to read or to write", async () => {
     ["POST", `/duels/${duel.id}/result`, { hostScore: 9, guestScore: 0 }],
     ["POST", `/duels/${duel.id}/phase`, undefined],
     ["POST", `/duels/${duel.id}/turn`, undefined],
-    ["POST", `/duels/${duel.id}/life`, { playerId: host.userId, delta: -8000 }],
+    ["POST", `/duels/${duel.id}/life`, { delta: -8000 }],
     ["PUT", `/duels/${duel.id}/deck`, { deckId: null }],
   ] as [string, string, unknown][]) {
     assert.equal((await req(method, path, stranger.cookie, body)).status, 404, `${method} ${path}`);

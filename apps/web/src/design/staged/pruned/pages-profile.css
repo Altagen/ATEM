@@ -227,3 +227,16 @@
   border: 1px solid color-mix(in srgb, var(--gold) 25%, transparent);
   flex-shrink: 0;
 }
+
+
+.profile-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #fff;
+}

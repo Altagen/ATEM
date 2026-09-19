@@ -31,7 +31,12 @@ const RecordBody = z.object({
 const DeckBody = z.object({ deckId: z.string().nullable() });
 
 const LifeBody = z.object({
-  playerId: z.string(),
+  /**
+   * Whose points — one's own, and only one's own. Optional because that is the
+   * only value it can hold; a screen that sends it wrong is refused rather than
+   * silently corrected.
+   */
+  playerId: z.string().optional(),
   /** Negative takes life points, positive gives them back. Never zero. */
   delta: z.number().int().min(-99_999).max(99_999),
   note: z.string().max(280).nullable().optional(),

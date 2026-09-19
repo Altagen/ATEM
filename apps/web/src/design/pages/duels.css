@@ -135,23 +135,132 @@
   color: var(--gold);
 }
 
+/* Whose turn it is, said in the panel and not only in the history. */
+.duel-now { font-size: 0.86rem; font-weight: 800; color: var(--muted); }
+.duel-now.is-you { color: var(--gold); }
+
 .duel-lives { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .duel-life {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
   padding: 0.85rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--fg-fort) 3%, transparent);
 }
+/* The duellist whose turn it is stands out, wherever one's eye lands first. */
+.duel-life.is-playing {
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 25%, transparent);
+}
+.duel-life-who { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+.duel-life-name { font-weight: 800; color: #fff; }
+.duel-life-turn {
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
 .duel-life-value { font-size: 2.1rem; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
-.duel-life .btn { min-height: 44px; }
+.duel-life-theirs { margin: 0; text-align: center; }
 
-/* The amounts a duel deals in, one tap away — they fill the field rather than
-   sending, so a mistap costs nothing. */
-.duel-quick-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/*
+ * One's own amounts, one tap away.
+ *
+ * They act straight away: the figures are small, the opposite button undoes
+ * one, and the history keeps what happened. The other duellist's card has no
+ * buttons at all — the one who takes the damage declares it.
+ */
+.duel-life-steps { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center; }
+.duel-step { min-height: 40px; font-variant-numeric: tabular-nums; }
+
+/* End of turn: blue and round, so the hand finds it without reading. */
+.duel-end-turn {
+  border-radius: 999px;
+  border-color: color-mix(in srgb, var(--info) 55%, transparent);
+  background: color-mix(in srgb, var(--info) 18%, transparent);
+  color: var(--info);
+  font-weight: 800;
+}
+.duel-end-turn:hover {
+  background: color-mix(in srgb, var(--info) 28%, transparent);
+  border-color: var(--info);
+}
+
+/*
+ * The history folds away.
+ *
+ * A duel is played on the panel; the log is opened to settle a doubt, not to
+ * follow along — Ange, on 2026-09-19.
+ */
+.duel-log { padding-block: 1rem; }
+.duel-log-summary {
+  cursor: pointer;
+  font-weight: 900;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.duel-log[open] .duel-log-summary { margin-bottom: 1rem; }
+
+/*
+ * The coin, while it turns.
+ *
+ * The name alternates on its own beat; the settled one stops and swells a
+ * little. Nothing here decides anything — the server drew it — this only shows
+ * it happening.
+ */
+.duel-coin {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  z-index: var(--z-modal-panel);
+  pointer-events: none;
+  text-align: center;
+  padding: 1rem;
+}
+.duel-coin-label {
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.duel-coin-name {
+  font-size: clamp(1.6rem, 7vw, 3rem);
+  font-weight: 900;
+  color: #fff;
+  padding: 0.5rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  background: color-mix(in srgb, var(--ombre) 75%, transparent);
+}
+.duel-coin-name.is-settled {
+  color: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--gold) 35%, transparent);
+  animation: duel-coin-settle 0.35s ease-out;
+}
+@keyframes duel-coin-settle {
+  from { transform: scale(0.88); }
+  to { transform: scale(1); }
+}
+/* Asked for less motion: the answer, without the flourish. */
+@media (prefers-reduced-motion: reduce) {
+  .duel-coin-name.is-settled { animation: none; }
+}
+.deck-modal-backdrop.is-coin { background: rgba(0, 0, 0, 0.72); }
 
 @media (max-width: 650px) {
   .duel-lives { grid-template-columns: 1fr; }

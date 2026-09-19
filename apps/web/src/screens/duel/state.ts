@@ -66,8 +66,16 @@ export type DuelState = {
   result: { hostScore: string; guestScore: string; note: string } | null;
   /** Naming the deck one brought, before the coin. */
   deckPick: { deckId: string } | null;
-  /** Taking life points: from whom, how many. */
-  life: { playerId: string; amount: string; note: string } | null;
+  /** A custom amount, when the offered ones do not fit. */
+  life: { amount: string; note: string } | null;
+  /**
+   * The coin, while it turns.
+   *
+   * It holds the two names and, once the server has answered, the one it fell
+   * on — the screen keeps turning for a moment before settling, because a coin
+   * that lands instantly is not a coin flip.
+   */
+  coin: { names: [string, string]; winner: string | null } | null;
   busy: boolean;
 };
 
@@ -81,5 +89,6 @@ export const duelState = (): DuelState => ({
   result: null,
   deckPick: null,
   life: null,
+  coin: null,
   busy: false,
 });
