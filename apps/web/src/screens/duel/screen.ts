@@ -23,6 +23,15 @@ export async function duelScreen(
 ): Promise<void> {
   const state = duelState();
   const duelId = params.get("duel");
+  /**
+   * Which list one is on lives in the address, not only in memory.
+   *
+   * Ange, on 2026-09-19: opening a past duel and coming back landed on the
+   * current one, two clicks from where he was. The address carries it, so the
+   * way back — and a reload, and the browser's own back button — all return to
+   * the list that was being read.
+   */
+  state.showPast = params.get("past") === "1";
 
   const reason = (err: unknown, fallback: string): string =>
     err instanceof ApiError ? err.message : fallback;
@@ -350,16 +359,8 @@ export async function duelScreen(
 
     for (const button of root.querySelectorAll<HTMLButtonElement>("[data-duels]")) {
       button.addEventListener("click", () => {
-        state.showPast = button.dataset.duels === "past";
-        paint();
-        // Read when it is opened, so a duel just recorded is in it.
-        if (state.showPast) {
-          state.past = null;
-          state.pastCursor = null;
-          void loadPast().then(() => {
-            if (!signal.aborted && state.showPast) paint();
-          });
-        }
+        // The address is the state: navigating repaints the screen from it.
+        navigate(button.dataset.duels === "past" ? "/duels?past=1" : "/duels");
       });
     }
 
@@ -461,7 +462,9 @@ export async function duelScreen(
   }, { signal });
 
   paint();
-  await (duelId ? loadDuel() : loadList());
+  // The past list is read when it is the one being shown, so a duel just
+  // recorded is in it.
+  await (duelId ? loadDuel() : state.showPast ? loadPast() : loadList());
   if (signal.aborted) return;
   paint();
 

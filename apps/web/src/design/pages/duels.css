@@ -346,3 +346,7 @@
 .duel-log-order { display: flex; justify-content: flex-end; margin-bottom: 0.6rem; }
 
 .duel-more { display: flex; justify-content: center; margin-top: 1rem; }
+
+/* Your own name, wherever it appears: the eye finds itself first. */
+.duel-side-text strong.is-you,
+.admin-table .is-you { color: var(--gold); }

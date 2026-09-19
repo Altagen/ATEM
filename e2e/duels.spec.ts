@@ -196,11 +196,20 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   // One word, for the person reading: this duel was lost here.
   await expect(page.locator(".duel-outcome")).toHaveText("Perdant");
   await expect(page.locator(".duel-verdict")).toHaveCount(0, { timeout: 1_000 });
+  // One's own name is picked out, so the eye finds itself first.
+  await expect(page.locator(".duel-side-text strong.is-you")).toHaveText(me.displayName);
 
   // Opening it is where who beat whom is read.
   await page.locator(".duel-row").click();
   await expect(page.locator(".duel-verdict.is-won")).toHaveText("Vainqueur");
   await expect(page.locator(".duel-verdict.is-lost")).toHaveText("Perdant");
+  await page.getByText(/Tour par tour/).click();
+  await expect(page.locator(".admin-table .is-you").first()).toHaveText(me.displayName);
+
+  // And coming back lands on the list one was reading, in one click.
+  await page.getByRole("link", { name: "← Duels" }).click();
+  await page.waitForURL("**/duels?past=1");
+  await expect(page.locator(".duel-row")).toHaveCount(1);
 
   // Recorded means nothing more is played, and counted on the profile.
   await expect(page.getByRole("button", { name: "Phase suivante" })).toHaveCount(0);

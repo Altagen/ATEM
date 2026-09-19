@@ -36,14 +36,20 @@ function phaseName(phase: DuelPhase): string {
   }
 }
 
-function side(one: DuelSide, verdict: "won" | "lost" | null): SafeHtml {
+/**
+ * One side of a duel. **Your own name is gold**, wherever it appears.
+ *
+ * Ange, on 2026-09-19: two names on a card, and the eye has to work out which
+ * one is its own before reading anything else. The colour answers that first.
+ */
+function side(one: DuelSide, verdict: "won" | "lost" | null, isYou: boolean): SafeHtml {
   const look = one.player ? avatarLooks()[one.player.avatar] : null;
   return html`<div class="duel-side${verdict === "won" ? " is-winner" : ""}">
     ${look
       ? html`<span class="user-avatar-badge" role="img" aria-label="${look.label}">${look.icon}</span>`
       : raw("")}
     <div class="duel-side-text">
-      <strong>${one.player?.displayName ?? t("A duellist")}</strong>
+      <strong class="${isYou ? "is-you" : ""}">${one.player?.displayName ?? t("A duellist")}</strong>
       <span class="legende">${one.deck.name ?? t("No deck named")}</span>
     </div>
     ${verdict === null
@@ -71,23 +77,25 @@ const verdictOf = (duel: Duel, one: DuelSide): "won" | "lost" | null => {
  * nobody asked here — opening the duel is where one looks at who beat whom.
  * The overview answers “did I win?”, above the crossed swords.
  */
-function duelRow(duel: Duel): SafeHtml {
+function duelRow(duel: Duel, fromPast: boolean): SafeHtml {
   const mine = duel.isHost ? duel.host : duel.guest;
   const outcome = verdictOf(duel, mine);
-  return html`<a class="player-card-row-full duel-row" href="/duels?duel=${duel.id}">
+  // The address remembers which list this was opened from.
+  return html`<a class="player-card-row-full duel-row"
+      href="/duels?duel=${duel.id}${fromPast ? "&past=1" : ""}">
     <div class="duel-row-line">
       <span class="duel-status is-${duel.status}">${statusLabel(duel)}</span>
       <span class="legende">${day(duel.playedOn)}</span>
     </div>
     <div class="duel-row-players">
-      ${side(duel.host, null)}
+      ${side(duel.host, null, duel.isHost)}
       <span class="duel-versus">
         ${outcome === null
           ? raw("")
           : html`<span class="duel-outcome is-${outcome}">${outcome === "won" ? t("Winner") : t("Loser")}</span>`}
         <span aria-hidden="true">⚔️</span>
       </span>
-      ${side(duel.guest, null)}
+      ${side(duel.guest, null, !duel.isHost)}
     </div>
   </a>`;
 }
@@ -145,7 +153,9 @@ export function listHtml(state: DuelState): SafeHtml {
                     ? t("A duel appears here once its result is recorded.")
                     : t("Invite a friend: ATEM keeps the record of a duel played in person.")}</p>
                 </div>`
-              : html`<div class="player-cards-list-full">${showing.map(duelRow)}</div>
+              : html`<div class="player-cards-list-full">
+                    ${showing.map((duel) => duelRow(duel, state.showPast))}
+                  </div>
                   ${when(state.showPast && state.pastCursor !== null,
                     html`<div class="duel-more"><button type="button" class="btn" id="btn-more-past">
                       ${t("Show more")}
@@ -156,10 +166,26 @@ export function listHtml(state: DuelState): SafeHtml {
   ${inviteModal(state)}`;
 }
 
+/**
+ * A sentence with **your own name picked out** in it.
+ *
+ * The name is inside the translated phrase, so it is put back in by hand: the
+ * sentence is split on it and the middle wrapped. Both halves go through the
+ * escaping template like anything else.
+ */
+function withName(sentence: string, name: string, isYou: boolean): SafeHtml {
+  if (!isYou || name === "") return html`${sentence}`;
+  const at = sentence.indexOf(name);
+  if (at < 0) return html`${sentence}`;
+  return html`${sentence.slice(0, at)}<span class="is-you">${name}</span>${sentence.slice(at + name.length)}`;
+}
+
 /** One line of the history, in the words a duel is read in. */
 function eventLine(duel: DuelDetail, event: DuelEvent): SafeHtml {
   const about = event.playerId === duel.host.player?.id ? duel.host.player : duel.guest.player;
   const name = about?.displayName ?? t("A duellist");
+  const mine = duel.isHost ? duel.host.player : duel.guest.player;
+  const isYou = about !== null && about.id === mine?.id;
   // A phase event says nothing here: the phase column beside it already does.
   const text = event.kind === "life"
     ? t("{name}: {delta} life points", { name, delta: String(event.delta ?? 0) })
@@ -171,7 +197,9 @@ function eventLine(duel: DuelDetail, event: DuelEvent): SafeHtml {
   return html`<tr>
     <td data-col="${t("Turn")}">${String(event.turnNumber)}</td>
     <td data-col="${t("Phase")}">${phaseName(event.phase)}</td>
-    <td data-col="${t("What happened")}">${text}${event.note ? ` — ${event.note}` : ""}</td>
+    <td data-col="${t("What happened")}">
+      ${withName(text, name, isYou)}${event.note ? ` — ${event.note}` : ""}
+    </td>
     <td data-col="${t("Life points")}">${String(event.hostLife)} — ${String(event.guestLife)}</td>
   </tr>`;
 }
@@ -331,7 +359,7 @@ export function detailHtml(state: DuelState): SafeHtml {
   // A duellist at zero ends the duel: nothing is played on top of that.
   const over = duel.status === "playing" && (duel.host.life === 0 || duel.guest.life === 0);
   return html`<main class="community-app-container">
-    <a class="settings-back-btn" href="/duels">${t("← Duels")}</a>
+    <a class="settings-back-btn" href="${state.showPast ? "/duels?past=1" : "/duels"}">${t("← Duels")}</a>
 
     <section class="profile-section-card">
       <div class="duel-row-line">
@@ -339,9 +367,9 @@ export function detailHtml(state: DuelState): SafeHtml {
         <span class="legende">${day(duel.playedOn)}</span>
       </div>
       <div class="duel-row-players">
-        ${side(duel.host, verdictOf(duel, duel.host))}
+        ${side(duel.host, verdictOf(duel, duel.host), duel.isHost)}
         <span class="duel-versus" aria-hidden="true">⚔️</span>
-        ${side(duel.guest, verdictOf(duel, duel.guest))}
+        ${side(duel.guest, verdictOf(duel, duel.guest), !duel.isHost)}
       </div>
       ${when(duel.note !== null && duel.note !== "", html`<p class="showcase-bio">${duel.note}</p>`)}
 
