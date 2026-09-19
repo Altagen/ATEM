@@ -184,14 +184,55 @@ function boardHtml(duel: DuelDetail, state: DuelState): SafeHtml {
       The turn belongs to the one playing it: off their turn, the two controls
       that move it are inert rather than hidden — one sees what will be possible
       again, and the server refuses them anyway (Ange, 2026-09-19).
+
+      Calling the duel off is not one of them: it sits apart, under the other
+      duellist's card, where the hand moving the turn along does not pass.
     -->
     <div class="duel-actions">
       <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-phase"
               ${!myTurn || phase === "end" ? raw("disabled") : raw("")}>${t("Next phase")}</button>
       <button type="button" class="btn duel-end-turn" id="btn-end-turn"
               ${myTurn ? raw("") : raw("disabled")}>${t("End the turn")}</button>
-      <button type="button" class="btn" id="btn-result">${t("Record the result")}</button>
-      <button type="button" class="btn" id="btn-drop">${t("Call it off")}</button>
+    </div>
+
+    <div class="duel-drop-row">
+      <button type="button" class="btn-action-danger-red is-petit is-auto" id="btn-drop">
+        ${t("Call it off")}
+      </button>
+    </div>
+  </section>`;
+}
+
+/**
+ * Zero life points: the duel is over, and the screen says so.
+ *
+ * Asked for by Ange on 2026-09-19. The result is not written by the
+ * application — a duel is a best of three, and only the two know what the
+ * evening was — so this offers to record it, with the decks played under the
+ * winner's name. And a way back, because a life total reaches zero by a
+ * mistyped figure as easily as by an attack.
+ */
+function victoryHtml(duel: DuelDetail): SafeHtml {
+  const beaten = duel.host.life === 0 ? duel.host : duel.guest;
+  const winner = duel.host.life === 0 ? duel.guest : duel.host;
+  return html`<section class="profile-section-card duel-victory">
+    <span class="duel-victory-cup" aria-hidden="true">🏆</span>
+    <h2 class="duel-victory-name">${t("{name} wins", { name: winner.player?.displayName ?? t("A duellist") })}</h2>
+    <p class="legende">${t("{name} is at zero life points.", { name: beaten.player?.displayName ?? t("A duellist") })}</p>
+
+    <div class="duel-victory-decks">
+      ${[winner, beaten].map((one) => html`<div class="duel-victory-deck">
+        <span class="legende">${one.player?.displayName ?? t("A duellist")}</span>
+        <strong>${one.deck.name ?? t("No deck named")}</strong>
+      </div>`)}
+    </div>
+
+    <div class="duel-actions">
+      <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-result">
+        ${t("Record the result")}
+      </button>
+      <button type="button" class="btn" id="btn-correct">${t("Correct the life points")}</button>
+      <button type="button" class="btn-action-danger-red is-petit is-auto" id="btn-drop">${t("Call it off")}</button>
     </div>
   </section>`;
 }
@@ -223,6 +264,8 @@ export function detailHtml(state: DuelState): SafeHtml {
 
   const mine = duel.isHost ? duel.host : duel.guest;
   const ready = duel.host.deck.id !== null && duel.guest.deck.id !== null;
+  // A duellist at zero ends the duel: nothing is played on top of that.
+  const over = duel.status === "playing" && (duel.host.life === 0 || duel.guest.life === 0);
   return html`<main class="community-app-container">
     <a class="settings-back-btn" href="/duels">${t("← Duels")}</a>
 
@@ -255,7 +298,8 @@ export function detailHtml(state: DuelState): SafeHtml {
         html`<p class="legende">${t("Both duellists choose a deck before the coin is flipped.")}</p>`)}
     </section>
 
-    ${when(duel.status === "playing", boardHtml(duel, state))}
+    ${when(duel.status === "playing",
+      over && !state.correcting ? victoryHtml(duel) : boardHtml(duel, state))}
 
     <!--
       The history is folded: a duel is played on the panel above, and the two

@@ -66,6 +66,13 @@ export type DuelState = {
   result: { hostScore: string; guestScore: string; note: string } | null;
   /** Naming the deck one brought, before the coin. */
   deckPick: { deckId: string } | null;
+/**
+   * The victory panel is set aside, to go back and correct a life total.
+   *
+   * A duellist at zero ends the duel; a duellist at zero **by a mistyped
+   * figure** has to be able to put it back.
+   */
+  correcting: boolean;
   /** A custom amount, when the offered ones do not fit. */
   life: { amount: string; note: string } | null;
   /**
@@ -89,6 +96,7 @@ export const duelState = (): DuelState => ({
   result: null,
   deckPick: null,
   life: null,
+  correcting: false,
   coin: null,
   busy: false,
 });

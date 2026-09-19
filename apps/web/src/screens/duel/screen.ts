@@ -43,6 +43,14 @@ export async function duelScreen(
     }
   }
 
+  /**
+   * The duel, as the server has it.
+   *
+   * **A duel that is no longer there takes us back to the list.** The other
+   * duellist may have called it off while this screen was open: staying on
+   * “this duel could not be opened” would leave the person to work out that
+   * something happened elsewhere — Ange, on 2026-09-19.
+   */
   async function loadDuel(): Promise<void> {
     if (!duelId) return;
     try {
@@ -50,6 +58,11 @@ export async function duelScreen(
       state.failure = null;
     } catch (err) {
       state.open = null;
+      if (err instanceof ApiError && err.status === 404) {
+        toast(t("This duel was called off."), "info");
+        navigate("/duels");
+        return;
+      }
       state.failure = reason(err, t("This duel could not be opened."));
     }
   }
@@ -226,10 +239,13 @@ export async function duelScreen(
      */
     const declare = (delta: number, note: string | null, done: string): void => {
       void act(async () => {
-        state.open = await api<DuelDetail>(`/duels/${duelId}/life`, {
+        const duel = await api<DuelDetail>(`/duels/${duelId}/life`, {
           method: "POST",
           body: { delta, note },
         });
+        state.open = duel;
+        // Off zero, the victory panel has nothing to stand on: the duel resumes.
+        if (duel.host.life > 0 && duel.guest.life > 0) state.correcting = false;
       }, done);
     };
 
@@ -322,7 +338,25 @@ export async function duelScreen(
     });
 
     root.querySelector("#btn-result")?.addEventListener("click", () => {
-      state.result = { hostScore: "", guestScore: "", note: "" };
+      const duel = state.open;
+      // Coming from a duellist at zero, the score is already known: one game to
+      // the other. It is a proposal, not a decision — a duel is a best of three
+      // and the two know what their evening was.
+      const won = duel && duel.status === "playing" && (duel.host.life === 0 || duel.guest.life === 0);
+      state.result = won
+        ? {
+            hostScore: duel.host.life === 0 ? "0" : "1",
+            guestScore: duel.host.life === 0 ? "1" : "0",
+            note: "",
+          }
+        : { hostScore: "", guestScore: "", note: "" };
+      paint();
+    });
+
+    root.querySelector("#btn-correct")?.addEventListener("click", () => {
+      // Back to the board: a life total reaches zero by a mistyped figure as
+      // easily as by an attack.
+      state.correcting = true;
       paint();
     });
 

@@ -264,3 +264,37 @@
 @media (max-width: 650px) {
   .duel-lives { grid-template-columns: 1fr; }
 }
+
+/* Calling the duel off sits apart, under the other duellist's card: the hand
+   moving the turn along does not pass over it. */
+.duel-drop-row { display: flex; justify-content: flex-end; margin-top: 0.9rem; }
+
+/*
+ * Zero life points: the duel is over, and the panel gives way to its result.
+ *
+ * The decks are named here because this is the moment one writes the evening
+ * down — and the moment one remembers what was played with.
+ */
+.duel-victory { text-align: center; }
+.duel-victory-cup { font-size: 2.5rem; display: block; }
+.duel-victory-name { margin: 0.35rem 0 0.2rem; font-size: 1.5rem; font-weight: 900; color: #fff; }
+.duel-victory-decks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 1.1rem 0;
+}
+.duel-victory-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.duel-victory-deck strong { color: #fff; }
+.duel-victory .duel-actions { justify-content: center; }
+
+@media (max-width: 650px) {
+  .duel-victory-decks { grid-template-columns: 1fr; }
+}

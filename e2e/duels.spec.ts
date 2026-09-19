@@ -139,8 +139,32 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await page.getByText(/Tour par tour/).click();
   await expect(page.locator(".admin-table tbody tr").first()).toContainText("Draw Phase");
 
-  // The result, recorded by either: the score says who won.
+  /**
+   * Zero life points ends the duel: the winner's screen takes the panel's
+   * place, names the decks, and offers to record — with the score it already
+   * knows (Ange, 2026-09-19).
+   */
+  await page.locator(".duel-life.is-mine").getByRole("button", { name: "Autre…" }).click();
+  await page.locator("#life-amount").fill("8000");
+  await page.getByRole("button", { name: "Les retirer" }).click();
+  await expect(page.getByText(/l'emporte/)).toBeVisible();
+  await expect(page.locator(".duel-victory")).toContainText("Blue-Eyes");
+  await expect(page.locator(".duel-victory")).toContainText("Harpies");
+  await expect(page.getByRole("button", { name: "Phase suivante" })).toHaveCount(0);
+
+  // A life total reaches zero by a mistyped figure as easily as by an attack.
+  await page.getByRole("button", { name: "Corriger les points de vie" }).click();
+  await expect(page.getByRole("button", { name: "Phase suivante" })).toBeVisible();
+  await page.locator(".duel-life.is-mine").getByRole("button", { name: "+1000" }).click();
+  await expect(page.getByText(/l'emporte/)).toHaveCount(0);
+
+  // Back to zero, and this time it is recorded.
+  await page.locator(".duel-life.is-mine").getByRole("button", { name: "Autre…" }).click();
+  await page.locator("#life-amount").fill("8000");
+  await page.getByRole("button", { name: "Les retirer" }).click();
   await page.getByRole("button", { name: "Enregistrer le résultat" }).first().click();
+  // The score is proposed from the duel: one game to the other.
+  await expect(page.locator("#result-host")).toHaveValue("0");
   await page.locator("#result-host").fill("2");
   await page.locator("#result-guest").fill("1");
   await page.getByRole("dialog").getByRole("button", { name: "Enregistrer le résultat" }).click();
@@ -175,6 +199,35 @@ test("an invitation can be declined, and leaves nothing behind", async ({ page, 
   await expect(page.getByText("Aucun duel pour l'instant")).toBeVisible();
   await friend.page.goto("/inbox");
   await expect(friend.page.getByText("Rien en attente")).toBeVisible();
+  await friend.context.close();
+});
+
+test("a duel called off elsewhere takes the other duellist back to the list", async ({ page, browser }) => {
+  /**
+   * Ange, on 2026-09-19: he called a duel off and the other screen sat there
+   * until it was reloaded by hand.
+   */
+  await signUp(page);
+  const friend = await duellist(browser);
+  await befriend(page, friend);
+
+  await page.goto("/duels");
+  await page.getByRole("button", { name: "Inviter un ami" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Envoyer l'invitation" }).click();
+  await expect(page.getByText("Invitation envoyée.")).toBeVisible();
+
+  // The other duellist opens it, and stays on it.
+  await friend.page.goto("/duels");
+  await friend.page.locator(".duel-row").first().click();
+  await friend.page.waitForURL("**/duels?duel=**");
+
+  await page.getByRole("button", { name: "Annuler l'invitation" }).click();
+  await expect(page.getByText("Le duel a été annulé.")).toBeVisible();
+
+  // No reload here: the screen notices on its own and goes back.
+  await friend.page.waitForURL("**/duels", { timeout: 15_000 });
+  await expect(friend.page.getByText("Ce duel a été annulé.")).toBeVisible();
+  await expect(friend.page.getByText("Aucun duel pour l'instant")).toBeVisible();
   await friend.context.close();
 });
 
