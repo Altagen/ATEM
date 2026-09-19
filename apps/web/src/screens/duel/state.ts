@@ -11,7 +11,6 @@ export type DuelSide = {
   player: Duellist | null;
   deck: { id: string | null; name: string | null };
   life: number;
-  score: number | null;
 };
 
 /** Mirrors the server's `DuelEvent`. */
@@ -60,12 +59,17 @@ export type DuelState = {
   failure: string | null;
   /** The list shows the duel under way, or the ones already played. */
   showPast: boolean;
+  /** The duels already played, paged: they accumulate for as long as one plays. */
+  past: Duel[] | null;
+  pastCursor: string | null;
+  /** The turn-by-turn, newest first or oldest first — the reader chooses. */
+  newestFirst: boolean;
   /** The invitation window: whom, when, with which deck. */
   invite: { guestId: string; playedOn: string; deckId: string } | null;
   friends: Duellist[] | null;
   decks: DeckChoice[] | null;
-  /** The result window's fields — scores as typed, checked before sending. */
-  result: { hostScore: string; guestScore: string; note: string } | null;
+  /** The result window: who won, and a word about it. */
+  result: { winnerId: string; note: string } | null;
   /** Naming the deck one brought, before the coin. */
   deckPick: { deckId: string } | null;
 /**
@@ -93,6 +97,9 @@ export const duelState = (): DuelState => ({
   open: null,
   failure: null,
   showPast: false,
+  past: null,
+  pastCursor: null,
+  newestFirst: true,
   invite: null,
   friends: null,
   decks: null,

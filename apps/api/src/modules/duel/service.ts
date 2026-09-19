@@ -9,7 +9,7 @@
  * Every function takes the session's identity and refuses anything that is not
  * about the caller's own duels (ADR-009).
  */
-import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { DUEL_PHASES, LIFE_BOUNDS, LIMITS, nextPhase, STARTING_LIFE, type DuelPhase } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { conflict, forbidden, invalidInput, notFound } from "../../platform/errors.js";
@@ -27,7 +27,6 @@ export type DuelSide = {
   player: Duellist | null;
   deck: { id: string | null; name: string | null };
   life: number;
-  score: number | null;
 };
 
 export type DuelEvent = {
@@ -56,7 +55,7 @@ export type Duel = {
   phase: DuelPhase | null;
   currentPlayerId: string | null;
   note: string | null;
-  /** `null` on a draw or before the result — the score decides, nothing else. */
+  /** Who won. `null` until the duel is recorded. */
   winnerId: string | null;
   /** The caller invited: it is theirs to cancel rather than to answer. */
   isHost: boolean;
@@ -66,16 +65,9 @@ export type Duel = {
 
 export type DuelDetail = Duel & { events: DuelEvent[] };
 
-const SCORE_MAX = 99;
 const EVENT_NOTE_MAX = 280;
 
 type DuelRow = typeof duels.$inferSelect;
-
-function winnerOf(row: DuelRow): string | null {
-  if (row.hostScore === null || row.guestScore === null) return null;
-  if (row.hostScore === row.guestScore) return null;
-  return row.hostScore > row.guestScore ? row.hostId : row.guestId;
-}
 
 function toDuel(row: DuelRow, viewerId: string, players: Map<string, Duellist>): Duel {
   return {
@@ -86,19 +78,17 @@ function toDuel(row: DuelRow, viewerId: string, players: Map<string, Duellist>):
       player: players.get(row.hostId) ?? null,
       deck: { id: row.hostDeckId, name: row.hostDeckName },
       life: row.hostLife,
-      score: row.hostScore,
     },
     guest: {
       player: players.get(row.guestId) ?? null,
       deck: { id: row.guestDeckId, name: row.guestDeckName },
       life: row.guestLife,
-      score: row.guestScore,
     },
     turnNumber: row.turnNumber,
     phase: row.phase as DuelPhase | null,
     currentPlayerId: row.currentPlayerId,
     note: row.note,
-    winnerId: winnerOf(row),
+    winnerId: row.winnerId,
     isHost: row.hostId === viewerId,
     createdAt: row.createdAt,
     recordedAt: row.recordedAt,
@@ -577,23 +567,23 @@ export async function dropDuel(db: Database, viewerId: string, duelId: string): 
 /**
  * Recording the result — by either player, once.
  *
- * The score says who won; equal scores are a draw. The format is not policed:
- * `2–1`, `1–0` and `3–2` are all somebody's evening.
+ * **A winner, not a score.** A score counts games won, so `2–0` would need two
+ * duels; counting an evening is the players' business, and the list of past
+ * duels is what they count from (Ange, 2026-09-19).
  */
 export async function recordDuel(
   db: Database,
   viewerId: string,
   duelId: string,
-  input: { hostScore: number; guestScore: number; note?: string | null },
+  input: { winnerId: string; note?: string | null },
 ): Promise<Duel> {
   const row = await own(db, viewerId, duelId);
   if (row.status === "proposed") throw conflict("This duel has not been accepted yet.");
   if (row.status === "recorded") throw conflict("This duel already has its result.");
 
-  for (const score of [input.hostScore, input.guestScore]) {
-    if (!Number.isInteger(score) || score < 0 || score > SCORE_MAX) {
-      throw invalidInput("A score is a whole number of wins.");
-    }
+  const winnerId = requireUuid(input.winnerId);
+  if (winnerId !== row.hostId && winnerId !== row.guestId) {
+    throw invalidInput("The winner is one of the two duellists.");
   }
   const note = input.note?.trim() ?? null;
   if (note && note.length > LIMITS.note.max) throw invalidInput("The note is too long.");
@@ -603,8 +593,7 @@ export async function recordDuel(
     .set({
       status: "recorded",
       recordedAt: new Date(),
-      hostScore: input.hostScore,
-      guestScore: input.guestScore,
+      winnerId,
       note,
       // Where the duel was has no meaning once it is over, and the history keeps
       // every turn it went through.
@@ -621,16 +610,67 @@ export async function recordDuel(
   return toDuel(updated, viewerId, await playersOf(db, [updated]));
 }
 
-/** The duels one is in, newest first. */
-export async function listDuels(db: Database, viewerId: string): Promise<Duel[]> {
+/**
+ * The duels one is in, newest first — **a page at a time**.
+ *
+ * A duel under way is one at most, but the ones played accumulate for as long
+ * as one plays: they are paged through rather than answered in full. The cursor
+ * is the last duel's date and identifier, which orders them without missing one
+ * when two share a day.
+ */
+const DUELS_PAGE = 20;
+
+export type DuelPage = { items: Duel[]; nextCursor: string | null };
+
+export async function listDuels(
+  db: Database,
+  viewerId: string,
+  options: { past?: boolean; cursor?: string; limit?: number } = {},
+): Promise<DuelPage> {
+  const limit = Math.min(Math.max(options.limit ?? DUELS_PAGE, 1), 100);
+  const mine = or(eq(duels.hostId, viewerId), eq(duels.guestId, viewerId));
+  const before = options.cursor ? parseCursor(options.cursor) : null;
+
   const rows = await db
     .select()
     .from(duels)
-    .where(or(eq(duels.hostId, viewerId), eq(duels.guestId, viewerId)))
-    .orderBy(desc(duels.playedOn))
-    .limit(200);
-  const players = await playersOf(db, rows);
-  return rows.map((row) => toDuel(row, viewerId, players));
+    .where(and(
+      mine,
+      options.past === undefined
+        ? undefined
+        : options.past
+          ? eq(duels.status, "recorded")
+          : ne(duels.status, "recorded"),
+      // The types are spelled out: a row comparison against two parameters
+      // leaves PostgreSQL with nothing to infer them from, and it refuses.
+      before
+        ? sql`(${duels.playedOn}, ${duels.id}) < (${before.playedOn}::timestamptz, ${before.id}::uuid)`
+        : undefined,
+    ))
+    .orderBy(desc(duels.playedOn), desc(duels.id))
+    .limit(limit + 1);
+
+  const page = rows.slice(0, limit);
+  const players = await playersOf(db, page);
+  const last = page.at(-1);
+  return {
+    items: page.map((row) => toDuel(row, viewerId, players)),
+    nextCursor: rows.length > limit && last ? `${last.playedOn.toISOString()}|${last.id}` : null,
+  };
+}
+
+/**
+ * A cursor is a date and an identifier; anything else is simply no cursor.
+ *
+ * The date travels as the text it came in: inside a hand-written fragment the
+ * driver has no column to infer a `Date` from, and refuses it — measured on
+ * 2026-09-19, as a 500 on the second page.
+ */
+function parseCursor(cursor: string): { playedOn: string; id: string } | null {
+  const [when, id] = cursor.split("|");
+  if (!when || !id) return null;
+  if (Number.isNaN(new Date(when).getTime())) return null;
+  return { playedOn: when, id: requireUuid(id) };
 }
 
 export async function getDuel(db: Database, viewerId: string, duelId: string): Promise<DuelDetail> {
@@ -645,9 +685,7 @@ export async function duelTally(
   const [row] = await db
     .select({
       played: sql<number>`count(*)::int`,
-      won: sql<number>`count(*) filter (where
-        (${duels.hostId} = ${ownerId} and ${duels.hostScore} > ${duels.guestScore})
-        or (${duels.guestId} = ${ownerId} and ${duels.guestScore} > ${duels.hostScore}))::int`,
+      won: sql<number>`count(*) filter (where ${duels.winnerId} = ${ownerId})::int`,
     })
     .from(duels)
     .where(and(

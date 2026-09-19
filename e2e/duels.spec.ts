@@ -147,9 +147,13 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await expect(page.locator(".duel-turn")).toHaveText("Tour 2", { timeout: 15_000 });
   await expect(page.locator(".duel-life.is-playing")).toHaveCount(1);
 
-  // The history is folded away; it opens on demand.
+  // The history is folded away; it opens on demand, and reads in either order.
   await page.getByText(/Tour par tour/).click();
   await expect(page.locator(".admin-table tbody tr").first()).toContainText("Draw Phase");
+  const newestFirst = await page.locator(".admin-table tbody tr").first().textContent();
+  await page.getByRole("button", { name: /Du plus ancien/ }).click();
+  await expect(page.locator(".admin-table tbody tr").first()).not.toHaveText(newestFirst ?? "");
+  await expect(page.locator(".admin-table tbody tr").first()).toContainText(/gagne le lancer/);
 
   /**
    * Zero life points ends the duel: the winner's screen takes the panel's
@@ -175,25 +179,28 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await page.locator("#life-amount").fill("8000");
   await page.getByRole("button", { name: "Les retirer" }).click();
   await page.getByRole("button", { name: "Enregistrer le résultat" }).first().click();
-  // The score is proposed from the duel: one game to the other.
-  await expect(page.locator("#result-host")).toHaveValue("0");
-  await page.locator("#result-host").fill("2");
-  await page.locator("#result-guest").fill("1");
+  // A winner, not a score — and the duellist still standing is proposed.
+  await expect(page.getByRole("dialog").locator(".chip-btn.is-active"))
+    .toHaveText(friend.account.displayName);
   await page.getByRole("dialog").getByRole("button", { name: "Enregistrer le résultat" }).click();
   await expect(page.getByText("Résultat enregistré.")).toBeVisible();
   await expect(page.getByText("Enregistré", { exact: true })).toBeVisible();
 
-  // A recorded duel leaves the table and joins the ones already played.
+  // A recorded duel leaves the table and joins the ones already played, where
+  // it says who won and who lost rather than a score.
   await page.goto("/duels");
   await expect(page.getByText("Aucun duel en cours")).toBeVisible();
   await page.getByRole("button", { name: /Anciens duels/ }).click();
   await expect(page.locator(".duel-row")).toHaveCount(1);
   await expect(page.locator(".duel-row")).toContainText("Blue-Eyes");
+  await expect(page.locator(".duel-verdict.is-won")).toHaveText("Vainqueur");
+  await expect(page.locator(".duel-verdict.is-lost")).toHaveText("Perdant");
 
   // Recorded means nothing more is played, and counted on the profile.
   await expect(page.getByRole("button", { name: "Phase suivante" })).toHaveCount(0);
   await page.goto("/profile");
-  await expect(page.getByText("1 duel joué, 1 gagné")).toBeVisible();
+  // The duel was lost here: the other duellist was the one still standing.
+  await expect(page.getByText("1 duel joué, 0 gagnés")).toBeVisible();
 
   expect(await expectNoHorizontalOverflow(page)).toBe(0);
   await friend.context.close();

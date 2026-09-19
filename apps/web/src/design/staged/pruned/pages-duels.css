@@ -1,0 +1,15 @@
+/**
+ * Rules removed from `design/pages/duels.css`.
+ *
+ * Nothing set them in the shipped markup: they styled screens that do not
+ * exist here yet (guilds, settings, administration, landing page).
+ * Kept as they were — when their screen arrives, they move back up.
+ */
+
+
+.duel-score { margin-left: auto; font-size: 1.35rem; font-weight: 900; color: #fff; }
+
+
+
+/* The two scores side by side: they are read as a pair. */
+.duel-score-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }

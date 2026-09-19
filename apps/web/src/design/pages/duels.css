@@ -59,7 +59,6 @@
 }
 .duel-side-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
 .duel-side-text strong { color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.duel-score { margin-left: auto; font-size: 1.35rem; font-weight: 900; color: #fff; }
 
 .duel-status {
   font-size: 0.72rem;
@@ -81,9 +80,6 @@
   flex-wrap: wrap;
   margin-top: 1rem;
 }
-
-/* The two scores side by side: they are read as a pair. */
-.duel-score-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
 @media (max-width: 650px) {
   .duel-row-players { grid-template-columns: 1fr; }
@@ -298,3 +294,39 @@
 @media (max-width: 650px) {
   .duel-victory-decks { grid-template-columns: 1fr; }
 }
+
+/*
+ * A recorded duel wears its verdict.
+ *
+ * Yellow for the winner, red for the loser — Ange, on 2026-09-19. It replaces
+ * the score, which counted games and therefore counted wrong: `2–0` would need
+ * two duels.
+ */
+.duel-verdict {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.duel-verdict.is-won {
+  color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+.duel-verdict.is-lost {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+/* Who won, asked as a choice between the two names. */
+.duel-winner-choice { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* The history reads newest first or oldest first, as one asks. */
+.duel-log-order { display: flex; justify-content: flex-end; margin-bottom: 0.6rem; }
+
+.duel-more { display: flex; justify-content: center; margin-top: 1rem; }

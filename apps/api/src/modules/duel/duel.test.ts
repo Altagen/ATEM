@@ -83,17 +83,76 @@ test("a duel is proposed to a friend, accepted, and the result names the winner"
   assert.equal((await req("POST", `/duels/${duel.id}/accept`, guest.cookie)).status, 200);
   assert.equal((await req("POST", `/duels/${duel.id}/accept`, guest.cookie)).status, 409);
 
+  // Either player records it, and it is a winner — not a score (Ange, 2026-09-19).
   const recorded = await req("POST", `/duels/${duel.id}/result`, guest.cookie, {
-    hostScore: 2, guestScore: 1, note: "Serré.",
+    winnerId: host.userId, note: "Serré.",
   });
   assert.equal(recorded.status, 200);
   const done = (await recorded.json()) as Duel;
   assert.equal(done.status, "recorded");
-  assert.equal(done.winnerId, host.userId, "the score says who won, nothing else");
-  assert.equal((await req("POST", `/duels/${duel.id}/result`, host.cookie, { hostScore: 0, guestScore: 2 })).status, 409);
+  assert.equal(done.winnerId, host.userId);
+  assert.equal((await req("POST", `/duels/${duel.id}/result`, host.cookie, { winnerId: guest.userId })).status, 409);
 
   const told = (await (await req("GET", "/inbox", host.cookie)).json()) as { items: { kind: string }[] };
   assert.equal(told.items[0]?.kind, "duel_recorded");
+});
+
+test("the winner is one of the two, and the profile counts what was won", async () => {
+  const { host, guest, duel } = await accepted("duel-winner");
+  const outsider = await freshSession(app, "duel-winner-outsider");
+
+  assert.equal(
+    (await req("POST", `/duels/${duel.id}/result`, host.cookie, { winnerId: outsider.userId })).status,
+    400,
+    "a winner who did not play it",
+  );
+  assert.equal(
+    (await req("POST", `/duels/${duel.id}/result`, host.cookie, { winnerId: "not-a-uuid" })).status,
+    400,
+  );
+
+  await req("POST", `/duels/${duel.id}/result`, host.cookie, { winnerId: guest.userId });
+
+  const tally = async (who: { userId: string; cookie: string }) =>
+    ((await (await req("GET", `/players/${who.userId}`, who.cookie)).json()) as {
+      duels: { played: number; won: number };
+    }).duels;
+  assert.deepEqual(await tally(guest), { played: 1, won: 1 });
+  assert.deepEqual(await tally(host), { played: 1, won: 0 });
+});
+
+test("past duels are answered a page at a time", async () => {
+  /**
+   * One duel is under way at a time, but the ones played accumulate for as long
+   * as one plays. Ange asked whether they were paged: they are now.
+   */
+  const table = await ready("duel-page");
+  for (let index = 0; index < 3; index += 1) {
+    const duel = (await (await req("POST", "/duels", table.host.cookie, {
+      guestId: table.guest.userId, deckId: table.hostDeck.id,
+    })).json()) as Duel;
+    await req("POST", `/duels/${duel.id}/accept`, table.guest.cookie);
+    await req("POST", `/duels/${duel.id}/result`, table.host.cookie, { winnerId: table.host.userId });
+  }
+
+  const page = async (query: string) =>
+    (await (await req("GET", `/duels${query}`, table.host.cookie)).json()) as
+      { items: Duel[]; nextCursor: string | null };
+
+  const first = await page("?past=1&limit=2");
+  assert.equal(first.items.length, 2);
+  assert.ok(first.nextCursor, "there is more to read");
+
+  const second = await page(`?past=1&limit=2&cursor=${encodeURIComponent(first.nextCursor!)}`);
+  assert.equal(second.items.length, 1);
+  assert.equal(second.nextCursor, null);
+  // No duel is read twice, and none is skipped.
+  const ids = [...first.items, ...second.items].map((duel) => duel.id);
+  assert.equal(new Set(ids).size, 3);
+
+  // The duel under way is not among them, and they are not among it.
+  const under = await page("?past=0");
+  assert.equal(under.items.length, 0, "all three are recorded");
 });
 
 test("the coin is flipped by the server, once both decks are chosen", async () => {
@@ -288,7 +347,7 @@ test("nothing is played before the start, or after the result", async () => {
   );
 
   await req("POST", `/duels/${duel.id}/start`, host.cookie);
-  await req("POST", `/duels/${duel.id}/result`, guest.cookie, { hostScore: 2, guestScore: 0 });
+  await req("POST", `/duels/${duel.id}/result`, guest.cookie, { winnerId: host.userId });
 
   for (const path of ["phase", "turn", "start"]) {
     assert.equal((await req("POST", `/duels/${duel.id}/${path}`, host.cookie)).status, 409, path);
@@ -323,7 +382,7 @@ test("one duel at a time: a second is refused while one is under way", async () 
 
   // Once the duel on is recorded, the next one can begin.
   await req("POST", `/duels/${duel.id}/start`, host.cookie);
-  await req("POST", `/duels/${duel.id}/result`, guest.cookie, { hostScore: 2, guestScore: 0 });
+  await req("POST", `/duels/${duel.id}/result`, guest.cookie, { winnerId: host.userId });
   assert.equal((await req("POST", `/duels/${waiting.id}/accept`, host.cookie)).status, 200);
 });
 
@@ -349,7 +408,7 @@ test("declining removes the invitation; a recorded duel stays", async () => {
   assert.equal(inbox.items.length, 0, "the invitation leaves nothing behind");
 
   const { duel: second } = await accepted("duel-drop-two");
-  await req("POST", `/duels/${second.id}/result`, host.cookie, { hostScore: 2, guestScore: 0 });
+  await req("POST", `/duels/${second.id}/result`, host.cookie, { winnerId: host.userId });
   assert.equal((await req("DELETE", `/duels/${second.id}`, host.cookie)).status, 404, "another table");
 });
 
@@ -362,7 +421,7 @@ test("a duel is nobody else's to read or to write", async () => {
     ["GET", `/duels/${duel.id}`, undefined],
     ["POST", `/duels/${duel.id}/accept`, undefined],
     ["DELETE", `/duels/${duel.id}`, undefined],
-    ["POST", `/duels/${duel.id}/result`, { hostScore: 9, guestScore: 0 }],
+    ["POST", `/duels/${duel.id}/result`, { winnerId: host.userId }],
     ["POST", `/duels/${duel.id}/phase`, undefined],
     ["POST", `/duels/${duel.id}/turn`, undefined],
     ["POST", `/duels/${duel.id}/life`, { delta: -8000 }],
@@ -386,7 +445,7 @@ test("a deck is one's own, and its name outlives it", async () => {
     "one brings one's own deck",
   );
   await req("POST", `/duels/${duel.id}/start`, host.cookie);
-  await req("POST", `/duels/${duel.id}/result`, host.cookie, { hostScore: 2, guestScore: 1 });
+  await req("POST", `/duels/${duel.id}/result`, host.cookie, { winnerId: host.userId });
 
   // The deck is deleted; the duel still says what was played with.
   assert.equal((await req("DELETE", `/decks/${hostDeck.id}`, host.cookie)).status, 200);

@@ -23,8 +23,8 @@ const ProposeBody = z.object({
 });
 
 const RecordBody = z.object({
-  hostScore: z.number().int().min(0).max(99),
-  guestScore: z.number().int().min(0).max(99),
+  /** Who won: a duel has a winner and a loser, not a score. */
+  winnerId: z.string(),
   note: z.string().max(LIMITS.note.max).nullable().optional(),
 });
 
@@ -64,7 +64,26 @@ export function duelRoutes(db: Database) {
     return parsed.data;
   }
 
-  app.get("/", async (c) => c.json({ items: await listDuels(db, viewerId(c)) }));
+  /**
+   * `?past=1` for the duels already played, paged; anything else for the one
+   * under way. The two are read at different moments and in different numbers.
+   */
+  app.get("/", async (c) => {
+    const past = c.req.query("past");
+    if (past !== undefined && past !== "1" && past !== "0") throw invalidInput("Invalid data.");
+    const cursor = c.req.query("cursor");
+    if (cursor !== undefined && cursor.length > 128) throw invalidInput("Invalid data.");
+    const asked = c.req.query("limit");
+    const limit = asked === undefined ? undefined : Number(asked);
+    if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 100)) {
+      throw invalidInput("Invalid data.");
+    }
+    return c.json(await listDuels(db, viewerId(c), {
+      past: past === undefined ? undefined : past === "1",
+      cursor,
+      limit,
+    }));
+  });
 
   app.get("/:id", async (c) => c.json(await getDuel(db, viewerId(c), c.req.param("id"))));
 

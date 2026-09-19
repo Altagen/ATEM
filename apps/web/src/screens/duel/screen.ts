@@ -34,12 +34,32 @@ export async function duelScreen(
 
   async function loadList(): Promise<void> {
     try {
-      const { items } = await api<{ items: Duel[] }>("/duels");
+      const { items } = await api<{ items: Duel[] }>("/duels?past=0");
       state.duels = items;
       state.failure = null;
     } catch (err) {
       state.duels = [];
       state.failure = reason(err, t("The duels could not be loaded."));
+    }
+  }
+
+  /**
+   * The duels already played, a page at a time.
+   *
+   * They accumulate for as long as one plays, so they are asked for when their
+   * list is opened and extended from there — never all at once.
+   */
+  async function loadPast(more = false): Promise<void> {
+    const cursor = more ? state.pastCursor : null;
+    try {
+      const answer = await api<{ items: Duel[]; nextCursor: string | null }>(
+        `/duels?past=1${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      );
+      state.past = more && state.past ? [...state.past, ...answer.items] : answer.items;
+      state.pastCursor = answer.nextCursor;
+    } catch (err) {
+      if (!more) state.past = [];
+      toast(reason(err, t("The duels could not be loaded.")), "error");
     }
   }
 
@@ -234,17 +254,13 @@ export async function duelScreen(
 
     root.querySelector("#form-result")?.addEventListener("submit", (event) => {
       event.preventDefault();
-      const hostScore = Number(value("result-host"));
-      const guestScore = Number(value("result-guest"));
+      const winnerId = state.result?.winnerId ?? "";
       const note = value("result-note") || null;
-      if (!Number.isInteger(hostScore) || !Number.isInteger(guestScore)) {
-        toast(t("A score is a whole number of wins."), "error");
-        return;
-      }
+      if (!winnerId) return;
       void act(async () => {
         await api(`/duels/${duelId}/result`, {
           method: "POST",
-          body: { hostScore, guestScore, note },
+          body: { winnerId, note },
         });
         state.result = null;
         await loadDuel();
@@ -336,8 +352,22 @@ export async function duelScreen(
       button.addEventListener("click", () => {
         state.showPast = button.dataset.duels === "past";
         paint();
+        // Read when it is opened, so a duel just recorded is in it.
+        if (state.showPast) {
+          state.past = null;
+          state.pastCursor = null;
+          void loadPast().then(() => {
+            if (!signal.aborted && state.showPast) paint();
+          });
+        }
       });
     }
+
+    root.querySelector("#btn-more-past")?.addEventListener("click", () => {
+      void loadPast(true).then(() => {
+        if (!signal.aborted) paint();
+      });
+    });
 
     root.querySelector("#btn-invite")?.addEventListener("click", () => {
       void (async () => {
@@ -368,17 +398,23 @@ export async function duelScreen(
 
     root.querySelector("#btn-result")?.addEventListener("click", () => {
       const duel = state.open;
-      // Coming from a duellist at zero, the score is already known: one game to
-      // the other. It is a proposal, not a decision — a duel is a best of three
-      // and the two know what their evening was.
-      const won = duel && duel.status === "playing" && (duel.host.life === 0 || duel.guest.life === 0);
-      state.result = won
-        ? {
-            hostScore: duel.host.life === 0 ? "0" : "1",
-            guestScore: duel.host.life === 0 ? "1" : "0",
-            note: "",
-          }
-        : { hostScore: "", guestScore: "", note: "" };
+      // Coming from a duellist at zero, the winner is already known: the one
+      // still standing. It is a proposal — the window lets it be changed.
+      const beaten = duel?.host.life === 0 ? duel.guest : duel?.guest.life === 0 ? duel.host : null;
+      state.result = { winnerId: beaten?.player?.id ?? "", note: "" };
+      paint();
+    });
+
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-winner]")) {
+      button.addEventListener("click", () => {
+        if (!state.result) return;
+        state.result.winnerId = button.dataset.winner ?? "";
+        paint();
+      });
+    }
+
+    root.querySelector("#btn-log-order")?.addEventListener("click", () => {
+      state.newestFirst = !state.newestFirst;
       paint();
     });
 

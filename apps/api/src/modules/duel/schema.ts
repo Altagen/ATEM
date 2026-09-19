@@ -45,9 +45,13 @@ export const duels = pgTable(
     guestLife: integer("guest_life").notNull().default(STARTING_LIFE),
     startedAt: timestamp("started_at", { withTimezone: true }),
 
-    /** Wins each, `2–1` and the like. `null` until the result is recorded. */
-    hostScore: integer("host_score"),
-    guestScore: integer("guest_score"),
+    /**
+     * Who won. `null` until the duel is recorded.
+     *
+     * Not a score: a score counts games won, so `2–0` would need two duels.
+     * Counting an evening is the players' business (`docs/ref-duels.md`).
+     */
+    winnerId: uuid("winner_id").references(() => users.id, { onDelete: "set null" }),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     recordedAt: timestamp("recorded_at", { withTimezone: true }),
@@ -63,14 +67,13 @@ export const duels = pgTable(
       sql`${t.hostLife} between ${sql.raw(String(LIFE_BOUNDS.min))} and ${sql.raw(String(LIFE_BOUNDS.max))}
         and ${t.guestLife} between ${sql.raw(String(LIFE_BOUNDS.min))} and ${sql.raw(String(LIFE_BOUNDS.max))}`,
     ),
-    // A score exists on both sides or on neither: half a result is not a result.
-    check("duels_score_pair", sql`(${t.hostScore} is null) = (${t.guestScore} is null)`),
+    // The winner is one of the two who played, or nobody yet.
     check(
-      "duels_score_bounds",
-      sql`${t.hostScore} is null or (${t.hostScore} between 0 and 99 and ${t.guestScore} between 0 and 99)`,
+      "duels_winner_played",
+      sql`${t.winnerId} is null or ${t.winnerId} in (${t.hostId}, ${t.guestId})`,
     ),
-    // A recorded duel has its score, and only a recorded one has it.
-    check("duels_recorded_has_score", sql`(${t.status} = 'recorded') = (${t.hostScore} is not null)`),
+    // A recorded duel has its winner, and only a recorded one has it.
+    check("duels_recorded_has_winner", sql`(${t.status} = 'recorded') = (${t.winnerId} is not null)`),
     // A duel being played is somewhere: on a turn, in a phase, with someone to play it.
     check(
       "duels_playing_has_place",

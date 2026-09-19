@@ -55,10 +55,10 @@ proposed ──accept──▶ accepted ──start──▶ playing ──resul
   starts with what is being played, and the deck is what the history will name.
 - **playing** — the coin has been flipped. Life totals, the turn and its phase
   live on the duel, and both players write into it.
-- **recorded** — the result is in. The duel becomes read-only for both, and
+- **recorded** — the winner is named. The duel becomes read-only for both, and
   counts in what each player has played.
 
-**Cancelling** is possible until the result is recorded, and only by the two
+**Cancelling** is possible until the winner is recorded, and only by the two
 participants — a duel that did not happen leaves no trace. Once `recorded`, it
 stays: a history one can rewrite is not a history.
 
@@ -122,8 +122,7 @@ screen do what a hand would not. Every event keeps who wrote it all the same.
 | the date played | chosen, not the row's creation time: one records the duel in the evening |
 | each player's deck | chosen from one's own decks before the start |
 | where the duel is | turn number, phase, whose turn it is, both life totals |
-| the score | wins per player, `2–1` and the like — the format is not policed |
-| the winner | derived from the score; equal scores are a draw |
+| the winner | one of the two — a duel has a winner and a loser |
 | a note | free text, bounded, for what the score does not say |
 | the history | every event: the start, each phase, each turn, each life change |
 
@@ -136,6 +135,14 @@ Blue-Eyes” stays true even when that deck is gone.
 > be physically deleted once used”. A soft delete would leave ghost decks in the
 > deck screen, which is where people file, not where they read history. Copying
 > the name costs one column and keeps both screens honest.
+
+## A winner, not a score
+
+**A duel has a winner and a loser, and that is what is recorded.** ATEM first
+kept a score — `2–1` — and Ange took it out on 2026-09-19: a score counts games
+won, so `2–0` needs two duels. Counting how many one has won against someone
+over an evening is the players' business, and the list of past duels is what
+they count from.
 
 ## What is deliberately not here
 
@@ -162,6 +169,7 @@ Blue-Eyes” stays true even when that deck is gone.
 | moving a phase or ending a turn that is not yours | 403 |
 | writing on a `recorded` duel | 409 |
 | recording a result twice | 409 |
+| naming a winner who is not one of the two | 400 |
 
 The read/write split of ADR-009 holds: a duel is read by its two players, and
 every write takes the session's identity, never the path's.
