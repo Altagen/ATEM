@@ -64,16 +64,30 @@ const verdictOf = (duel: Duel, one: DuelSide): "won" | "lost" | null => {
   return duel.winnerId === one.player.id ? "won" : "lost";
 };
 
+/**
+ * A duel in the list: **one word for the person reading**.
+ *
+ * Ange, on 2026-09-19: a badge on each card is two answers to a question
+ * nobody asked here — opening the duel is where one looks at who beat whom.
+ * The overview answers “did I win?”, above the crossed swords.
+ */
 function duelRow(duel: Duel): SafeHtml {
+  const mine = duel.isHost ? duel.host : duel.guest;
+  const outcome = verdictOf(duel, mine);
   return html`<a class="player-card-row-full duel-row" href="/duels?duel=${duel.id}">
     <div class="duel-row-line">
       <span class="duel-status is-${duel.status}">${statusLabel(duel)}</span>
       <span class="legende">${day(duel.playedOn)}</span>
     </div>
     <div class="duel-row-players">
-      ${side(duel.host, verdictOf(duel, duel.host))}
-      <span class="duel-versus" aria-hidden="true">⚔️</span>
-      ${side(duel.guest, verdictOf(duel, duel.guest))}
+      ${side(duel.host, null)}
+      <span class="duel-versus">
+        ${outcome === null
+          ? raw("")
+          : html`<span class="duel-outcome is-${outcome}">${outcome === "won" ? t("Winner") : t("Loser")}</span>`}
+        <span aria-hidden="true">⚔️</span>
+      </span>
+      ${side(duel.guest, null)}
     </div>
   </a>`;
 }

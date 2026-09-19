@@ -193,6 +193,12 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await page.getByRole("button", { name: /Anciens duels/ }).click();
   await expect(page.locator(".duel-row")).toHaveCount(1);
   await expect(page.locator(".duel-row")).toContainText("Blue-Eyes");
+  // One word, for the person reading: this duel was lost here.
+  await expect(page.locator(".duel-outcome")).toHaveText("Perdant");
+  await expect(page.locator(".duel-verdict")).toHaveCount(0, { timeout: 1_000 });
+
+  // Opening it is where who beat whom is read.
+  await page.locator(".duel-row").click();
   await expect(page.locator(".duel-verdict.is-won")).toHaveText("Vainqueur");
   await expect(page.locator(".duel-verdict.is-lost")).toHaveText("Perdant");
 
