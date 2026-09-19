@@ -31,6 +31,8 @@ export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export type InboxItem = {
   id: string;
   kind: NotificationKind;
+  /** What it is about — a duel, for an invitation. `null` when nothing. */
+  subjectId: string | null;
   /** `null` when the account behind it is gone — the row goes with it, so rare. */
   actor: Duellist | null;
   isRead: boolean;
@@ -49,13 +51,14 @@ const INBOX_LIMIT = 100;
  */
 export async function notify(
   db: Database,
-  input: { userId: string; kind: NotificationKind; actorId?: string },
+  input: { userId: string; kind: NotificationKind; actorId?: string; subjectId?: string },
 ): Promise<void> {
   if (input.actorId === input.userId) return;
   await db.insert(notifications).values({
     userId: input.userId,
     kind: input.kind,
     actorId: input.actorId ?? null,
+    subjectId: input.subjectId ?? null,
   });
 }
 
@@ -103,6 +106,7 @@ export async function listInbox(db: Database, viewerId: string): Promise<InboxIt
   return rows.map((row) => ({
     id: row.id,
     kind: row.kind as NotificationKind,
+    subjectId: row.subjectId,
     actor: row.actorId === null ? null : byId.get(row.actorId) ?? null,
     isRead: row.readAt !== null,
     createdAt: row.createdAt,

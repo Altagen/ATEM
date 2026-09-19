@@ -136,6 +136,28 @@ export async function duelScreen(
   const COIN_TICK_MS = 110;
   const COIN_TURNS = 12;
 
+  /**
+   * The coin, seen from the other side: it has fallen, this only shows on whom.
+   *
+   * No turning here — the name is already known, and pretending to draw it
+   * again would be theatre over a decision already made.
+   */
+  async function showCoinResult(started: DuelDetail): Promise<void> {
+    const names: [string, string] = [
+      started.host.player?.displayName ?? t("Host"),
+      started.guest.player?.displayName ?? t("Guest"),
+    ];
+    const first = started.currentPlayerId === started.host.player?.id
+      ? started.host.player
+      : started.guest.player;
+    state.coin = { names, winner: first?.displayName ?? names[0] };
+    paint();
+    await new Promise((done) => setTimeout(done, 1_400));
+    if (signal.aborted) return;
+    state.coin = null;
+    toast(t("{name} won the coin flip and begins.", { name: first?.displayName ?? "" }), "success");
+  }
+
   async function flipCoin(duel: DuelDetail): Promise<void> {
     const names: [string, string] = [
       duel.host.player?.displayName ?? t("Host"),
@@ -310,6 +332,13 @@ export async function duelScreen(
   function bind(): void {
     bindModals();
 
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-duels]")) {
+      button.addEventListener("click", () => {
+        state.showPast = button.dataset.duels === "past";
+        paint();
+      });
+    }
+
     root.querySelector("#btn-invite")?.addEventListener("click", () => {
       void (async () => {
         await loadChoices();
@@ -409,14 +438,35 @@ export async function duelScreen(
    * hidden tab asks for nothing, and a finished duel has nothing left to learn.
    */
   if (duelId) {
-    const timer = window.setInterval(() => {
-      if (document.hidden || state.busy) return;
-      if (state.invite || state.result || state.life || state.deckPick) return;
-      if (state.open?.status === "recorded") return;
-      void loadDuel().then(() => {
-        if (!signal.aborted && !state.busy) paint();
-      });
-    }, 5_000);
-    signal.addEventListener("abort", () => window.clearInterval(timer));
+    /**
+     * Waiting for the other to start is the one moment a few seconds are long.
+     *
+     * Ange, on 2026-09-19: the duellist who did not flip the coin waited
+     * without a sign. So the beat is quicker while the duel has not begun, and
+     * when the poll finds that it has, **this screen shows the coin too** — it
+     * settles straight on the name, because it has already been drawn.
+     */
+    const beat = () => (state.open?.status === "playing" ? 5_000 : 2_000);
+    let timer = 0;
+
+    const tick = async (): Promise<void> => {
+      if (!document.hidden && !state.busy
+        && !state.invite && !state.result && !state.life && !state.deckPick
+        && state.open?.status !== "recorded") {
+        const was = state.open?.status;
+        await loadDuel();
+        if (signal.aborted) return;
+
+        if (was === "accepted" && state.open?.status === "playing") {
+          await showCoinResult(state.open);
+          if (signal.aborted) return;
+        }
+        if (!state.busy) paint();
+      }
+      timer = window.setTimeout(() => void tick(), beat());
+    };
+
+    timer = window.setTimeout(() => void tick(), beat());
+    signal.addEventListener("abort", () => window.clearTimeout(timer));
   }
 }

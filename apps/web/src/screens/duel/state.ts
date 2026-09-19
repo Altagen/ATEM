@@ -58,6 +58,8 @@ export type DuelState = {
   /** The duel being looked at, or `null` on the list. */
   open: DuelDetail | null;
   failure: string | null;
+  /** The list shows the duel under way, or the ones already played. */
+  showPast: boolean;
   /** The invitation window: whom, when, with which deck. */
   invite: { guestId: string; playedOn: string; deckId: string } | null;
   friends: Duellist[] | null;
@@ -90,6 +92,7 @@ export const duelState = (): DuelState => ({
   duels: null,
   open: null,
   failure: null,
+  showPast: false,
   invite: null,
   friends: null,
   decks: null,

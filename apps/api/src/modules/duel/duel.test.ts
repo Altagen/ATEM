@@ -298,6 +298,35 @@ test("nothing is played before the start, or after the result", async () => {
   assert.ok((frozen.events?.length ?? 0) > 0);
 });
 
+test("one duel at a time: a second is refused while one is under way", async () => {
+  /**
+   * Ange, on 2026-09-19: one plays one duel, at one table. Invitations are not
+   * duels under way — they wait in the inbox — but accepting one while a duel
+   * is on is refused, on both sides of the table.
+   */
+  const { host, guest, duel } = await accepted("duel-single");
+  const third = await freshSession(app, "duel-single-third");
+  await req("POST", `/community/friends/${third.userId}`, host.cookie);
+  await req("POST", `/community/friends/${host.userId}/accept`, third.cookie);
+
+  assert.equal(
+    (await req("POST", "/duels", host.cookie, { guestId: third.userId })).status,
+    409,
+    "the host is already at a table",
+  );
+
+  // An invitation may still be sent **to** them: it costs nothing until answered.
+  const invitation = await req("POST", "/duels", third.cookie, { guestId: host.userId });
+  assert.equal(invitation.status, 201);
+  const waiting = (await invitation.json()) as Duel;
+  assert.equal((await req("POST", `/duels/${waiting.id}/accept`, host.cookie)).status, 409);
+
+  // Once the duel on is recorded, the next one can begin.
+  await req("POST", `/duels/${duel.id}/start`, host.cookie);
+  await req("POST", `/duels/${duel.id}/result`, guest.cookie, { hostScore: 2, guestScore: 0 });
+  assert.equal((await req("POST", `/duels/${waiting.id}/accept`, host.cookie)).status, 200);
+});
+
 test("a duel is between friends, and never with oneself", async () => {
   const alone = await freshSession(app, "duel-alone");
   const stranger = await freshSession(app, "duel-stranger");

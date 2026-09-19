@@ -106,4 +106,28 @@ export async function inboxScreen(
       // A badge left standing is not worth a message: the next visit clears it.
     }
   }
+
+  /**
+   * What arrives while one is looking at the inbox appears in it.
+   *
+   * Ange, on 2026-09-19: the badge lit up in the bar while the inbox itself sat
+   * still, and he had to click it to see the line. The list asks on the same
+   * beat as the badge — and marks what it brings as read, since the inbox is
+   * open in front of the person.
+   */
+  const timer = window.setInterval(() => {
+    if (document.hidden || state.busy.size > 0) return;
+    void (async () => {
+      const before = state.items?.length ?? 0;
+      await load();
+      if (signal.aborted) return;
+      paint();
+      if ((state.items?.length ?? 0) !== before && state.unread > 0) {
+        await api("/inbox/read-all", { method: "POST" }).catch(() => undefined);
+        state.unread = 0;
+        await refreshInbox();
+      }
+    })();
+  }, 5_000);
+  signal.addEventListener("abort", () => window.clearInterval(timer));
 }

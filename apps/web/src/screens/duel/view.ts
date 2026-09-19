@@ -64,13 +64,42 @@ function duelRow(duel: Duel): SafeHtml {
   </a>`;
 }
 
+/**
+ * The duels screen: **the duel now, or the ones before**.
+ *
+ * Ange, on 2026-09-19: one plays one duel at a time, so the screen shows that
+ * one — and files the rest under “past duels”. Invitations are not listed here
+ * at all: they wait in the inbox until they are answered, which is where one
+ * goes to answer them.
+ */
 export function listHtml(state: DuelState): SafeHtml {
   const duels = state.duels;
+  /**
+   * The duel now: the one accepted or being played, or an invitation one has
+   * sent. An invitation **received** is not a duel one is in — it waits in the
+   * inbox until it is answered (Ange, 2026-09-19).
+   */
+  const current = duels?.find((duel) =>
+    duel.status === "accepted" || duel.status === "playing" || (duel.status === "proposed" && duel.isHost),
+  ) ?? null;
+  const past = duels?.filter((duel) => duel.status === "recorded") ?? [];
+  const showing = state.showPast ? past : current ? [current] : [];
+
   return html`<main class="community-app-container">
     <div class="duel-head">
       <h1 class="page-title">⚔️ ${t("Duels")}</h1>
-      <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-invite">
-        ${t("Invite a friend")}
+      ${when(!state.showPast && current === null, html`<button type="button"
+            class="btn-showcase-primary-full is-moyen is-auto" id="btn-invite">
+          ${t("Invite a friend")}
+        </button>`)}
+    </div>
+
+    <div class="filter-chips-row" role="group" aria-label="${t("Duels")}">
+      <button type="button" class="chip-btn${state.showPast ? "" : " is-active"}"
+              data-duels="current" aria-pressed="${String(!state.showPast)}">${t("⚔️ The duel now")}</button>
+      <button type="button" class="chip-btn${state.showPast ? " is-active" : ""}"
+              data-duels="past" aria-pressed="${String(state.showPast)}">
+        ${t("📜 Past duels")}${past.length > 0 ? ` (${past.length})` : ""}
       </button>
     </div>
 
@@ -80,12 +109,14 @@ export function listHtml(state: DuelState): SafeHtml {
           ? html`<div class="empty-state"><p class="empty-title">${state.failure}</p></div>`
           : duels === null
             ? html`<div class="empty-state"><p class="empty-title">${t("Loading…")}</p></div>`
-            : duels.length === 0
+            : showing.length === 0
               ? html`<div class="empty-state">
-                  <p class="empty-title">${t("No duel yet")}</p>
-                  <p class="muted">${t("Invite a friend: ATEM keeps the record of a duel played in person.")}</p>
+                  <p class="empty-title">${state.showPast ? t("No duel played yet") : t("No duel under way")}</p>
+                  <p class="muted">${state.showPast
+                    ? t("A duel appears here once its result is recorded.")
+                    : t("Invite a friend: ATEM keeps the record of a duel played in person.")}</p>
                 </div>`
-              : html`<div class="player-cards-list-full">${duels.map(duelRow)}</div>`}
+              : html`<div class="player-cards-list-full">${showing.map(duelRow)}</div>`}
       </div>
     </div>
   </main>

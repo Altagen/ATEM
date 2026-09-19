@@ -52,17 +52,22 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
 
   // The invitation, with the deck brought along.
   await page.goto("/duels");
-  await expect(page.getByText("Aucun duel pour l'instant")).toBeVisible();
+  await expect(page.getByText("Aucun duel en cours")).toBeVisible();
   await page.getByRole("button", { name: "Inviter un ami" }).click();
   await page.getByRole("dialog").locator("#invite-deck").selectOption({ label: "Blue-Eyes" });
   await page.getByRole("dialog").getByRole("button", { name: "Envoyer l'invitation" }).click();
   await expect(page.getByText("Invitation envoyée.")).toBeVisible();
 
-  // The other side answers from their inbox, then chooses their own deck.
+  /**
+   * The other side answers from their inbox: an invitation is not listed on the
+   * duels screen — one duel at a time — so its line is the way in.
+   */
+  await friend.page.goto("/duels");
+  await expect(friend.page.getByText("Aucun duel en cours")).toBeVisible();
   await friend.page.goto("/inbox");
   await expect(friend.page.getByText(`${me.displayName} vous invite en duel.`)).toBeVisible();
-  await friend.page.goto("/duels");
-  await friend.page.locator(".duel-row").first().click();
+  await friend.page.getByRole("link", { name: "Voir le duel" }).click();
+  await friend.page.waitForURL("**/duels?duel=**");
   await friend.page.getByRole("button", { name: "Accepter le duel" }).click();
   await expect(friend.page.getByText("Prêt à commencer")).toBeVisible();
 
@@ -74,12 +79,19 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await expect(friend.page.getByText("Deck enregistré.")).toBeVisible();
 
   // The coin is flipped by the server: one of the two begins.
+  // The other duellist is on the duel, waiting, and touches nothing.
+  await page.goto(`/duels?duel=${new URL(friend.page.url()).searchParams.get("duel")}`);
+
   await friend.page.getByRole("button", { name: /Lancer la pièce/ }).click();
   // The coin turns, then settles on a name.
   await expect(friend.page.locator(".duel-coin")).toBeVisible();
   await expect(friend.page.locator(".duel-coin-name.is-settled")).toBeVisible({ timeout: 10_000 });
   await expect(friend.page.locator(".duel-coin")).toHaveCount(0, { timeout: 10_000 });
   await expect(friend.page.locator(".duel-turn")).toHaveText("Tour 1");
+
+  // The one who did not flip it sees it fall too, without reloading.
+  await expect(page.locator(".duel-coin-name.is-settled")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".duel-turn")).toHaveText("Tour 1", { timeout: 15_000 });
   await expect(friend.page.locator(".duel-phase.is-current")).toHaveText("Draw Phase");
 
   /**
@@ -171,6 +183,13 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await expect(page.getByText("Résultat enregistré.")).toBeVisible();
   await expect(page.getByText("Enregistré", { exact: true })).toBeVisible();
 
+  // A recorded duel leaves the table and joins the ones already played.
+  await page.goto("/duels");
+  await expect(page.getByText("Aucun duel en cours")).toBeVisible();
+  await page.getByRole("button", { name: /Anciens duels/ }).click();
+  await expect(page.locator(".duel-row")).toHaveCount(1);
+  await expect(page.locator(".duel-row")).toContainText("Blue-Eyes");
+
   // Recorded means nothing more is played, and counted on the profile.
   await expect(page.getByRole("button", { name: "Phase suivante" })).toHaveCount(0);
   await page.goto("/profile");
@@ -190,13 +209,13 @@ test("an invitation can be declined, and leaves nothing behind", async ({ page, 
   await page.getByRole("dialog").getByRole("button", { name: "Envoyer l'invitation" }).click();
   await expect(page.getByText("Invitation envoyée.")).toBeVisible();
 
-  await friend.page.goto("/duels");
-  await friend.page.locator(".duel-row").first().click();
+  await friend.page.goto("/inbox");
+  await friend.page.getByRole("link", { name: "Voir le duel" }).click();
   await friend.page.getByRole("button", { name: "Refuser" }).click();
-  await expect(friend.page.getByText("Aucun duel pour l'instant")).toBeVisible();
+  await expect(friend.page.getByText("Aucun duel en cours")).toBeVisible();
 
   await page.goto("/duels");
-  await expect(page.getByText("Aucun duel pour l'instant")).toBeVisible();
+  await expect(page.getByText("Aucun duel en cours")).toBeVisible();
   await friend.page.goto("/inbox");
   await expect(friend.page.getByText("Rien en attente")).toBeVisible();
   await friend.context.close();
@@ -216,9 +235,9 @@ test("a duel called off elsewhere takes the other duellist back to the list", as
   await page.getByRole("dialog").getByRole("button", { name: "Envoyer l'invitation" }).click();
   await expect(page.getByText("Invitation envoyée.")).toBeVisible();
 
-  // The other duellist opens it, and stays on it.
-  await friend.page.goto("/duels");
-  await friend.page.locator(".duel-row").first().click();
+  // The other duellist opens it from their inbox, and stays on it.
+  await friend.page.goto("/inbox");
+  await friend.page.getByRole("link", { name: "Voir le duel" }).click();
   await friend.page.waitForURL("**/duels?duel=**");
 
   await page.getByRole("button", { name: "Annuler l'invitation" }).click();
@@ -227,7 +246,7 @@ test("a duel called off elsewhere takes the other duellist back to the list", as
   // No reload here: the screen notices on its own and goes back.
   await friend.page.waitForURL("**/duels", { timeout: 15_000 });
   await expect(friend.page.getByText("Ce duel a été annulé.")).toBeVisible();
-  await expect(friend.page.getByText("Aucun duel pour l'instant")).toBeVisible();
+  await expect(friend.page.getByText("Aucun duel en cours")).toBeVisible();
   await friend.context.close();
 });
 

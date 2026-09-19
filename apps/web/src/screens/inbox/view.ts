@@ -38,7 +38,7 @@ function sentence(item: InboxItem): { icon: string; text: string } {
   }
 }
 
-/** Is this line about a duel? Then the way through is the duels screen. */
+/** Is this line about a duel? Then the way through is that duel. */
 const aboutDuel = (item: InboxItem): boolean => item.kind.startsWith("duel_");
 
 /** “3 minutes ago”, at the coarseness that is actually useful. */
@@ -74,7 +74,10 @@ function line(state: InboxState, item: InboxItem): SafeHtml {
                     data-accept="${item.actor?.id ?? ""}" data-item-id="${item.id}"${inert}>${t("Accept")}</button>
             <button type="button" class="btn-showcase-secondary is-petit is-auto"
                     data-decline="${item.actor?.id ?? ""}" data-item-id="${item.id}"${inert}>${t("Decline")}</button>`)}
-          ${when(aboutDuel(item), html`<a class="btn-inbox-tool" href="/duels">${t("See the duels")}</a>`)}
+          ${when(aboutDuel(item) && item.subjectId !== null,
+            html`<a class="btn-inbox-tool" href="/duels?duel=${item.subjectId ?? ""}">${t("See the duel")}</a>`)}
+          ${when(aboutDuel(item) && item.subjectId === null,
+            html`<a class="btn-inbox-tool" href="/duels">${t("See the duels")}</a>`)}
           ${when(item.actor !== null, html`<a class="btn-inbox-tool" href="/profile?user=${item.actor?.id ?? ""}">${t("See profile")}</a>`)}
           <button type="button" class="btn-inbox-delete" data-remove="${item.id}"
                   aria-label="${t("Remove this notification")}"${inert}>✕</button>

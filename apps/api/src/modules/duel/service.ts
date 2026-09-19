@@ -9,7 +9,7 @@
  * Every function takes the session's identity and refuses anything that is not
  * about the caller's own duels (ADR-009).
  */
-import { and, asc, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { DUEL_PHASES, LIFE_BOUNDS, LIMITS, nextPhase, STARTING_LIFE, type DuelPhase } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { conflict, forbidden, invalidInput, notFound } from "../../platform/errors.js";
@@ -300,6 +300,24 @@ async function deckBrought(
 }
 
 /**
+ * The duel a duellist is in the middle of, if any.
+ *
+ * Accepted or being played — an invitation is not one: it waits in the inbox
+ * and costs nothing until it is answered (`docs/ref-duels.md`).
+ */
+async function duelUnderWay(db: Database, userId: string): Promise<DuelRow | null> {
+  const [row] = await db
+    .select()
+    .from(duels)
+    .where(and(
+      inArray(duels.status, ["accepted", "playing"]),
+      or(eq(duels.hostId, userId), eq(duels.guestId, userId)),
+    ))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
  * Inviting a friend to a duel.
  *
  * Friends only, through `social`'s single checkpoint: an invitation open to
@@ -317,6 +335,8 @@ export async function proposeDuel(
     throw notFound("Player not found.");
   }
 
+  if (await duelUnderWay(db, viewerId)) throw conflict("You already have a duel under way.");
+
   const deck = await deckBrought(db, viewerId, input.deckId);
   const [row] = await db
     .insert(duels)
@@ -330,7 +350,7 @@ export async function proposeDuel(
     .returning();
   if (!row) throw new Error("insert returned nothing");
 
-  await notify(db, { userId: guestId, kind: "duel_invite", actorId: viewerId });
+  await notify(db, { userId: guestId, kind: "duel_invite", actorId: viewerId, subjectId: row.id });
   return toDuel(row, viewerId, await playersOf(db, [row]));
 }
 
@@ -339,6 +359,11 @@ export async function acceptDuel(db: Database, viewerId: string, duelId: string)
   const row = await own(db, viewerId, duelId);
   if (row.guestId !== viewerId) throw forbidden("Only the invited duellist can accept.");
   if (row.status !== "proposed") throw conflict("This duel is no longer an invitation.");
+  // One duel at a time, on both sides of the table.
+  if (await duelUnderWay(db, viewerId)) throw conflict("You already have a duel under way.");
+  if (await duelUnderWay(db, row.hostId)) {
+    throw conflict("This duellist has started another duel in the meantime.");
+  }
 
   const [updated] = await db
     .update(duels)
@@ -348,7 +373,7 @@ export async function acceptDuel(db: Database, viewerId: string, duelId: string)
   if (!updated) throw notFound("Duel not found.");
 
   await withdraw(db, { userId: viewerId, kind: "duel_invite", actorId: row.hostId });
-  await notify(db, { userId: row.hostId, kind: "duel_accepted", actorId: viewerId });
+  await notify(db, { userId: row.hostId, kind: "duel_accepted", actorId: viewerId, subjectId: row.id });
   return toDuel(updated, viewerId, await playersOf(db, [updated]));
 }
 
@@ -592,7 +617,7 @@ export async function recordDuel(
   if (!updated) throw notFound("Duel not found.");
 
   const other = row.hostId === viewerId ? row.guestId : row.hostId;
-  await notify(db, { userId: other, kind: "duel_recorded", actorId: viewerId });
+  await notify(db, { userId: other, kind: "duel_recorded", actorId: viewerId, subjectId: row.id });
   return toDuel(updated, viewerId, await playersOf(db, [updated]));
 }
 

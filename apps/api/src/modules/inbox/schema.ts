@@ -27,6 +27,14 @@ export const notifications = pgTable(
      * a name to display that it cannot find.
      */
     actorId: uuid("actor_id").references(() => users.id, { onDelete: "cascade" }),
+    /**
+     * What it is about, when it is about something: the duel of an invitation.
+     *
+     * Not a foreign key: the inbox does not depend on the tables of the modules
+     * that write into it, and a line whose subject is gone is a line that reads
+     * fine and leads nowhere — the screen checks before offering the way in.
+     */
+    subjectId: uuid("subject_id"),
     readAt: timestamp("read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

@@ -37,4 +37,34 @@
    is not a signal everyone receives. */
 .player-card-row-full.is-unread { border-left: 3px solid var(--gold); }
 
-.btn-inbox-tool { text-decoration: none; display: inline-flex; align-items: center; }
+/*
+ * The actions of a line must look like actions.
+ *
+ * Ange, on 2026-09-19: “‘Voir les duels’ et ‘Voir profil’ n'ont pas de hover, et
+ * ont la même couleur, gris sur gris”, and the cross gave no sign either. They
+ * carry a readable colour and a border at rest, and light up under the pointer —
+ * the affordance is there before the hand moves, not after.
+ */
+.btn-inbox-tool {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--fg-fort) 22%, transparent);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.btn-inbox-tool:hover,
+.btn-inbox-tool:focus-visible {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+.btn-inbox-delete {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--fg-fort) 22%, transparent);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.btn-inbox-delete:hover,
+.btn-inbox-delete:focus-visible {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}

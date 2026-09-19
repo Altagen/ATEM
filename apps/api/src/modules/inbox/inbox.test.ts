@@ -15,7 +15,13 @@ const { app } = createTestApp();
 const req = (method: string, path: string, cookie: string, body?: unknown) =>
   jsonRequest(app, method, path, body, { cookie });
 
-type Item = { id: string; kind: string; isRead: boolean; actor: { id: string; displayName: string } | null };
+type Item = {
+  id: string;
+  kind: string;
+  isRead: boolean;
+  subjectId: string | null;
+  actor: { id: string; displayName: string } | null;
+};
 
 const inbox = async (cookie: string): Promise<{ items: Item[]; unread: number }> => {
   const response = await req("GET", "/inbox", cookie);
@@ -99,6 +105,29 @@ test("an inbox is nobody else's to read, mark or empty", async () => {
   const after = await inbox(owner.cookie);
   assert.equal(after.unread, 1, "nothing a stranger did touched it");
   assert.equal((await req("DELETE", "/inbox/not-a-uuid", owner.cookie)).status, 400);
+});
+
+test("an invitation says which duel it is about", async () => {
+  /**
+   * Its line is the way into that duel: invitations are not listed on the duels
+   * screen — one duel at a time — so without this the inbox led to “no duel
+   * under way”.
+   */
+  const host = await freshSession(app, "inbox-duel-host");
+  const guest = await freshSession(app, "inbox-duel-guest");
+  await req("POST", `/community/friends/${guest.userId}`, host.cookie);
+  await req("POST", `/community/friends/${host.userId}/accept`, guest.cookie);
+
+  const duel = (await (await req("POST", "/duels", host.cookie, { guestId: guest.userId })).json()) as { id: string };
+  const waiting = (await inbox(guest.cookie)).items[0];
+  assert.equal(waiting?.kind, "duel_invite");
+  assert.equal(waiting?.subjectId, duel.id);
+
+  // A friend request is about nobody's duel.
+  const other = await freshSession(app, "inbox-duel-other");
+  await req("POST", `/community/friends/${guest.userId}`, other.cookie);
+  const friendLine = (await inbox(guest.cookie)).items.find((item) => item.kind === "friend_request");
+  assert.equal(friendLine?.subjectId, null);
 });
 
 test("a line does not outlive the account it talks about", async () => {

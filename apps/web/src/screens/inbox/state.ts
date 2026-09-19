@@ -12,6 +12,8 @@ export type NotificationKind =
 export type InboxItem = {
   id: string;
   kind: NotificationKind;
+  /** The duel an invitation is about, when there is one. */
+  subjectId: string | null;
   actor: Duellist | null;
   isRead: boolean;
   createdAt: string;

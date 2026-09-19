@@ -16,6 +16,17 @@ legality checking during play, no timer. A duel row is a **testimony**, not a
 game state, and the application never knows more about the game than the two
 players tell it.
 
+## One duel at a time
+
+**A duellist has at most one duel under way** — accepted or being played. Asked
+for by Ange on 2026-09-19: one plays one duel, at one table, and a screen that
+lists three “in progress” is a screen one has to sort out before playing.
+
+Invitations are not duels under way: they wait in the inbox, as many as people
+care to send, and accepting one while a duel is under way is refused. Finished
+duels are the record, and they live in their own list — “past duels” — with the
+decks each was played with.
+
 ## Who can duel
 
 **Friends only**, for this iteration. A duel is an agreement between two people
