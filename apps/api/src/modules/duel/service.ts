@@ -134,6 +134,19 @@ async function playing(db: Database, viewerId: string, duelId: string): Promise<
 }
 
 /**
+ * The turn belongs to the one playing it.
+ *
+ * Ange, on 2026-09-19: nobody advances someone else's turn at the table, so no
+ * screen may do it either. Life points are the other half of the same rule —
+ * each declares their own — and both are refused here rather than merely hidden.
+ */
+function theirTurn(row: DuelRow, viewerId: string): void {
+  if (row.currentPlayerId !== viewerId) {
+    throw forbidden("Only the duellist playing this turn can move it on.");
+  }
+}
+
+/**
  * Writes one event, numbered after the last.
  *
  * The number comes from the duel's own count rather than from a shared
@@ -343,13 +356,14 @@ export async function startDuel(db: Database, viewerId: string, duelId: string):
   return detailOf(db, updated, viewerId);
 }
 
-/** The next phase, one at a time, never backwards. */
+/** The next phase, one at a time, never backwards — by the player whose turn it is. */
 export async function advancePhase(
   db: Database,
   viewerId: string,
   duelId: string,
 ): Promise<DuelDetail> {
   const row = await playing(db, viewerId, duelId);
+  theirTurn(row, viewerId);
   const phase = nextPhase(row.phase as DuelPhase);
   if (!phase) throw conflict("The End Phase is the last: end the turn.");
 
@@ -375,11 +389,12 @@ export async function advancePhase(
 /**
  * Ending the turn: the other player, a new turn, back to the Draw Phase.
  *
- * From any phase — a duel ends its turn when the players say so, not when the
+ * From any phase — a duel ends its turn when its player says so, not when the
  * application decides.
  */
 export async function endTurn(db: Database, viewerId: string, duelId: string): Promise<DuelDetail> {
   const row = await playing(db, viewerId, duelId);
+  theirTurn(row, viewerId);
   const turnNumber = (row.turnNumber ?? 1) + 1;
   if (turnNumber > 999) throw conflict("This duel has run out of turns.");
   const currentPlayerId = row.currentPlayerId === row.hostId ? row.guestId : row.hostId;

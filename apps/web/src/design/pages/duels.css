@@ -168,7 +168,6 @@
   padding: 0.1rem 0.45rem;
 }
 .duel-life-value { font-size: 2.1rem; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
-.duel-life-theirs { margin: 0; text-align: center; }
 
 /*
  * One's own amounts, one tap away.

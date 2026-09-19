@@ -53,6 +53,19 @@ async function accepted(prefix: string) {
 const duelOf = async (cookie: string, id: string): Promise<Duel> =>
   (await (await req("GET", `/duels/${id}`, cookie)).json()) as Duel;
 
+/**
+ * The cookie of whoever is playing this turn, and the other one.
+ *
+ * The coin decides who begins, so a test cannot know it: it asks. Written on
+ * 2026-09-19, when phases became the turn player's alone.
+ */
+async function sides(duel: { id: string }, one: { cookie: string; userId: string }, two: { cookie: string; userId: string }) {
+  const state = await duelOf(one.cookie, duel.id);
+  return state.currentPlayerId === one.userId
+    ? { playing: one, waiting: two }
+    : { playing: two, waiting: one };
+}
+
 test("a duel is proposed to a friend, accepted, and the result names the winner", async () => {
   const { host, guest, hostDeck } = await ready("duel-flow");
   const duel = (await (await req("POST", "/duels", host.cookie, {
@@ -134,27 +147,34 @@ test("the coin does not always fall on the same side", async () => {
   assert.equal(first.size, 2, "both players began at least once");
 });
 
-test("the phases follow one another, and the turn passes to the other player", async () => {
+test("the phases follow one another, moved by the duellist whose turn it is", async () => {
   const { host, guest, duel } = await accepted("duel-phases");
   const started = (await (await req("POST", `/duels/${duel.id}/start`, host.cookie)).json()) as Duel;
   const opener = started.currentPlayerId;
+  const first = await sides(duel, host, guest);
+
+  // Nobody advances someone else's turn (Ange, 2026-09-19).
+  assert.equal((await req("POST", `/duels/${duel.id}/phase`, first.waiting.cookie)).status, 403);
+  assert.equal((await req("POST", `/duels/${duel.id}/turn`, first.waiting.cookie)).status, 403);
+  assert.equal((await duelOf(host.cookie, duel.id)).phase, "draw", "nothing moved");
 
   // Draw → standby → main1 → battle → main2 → end, one at a time.
   for (const phase of ["standby", "main1", "battle", "main2", "end"]) {
-    const after = (await (await req("POST", `/duels/${duel.id}/phase`, guest.cookie)).json()) as Duel;
+    const after = (await (await req("POST", `/duels/${duel.id}/phase`, first.playing.cookie)).json()) as Duel;
     assert.equal(after.phase, phase);
   }
   // The End Phase is the last: there is nothing after it but the next turn.
-  assert.equal((await req("POST", `/duels/${duel.id}/phase`, host.cookie)).status, 409);
+  assert.equal((await req("POST", `/duels/${duel.id}/phase`, first.playing.cookie)).status, 409);
 
-  const next = (await (await req("POST", `/duels/${duel.id}/turn`, host.cookie)).json()) as Duel;
+  const next = (await (await req("POST", `/duels/${duel.id}/turn`, first.playing.cookie)).json()) as Duel;
   assert.equal(next.turnNumber, 2);
   assert.equal(next.phase, "draw");
   assert.notEqual(next.currentPlayerId, opener, "the turn passed to the other");
 
-  // The turn can be ended from any phase: the players say when, not the app.
-  await req("POST", `/duels/${duel.id}/phase`, host.cookie);
-  const third = (await (await req("POST", `/duels/${duel.id}/turn`, guest.cookie)).json()) as Duel;
+  // And it is now the other one who moves it: the turn can be ended from any phase.
+  const second = await sides(duel, host, guest);
+  await req("POST", `/duels/${duel.id}/phase`, second.playing.cookie);
+  const third = (await (await req("POST", `/duels/${duel.id}/turn`, second.playing.cookie)).json()) as Duel;
   assert.equal(third.turnNumber, 3);
   assert.equal(third.currentPlayerId, opener);
 });
@@ -167,10 +187,10 @@ test("each duellist declares their own life points, and only their own", async (
    */
   const { host, guest, duel } = await accepted("duel-life");
   await req("POST", `/duels/${duel.id}/start`, host.cookie);
-  await req("POST", `/duels/${duel.id}/phase`, host.cookie);
-  await req("POST", `/duels/${duel.id}/phase`, host.cookie);
-  await req("POST", `/duels/${duel.id}/phase`, host.cookie); // battle
+  const { playing } = await sides(duel, host, guest);
+  for (const _ of [1, 2, 3]) await req("POST", `/duels/${duel.id}/phase`, playing.cookie); // battle
 
+  // Life points are declared at any moment — whosever turn it is.
   const hit = (await (await req("POST", `/duels/${duel.id}/life`, host.cookie, {
     delta: -1800, note: "Blue-Eyes attaque.",
   })).json()) as Duel;

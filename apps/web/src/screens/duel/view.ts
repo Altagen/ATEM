@@ -122,6 +122,8 @@ const LIFE_STEPS = [-1000, -500, -100, 100, 500, 1000] as const;
  * opposite card is a figure to read, never a counter to reach across and move.
  */
 function lifeCard(one: DuelSide, options: { mine: boolean; playing: boolean; busy: boolean }): SafeHtml {
+  // The other duellist's card carries no button and says nothing about it: an
+  // absent button needs no caption.
   const look = one.player ? avatarLooks()[one.player.avatar] : null;
   return html`<div class="duel-life${options.mine ? " is-mine" : ""}${options.playing ? " is-playing" : ""}">
     <div class="duel-life-who">
@@ -130,16 +132,14 @@ function lifeCard(one: DuelSide, options: { mine: boolean; playing: boolean; bus
       ${when(options.playing, html`<span class="duel-life-turn">${t("Playing")}</span>`)}
     </div>
     <strong class="duel-life-value" aria-live="polite">${String(one.life)}</strong>
-    ${options.mine
-      ? html`<div class="duel-life-steps">
-          ${LIFE_STEPS.map((step) => html`<button type="button" class="chip duel-step" data-step="${String(step)}"
-                ${options.busy ? raw("disabled") : raw("")}>${step > 0 ? `+${step}` : `−${Math.abs(step)}`}</button>`)}
-          <button type="button" class="chip duel-step" data-halve
-                  ${options.busy ? raw("disabled") : raw("")}>${t("÷2")}</button>
-          <button type="button" class="chip duel-step" id="btn-life-other"
-                  ${options.busy ? raw("disabled") : raw("")}>${t("Other…")}</button>
-        </div>`
-      : html`<p class="legende duel-life-theirs">${t("They declare their own.")}</p>`}
+    ${when(options.mine, html`<div class="duel-life-steps">
+      ${LIFE_STEPS.map((step) => html`<button type="button" class="chip duel-step" data-step="${String(step)}"
+            ${options.busy ? raw("disabled") : raw("")}>${step > 0 ? `+${step}` : `−${Math.abs(step)}`}</button>`)}
+      <button type="button" class="chip duel-step" data-halve
+              ${options.busy ? raw("disabled") : raw("")}>${t("÷2")}</button>
+      <button type="button" class="chip duel-step" id="btn-life-other"
+              ${options.busy ? raw("disabled") : raw("")}>${t("Other…")}</button>
+    </div>`)}
   </div>`;
 }
 
@@ -180,10 +180,16 @@ function boardHtml(duel: DuelDetail, state: DuelState): SafeHtml {
       ${lifeCard(theirs, { mine: false, playing: !myTurn, busy: state.busy })}
     </div>
 
+    <!--
+      The turn belongs to the one playing it: off their turn, the two controls
+      that move it are inert rather than hidden — one sees what will be possible
+      again, and the server refuses them anyway (Ange, 2026-09-19).
+    -->
     <div class="duel-actions">
       <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-phase"
-              ${phase === "end" ? raw("disabled") : raw("")}>${t("Next phase")}</button>
-      <button type="button" class="btn duel-end-turn" id="btn-end-turn">${t("End the turn")}</button>
+              ${!myTurn || phase === "end" ? raw("disabled") : raw("")}>${t("Next phase")}</button>
+      <button type="button" class="btn duel-end-turn" id="btn-end-turn"
+              ${myTurn ? raw("") : raw("disabled")}>${t("End the turn")}</button>
       <button type="button" class="btn" id="btn-result">${t("Record the result")}</button>
       <button type="button" class="btn" id="btn-drop">${t("Call it off")}</button>
     </div>

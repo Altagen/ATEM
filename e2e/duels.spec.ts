@@ -82,10 +82,25 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await expect(friend.page.locator(".duel-turn")).toHaveText("Tour 1");
   await expect(friend.page.locator(".duel-phase.is-current")).toHaveText("Draw Phase");
 
-  // The phases follow one another; either player may advance them.
+  /**
+   * The phases are moved by the duellist whose turn it is (Ange, 2026-09-19).
+   * The coin decides who that is, so the test asks rather than assumes — from
+   * the tab that has just seen it fall.
+   */
+  await page.goto("/duels");
+  await page.locator(".duel-row").first().click();
+  await expect(page.locator(".duel-life.is-playing")).toHaveCount(1);
+
+  const friendPlays = await friend.page.locator(".duel-life.is-mine.is-playing").count() > 0;
+  const playing = friendPlays ? friend.page : page;
+  const waiting = friendPlays ? page : friend.page;
+  await expect(waiting.getByRole("button", { name: "Phase suivante" })).toBeDisabled();
+  await expect(waiting.getByRole("button", { name: "Finir le tour" })).toBeDisabled();
+  await expect(playing.getByRole("button", { name: "Phase suivante" })).toBeEnabled();
+
   for (const phase of ["Standby Phase", "Main Phase 1", "Battle Phase"]) {
-    await friend.page.getByRole("button", { name: "Phase suivante" }).click();
-    await expect(friend.page.locator(".duel-phase.is-current")).toHaveText(phase);
+    await playing.getByRole("button", { name: "Phase suivante" }).click();
+    await expect(playing.locator(".duel-phase.is-current")).toHaveText(phase);
   }
 
   /**
@@ -112,10 +127,12 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await expect(page.locator(".duel-life").filter({ hasText: friend.account.displayName })
     .locator(".duel-life-value")).toHaveText("3500");
 
-  // The turn passes, and the panel says whose it is.
-  await page.getByRole("button", { name: "Finir le tour" }).click();
-  await expect(page.getByText("Le tour passe.")).toBeVisible();
-  await expect(page.locator(".duel-turn")).toHaveText("Tour 2");
+  // The turn passes, ended by the duellist playing it, and the panel says whose it is.
+  await playing.reload();
+  await playing.getByRole("button", { name: "Finir le tour" }).click();
+  await expect(playing.getByText("Le tour passe.")).toBeVisible();
+  // The other tab learns it on its own: it polls, it was not reloaded.
+  await expect(page.locator(".duel-turn")).toHaveText("Tour 2", { timeout: 15_000 });
   await expect(page.locator(".duel-life.is-playing")).toHaveCount(1);
 
   // The history is folded away; it opens on demand.

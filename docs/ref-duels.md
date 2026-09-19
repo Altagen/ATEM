@@ -71,11 +71,12 @@ Phase has steps of its own in the rules (start, battle, damage, end); ATEM does
 not follow them: nobody announces a damage step out loud, and a notebook that
 asks for one is in the way.
 
-What either player can do while it is `playing`:
+What can be done while it is `playing`:
 
-- **advance to the next phase**, one at a time, never backwards;
-- **end the turn**, from any phase — a duel ends its turn when the players say
-  so, not when the application decides.
+- **advance to the next phase**, one at a time, never backwards — **by the
+  duellist whose turn it is**;
+- **end the turn**, from any phase and by that same duellist: a duel ends its
+  turn when its player says so, not when the application decides.
 
 **Each duellist declares their own life points, and only their own.** Asked for
 by Ange on 2026-09-19: the one who takes the damage is the one who says so. It is
@@ -91,9 +92,10 @@ Life points are declared at any moment, in whatever phase the duel is in; the
 event records that phase, which is what makes the history read like a duel:
 “turn 4, Battle Phase, −1800”.
 
-**The phase and the turn, on the other hand, either may move**: one phone often
-lies between the two, and the one holding it advances for both. Every event keeps
-who wrote it, so a disagreement is visible rather than silent.
+**The turn belongs to the one playing it.** Ange, on 2026-09-19: “un joueur ne
+peut pas contrôler les phases de l'adversaire, comme ses life points.” Nobody
+advances someone else's turn at the table, and the application does not let a
+screen do what a hand would not. Every event keeps who wrote it all the same.
 
 ## What a duel holds
 
@@ -140,6 +142,7 @@ Blue-Eyes” stays true even when that deck is gone.
 | accepting an invitation that is not yours | 404 |
 | writing a turn on a duel one is not in | 404 |
 | declaring the other player's life points | 403 |
+| moving a phase or ending a turn that is not yours | 403 |
 | writing on a `recorded` duel | 409 |
 | recording a result twice | 409 |
 
