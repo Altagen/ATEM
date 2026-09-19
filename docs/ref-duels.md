@@ -88,9 +88,15 @@ The amounts offered are the ones a duel deals in: −100, −500, −1000, their
 positive counterparts for a gain, and **half**, rounded **up** (4000 → 2000,
 2001 → 1001). Any other number is typed.
 
-Life points are declared at any moment, in whatever phase the duel is in; the
-event records that phase, which is what makes the history read like a duel:
-“turn 4, Battle Phase, −1800”.
+Life points are declared at any moment, in whatever phase the duel is in.
+
+**One life event per duellist and per phase, not per tap.** Taking 3000 means
+tapping −1000 three times, and three rows saying “−1000” tell nobody anything —
+Ange, on 2026-09-19: “sinon en base de données ça va être compliqué, ça va
+devenir gigantesque”. So the taps of one phase add up into the single event of
+that phase: the history reads “turn 4, Battle Phase, −3000”, which is what
+happened. A gain cancelling a loss in the same phase leaves **no** event at all:
+nothing happened that phase.
 
 **The turn belongs to the one playing it.** Ange, on 2026-09-19: “un joueur ne
 peut pas contrôler les phases de l'adversaire, comme ses life points.” Nobody

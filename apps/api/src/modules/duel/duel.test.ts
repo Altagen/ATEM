@@ -222,6 +222,60 @@ test("each duellist declares their own life points, and only their own", async (
   assert.equal((await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: 0 })).status, 400);
 });
 
+test("the taps of one phase add up into that phase's event", async () => {
+  /**
+   * Ange, on 2026-09-19: taking 3000 means tapping −1000 three times, and three
+   * rows saying “−1000” tell nobody anything — they only make the table grow.
+   */
+  const { host, guest, duel } = await accepted("duel-merge");
+  await req("POST", `/duels/${duel.id}/start`, host.cookie);
+  const { playing } = await sides(duel, host, guest);
+
+  const lifeEvents = async () =>
+    ((await duelOf(host.cookie, duel.id)).events ?? []).filter((event) => event.kind === "life");
+
+  for (const _ of [1, 2, 3]) {
+    await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: -1000 });
+  }
+  let written = await lifeEvents();
+  assert.equal(written.length, 1, "one event for the phase, whatever the number of taps");
+  assert.equal(written[0]?.delta, -3000);
+
+  // A gain in the same phase comes off the same event.
+  await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: 500 });
+  written = await lifeEvents();
+  assert.equal(written.length, 1);
+  assert.equal(written[0]?.delta, -2500);
+
+  // The other duellist's points are their own event, in the same phase.
+  await req("POST", `/duels/${duel.id}/life`, guest.cookie, { delta: -800 });
+  assert.equal((await lifeEvents()).length, 2);
+
+  // The next phase opens a new one.
+  await req("POST", `/duels/${duel.id}/phase`, playing.cookie);
+  await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: -200 });
+  const byPhase = await lifeEvents();
+  assert.equal(byPhase.length, 3);
+  assert.deepEqual(
+    byPhase.filter((event) => event.phase === "standby").map((event) => event.delta),
+    [-200],
+  );
+});
+
+test("a gain cancelling a loss in the same phase leaves no event", async () => {
+  // Nothing happened that phase; a row saying “0” would be noise with a date.
+  const { host, guest, duel } = await accepted("duel-cancel");
+  await req("POST", `/duels/${duel.id}/start`, host.cookie);
+
+  await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: -500 });
+  await req("POST", `/duels/${duel.id}/life`, host.cookie, { delta: 500 });
+
+  const after = await duelOf(host.cookie, duel.id);
+  assert.equal(after.host.life, 8000, "back where it started");
+  assert.equal((after.events ?? []).filter((event) => event.kind === "life").length, 0);
+  void guest;
+});
+
 test("nothing is played before the start, or after the result", async () => {
   const { host, guest, duel } = await accepted("duel-closed");
 

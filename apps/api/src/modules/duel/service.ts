@@ -191,6 +191,69 @@ async function writeEvent(
   });
 }
 
+/**
+ * The life points of one duellist, in one phase — **one event, not one per tap**.
+ *
+ * Taking 3000 means tapping −1000 three times, and three rows saying “−1000”
+ * tell nobody anything; they only make the table grow. Ange, on 2026-09-19:
+ * “le mieux serait de faire un événement de dommage à chaque phase”. So the taps
+ * of a phase add up into that phase's event, and the history reads “turn 4,
+ * Battle Phase, −3000”.
+ *
+ * A gain cancelling a loss within the same phase leaves **no** event: nothing
+ * happened that phase, and a row saying “0” would be noise with a timestamp.
+ */
+async function recordLife(
+  db: Database,
+  row: DuelRow,
+  event: { authorId: string; turnNumber: number; phase: DuelPhase; delta: number; note: string | null },
+): Promise<void> {
+  const [held] = await db
+    .select()
+    .from(duelEvents)
+    .where(and(
+      eq(duelEvents.duelId, row.id),
+      eq(duelEvents.kind, "life"),
+      eq(duelEvents.playerId, event.authorId),
+      eq(duelEvents.turnNumber, event.turnNumber),
+      eq(duelEvents.phase, event.phase),
+    ))
+    .limit(1);
+
+  if (!held) {
+    await writeEvent(db, row, {
+      kind: "life",
+      authorId: event.authorId,
+      turnNumber: event.turnNumber,
+      phase: event.phase,
+      playerId: event.authorId,
+      delta: event.delta,
+      hostLife: row.hostLife,
+      guestLife: row.guestLife,
+      note: event.note,
+    });
+    return;
+  }
+
+  const total = (held.delta ?? 0) + event.delta;
+  if (total === 0) {
+    await db.delete(duelEvents).where(eq(duelEvents.id, held.id));
+    return;
+  }
+
+  await db
+    .update(duelEvents)
+    .set({
+      delta: total,
+      hostLife: row.hostLife,
+      guestLife: row.guestLife,
+      // The latest word about the phase wins; silence does not erase the last one.
+      note: event.note ?? held.note,
+      authorId: event.authorId,
+    })
+    .where(eq(duelEvents.id, held.id));
+}
+
 async function listEvents(db: Database, duelId: string): Promise<DuelEvent[]> {
   const rows = await db
     .select()
@@ -460,15 +523,11 @@ export async function changeLife(
     .returning();
   if (!updated) throw notFound("Duel not found.");
 
-  await writeEvent(db, updated, {
-    kind: "life",
+  await recordLife(db, updated, {
     authorId: viewerId,
     turnNumber: updated.turnNumber ?? 1,
     phase: updated.phase as DuelPhase,
-    playerId: viewerId,
     delta: after - current,
-    hostLife: updated.hostLife,
-    guestLife: updated.guestLife,
     note,
   });
   return detailOf(db, updated, viewerId);
