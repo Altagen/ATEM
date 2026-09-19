@@ -393,6 +393,7 @@ export const FR: Record<string, string> = {
   "Pending": "En attente",
   "pending": "en attente",
   "Phase": "Phase",
+  "phase {n} of {total}": "phase {n} sur {total}",
   "Pin the bar": "Épingler la barre",
   "Played on": "Joué le",
   "Player not found.": "Duelliste introuvable.",

@@ -157,6 +157,22 @@
 .duel-now { font-size: 0.86rem; font-weight: 800; color: var(--muted); }
 .duel-now.is-you { color: var(--gold); }
 
+/*
+ * Where the duel is, in one line.
+ *
+ * Shown only where the six chips do not fit — on a phone in focus. Wide, the
+ * path itself says it better, and saying it twice is noise.
+ */
+.duel-phase-now {
+  display: none;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.9rem;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--gold);
+}
+
 .duel-lives { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .duel-life {
   display: flex;
@@ -364,7 +380,7 @@
  * come back — and the board takes the height it needs without scrolling: the
  * life points are what one reaches for between two attacks.
  */
-.duel-focused { padding-top: 0.75rem; }
+.duel-focused { padding-block: 0.5rem; }
 .duel-focused .duel-board { margin-bottom: 0; }
 .duel-focus-toggle { margin-right: auto; }
 
@@ -375,27 +391,36 @@
   body:has(.duel-focused) { padding-bottom: 0; }
 
   /*
-   * Everything on one screen, which is the whole point.
+   * Focus, on a phone: everything under everything else.
    *
-   * The phases run on one line that scrolls sideways instead of wrapping onto
-   * three, and the two life totals sit side by side: stacked, the opponent's
-   * was below the fold, which is the scrolling this mode exists to remove.
+   * Nothing is squeezed sideways here — Ange, on 2026-09-19, on scrolling to
+   * read the phases: “pourquoi tu ne fais pas l'un en dessous de l'autre ?”.
+   * So the path of six chips gives way to the phase one is in, the two life
+   * totals stack, and the buttons follow in the order they are used: the phase,
+   * the turn, the end of the duel, then leaving.
    */
-  .duel-focused .duel-phases {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 0.2rem;
+  .duel-focused .duel-phases { display: none; }
+  .duel-focused .duel-phase-now { display: flex; }
+  .duel-focused .duel-lives { grid-template-columns: 1fr; gap: 0.5rem; }
+  .duel-focused .duel-life { padding: 0.7rem 0.6rem; }
+  /* The other duellist's total is read, not acted on: it takes a line. */
+  .duel-focused .duel-life:not(.is-mine) {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 0.75rem;
   }
-  .duel-focused .duel-phase { white-space: nowrap; }
-  .duel-focused .duel-lives { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .duel-focused .duel-life { padding: 0.6rem 0.4rem; }
-  .duel-focused .duel-life-value { font-size: 1.9rem; }
-  .duel-focused .duel-life-steps { gap: 0.25rem; }
-  .duel-focused .duel-step {
-    min-height: 40px;
-    padding-inline: 0.5rem;
-    font-size: 0.78rem;
+  .duel-focused .duel-life:not(.is-mine) .duel-life-value { font-size: 1.5rem; }
+  .duel-focused .duel-life-value { font-size: 2.2rem; }
+  .duel-focused .duel-life-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; }
+  .duel-focused .duel-step { min-height: 42px; padding-inline: 0.35rem; font-size: 0.8rem; }
+  .duel-focused .duel-actions { flex-direction: column; gap: 0.45rem; }
+  /* Stacked, `flex: 1 1 10rem` from the rule above would be a **height**: the
+     buttons grew to ten rems tall. They take their own height and the width. */
+  .duel-focused .duel-actions > * {
+    width: 100%;
+    flex: 0 0 auto;
+    min-height: 44px;
   }
-  .duel-focused .duel-actions { gap: 0.4rem; }
-  .duel-focused .duel-drop-row { margin-top: 0.5rem; }
+  .duel-focused .duel-drop-row { margin-top: 0.5rem; gap: 0.5rem; }
+  .duel-focused .duel-drop-row > * { flex: 1 1 0; justify-content: center; text-align: center; }
 }

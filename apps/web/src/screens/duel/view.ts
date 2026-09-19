@@ -259,9 +259,18 @@ function boardHtml(duel: DuelDetail, state: DuelState): SafeHtml {
     </div>
 
     <!--
-      The phases as a path, the one under way marked: a duel is followed by
-      knowing where one is, not by reading a word.
+      Two ways of saying where the duel is, and the screen picks one.
+      Wide, the whole path is shown and one sees what comes next. On a phone in
+      focus the path becomes the phase one is in, spelled out, with its rank —
+      six chips on a narrow screen either wrap onto three lines or scroll
+      sideways, and Ange rightly refused both.
     -->
+    <p class="duel-phase-now">
+      ${phaseName(phase)}
+      <span class="legende">${t("phase {n} of {total}", {
+        n: String(DUEL_PHASES.indexOf(phase) + 1), total: String(DUEL_PHASES.length),
+      })}</span>
+    </p>
     <ol class="duel-phases" aria-label="${t("Phase")}">
       ${DUEL_PHASES.map((one) => html`<li class="duel-phase${one === phase ? " is-current" : ""}"
             ${one === phase ? raw('aria-current="step"') : raw("")}>${phaseName(one)}</li>`)}
