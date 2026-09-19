@@ -419,6 +419,27 @@ export async function duelScreen(
       paint();
     });
 
+    root.querySelector("#btn-focus")?.addEventListener("click", () => {
+      state.focus = !state.focus;
+      paint();
+      window.scrollTo({ top: 0 });
+    });
+
+    /**
+     * Ending the duel from the board.
+     *
+     * A duel stops when the players stop, and after correcting a life total
+     * back off zero there was otherwise no way back to the result but to take
+     * the points down again.
+     */
+    root.querySelector("#btn-finish")?.addEventListener("click", () => {
+      const duel = state.open;
+      const beaten = duel?.host.life === 0 ? duel.guest : duel?.guest.life === 0 ? duel.host : null;
+      state.correcting = false;
+      state.result = { winnerId: beaten?.player?.id ?? "", note: "" };
+      paint();
+    });
+
     root.querySelector("#btn-correct")?.addEventListener("click", () => {
       // Back to the board: a life total reaches zero by a mistyped figure as
       // easily as by an attack.

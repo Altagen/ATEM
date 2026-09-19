@@ -221,6 +221,61 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await friend.context.close();
 });
 
+test("focus shows the board alone, and the duel ends from it", async ({ page, browser }) => {
+  /**
+   * Ange, on a phone: a duel is followed between two hands and a mat, and the
+   * summary above and the log below are two scrolls from the life points. And
+   * after correcting a total off zero there was no way back to the result but
+   * to take the points down again.
+   */
+  const me = await signUp(page);
+  await deck(page, "Blue-Eyes");
+  const friend = await duellist(browser);
+  await deck(friend.page, "Harpies");
+  await befriend(page, friend);
+
+  await page.evaluate(async (id) => {
+    const decks = await (await fetch("/api/decks")).json();
+    await fetch("/api/duels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guestId: id, deckId: decks.items[0].id }),
+    });
+  }, friend.id);
+  await friend.page.evaluate(async () => {
+    const duels = await (await fetch("/api/duels?past=0")).json();
+    const decks = await (await fetch("/api/decks")).json();
+    await fetch(`/api/duels/${duels.items[0].id}/accept`, { method: "POST" });
+    await fetch(`/api/duels/${duels.items[0].id}/deck`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deckId: decks.items[0].id }),
+    });
+    await fetch(`/api/duels/${duels.items[0].id}/start`, { method: "POST" });
+  });
+
+  await page.goto("/duels");
+  await page.locator(".duel-row").click();
+  await expect(page.locator(".duel-board")).toBeVisible();
+
+  // Focus: the board, and nothing above or below it.
+  await page.getByRole("button", { name: "Focus", exact: true }).click();
+  await expect(page.locator(".duel-focused")).toBeVisible();
+  await expect(page.getByRole("link", { name: "← Duels" })).toHaveCount(0);
+  await expect(page.getByText(/Tour par tour/)).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Quitter le focus" }).click();
+  await expect(page.getByRole("link", { name: "← Duels" })).toBeVisible();
+
+  // Ending the duel is one gesture from the board, without reaching zero.
+  await page.getByRole("button", { name: "Terminer le duel" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: me.displayName }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Enregistrer le résultat" }).click();
+  await expect(page.getByText("Résultat enregistré.")).toBeVisible();
+  await expect(page.getByText("Enregistré", { exact: true })).toBeVisible();
+  await friend.context.close();
+});
+
 test("an invitation can be declined, and leaves nothing behind", async ({ page, browser }) => {
   await signUp(page);
   const friend = await duellist(browser);

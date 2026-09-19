@@ -101,7 +101,13 @@
   .duel-row-players { grid-template-columns: 1fr; }
   /* Stacked, the crossed swords sit between the two rather than beside them. */
   .duel-versus { text-align: center; }
-  .duel-actions > * { flex: 1 1 10rem; }
+  /* Stretched to the width, a button's label must still sit in its middle:
+     several of ours are `inline-flex` rows that would otherwise start left. */
+  .duel-actions > * {
+    flex: 1 1 10rem;
+    justify-content: center;
+    text-align: center;
+  }
 }
 
 /* ── The board ─────────────────────────────────────────────────────────────
@@ -350,3 +356,46 @@
 /* Your own name, wherever it appears: the eye finds itself first. */
 .duel-side-text strong.is-you,
 .admin-table .is-you { color: var(--gold); }
+
+/*
+ * Focus: the board and nothing else, for a phone on the table.
+ *
+ * The bottom navigation goes with the rest — one taps “Quitter le focus” to
+ * come back — and the board takes the height it needs without scrolling: the
+ * life points are what one reaches for between two attacks.
+ */
+.duel-focused { padding-top: 0.75rem; }
+.duel-focused .duel-board { margin-bottom: 0; }
+.duel-focus-toggle { margin-right: auto; }
+
+@media (max-width: 850px) {
+  .duel-focused ~ .global-mobile-bottom-nav,
+  body:has(.duel-focused) .global-mobile-bottom-nav { display: none; }
+  /* Without the bar, the page keeps nothing in reserve for it. */
+  body:has(.duel-focused) { padding-bottom: 0; }
+
+  /*
+   * Everything on one screen, which is the whole point.
+   *
+   * The phases run on one line that scrolls sideways instead of wrapping onto
+   * three, and the two life totals sit side by side: stacked, the opponent's
+   * was below the fold, which is the scrolling this mode exists to remove.
+   */
+  .duel-focused .duel-phases {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+  }
+  .duel-focused .duel-phase { white-space: nowrap; }
+  .duel-focused .duel-lives { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .duel-focused .duel-life { padding: 0.6rem 0.4rem; }
+  .duel-focused .duel-life-value { font-size: 1.9rem; }
+  .duel-focused .duel-life-steps { gap: 0.25rem; }
+  .duel-focused .duel-step {
+    min-height: 40px;
+    padding-inline: 0.5rem;
+    font-size: 0.78rem;
+  }
+  .duel-focused .duel-actions { gap: 0.4rem; }
+  .duel-focused .duel-drop-row { margin-top: 0.5rem; }
+}

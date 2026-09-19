@@ -79,6 +79,11 @@ export type DuelState = {
    * figure** has to be able to put it back.
    */
   correcting: boolean;
+  /**
+   * The board alone, on a phone: a duel is followed between two hands and a
+   * mat, and scrolling to find the life points is one hand too many.
+   */
+  focus: boolean;
   /** A custom amount, when the offered ones do not fit. */
   life: { amount: string; note: string } | null;
   /**
@@ -107,6 +112,7 @@ export const duelState = (): DuelState => ({
   deckPick: null,
   life: null,
   correcting: false,
+  focus: false,
   coin: null,
   busy: false,
 });

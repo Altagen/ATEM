@@ -285,9 +285,18 @@ function boardHtml(duel: DuelDetail, state: DuelState): SafeHtml {
               ${!myTurn || phase === "end" ? raw("disabled") : raw("")}>${t("Next phase")}</button>
       <button type="button" class="btn duel-end-turn" id="btn-end-turn"
               ${myTurn ? raw("") : raw("disabled")}>${t("End the turn")}</button>
+      <!--
+        Ending the duel is one gesture from here: a duel stops when the players
+        stop, not only when a life total reaches zero — and after correcting a
+        total back off zero, there would otherwise be no way back to the result.
+      -->
+      <button type="button" class="btn" id="btn-finish">${t("End the duel")}</button>
     </div>
 
     <div class="duel-drop-row">
+      <button type="button" class="btn duel-focus-toggle" id="btn-focus">
+        ${state.focus ? t("Leave focus") : t("Focus")}
+      </button>
       <button type="button" class="btn-action-danger-red is-petit is-auto" id="btn-drop">
         ${t("Call it off")}
       </button>
@@ -358,6 +367,22 @@ export function detailHtml(state: DuelState): SafeHtml {
   const ready = duel.host.deck.id !== null && duel.guest.deck.id !== null;
   // A duellist at zero ends the duel: nothing is played on top of that.
   const over = duel.status === "playing" && (duel.host.life === 0 || duel.guest.life === 0);
+
+  /**
+   * Focus: the board and nothing else.
+   *
+   * Ange, on 2026-09-19: on a phone, a duel is followed between two hands and a
+   * mat — the summary above and the log below are two scrolls away from the
+   * life points. Everything else goes; the way out is on the board.
+   */
+  if (state.focus && duel.status === "playing" && !over) {
+    return html`<main class="community-app-container duel-focused">
+      ${boardHtml(duel, state)}
+    </main>
+    ${resultModal(state)}
+    ${lifeModal(state)}
+    ${coinHtml(state)}`;
+  }
   return html`<main class="community-app-container">
     <a class="settings-back-btn" href="${state.showPast ? "/duels?past=1" : "/duels"}">${t("← Duels")}</a>
 
@@ -376,15 +401,21 @@ export function detailHtml(state: DuelState): SafeHtml {
       <div class="duel-actions">
         ${when(duel.status === "proposed" && !duel.isHost, html`
           <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-accept">${t("Accept the duel")}</button>
-          <button type="button" class="btn" id="btn-drop">${t("Decline")}</button>`)}
+          <button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-drop">
+            ${t("Decline")}
+          </button>`)}
         ${when(duel.status === "proposed" && duel.isHost, html`
           <p class="legende">${t("Waiting for the other duellist to accept.")}</p>
-          <button type="button" class="btn" id="btn-drop">${t("Cancel the invitation")}</button>`)}
+          <button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-drop">
+            ${t("Cancel the invitation")}
+          </button>`)}
         ${when(duel.status === "accepted", html`
           <button type="button" class="btn" id="btn-deck">${mine.deck.name ? t("Change my deck") : t("Choose my deck")}</button>
           <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-start"
                   ${ready ? raw("") : raw("disabled")}>${t("Flip the coin and start")}</button>
-          <button type="button" class="btn" id="btn-drop">${t("Call it off")}</button>`)}
+          <button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-drop">
+            ${t("Call it off")}
+          </button>`)}
       </div>
       ${when(duel.status === "accepted" && !ready,
         html`<p class="legende">${t("Both duellists choose a deck before the coin is flipped.")}</p>`)}
