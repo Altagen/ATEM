@@ -57,8 +57,6 @@ export type DeckSummary = {
   name: string;
   counts: Record<DeckZone, number>;
   missing: number;
-  /** The deck's artwork — that of the most played card, chosen by the server. */
-  coverImage: string | null;
   /** The folder it is filed in, or `null` at the root. */
   folderId: string | null;
   /**

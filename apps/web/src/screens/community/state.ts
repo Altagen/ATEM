@@ -39,6 +39,8 @@ export type CommunityState = {
   failure: string | null;
   /** The relation gesture under way, by duellist: its buttons go inert. */
   busy: Set<string>;
+  /** The duellist whose card is open, if any. */
+  preview: string | null;
 };
 
 export const communityState = (): CommunityState => ({
@@ -49,4 +51,5 @@ export const communityState = (): CommunityState => ({
   search: "",
   failure: null,
   busy: new Set(),
+  preview: null,
 });

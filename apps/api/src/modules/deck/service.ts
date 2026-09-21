@@ -39,22 +39,6 @@ export type DeckSummary = {
    * built. It only drifts if a card is sold afterwards.
    */
   missing: number;
-  /**
-   * The artwork that stands for the deck, or nothing.
-   *
-   * A cover chosen by hand would ask for a column, a picker, and a fix-up when
-   * that card leaves the deck. This one is deduced: it is the card the deck
-   * holds **the most copies of in the Main** — its identity, in practice —
-   * tie-broken by passcode so the artwork does not change from one refresh to
-   * the next.
-   *
-   * We return **the image address and nothing else**: that card's name and
-   * passcode travelled with the answer without anything reading them. A deck
-   * whose leading card has no artwork falls back to `null` here, like an empty
-   * deck — the screen shows the card back in both cases, so it has no reason to
-   * tell them apart.
-   */
-  coverImage: string | null;
   /** The folder that files it, or `null` at the root. */
   folderId: string | null;
   /**
@@ -91,7 +75,6 @@ const toSummary = (
   row: DeckRow,
   counts: DeckSummary["counts"],
   missing: number,
-  coverImage: string | null = null,
 ): DeckSummary => ({
   id: row.id,
   name: row.name,
@@ -99,38 +82,9 @@ const toSummary = (
   updatedAt: row.updatedAt.toISOString(),
   counts,
   missing,
-  coverImage,
   folderId: row.folderId,
   targetMain: row.targetMain,
 });
-
-/**
- * The card that stands for a deck.
- *
- * The Main first, because that is what gets played; the Extra and the Side
- * next, so that a deck under construction is not left faceless. The passcode
- * breaks ties: without it, two cards at three copies would give a different
- * cover on every request, row order not being guaranteed.
- */
-function coverPasscode(rows: { passcode: number; mainQty: number; extraQty: number; sideQty: number }[]): number | null {
-  let best: { passcode: number; main: number; total: number } | null = null;
-  for (const row of rows) {
-    const total = row.mainQty + row.extraQty + row.sideQty;
-    if (total === 0) continue;
-    const candidate = { passcode: row.passcode, main: row.mainQty, total };
-    if (
-      best === null ||
-      candidate.main > best.main ||
-      (candidate.main === best.main && candidate.total > best.total) ||
-      (candidate.main === best.main &&
-        candidate.total === best.total &&
-        candidate.passcode < best.passcode)
-    ) {
-      best = candidate;
-    }
-  }
-  return best?.passcode ?? null;
-}
 
 /** The deck and its rows, with nothing from the catalogue or the collection. */
 async function loadDeck(db: Database, ownerId: string, deckId: string) {
@@ -212,19 +166,6 @@ export async function listDecks(db: Database, ownerId: string): Promise<DeckSumm
     ...new Set(cardRows.map((row) => row.passcode)),
   ]);
 
-  /**
-   * The covers in **one** query.
-   *
-   * One per deck would be twenty queries for twenty decks: that is the flaw the
-   * collection list once had, and one we do not repeat.
-   */
-  const covers = new Map<string, number | null>(
-    deckRows.map((row) => [row.id, coverPasscode(cardRows.filter((c) => c.deckId === row.id))]),
-  );
-  const cardsByCode = await cardsByPasscode(db, [
-    ...new Set([...covers.values()].filter((pc): pc is number => pc !== null)),
-  ]);
-
   return deckRows.map((deck) => {
     const its = cardRows.filter((card) => card.deckId === deck.id);
     const counts = { main: 0, extra: 0, side: 0 };
@@ -238,14 +179,7 @@ export async function listDecks(db: Database, ownerId: string): Promise<DeckSumm
         owned.get(card.passcode) ?? 0,
       );
     }
-    const pc = covers.get(deck.id) ?? null;
-    const coverCard = pc === null ? undefined : cardsByCode.get(pc);
-    return toSummary(
-      deck,
-      counts,
-      missing,
-      coverCard ? publicImageUrls(coverCard.passcode, coverCard).imageUrlSmall : null,
-    );
+    return toSummary(deck, counts, missing);
   });
 }
 
@@ -294,11 +228,7 @@ export async function getDeck(
 
   entries.sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
-  const pc = coverPasscode(cardRows);
-  const coverCard = pc === null ? undefined : catalogue.get(pc);
-  const cover = coverCard ? publicImageUrls(coverCard.passcode, coverCard).imageUrlSmall : null;
-
-  return { ...toSummary(deck, counts, missing, cover), cards: entries };
+  return { ...toSummary(deck, counts, missing), cards: entries };
 }
 
 export async function createDeck(

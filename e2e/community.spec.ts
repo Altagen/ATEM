@@ -63,10 +63,11 @@ test("blocking hides the duellist on both sides, and unblocking brings them back
   const blocker = await signUp(page);
   const other = await otherDuellist(browser, page);
 
-  // Blocking is done from the profile: it is where you are when you decide to.
+  // Blocking from the profile, reached through the duellist's card.
   await page.goto("/community");
   await search(page, other.account.displayName);
-  await row(page, other.account.displayName).getByRole("link", { name: other.account.displayName }).click();
+  await row(page, other.account.displayName).getByRole("button", { name: other.account.displayName }).click();
+  await page.getByRole("dialog").getByRole("link", { name: "Voir le profil" }).click();
   await page.waitForURL("**/profile?user=**");
   await page.getByRole("button", { name: /Bloquer/ }).click();
   await expect(page.getByText(/a été bloqué/)).toBeVisible();
@@ -107,5 +108,39 @@ test("the directory is reachable from the navigation and searches by number", as
   await expect(row(page, other.account.displayName)).toBeVisible();
 
   expect(await expectNoHorizontalOverflow(page)).toBe(0);
+  await other.context.close();
+});
+
+test("a row opens the duellist's card, which leads to the profile or to a block", async ({ page, browser }) => {
+  await signUp(page);
+  const other = await otherDuellist(browser, page);
+  const name = other.account.displayName;
+
+  await page.goto("/community");
+  await search(page, name);
+  await row(page, name).locator(".player-row-subtitle").click();
+  const card = page.getByRole("dialog");
+  await expect(card.getByRole("heading", { name })).toBeVisible();
+  await expect(card.getByText("Connecté")).toBeVisible();
+  await expect(card.getByText("Membre depuis")).toBeVisible();
+  expect(await expectNoHorizontalOverflow(page)).toBe(0);
+
+  // Escape closes it, and the name opens it again.
+  await page.keyboard.press("Escape");
+  await expect(card).toHaveCount(0);
+  await row(page, name).getByRole("button", { name }).click();
+  await card.getByRole("link", { name: "Voir le profil" }).click();
+  await expect(page).toHaveURL(new RegExp(`/profile\\?user=`));
+  await expect(page.getByRole("heading", { name })).toBeVisible();
+
+  // Blocking from the card closes it and takes the duellist out of the list.
+  await page.goto("/community");
+  await search(page, name);
+  await row(page, name).locator(".player-row-subtitle").click();
+  await card.getByRole("button", { name: /Bloquer/ }).click();
+  await expect(page.getByText(`${name} a été bloqué.`)).toBeVisible();
+  await expect(card).toHaveCount(0);
+  await expect(page.locator(".player-card-row-full").filter({ hasText: name })).toHaveCount(0);
+
   await other.context.close();
 });

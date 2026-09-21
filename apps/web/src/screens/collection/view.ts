@@ -108,7 +108,7 @@ function listItem(item: CollectionItem): SafeHtml {
       <button type="button" class="item-main js-open" data-id="${item.id}">
         ${art
           ? html`<img class="thumb" src="${art}" alt="" loading="lazy" decoding="async" />`
-          : raw(`<div class="thumb-empty">?</div>`)}
+          : raw(`<div class="thumb-empty"></div>`)}
         <div class="item-text">
           <strong>${item.card?.name ?? t("Unidentified card")}</strong>
           <code>${item.setCode}</code>
@@ -145,7 +145,7 @@ function tile(item: CollectionItem): SafeHtml {
     <div class="tile-art">
       ${art
         ? html`<img src="${art}" alt="" loading="lazy" decoding="async" />`
-        : raw(`<div class="tile-art-empty">?</div>`)}
+        : raw(`<div class="tile-art-empty"></div>`)}
       <span class="tile-qty">×${item.quantity}</span>
       ${when(item.isFavorite, raw(`<span class="tile-star" title="${t("Favourite")}">★</span>`))}
     </div>

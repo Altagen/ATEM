@@ -93,7 +93,7 @@ const thumbnail = (url: string | null | undefined, cls = "thumb"): SafeHtml =>
     ? html`<img loading="lazy" decoding="async" class="${cls}" src="${url}" alt="" />`
     // `html`, not `raw`: the class is interpolated, so it goes through the
     // escaping like any other value. Nothing here needs to be trusted.
-    : html`<div class="thumb-empty ${cls === "thumb" ? "" : cls}">?</div>`;
+    : html`<div class="thumb-empty ${cls === "thumb" ? "" : cls}"></div>`;
 
 /**
  * The zone counter, with its limits.
@@ -246,7 +246,7 @@ function collTile(row: CollectionRow, state: DeckState): SafeHtml {
       <div class="tile-art">
         ${card?.imageUrlSmall || card?.imageUrl
           ? html`<img loading="lazy" decoding="async" src="${card.imageUrlSmall ?? card.imageUrl!}" alt="" />`
-          : raw(`<div class="tile-art-empty">?</div>`)}
+          : raw(`<div class="tile-art-empty"></div>`)}
         ${already > 0
           ? html`<span class="in-deck-qty">×${already}</span>`
           : html`<span class="tile-qty muted-own">×${state.owned.get(passcode) ?? 0}</span>`}
@@ -387,19 +387,14 @@ function deckPill(deck: DeckSummary): SafeHtml {
 }
 
 /**
- * A deck's artwork.
+ * A deck's face: the card back, for every deck.
  *
- * The server picks the card — the most played one — and the screen only has to
- * place it. An empty deck keeps the card back: it is the only case where there
- * is nothing to show.
- *
- * `alt` is empty, and the link's `title` already carries the deck's name:
- * announcing it twice to a screen reader would be noise, not information.
+ * The server used to pick the most played card; Ange, on 2026-09-21, found it
+ * read as a random card and asked for ATEM-old's placeholder instead. The
+ * stylesheet paints it, so there is nothing to load.
  */
-function deckCover(deck: DeckSummary, cls: string): SafeHtml {
-  return deck.coverImage
-    ? html`<img class="${cls}" src="${deck.coverImage}" alt="" loading="lazy" decoding="async" />`
-    : html`<span class="${cls} deck-cover-default"><span class="deck-cover-ygo">遊戯王</span></span>`;
+function deckCover(cls: string): SafeHtml {
+  return html`<span class="${cls} deck-cover-default" aria-hidden="true"></span>`;
 }
 
 function deckDriveRow(state: DeckState, deck: DeckSummary): SafeHtml {
@@ -407,7 +402,7 @@ function deckDriveRow(state: DeckState, deck: DeckSummary): SafeHtml {
     <a class="drive-main" href="/decks?deck=${deck.id}"
        draggable="true" data-drag-deck="${deck.id}">
       <span class="drive-ico drive-ico-cover" aria-hidden="true">
-        ${deckCover(deck, "drive-cover")}
+        ${deckCover("drive-cover")}
       </span>
       <span class="drive-text"><strong class="drive-name">${deck.name}</strong></span>
       <span class="muted drive-meta"
@@ -431,7 +426,7 @@ function deckTile(state: DeckState, deck: DeckSummary, path = ""): SafeHtml {
     <div class="deck-tile-wrap">
       <a class="deck-tile" href="/decks?deck=${deck.id}" title="${deck.name}"
          draggable="true" data-drag-deck="${deck.id}">
-        ${deckCover(deck, "deck-tile-cover")}
+        ${deckCover("deck-tile-cover")}
         <span class="deck-tile-label">
           <strong class="deck-tile-name">${deck.name}</strong>
           ${when(path !== "", html`<span class="muted deck-tile-meta">📁 ${path}</span>`)}
@@ -560,6 +555,7 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
           <input type="text" id="edit-name" maxlength="60" value="${deck.name}"
                  placeholder="${t("Unique name…")}" />
         </label>
+        <a class="btn" href="/decks?deck=${deck.id}">${t("Back")}</a>
       </div>
       <div class="deck-edit-actions">
         <!--
@@ -574,7 +570,6 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
           one too many.
         -->
         <button type="button" class="btn" id="btn-deck-options">${t("Options")}</button>
-        <a class="btn" href="/decks?deck=${deck.id}">${t("← Sheet")}</a>
         <a class="btn" href="/decks">${t("All decks")}</a>
       </div>
     </div>
@@ -746,7 +741,7 @@ function sheetTile({ entry, zone, qty }: SheetRow): SafeHtml {
       <div class="tile-art">
         ${entry.imageUrlSmall
           ? html`<img loading="lazy" decoding="async" src="${entry.imageUrlSmall}" alt="" />`
-          : raw(`<div class="tile-art-empty">?</div>`)}
+          : raw(`<div class="tile-art-empty"></div>`)}
         <span class="tile-qty">×${qty}</span>
         <span class="tile-zone">${zoneIcon(zone)}</span>
       </div>
@@ -766,7 +761,7 @@ function sheetHtml(state: DeckState, deck: DeckDetail): SafeHtml {
   return html`<main class="decks-page">
     <div class="deck-sheet-top">
       <div class="deck-sheet-identity">
-        <span class="deck-sheet-cover">${deckCover(deck, "deck-sheet-art")}</span>
+        <span class="deck-sheet-cover">${deckCover("deck-sheet-art")}</span>
         <div class="deck-sheet-titles">
           <h1>${deck.name}</h1>
           <p class="muted deck-sheet-place">

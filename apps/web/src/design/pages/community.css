@@ -167,8 +167,252 @@
   max-width: 28rem;
 }
 
-/* The name opens the profile; a link's underline would cut the row in two. */
-a.player-row-name { text-decoration: none; color: inherit; }
-a.player-row-name:hover { color: var(--gold); }
+/* The name opens the duellist's card: a button that reads as the name. */
+button.player-row-name {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+button.player-row-name:hover { color: var(--gold); }
+.player-card-row-full:has(button.player-row-name) { cursor: pointer; }
 
 .player-row-more { margin: 0.9rem 0 0; text-align: center; font-size: 0.82rem; }
+
+/* ── The duellist preview ────────────────────────────────────────────────────
+ * ATEM-old's showcase card, opened by a click on a row. Its values were read
+ * off the browser on the mock with the modal open, not guessed; they came here
+ * from `staged/components.css` on 2026-09-21, when Ange asked for the card back.
+ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 4, 8, 0.78);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  z-index: var(--z-modal);
+}
+.modal {
+  position: relative;
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
+  border-radius: 18px;
+  width: min(36rem, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+.modal-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 2;
+  appearance: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(10, 12, 20, 0.85);
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.modal-body { padding: 1.25rem 1.35rem 1.45rem; }
+
+.modal-backdrop:has(.modal-showcase) {
+  background: rgba(5, 5, 12, 0.84);
+  backdrop-filter: blur(12px);
+  padding: 2rem 1.5rem;
+}
+.modal-showcase {
+  /* 580px : la largeur du mock. À 576px la carte se décalait de 2px à l'écran,
+     puisqu'elle reste centrée sur la fenêtre. */
+  width: min(580px, 100%);
+  padding: 0;
+  background: #1a1a2b;
+  border: 1px solid rgba(245, 197, 66, 0.45);
+  border-radius: 24px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 197, 66, 0.25);
+  overflow: hidden;
+}
+.modal-showcase .modal-body { padding: 0; }
+
+/* La croix de fermeture flotte sur la bannière. */
+.modal-showcase .modal-close {
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 900;
+  backdrop-filter: blur(6px);
+}
+.modal-showcase .modal-close:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  transform: rotate(90deg) scale(1.1);
+}
+
+.showcase-banner-bg {
+  position: relative;
+  z-index: 0;
+  height: 165px;
+  min-height: 165px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #311b92 50%, #4a148c 100%);
+  overflow: hidden;
+}
+.showcase-banner-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(245, 197, 66, 0.2) 1px, transparent 1px);
+  background-size: 18px 18px;
+  opacity: 0.65;
+}
+
+.showcase-body { position: relative; z-index: 1; padding: 0 1.5rem 1.5rem; }
+
+/* L'avatar remonte sur la bannière et se cale à gauche du corps. Il était
+   centré sur la pastille de statut, ce qui le décalait de 40px vers la droite
+   et repoussait le pseudo d'autant. */
+.showcase-identity-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-top: -48px;
+  margin-bottom: 0.85rem;
+}
+.showcase-avatar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  width: 80px;
+}
+.showcase-avatar {
+  width: 80px;
+  height: 80px;
+  font-size: 2.5rem;
+  background: #1a1a2b;
+  border: 3px solid var(--gold);
+  box-shadow: 0 0 18px rgba(245, 197, 66, 0.4);
+}
+.showcase-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+.showcase-name {
+  flex: 1;
+  margin: 56px 0 0;
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #fff;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.showcase-name .muted { font-size: 0.88rem; font-weight: 700; }
+
+/* Deux lignes exactement : étiquette à gauche, actions à droite. */
+.showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  row-gap: 0.65rem;
+  column-gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.showcase-title-tag {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 197, 66, 0.3);
+  background: rgba(245, 197, 66, 0.15);
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.showcase-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.65rem; flex-wrap: nowrap; }
+.showcase-actions > * { white-space: nowrap; }
+
+/* La bio est une boîte, pas du texte nu : elle avait perdu son fond, son cadre
+   et ses arrondis en route. */
+.showcase-bio {
+  font-size: 0.92rem;
+  color: var(--fg);
+  margin: 0.8rem 0 1.1rem;
+  --lines: 3;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+}
+
+/* The mock had three stats; ATEM has what it knows, so the columns share the
+   width whatever their number. */
+.showcase-stats { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.9rem; }
+.showcase-stat {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 0.6rem;
+  text-align: center;
+}
+.showcase-stat-value { display: block; font-size: 1.1rem; font-weight: 900; color: var(--gold); }
+.showcase-stat .muted {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 0.2rem;
+}
+.btn-modal-block-toggle {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.btn-modal-block-toggle:hover { background: color-mix(in srgb, var(--danger) 22%, transparent); }
+.btn-modal-block-toggle[disabled] { opacity: 0.6; cursor: default; }
+
+/* On a phone the actions go under the name, one row each, and wrap. */
+@media (max-width: 560px) {
+  .modal-backdrop:has(.modal-showcase) { padding: 1rem; }
+  .showcase-body { padding: 0 1rem 1.25rem; }
+  .showcase-grid { grid-template-columns: 1fr; }
+  .showcase-actions { justify-content: flex-start; flex-wrap: wrap; }
+}

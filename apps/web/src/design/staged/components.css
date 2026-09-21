@@ -931,24 +931,6 @@
   box-shadow: 0 0 16px rgba(37, 99, 235, 0.45);
   transform: translateY(-1px);
 }
-/* Secondary Action Button: General Gaming Secondary */
-.btn-showcase-secondary {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border: 1px solid rgba(96, 165, 250, 0.35);
-  color: #93c5fd;
-  font-weight: 800;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.5);
-}
-.btn-showcase-secondary:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  border-color: #60a5fa;
-  color: #ffffff;
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
-  transform: translateY(-1px);
-}
 @keyframes slideToastIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
@@ -1088,42 +1070,6 @@
   color: var(--success);
   white-space: nowrap;
 }
-
-/* ── Modales ─────────────────────────────────────────────────────────────── */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(3, 4, 8, 0.78);
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  z-index: var(--z-modal);
-}
-.modal {
-  position: relative;
-  background: var(--card);
-  border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
-  border-radius: 18px;
-  width: min(36rem, 100%);
-  max-height: 88vh;
-  overflow: auto;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-}
-.modal-close {
-  position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
-  z-index: 2;
-  appearance: none;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(10, 12, 20, 0.85);
-  color: #fff;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
 .modal-banner {
   height: 8.5rem;
   background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 55%, #6d28d9 100%);
@@ -1135,7 +1081,6 @@
   background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px);
   background-size: 14px 14px;
 }
-.modal-body { padding: 1.25rem 1.35rem 1.45rem; }
 .modal-title { margin: 0 0 0.35rem; font-size: 1.15rem; font-weight: 900; color: #fff; }
 .modal-subtitle { margin: 0 0 1rem; font-size: 0.86rem; }
 
@@ -1312,121 +1257,10 @@
 .filter-chips-row::-webkit-scrollbar {
   display: none;
 }
-
-/* ── Aperçu de duelliste ─────────────────────────────────────────────────────
- * Toutes les valeurs de ce bloc sont relevées au navigateur sur
- * `mock/pages/community.html`, modale ouverte, et non estimées à l'œil.
- * Elles vivaient auparavant en deux exemplaires — une copie morte du mock, aux
- * classes que ce code n'utilise pas, et une série de correctifs empilés en fin
- * de fichier. Les deux ont disparu : il n'y a plus qu'une définition par règle.
- */
-.modal-backdrop:has(.modal-showcase) {
-  background: rgba(5, 5, 12, 0.84);
-  backdrop-filter: blur(12px);
-  padding: 2rem 1.5rem;
-}
-.modal-showcase {
-  /* 580px : la largeur du mock. À 576px la carte se décalait de 2px à l'écran,
-     puisqu'elle reste centrée sur la fenêtre. */
-  width: min(580px, 100%);
-  padding: 0;
-  background: #1a1a2b;
-  border: 1px solid rgba(245, 197, 66, 0.45);
-  border-radius: 24px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 197, 66, 0.25);
-  overflow: hidden;
-}
-.modal-showcase .modal-body { padding: 0; }
-
-/* La croix de fermeture flotte sur la bannière. */
-.modal-showcase .modal-close {
-  top: 1.25rem;
-  right: 1.25rem;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  font-size: 1.2rem;
-  font-weight: 900;
-  backdrop-filter: blur(6px);
-}
-.modal-showcase .modal-close:hover {
-  background: var(--danger);
-  border-color: var(--danger);
-  transform: rotate(90deg) scale(1.1);
-}
-
-.showcase-banner-bg {
-  position: relative;
-  z-index: 0;
-  height: 165px;
-  min-height: 165px;
-  background: linear-gradient(135deg, #1e1b4b 0%, #311b92 50%, #4a148c 100%);
-  overflow: hidden;
-}
-.showcase-banner-pattern {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(rgba(245, 197, 66, 0.2) 1px, transparent 1px);
-  background-size: 18px 18px;
-  opacity: 0.65;
-}
-/* Le rang se pose en bas à droite de la bannière, en taille lisible. */
-.showcase-banner-bg .rank-badge {
-  position: absolute;
-  right: 1.5rem;
-  bottom: 1rem;
-  font-size: 0.82rem;
-  padding: 4px 12px;
-}
-
-.showcase-body { position: relative; z-index: 1; padding: 0 1.5rem 1.5rem; }
-
-/* L'avatar remonte sur la bannière et se cale à gauche du corps. Il était
-   centré sur la pastille de statut, ce qui le décalait de 40px vers la droite
-   et repoussait le pseudo d'autant. */
-.showcase-identity-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.9rem;
-  margin-top: -48px;
-  margin-bottom: 0.85rem;
-}
-.showcase-avatar-col {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.45rem;
-  flex-shrink: 0;
-  width: 80px;
-}
-.showcase-avatar {
-  width: 80px;
-  height: 80px;
-  font-size: 2.5rem;
-  background: #1a1a2b;
-  border: 3px solid var(--gold);
-  box-shadow: 0 0 18px rgba(245, 197, 66, 0.4);
-}
-.showcase-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.76rem;
-  font-weight: 800;
-  padding: 3px 9px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.6);
-  white-space: nowrap;
-}
 /* Le chef et l'effectif tiennent la colonne de gauche de la rangée d'actions,
    là où le duelliste met son titre et sa guilde. Placés sous le nom, ils
    creusaient un vide sous l'emblème et laissaient les boutons seuls à droite. */
 .showcase-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.84rem; white-space: nowrap; }
-.showcase-grid .showcase-meta { justify-self: start; }
 
 /* L'emblème est carré à coins arrondis, là où l'avatar est rond. */
 .showcase-emblem {
@@ -1437,93 +1271,10 @@
   border: 3px solid var(--gold);
   box-shadow: 0 0 18px rgba(245, 197, 66, 0.4);
 }
-
-.showcase-name {
-  flex: 1;
-  margin: 56px 0 0;
-  font-size: 1.45rem;
-  font-weight: 900;
-  line-height: 1.2;
-  color: #fff;
-  display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
-}
-.showcase-name .muted { font-size: 0.88rem; font-weight: 700; }
-
-/* Deux lignes exactement : étiquette à gauche, actions à droite. */
-.showcase-grid {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  row-gap: 0.65rem;
-  column-gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-.showcase-title-tag {
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 5px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(245, 197, 66, 0.3);
-  background: rgba(245, 197, 66, 0.15);
-  color: var(--gold);
-  font-size: 0.82rem;
-  font-weight: 800;
-  white-space: nowrap;
-  text-decoration: none;
-}
 /* La guilde porte les mêmes couleurs que le titre dans le mock : c'est un
    second badge doré, pas une variante bleue. */
 .showcase-guild-tag { background: rgba(245, 197, 66, 0.12); cursor: pointer; }
 .showcase-guild-tag:hover { border-color: var(--gold); }
-
-.showcase-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.65rem; flex-wrap: nowrap; }
-.showcase-actions > * { white-space: nowrap; }
-
-/* La bio est une boîte, pas du texte nu : elle avait perdu son fond, son cadre
-   et ses arrondis en route. */
-.showcase-bio {
-  font-size: 0.92rem;
-  color: var(--fg);
-  margin: 0.8rem 0 1.1rem;
-  --lines: 3;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 0.9rem 1rem;
-  border-radius: 12px;
-}
-
-/* Trois colonnes fixes, et un fond translucide au lieu du gris plat de --input :
-   posé sur #1a1a2b il donne exactement la nuance du mock. */
-.showcase-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin-bottom: 1.1rem; }
-.showcase-stat {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 0.85rem 0.6rem;
-  text-align: center;
-}
-.showcase-stat-value { display: block; font-size: 1.35rem; font-weight: 900; color: var(--gold); }
-.showcase-stat-value.is-effectif { color: var(--info); font-size: 1.1rem; }
-/* Deux valeurs composées, qui doivent tenir sur une ligne quel que soit le
-   contenu : un bilan à quatre chiffres et un nom de deck passaient à la ligne
-   et étiraient toute la rangée de 32px. */
-.showcase-stat-value.is-deck { color: var(--gold); font-size: 0.95rem; }
-/* Le mode de recrutement garde la couleur de sa pastille : vert pour l'entrée
-   libre, doré pour la candidature, bleu pour l'invitation. */
-.showcase-stat-value.is-access-public_open { color: var(--success); font-size: 1.1rem; }
-.showcase-stat-value.is-access-public_apply { color: var(--gold); font-size: 1.1rem; }
-.showcase-stat-value.is-access-private_invite { color: var(--info); font-size: 1.1rem; }
-.showcase-stat .muted {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-top: 0.2rem;
-}
 
 .btn-friend-header-toggle {
   appearance: none;
@@ -1538,22 +1289,6 @@
   cursor: pointer;
 }
 .btn-friend-header-toggle.is-friend { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 40%, transparent); background: color-mix(in srgb, var(--gold) 10%, transparent); }
-.btn-modal-block-toggle {
-  appearance: none;
-  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  color: var(--danger);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 800;
-  padding: 0.45rem 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-.btn-showcase-secondary { text-decoration: none; padding: 0.45rem 0.8rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem; }
 
 /* ── Cartes de choix ───────────────────────────────────────────────────────
  * Le mode d'accès d'une guilde, la politique d'inscription de l'instance, le
@@ -3246,3 +2981,23 @@ img.is-card-back { background-image: none; object-fit: contain; }
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
+/* Le rang se pose en bas à droite de la bannière, en taille lisible. */
+.showcase-banner-bg .rank-badge {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1rem;
+  font-size: 0.82rem;
+  padding: 4px 12px;
+}
+.showcase-grid .showcase-meta { justify-self: start; }
+.showcase-stat-value.is-effectif { color: var(--info); font-size: 1.1rem; }
+/* Deux valeurs composées, qui doivent tenir sur une ligne quel que soit le
+   contenu : un bilan à quatre chiffres et un nom de deck passaient à la ligne
+   et étiraient toute la rangée de 32px. */
+.showcase-stat-value.is-deck { color: var(--gold); font-size: 0.95rem; }
+/* Le mode de recrutement garde la couleur de sa pastille : vert pour l'entrée
+   libre, doré pour la candidature, bleu pour l'invitation. */
+.showcase-stat-value.is-access-public_open { color: var(--success); font-size: 1.1rem; }
+.showcase-stat-value.is-access-public_apply { color: var(--gold); font-size: 1.1rem; }
+.showcase-stat-value.is-access-private_invite { color: var(--info); font-size: 1.1rem; }

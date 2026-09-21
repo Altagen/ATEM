@@ -232,3 +232,35 @@ a.btn-showcase-primary-full {
   font-size: 0.78rem;
   font-weight: 800;
 }
+
+/**
+ * The secondary button — its base rule.
+ *
+ * Only its size modifiers had come up from `staged/components.css`: the class was
+ * cited, so the unstyled-classes gate counted it as styled, and every
+ * “Retirer des amis”, “Annuler la demande” and “Refuser” rendered as a bare grey
+ * button (Ange, 2026-09-21). The same trap as `.btn-hero` on the scanlists.
+ */
+.btn-showcase-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: #93c5fd;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-decoration: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.5);
+}
+.btn-showcase-secondary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #60a5fa;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
+}

@@ -222,11 +222,18 @@
 .deck-sheet-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
 /* The pencil is a link — it changes screen — but it wears a button's look. */
 a.icon-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
-/* On a phone, the identity takes the full width and the actions move below:
-   side by side, the name was left a column three letters wide. */
+/* On a phone the head is centred and stacked: cover, name, folder, then the
+   actions. Side by side, the name was left a column three letters wide; with
+   the cover on the left and the actions on the right, the head read as three
+   pieces with a hole in the middle (Ange, 2026-09-21). */
 @media (max-width: 700px) {
-  .deck-sheet-top { flex-direction: column; align-items: stretch; }
-  .deck-sheet-actions { justify-content: flex-end; }
+  .deck-sheet-top { flex-direction: column; align-items: center; text-align: center; gap: 0.6rem; }
+  .deck-sheet-identity { flex-direction: column; flex: none; gap: 0.5rem; }
+  .deck-sheet-cover { width: 3.5rem; }
+  .deck-sheet-actions { justify-content: center; }
+  /* The counts and the verdict under it follow the head's axis. */
+  .deck-sheet-top ~ .deck-counts { justify-content: center; }
+  .deck-sheet-top ~ .deck-status { text-align: center; }
 }
 
 .deck-sheet-tile .tile-zone {
@@ -573,22 +580,14 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 .decks-toolbar-build{flex-shrink:0;white-space:nowrap;margin-left:auto}.btn-sm {
   font-size:.8rem;
   padding:.3rem .55rem;
-}.deck-cover-default {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:
-    radial-gradient(ellipse at 50% 40%,rgba(120,60,180,.35),transparent 55%),
-    repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px),
-    linear-gradient(160deg,#2a1848 0%,#12081f 50%,#1a0e30 100%);
-  border:2px solid rgba(200,160,80,.45);
-}.deck-cover-ygo {
-  font-size:.72rem;
-  letter-spacing:.12em;
-  color:rgba(255,220,140,.75);
-  font-weight:700;
-  text-shadow:0 1px 2px #000;
-}.zone-tabs {
+}/* Every deck wears the card back (Ange, 2026-09-21): the class carries its
+   picture, and the cover's own class its size. */
+.deck-cover-default {
+  display: block;
+  aspect-ratio: 59 / 86;
+  background: url("../../assets/cards/back.svg") center / cover no-repeat;
+}
+.zone-tabs {
   display:flex;
   flex-wrap:wrap;
   gap:.35rem;

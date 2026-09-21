@@ -130,7 +130,7 @@ test("discarding a deck does not touch the collection", async ({ page }) => {
 
   // Discarding is a gesture on the object: it lives on the sheet, not in the
   // workshop.
-  await page.getByRole("link", { name: "← Fiche" }).click();
+  await page.getByRole("link", { name: "Retour", exact: true }).click();
   page.once("dialog", (d) => d.accept());
   await page.locator("#btn-delete").click();
   await expect(page.getByRole("heading", { name: "Mes decks" })).toBeVisible();
@@ -411,11 +411,11 @@ test("the name field wears the application's styling", async ({ page }) => {
   expect(border).not.toBe("0px");
 });
 
-test("a deck wears the artwork of the card it plays most", async ({ page }) => {
+test("every deck wears the card back, whatever it holds", async ({ page }) => {
   /**
-   * Asked for by Ange along with folders. The server picks the card — the most
-   * played, its identity — and the screen places it. What counts here: the
-   * image really arrives, and it is no longer the card back.
+   * Ange, 2026-09-21: the most played card read as a random one, and ATEM-old's
+   * placeholder was asked for instead. A deck with cards and an empty one look
+   * the same, and the back is really painted — not a missing URL.
    */
   await signUp(page);
   await stockCollection(page, ["SDCR-FR016"]);
@@ -423,23 +423,21 @@ test("a deck wears the artwork of the card it plays most", async ({ page }) => {
   await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
-
   await page.getByRole("link", { name: "Tous les decks" }).click();
-  const cover = page.locator(".deck-tile-cover");
-  await expect(cover).toHaveJSProperty("tagName", "IMG");
-  // Loaded, not merely requested: a broken URL would otherwise pass.
-  await expect(cover).toHaveJSProperty("complete", true);
-  await expect(page.locator(".deck-cover-default")).toHaveCount(0);
-});
-
-test("an empty deck keeps the card back", async ({ page }) => {
-  // The only case where there is nothing to show.
-  await signUp(page);
-  await newDeck(page, "Faceless");
+  await createDeckHere(page, "Faceless");
   await page.getByRole("link", { name: "Tous les decks" }).click();
 
-  await expect(page.locator(".deck-cover-default")).toBeVisible();
+  const covers = page.locator(".deck-tile-cover");
+  await expect(covers).toHaveCount(2);
   await expect(page.locator("img.deck-tile-cover")).toHaveCount(0);
+  for (const cover of await covers.all()) {
+    await expect(cover).toHaveClass(/deck-cover-default/);
+  }
+  const painted = await covers.first().evaluate((node) => getComputedStyle(node).backgroundImage);
+  expect(painted).toMatch(/back.*\.svg|data:image\/svg/);
+  // A built bundle inlines the small SVG; the dev server serves it, and it must be there.
+  const source = painted.replace(/^url\("?|"?\)$/g, "");
+  if (!source.startsWith("data:")) expect((await page.request.get(source)).ok()).toBe(true);
 });
 
 test("the toggle shows rows, and the board comes back", async ({ page }) => {
@@ -919,7 +917,7 @@ test("the pencil opens the workshop, and the address says so", async ({ page }) 
   expect(page.url()).toContain("workshop=1");
 
   // And you come back to the sheet the way you came.
-  await page.getByRole("link", { name: "← Fiche" }).click();
+  await page.getByRole("link", { name: "Retour", exact: true }).click();
   await expect(page.locator("#edit-name")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "To edit" })).toBeVisible();
 });
@@ -939,7 +937,7 @@ test("the sheet's tabs show one zone at a time", async ({ page }) => {
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Side 1");
 
-  await page.getByRole("link", { name: "← Fiche" }).click();
+  await page.getByRole("link", { name: "Retour", exact: true }).click();
   // “All zones”: the same card holds two places, so two rows.
   await expect(page.locator(".item-main")).toHaveCount(2);
 
@@ -962,7 +960,7 @@ test("clicking a card on the sheet opens it full size", async ({ page }) => {
   await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
-  await page.getByRole("link", { name: "← Fiche" }).click();
+  await page.getByRole("link", { name: "Retour", exact: true }).click();
 
   await page.locator(".item-main").click();
   await expect(page.locator(".inspect-panel")).toBeVisible();
@@ -982,7 +980,7 @@ test("the deck sheet does not overflow", async ({ page }) => {
   await showPanel(page, "collection");
   await page.locator(".js-coll[data-d='1']").first().click();
   await expect(page.locator(".deck-counts")).toContainText("Main 1");
-  await page.getByRole("link", { name: "← Fiche" }).click();
+  await page.getByRole("link", { name: "Retour", exact: true }).click();
 
   expect(await expectNoHorizontalOverflow(page)).toBeLessThanOrEqual(0);
   await page.locator('[data-sheet-view="gallery"]').click();

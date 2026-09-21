@@ -107,7 +107,7 @@ export function cardSheetHtml(options: CardSheetOptions): SafeHtml {
       <div class="inspect-art-col">
         ${art
           ? html`<img class="inspect-art" src="${art}" alt="" />`
-          : raw(`<div class="inspect-art inspect-art-empty">?</div>`)}
+          : raw(`<div class="inspect-art inspect-art-empty"></div>`)}
       </div>
       <div class="inspect-info-col">
         <header class="inspect-info-head">

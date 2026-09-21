@@ -131,7 +131,7 @@ export function listHtml(state: DuelState): SafeHtml {
         </button>`)}
     </div>
 
-    <div class="filter-chips-row" role="group" aria-label="${t("Duels")}">
+    <div class="filter-chips-row duel-tabs" role="group" aria-label="${t("Duels")}">
       <button type="button" class="chip-btn${state.showPast ? "" : " is-active"}"
               data-duels="current" aria-pressed="${String(!state.showPast)}">${t("⚔️ Current duel")}</button>
       <button type="button" class="chip-btn${state.showPast ? " is-active" : ""}"

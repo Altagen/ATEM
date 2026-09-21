@@ -7,7 +7,7 @@
  * module yet. The guild tab of the original screen goes with them, and with it
  * the tab bar: one tab is not a choice.
  */
-import { t } from "../../platform/i18n/index.js";
+import { locale, t } from "../../platform/i18n/index.js";
 import { avatarLooks } from "../../platform/avatar.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import type { CommunityFilter, CommunityState, Duellist } from "./state.js";
@@ -63,14 +63,16 @@ function row(state: CommunityState, one: Duellist): SafeHtml {
       <span class="user-avatar-badge" role="img" aria-label="${look.label}">${look.icon}</span>
       <div class="player-row-meta">
         <div class="player-row-title-line">
-          <a class="player-row-name" href="/profile?user=${one.id}">${one.displayName}</a>
+          ${blocked
+            ? html`<span class="player-row-name">${one.displayName}</span>`
+            : html`<button type="button" class="player-row-name" data-preview="${one.id}">${one.displayName}</button>`}
           <span class="player-row-tag">#${one.tag}</span>
           ${when(one.role === "admin", html`<span class="settings-role-badge admin">${t("Instance administrator")}</span>`)}
           ${when(one.friendStatus === "friends", html`<span class="friend-star-fixed" aria-hidden="true">⭐</span>`)}
         </div>
         <div class="player-row-subtitle">
           <span class="status-dot ${one.isOnline ? "online" : "offline"}" aria-hidden="true"></span>
-          <span>${one.isOnline ? t("Around") : t("Away")}</span>
+          <span>${one.isOnline ? t("Online") : t("Offline")}</span>
           ${when(one.bio !== "", html`<span class="player-row-sep" aria-hidden="true">•</span>
             <span class="player-row-bio">${one.bio}</span>`)}
         </div>
@@ -85,10 +87,65 @@ function row(state: CommunityState, one: Duellist): SafeHtml {
   </div>`;
 }
 
+/**
+ * The duellist's card, opened from a row — ATEM-old's `PlayerPreview`.
+ *
+ * What it shows is what the row already holds: the card is a closer look, not
+ * a second request. The profile is one link further.
+ */
+function previewHtml(state: CommunityState, one: Duellist): SafeHtml {
+  const look = avatarLooks()[one.avatar];
+  const busy = state.busy.has(one.id);
+  const since = new Date(one.createdAt).toLocaleDateString(locale(), { month: "long", year: "numeric" });
+  return html`<div class="modal-backdrop" id="preview-backdrop">
+    <div class="modal modal-showcase" role="dialog" aria-modal="true" aria-labelledby="preview-name">
+      <button type="button" class="modal-close" id="preview-close" aria-label="${t("Close")}">✕</button>
+      <div class="modal-body">
+        <div class="showcase-banner-bg"><div class="showcase-banner-pattern"></div></div>
+        <div class="showcase-body">
+          <div class="showcase-identity-row">
+            <div class="showcase-avatar-col">
+              <span class="user-avatar-badge showcase-avatar" role="img" aria-label="${look.label}">${look.icon}</span>
+              <span class="showcase-status">
+                <span class="status-dot ${one.isOnline ? "online" : "offline"}" aria-hidden="true"></span>
+                ${one.isOnline ? t("Online") : t("Offline")}
+              </span>
+            </div>
+            <h2 class="showcase-name" id="preview-name">${one.displayName} <span class="muted">#${one.tag}</span></h2>
+          </div>
+          <div class="showcase-grid">
+            ${one.role === "admin"
+              ? html`<span class="showcase-title-tag">${t("Instance administrator")}</span>`
+              : html`<span></span>`}
+            <div class="showcase-actions">
+              ${actions(one, busy)}
+              <a class="btn-showcase-secondary is-petit is-auto" href="/profile?user=${one.id}">${t("View profile")}</a>
+            </div>
+            <span></span>
+            <div class="showcase-actions">
+              <button type="button" class="btn-modal-block-toggle" data-block="${one.id}"${busy ? raw(" disabled") : raw("")}>
+                ⛔ ${t("Block")}
+              </button>
+            </div>
+          </div>
+          ${when(one.bio !== "", html`<p class="showcase-bio">${one.bio}</p>`)}
+          <div class="showcase-stats">
+            <div class="showcase-stat">
+              <span class="showcase-stat-value">${since}</span>
+              <span class="muted">${t("Member since")}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 export function communityHtml(state: CommunityState): SafeHtml {
   const all = state.duellists;
   const rows = visible(state);
   const loading = state.filter === "blocked" ? state.blocked === null : all === null;
+  const previewed = all?.find((one) => one.id === state.preview);
 
   return html`<main class="community-app-container">
     <h1 class="page-title">🌐 ${t("Community")}</h1>
@@ -106,7 +163,7 @@ export function communityHtml(state: CommunityState): SafeHtml {
           ${chip(state, "all", t("🌐 All duellists"), all?.length ?? null)}
           ${chip(state, "friends", t("⭐ My friends"),
             all === null ? null : all.filter((one) => one.friendStatus === "friends").length)}
-          ${chip(state, "online", t("🟢 Around"),
+          ${chip(state, "online", t("🟢 Online"),
             all === null ? null : all.filter((one) => one.isOnline).length)}
           ${chip(state, "blocked", t("⛔ Blocked"), state.blocked?.length ?? null)}
         </div>
@@ -129,5 +186,6 @@ export function communityHtml(state: CommunityState): SafeHtml {
         </div>
       </div>
     </div>
+    ${previewed ? previewHtml(state, previewed) : raw("")}
   </main>`;
 }

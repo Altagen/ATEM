@@ -87,6 +87,15 @@ export async function communityScreen(
     }
   }
 
+  function closePreview(): void {
+    if (state.preview === null) return;
+    const id = state.preview;
+    state.preview = null;
+    paint();
+    // Focus goes back to the name the card was opened from.
+    root.querySelector<HTMLButtonElement>(`[data-preview="${CSS.escape(id)}"]`)?.focus();
+  }
+
   const nameOf = (id: string): string =>
     [...(state.duellists ?? []), ...(state.blocked ?? [])]
       .find((one) => one.id === id)?.displayName ?? t("This duellist");
@@ -142,6 +151,45 @@ export async function communityScreen(
         () => t("Nothing links you to {name} any more.", { name: nameOf(id) })));
     }
 
+    // A click anywhere on a row opens the card, except on its own buttons.
+    for (const row of root.querySelectorAll<HTMLElement>(".player-card-row-full")) {
+      const id = row.dataset.playerId!;
+      if (state.filter === "blocked") continue;
+      row.addEventListener("click", (event) => {
+        if ((event.target as HTMLElement).closest(".player-row-actions")) return;
+        state.preview = id;
+        paint();
+        root.querySelector<HTMLButtonElement>("#preview-close")?.focus();
+      });
+    }
+
+    root.querySelector("#preview-close")?.addEventListener("click", closePreview);
+    root.querySelector("#preview-backdrop")?.addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closePreview();
+    });
+
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-block]")) {
+      const id = button.dataset.block!;
+      button.addEventListener("click", () => {
+        const name = nameOf(id);
+        void (async () => {
+          state.busy.add(id);
+          paint();
+          try {
+            await api(`/community/blocks/${id}`, { method: "POST" });
+            toast(t("{name} is blocked.", { name }), "success");
+            state.preview = null;
+            await loadDuellists();
+          } catch (err) {
+            toast(reason(err, t("The request failed.")), "error");
+          } finally {
+            state.busy.delete(id);
+            if (!signal.aborted) paint();
+          }
+        })();
+      });
+    }
+
     for (const button of root.querySelectorAll<HTMLButtonElement>("[data-unblock]")) {
       const id = button.dataset.unblock!;
       button.addEventListener("click", () => {
@@ -163,6 +211,10 @@ export async function communityScreen(
       });
     }
   }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closePreview();
+  }, { signal });
 
   signal.addEventListener("abort", () => {
     if (searchTimer !== null) window.clearTimeout(searchTimer);

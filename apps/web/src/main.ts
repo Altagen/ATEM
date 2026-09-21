@@ -4,6 +4,7 @@ import { t } from "./platform/i18n/index.js";
 import {
   closeAccountSheet, refreshInbox, refreshServiceState, renderNavigation,
 } from "./platform/navigation.js";
+import { installCardBack } from "./platform/card-back.js";
 import { installFocusTrap } from "./platform/focus-trap.js";
 import { releaseScroll } from "./platform/scroll-lock.js";
 import {
@@ -125,6 +126,7 @@ async function start(): Promise<void> {
   // Installed before the first screen: a window opening on the landing route
   // would otherwise be the one that leaks.
   installFocusTrap();
+  installCardBack();
   startRouter();
 
   // The service state is read at startup, then every minute: often enough to
