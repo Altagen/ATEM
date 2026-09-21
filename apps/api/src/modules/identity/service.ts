@@ -8,7 +8,7 @@ import type { Database } from "../../db/client.js";
 import {
   conflict, invalidInput, notFound, unauthorized, violatesConstraint,
 } from "../../platform/errors.js";
-import { checkPasswordStrength, type Avatar } from "@atem/shared";
+import { checkPasswordStrength, type Avatar, type Visibility } from "@atem/shared";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
 import { authAttempts, users, type UserRow } from "./schema.js";
 
@@ -528,10 +528,44 @@ export async function changeEmail(
  * diff that led there to say so. What only its owner may read has its own type,
  * and its own route.
  */
-export type AccountDetails = PublicUser & { email: string };
+export type AccountDetails = PublicUser & { email: string; visibility: Visibilities };
 
 export async function getAccount(db: Database, userId: string): Promise<AccountDetails> {
   const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!row) throw notFound("Account not found.");
-  return { ...toPublic(row), email: row.email };
+  return { ...toPublic(row), email: row.email, visibility: visibilitiesOf(row) };
+}
+
+/** Who may look at the collection, and at the decks. */
+export type Visibilities = { collection: Visibility; decks: Visibility };
+
+const visibilitiesOf = (row: UserRow): Visibilities => ({
+  collection: row.collectionVisibility as Visibility,
+  decks: row.deckVisibility as Visibility,
+});
+
+/**
+ * What a duellist chose to show — for `social`'s checkpoint, which decides.
+ *
+ * `null` for an account that does not exist: the checkpoint answers that the
+ * same way as a refusal, and never has to guess a default.
+ */
+export async function visibilityOf(db: Database, userId: string): Promise<Visibilities | null> {
+  const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return row ? visibilitiesOf(row) : null;
+}
+
+/** Changes who may look — either, or both. */
+export async function setVisibility(
+  db: Database,
+  userId: string,
+  input: Partial<Visibilities>,
+): Promise<Visibilities> {
+  const values: Partial<{ collectionVisibility: Visibility; deckVisibility: Visibility }> = {};
+  if (input.collection !== undefined) values.collectionVisibility = input.collection;
+  if (input.decks !== undefined) values.deckVisibility = input.decks;
+  if (Object.keys(values).length === 0) throw invalidInput("Nothing to change.");
+  const [row] = await db.update(users).set(values).where(eq(users.id, userId)).returning();
+  if (!row) throw notFound("Account not found.");
+  return visibilitiesOf(row);
 }

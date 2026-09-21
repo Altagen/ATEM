@@ -5,10 +5,10 @@ import { invalidInput } from "../../platform/errors.js";
 import { clearSessionCookie, setSessionCookie } from "./cookie.js";
 import { requireViewer } from "./middleware.js";
 import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js";
-import { AVATARS, LIMITS } from "@atem/shared";
+import { AVATARS, LIMITS, VISIBILITIES } from "@atem/shared";
 import {
   authenticate, changePassword, deleteAccount, getPublicUser, registerUser, signOut,
-  changeEmail, getAccount, setLocale, updateAccount,
+  changeEmail, getAccount, setLocale, setVisibility, updateAccount,
 } from "./service.js";
 import { issueToken } from "./token.js";
 
@@ -34,6 +34,12 @@ const AccountBody = z
   })
   // An empty body is a request for nothing, which is a mistake, not a no-op.
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
+    message: "Nothing to change.",
+  });
+
+const VisibilityBody = z
+  .object({ collection: z.enum(VISIBILITIES).optional(), decks: z.enum(VISIBILITIES).optional() })
+  .refine((body) => body.collection !== undefined || body.decks !== undefined, {
     message: "Nothing to change.",
   });
 
@@ -158,6 +164,14 @@ export function identityRoutes(db: Database) {
     if (!viewer) throw invalidInput("No session.");
     const body = await readBody(c, AccountBody);
     return c.json({ user: await updateAccount(db, viewer.id, body) });
+  });
+
+  /** Who may look at the collection, and at the decks. */
+  app.patch("/me/visibility", requireViewer, async (c) => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("No session.");
+    const body = await readBody(c, VisibilityBody);
+    return c.json({ visibility: await setVisibility(db, viewer.id, body) });
   });
 
   /**

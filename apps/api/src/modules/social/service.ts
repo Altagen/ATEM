@@ -13,7 +13,7 @@ import { and, eq, or } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
 import { invalidInput, notFound } from "../../platform/errors.js";
 import { requireUuid } from "../../platform/identifiers.js";
-import { activePlayerId, listProfiles, type Duellist } from "../identity/index.js";
+import { activePlayerId, listProfiles, visibilityOf, type Duellist } from "../identity/index.js";
 import { notify, withdraw } from "../inbox/index.js";
 import { blocks, friendEdges } from "./schema.js";
 
@@ -73,17 +73,32 @@ async function blockedBetween(db: Database, x: string, y: string): Promise<boole
   return row !== undefined;
 }
 
+/** What someone may be looking at: the profile, or one of the two shelves. */
+export type ViewScope = "profile" | "collection" | "decks";
+
 /**
  * **The only place** that decides whether one person may read another's things.
  *
- * Today it answers the block, in both directions: everything else is open to
- * any signed-in duellist (ADR-009). When a visibility setting arrives — friends
- * only, private — it is read here, and every caller follows without being
- * touched.
+ * A block hides everything, in both directions. The profile is otherwise open
+ * to any signed-in duellist (ADR-009); the collection and the decks follow
+ * what their owner chose — everyone, friends, or nobody else (M4, 2026-09-21).
+ * Every caller asks here and follows, without testing anything itself.
  */
-export async function canView(db: Database, viewerId: string, ownerId: string): Promise<boolean> {
+export async function canView(
+  db: Database,
+  viewerId: string,
+  ownerId: string,
+  scope: ViewScope = "profile",
+): Promise<boolean> {
   if (viewerId === ownerId) return true;
-  return !(await blockedBetween(db, viewerId, ownerId));
+  if (await blockedBetween(db, viewerId, ownerId)) return false;
+  if (scope === "profile") return true;
+  const chosen = await visibilityOf(db, ownerId);
+  if (!chosen) return false;
+  const visibility = chosen[scope];
+  if (visibility === "everyone") return true;
+  if (visibility === "private") return false;
+  return (await friendStatusWith(db, viewerId, ownerId)) === "friends";
 }
 
 /**

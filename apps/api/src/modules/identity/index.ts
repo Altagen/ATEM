@@ -4,7 +4,7 @@
  */
 export { attachViewer, requireViewer } from "./middleware.js";
 export {
-  activePlayerId, getProfile, getPublicUser, listProfiles,
-  type Duellist, type Profile, type PublicUser,
+  activePlayerId, getProfile, getPublicUser, listProfiles, visibilityOf,
+  type Duellist, type Profile, type PublicUser, type Visibilities,
 } from "./service.js";
 export { identityRoutes } from "./routes.js";

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { AVATARS } from "@atem/shared";
+import { AVATARS, VISIBILITIES, VISIBILITY_DEFAULT } from "@atem/shared";
 import {
   check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid,
 } from "drizzle-orm/pg-core";
@@ -30,13 +30,19 @@ export const users = pgTable(
      * When this account was last seen doing something.
      *
      * Presence without a permanent connection: the session guard stamps it, at
-     * most once every few minutes, and the duellist list reads “active in the
-     * last quarter of an hour” from it. A live connection would be exact and
+     * most once a minute, and the duellist list reads “active in the last five
+     * minutes” from it; signing out clears it. A live connection would be exact and
      * would have to be held open for every visitor; this answers the only
      * question asked — is it worth asking them for a duel right now.
      */
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+    /**
+     * Who may look at this duellist's collection, and at their decks —
+     * `VISIBILITIES`. Read by `social`'s single checkpoint (R3), nowhere else.
+     */
+    collectionVisibility: text("collection_visibility").notNull().default(VISIBILITY_DEFAULT),
+    deckVisibility: text("deck_visibility").notNull().default(VISIBILITY_DEFAULT),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
@@ -49,6 +55,10 @@ export const users = pgTable(
     // The vocabulary comes from `@atem/shared`, the list the screen offers: one
     // list, so the picker and the database cannot disagree.
     check("users_avatar_vocab", sql`${t.avatar} in (${sql.raw(AVATARS.map((a) => `'${a}'`).join(", "))})`),
+    check("users_collection_visibility_vocab",
+      sql`${t.collectionVisibility} in (${sql.raw(VISIBILITIES.map((v) => `'${v}'`).join(", "))})`),
+    check("users_deck_visibility_vocab",
+      sql`${t.deckVisibility} in (${sql.raw(VISIBILITIES.map((v) => `'${v}'`).join(", "))})`),
   ],
 );
 

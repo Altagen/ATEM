@@ -1,7 +1,8 @@
 /** The public API of the collection module. */
 export { collectionRoutes } from "./routes.js";
+export { collectionQuery } from "./query.js";
 export {
-  adjustQuantity, listCollection, ownedByPasscode, requeuePendingResolves, reresolve,
+  adjustQuantity, collectionFacets, listCollection, ownedByPasscode, requeuePendingResolves, reresolve,
   resolveStatus,
   type CollectionItem,
 } from "./service.js";
