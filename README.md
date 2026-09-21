@@ -71,6 +71,9 @@ pnpm e2e:shots                                 # review screenshots in e2e/shots
 
 The tests run against a running instance: `ATEM_E2E_URL` points them at it
 (`https://localhost:5174` by default). They share it, so they run one at a time.
+Each test signs up an account of its own, at `@example.test`; `scripts/e2e.sh`
+deletes them all once the run ends, pass or fail, from the database named by
+`ATEM_E2E_DATABASE_URL` or else by `.env`'s `DATABASE_URL`.
 
 **Every screen is validated on both profiles when it is written**, never at
 integration. An overflowing grid, a touch target too small or a modal running off
