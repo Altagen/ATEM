@@ -36,6 +36,11 @@ export const EMPTY_FACETS: Facets = {
 };
 
 export type ViewState = {
+  /**
+   * Whose collection this is, when it is not the viewer's — read-only then:
+   * nothing that writes is drawn (ADR-009, M4). `null` is one's own.
+   */
+  owner: { id: string; name: string } | null;
   loading: boolean;
   items: CollectionItem[];
   total: number;
@@ -133,6 +138,7 @@ export function writePrefs(state: ViewState): void {
 
 export function createState(): ViewState {
   return {
+    owner: null,
     loading: true,
     items: [], total: 0, totalCopies: 0, pending: 0,
     query: "", kind: "", attributes: [], races: [], frameTypes: [], properties: [],

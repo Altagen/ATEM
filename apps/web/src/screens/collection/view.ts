@@ -101,7 +101,7 @@ const metaBits = (item: CollectionItem): SafeHtml => {
   return html`<span class="stats-line-rich">${bits}</span>`;
 };
 
-function listItem(item: CollectionItem): SafeHtml {
+function listItem(item: CollectionItem, readOnly: boolean): SafeHtml {
   const art = item.card?.imageUrlSmall ?? item.card?.imageUrl;
   return html`<li class="item">
     <div class="item-row">
@@ -124,7 +124,7 @@ function listItem(item: CollectionItem): SafeHtml {
           <div class="stats-line muted">${metaBits(item)}</div>
         </div>
       </button>
-      <div class="item-actions">
+      ${when(!readOnly, html`<div class="item-actions">
         <button type="button" class="btn-qty js-fav${item.isFavorite ? " is-fav" : ""}"
                 data-id="${item.id}" title="${t("Favourite")}"
                 aria-label="${t("Mark as favourite")}" aria-pressed="${String(item.isFavorite)}">★</button>
@@ -132,7 +132,7 @@ function listItem(item: CollectionItem): SafeHtml {
                 aria-label="${t("Add a copy")}">+</button>
         <button type="button" class="btn-qty btn-qty-danger js-delta" data-id="${item.id}" data-d="-1"
                 aria-label="${t("Remove a copy")}">−</button>
-      </div>
+      </div>`)}
     </div>
   </li>`;
 }
@@ -166,7 +166,9 @@ export function contentHtml(state: ViewState): SafeHtml {
       <p class="muted">
         ${filtered
           ? t("Adjust the filters.")
-          : t("Type the code at the bottom of the card, then press +.")}
+          : state.owner
+            ? t("This collection is empty.")
+            : t("Type the code at the bottom of the card, then press +.")}
       </p>
     </div>`;
   }
@@ -191,7 +193,7 @@ export function contentHtml(state: ViewState): SafeHtml {
         g.title !== null,
         html`<li class="group-header" role="presentation"><span>${g.title}</span><span>${g.items.length}</span></li>`,
       ),
-      ...g.items.map(listItem),
+      ...g.items.map((item) => listItem(item, state.owner !== null)),
     ])}
   </ul>`;
 }
@@ -520,7 +522,7 @@ export function filterPanelHtml(state: ViewState, facets: Facets): SafeHtml {
 
 
 /** The full-screen sheet of an opened card. */
-export function inspectHtml(item: CollectionItem): SafeHtml {
+export function inspectHtml(item: CollectionItem, readOnly: boolean): SafeHtml {
   const card = item.card;
 
   const owned: [string, string][] = [
@@ -536,10 +538,12 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
     title: card?.name ?? t("Unidentified card"),
     subtitle: `${item.setCode} · ×${item.quantity}`,
     card,
-    headActions: html`<div class="inspect-actions">
-      <button type="button" class="btn btn-danger btn-sm js-delta"
-              data-id="${String(item.id)}" data-d="-1">−1</button>
-    </div>`,
+    headActions: readOnly
+      ? raw("")
+      : html`<div class="inspect-actions">
+          <button type="button" class="btn btn-danger btn-sm js-delta"
+                  data-id="${String(item.id)}" data-d="-1">−1</button>
+        </div>`,
     notice: html`${when(
       !card,
       html`<p class="muted">
@@ -560,7 +564,10 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
         ${t("Translation not available yet — name and text in English.")}
       </p>`,
     )}`,
-    extra: html`
+    // A visitor reads the copy, not the note: that one is its owner's.
+    extra: readOnly
+      ? html`<h3>${t("This copy")}</h3>${detailGrid(owned)}`
+      : html`
       <h3>${t("Your copy")}</h3>
       ${detailGrid(owned)}
       <div class="inspect-notes">
@@ -574,10 +581,27 @@ export function inspectHtml(item: CollectionItem): SafeHtml {
   });
 }
 
+/** Someone else's collection that cannot be read — the server said why. */
+export function notFoundHtml(reason: string): SafeHtml {
+  return html`<main class="collection-page"><div class="empty-state">
+    <p class="empty-title">${t("Collection not found")}</p>
+    <p class="muted">${reason}</p>
+  </div></main>`;
+}
+
 export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
+  const readOnly = state.owner !== null;
   return html`<main class="collection-page">
-    <h1 class="page-heading">${t("My collection")}</h1>
+    <h1 class="page-heading">${state.owner
+      ? t("{name}'s collection", { name: state.owner.name })
+      : t("My collection")}</h1>
     <div class="pin-rail" id="pin-rail" data-pinned="${String(state.pinned)}">
+      ${state.owner
+        ? html`<p class="collection-visitor">
+            <span>👁️ ${t("{name}'s collection", { name: state.owner.name })}</span>
+            <a class="btn-showcase-secondary is-petit is-auto" href="/profile?user=${state.owner.id}">${t("Profile")}</a>
+          </p>`
+        : raw("")}
       <div class="tools-bar">
         <label class="search">
           <span class="search-icon" aria-hidden="true">⌕</span>
@@ -601,14 +625,14 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
           collection. A tab of the same rank as “Collection” suggested two
           inventories side by side.
         -->
-        <a class="btn scanlist-link" href="/scanlists"
+        ${when(!readOnly, html`<a class="btn scanlist-link" href="/scanlists"
            title="${t("Inventory a batch without adding it to your collection")}">
           <span aria-hidden="true">🗂️</span>
           <span class="scanlist-link-label">${t("Scanlists")}</span>
-        </a>
+        </a>`)}
       </div>
 
-      <div class="add-bar">
+      ${when(!readOnly, html`      <div class="add-bar">
         <div class="add-field">
           <input type="text" id="set-code" class="add-input" autocomplete="off"
                  autocapitalize="characters" spellcheck="false"
@@ -649,7 +673,7 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
           <input type="text" id="opt-passcode" inputmode="numeric" autocomplete="off"
                  placeholder="${t("optional")}" aria-label="${t("Card passcode")}" />
         </label>
-      </div>
+      </div>`)}
 
       <p class="meta-line">
         <span>${t("{shown}/{total} printing(s) · ×{copies}", { shown: state.items.length, total: state.total, copies: state.totalCopies })}</span>

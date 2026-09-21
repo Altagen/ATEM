@@ -21,7 +21,7 @@ import { cardSheetHtml } from "../shared/card-sheet.js";
 import { translateAttribute } from "../../platform/ygo-labels.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import {
-  breadcrumbHtml, childFolders, deckFolderPath, deckMenu, decksIn, folderRow,
+  breadcrumbHtml, childFolders, deckFolderPath, deckHref, deckMenu, decksIn, dragAttrs, folderRow,
   folderTile, modalHtml, moveBannerHtml, parentRow, parentTile, searchDecks,
 } from "./folders.js";
 import {
@@ -399,8 +399,7 @@ function deckCover(cls: string): SafeHtml {
 
 function deckDriveRow(state: DeckState, deck: DeckSummary): SafeHtml {
   return html`<li class="drive-row">
-    <a class="drive-main" href="/decks?deck=${deck.id}"
-       draggable="true" data-drag-deck="${deck.id}">
+    <a class="drive-main" href="${deckHref(state, deck.id)}"${dragAttrs(state, "deck", deck.id)}>
       <span class="drive-ico drive-ico-cover" aria-hidden="true">
         ${deckCover("drive-cover")}
       </span>
@@ -424,8 +423,7 @@ function deckDriveRow(state: DeckState, deck: DeckSummary): SafeHtml {
 function deckTile(state: DeckState, deck: DeckSummary, path = ""): SafeHtml {
   return html`<li class="deck-tile-li">
     <div class="deck-tile-wrap">
-      <a class="deck-tile" href="/decks?deck=${deck.id}" title="${deck.name}"
-         draggable="true" data-drag-deck="${deck.id}">
+      <a class="deck-tile" href="${deckHref(state, deck.id)}" title="${deck.name}"${dragAttrs(state, "deck", deck.id)}>
         ${deckCover("deck-tile-cover")}
         <span class="deck-tile-label">
           <strong class="deck-tile-name">${deck.name}</strong>
@@ -490,9 +488,11 @@ function contentsHtml(state: DeckState): SafeHtml {
     <div class="empty-state">
       <p class="empty-title">${state.folderId === null ? t("Nothing here") : t("Empty folder")}</p>
       <p class="muted">
-        ${state.folderId === null
-          ? t("Build a deck to get started.")
-          : t("Move a deck here, or go up one level.")}
+        ${state.owner
+          ? t("No deck here.")
+          : state.folderId === null
+            ? t("Build a deck to get started.")
+            : t("Move a deck here, or go up one level.")}
       </p>
     </div>`;
   }
@@ -511,10 +511,10 @@ function contentsHtml(state: DeckState): SafeHtml {
 function listHtml(state: DeckState): SafeHtml {
   return html`<main class="decks-page">
     <div class="decks-manage-head">
-      <h1>${t("My decks")}</h1>
-      <p class="muted">
+      <h1>${state.owner ? t("{name}'s decks", { name: state.owner.name }) : t("My decks")}</h1>
+      ${when(!state.owner, html`<p class="muted">
         ${t("A deck is built from your collection: you only put in what you own.")}
-      </p>
+      </p>`)}
     </div>
 
     ${breadcrumbHtml(state)} ${moveBannerHtml(state)}
@@ -534,10 +534,10 @@ function listHtml(state: DeckState): SafeHtml {
                 data-list-view="gallery" title="${t("Gallery")}" aria-label="${t("Gallery view")}"
                 aria-pressed="${String(state.listView === "gallery")}"><span class="i-grid" aria-hidden="true"></span></button>
       </div>
-      <button type="button" class="btn" id="btn-new-folder">${t("New folder")}</button>
+      ${when(!state.owner, html`<button type="button" class="btn" id="btn-new-folder">${t("New folder")}</button>
       <button type="button" class="btn btn-primary decks-toolbar-build" id="btn-build">
         ${t("Build a deck")}
-      </button>
+      </button>`)}
     </div>
 
     ${when(state.error, html`<p class="banner banner-err">${state.error}</p>`)}
@@ -771,11 +771,11 @@ function sheetHtml(state: DeckState, deck: DeckDetail): SafeHtml {
         </div>
       </div>
       <div class="deck-sheet-actions">
-        <a class="btn" href="/decks">${t("All decks")}</a>
-        <a class="icon-btn" id="btn-edit-deck" href="/decks?deck=${deck.id}&workshop=1"
+        <a class="btn" href="${state.owner ? `/decks?user=${state.owner.id}` : "/decks"}">${t("All decks")}</a>
+        ${when(!state.owner, html`<a class="icon-btn" id="btn-edit-deck" href="/decks?deck=${deck.id}&workshop=1"
            title="${t("Edit")}" aria-label="${t("Edit")}">✏️</a>
         <button type="button" class="icon-btn btn-icon-danger" id="btn-delete"
-                title="${t("Discard this deck")}" aria-label="${t("Discard this deck")}">🗑</button>
+                title="${t("Discard this deck")}" aria-label="${t("Discard this deck")}">🗑</button>`)}
       </div>
     </div>
 
@@ -816,7 +816,7 @@ function sheetHtml(state: DeckState, deck: DeckDetail): SafeHtml {
     ${rows.length === 0
       ? html`<div class="empty-state">
           <p class="empty-title">${t("No cards")}</p>
-          <p class="muted">${t("Open the workshop to add some.")}</p>
+          ${when(!state.owner, html`<p class="muted">${t("Open the workshop to add some.")}</p>`)}
         </div>`
       : state.sheetView === "gallery"
         ? html`<div class="gallery" data-cols="6">${rows.map(sheetTile)}</div>`
@@ -840,6 +840,14 @@ function sheetCard(state: DeckState): SafeHtml {
     subtitle: `#${card.passcode}`,
     card: card,
   });
+}
+
+/** Someone else's decks that cannot be read — the server said why. */
+export function decksNotFoundHtml(reason: string): SafeHtml {
+  return html`<main class="decks-page"><div class="empty-state">
+    <p class="empty-title">${t("Decks not found")}</p>
+    <p class="muted">${reason}</p>
+  </div></main>`;
 }
 
 export function deckHtml(state: DeckState): SafeHtml {

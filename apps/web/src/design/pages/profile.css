@@ -114,3 +114,5 @@
 
 /* What has been played, under the name: a line of figures, not a badge. */
 .profile-tally { margin: 0.35rem 0 0; font-size: 0.86rem; color: var(--muted); font-weight: 700; }
+/* The way to the shelves someone shows the viewer. */
+.profile-shelves { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.9rem 0 0; }

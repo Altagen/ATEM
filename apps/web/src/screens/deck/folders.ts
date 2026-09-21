@@ -88,8 +88,25 @@ export function breadcrumbHtml(state: DeckState): SafeHtml {
   </nav>`;
 }
 
-/** The “⋯” menu, and what it offers. */
+/**
+ * What makes an item draggable — nothing on someone else's decks, where
+ * there is nowhere one may file them.
+ */
+export function dragAttrs(state: DeckState, kind: "deck" | "folder", id: string): SafeHtml {
+  if (state.owner) return raw("");
+  return kind === "deck"
+    ? html` draggable="true" data-drag-deck="${id}"`
+    : html` draggable="true" data-drag-folder="${id}"`;
+}
+
+/** Where a deck opens: one's own, or the visited owner's. */
+export function deckHref(state: DeckState, id: string): string {
+  return state.owner ? `/decks?user=${state.owner.id}&deck=${id}` : `/decks?deck=${id}`;
+}
+
+/** The “⋯” menu, and what it offers — none on someone else's decks. */
 function menuHtml(state: DeckState, id: string, actions: SafeHtml): SafeHtml {
+  if (state.owner) return raw("");
   const open = state.menu === id;
   return html`<div class="folder-menu-anchor">
     <button type="button" class="icon-btn folder-menu-btn" data-menu="${id}"
@@ -144,8 +161,7 @@ function folderMeta(state: DeckState, folder: DeckFolder): string {
 export function folderTile(state: DeckState, folder: DeckFolder): SafeHtml {
   return html`<li class="folder-tile-li" data-drop="${folder.id}">
     <div class="folder-tile">
-      <button type="button" class="folder-open" data-goto-folder="${folder.id}"
-              draggable="true" data-drag-folder="${folder.id}">
+      <button type="button" class="folder-open" data-goto-folder="${folder.id}"${dragAttrs(state, "folder", folder.id)}>
         <span class="folder-ico" aria-hidden="true">📁</span>
         <strong class="folder-name">${folder.name}</strong>
         <span class="muted folder-meta">${folderMeta(state, folder)}</span>
@@ -157,8 +173,7 @@ export function folderTile(state: DeckState, folder: DeckFolder): SafeHtml {
 
 export function folderRow(state: DeckState, folder: DeckFolder): SafeHtml {
   return html`<li class="drive-row" data-drop="${folder.id}">
-    <button type="button" class="drive-main drive-folder" data-goto-folder="${folder.id}"
-            draggable="true" data-drag-folder="${folder.id}">
+    <button type="button" class="drive-main drive-folder" data-goto-folder="${folder.id}"${dragAttrs(state, "folder", folder.id)}>
       <span class="drive-ico" aria-hidden="true">📁</span>
       <span class="drive-text"><strong class="drive-name">${folder.name}</strong></span>
       <span class="muted drive-meta">${folderMeta(state, folder)}</span>

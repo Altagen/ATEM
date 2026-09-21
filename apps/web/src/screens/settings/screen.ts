@@ -19,7 +19,7 @@ import {
 } from "./state.js";
 import { deletionReady, emailChangeReady, emailMismatch, settingsHtml } from "./view.js";
 import {
-  checkPasswordStrength, isCsvExportFormat, LIMITS, parseCollectionFile,
+  checkPasswordStrength, isCsvExportFormat, isVisibility, LIMITS, parseCollectionFile,
 } from "@atem/shared";
 
 /** How long an erase can still be cancelled. ATEM-old's five seconds, kept. */
@@ -236,6 +236,28 @@ export async function settingsScreen(
         toast(reason(err, t("The password could not be changed.")), "error");
       }
     });
+
+    // ── Privacy ───────────────────────────────────────────────────────────
+    // Written on change: the server's answer is what the panel then shows.
+    for (const scope of ["collection", "decks"] as const) {
+      root.querySelectorAll<HTMLInputElement>(`input[name="visibility-${scope}"]`).forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (!isVisibility(radio.value) || !state.account) return;
+          const value = radio.value;
+          void (async () => {
+            try {
+              const { visibility } = await api<{ visibility: AccountDetails["visibility"] }>(
+                "/auth/me/visibility", { method: "PATCH", body: { [scope]: value } });
+              if (state.account) state.account.visibility = visibility;
+              toast(t("Saved"), "success");
+            } catch (err) {
+              toast(reason(err, t("The request failed.")), "error");
+            }
+            if (!signal.aborted) paint();
+          })();
+        });
+      });
+    }
 
     // ── Export ────────────────────────────────────────────────────────────
     // A radio button, not a field: repainting on change loses no typing.

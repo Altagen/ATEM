@@ -10,9 +10,10 @@ import { DECK_ZONES, type DeckZone } from "@atem/shared";
 import { api, ApiError, type CardDetail } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { lockScroll, unlockScroll } from "../../platform/scroll-lock.js";
+import { knownUser } from "../../platform/session.js";
 import { toast } from "../../platform/ui.js";
 import { dropRefusal } from "./folders.js";
-import { deckHtml, zoneFor } from "./view.js";
+import { deckHtml, decksNotFoundHtml, zoneFor } from "./view.js";
 import {
   countByCard, deckState, resetView,
   type CollectionRow, type DeckDetail, type DeckFolder, type DeckMoving, type DeckState,
@@ -62,12 +63,20 @@ export async function deckScreen(
    * or folders with no contents, for the length of one round trip.
    */
   async function loadFiling(): Promise<void> {
-    const [decks, folders] = await Promise.all([
-      api<{ items: DeckSummary[] }>("/decks"),
-      api<{ items: DeckFolder[] }>("/decks/folders"),
-    ]);
-    state.decks = decks.items;
-    state.folders = folders.items;
+    if (state.owner) {
+      // Someone else's: one read-only route answers both, behind the checkpoint.
+      const shelf = await api<{ items: DeckSummary[]; folders: DeckFolder[] }>(
+        `/players/${state.owner.id}/decks`);
+      state.decks = shelf.items;
+      state.folders = shelf.folders;
+    } else {
+      const [decks, folders] = await Promise.all([
+        api<{ items: DeckSummary[] }>("/decks"),
+        api<{ items: DeckFolder[] }>("/decks/folders"),
+      ]);
+      state.decks = decks.items;
+      state.folders = folders.items;
+    }
 
     /**
      * The level we were on may have disappeared — it has just been deleted, or
@@ -136,12 +145,17 @@ export async function deckScreen(
    */
   async function loadDeck(id: string): Promise<void> {
     try {
+      const owner = state.owner;
       const [deck, folders] = await Promise.all([
-        api<DeckDetail>(`/decks/${encodeURIComponent(id)}`),
-        api<{ items: DeckFolder[] }>("/decks/folders"),
+        api<DeckDetail>(owner
+          ? `/players/${owner.id}/decks/${encodeURIComponent(id)}`
+          : `/decks/${encodeURIComponent(id)}`),
+        owner
+          ? api<{ folders: DeckFolder[] }>(`/players/${owner.id}/decks`).then((shelf) => shelf.folders)
+          : api<{ items: DeckFolder[] }>("/decks/folders").then((answer) => answer.items),
       ]);
       state.opened = deck;
-      state.folders = folders.items;
+      state.folders = folders;
       state.error = "";
     } catch (err) {
       fail(err, "Deck not found.");
@@ -820,10 +834,38 @@ export async function deckScreen(
     // which paints into a detached `root` — answered first.
   }, { signal });
 
+  /**
+   * `?user=` opens someone else's decks, read-only (M4). The profile is asked
+   * first, for the owner's name; its refusal — a block, a shelf not shown to
+   * this viewer — is the screen's.
+   */
+  const visited = params.get("user");
+  if (visited && visited !== knownUser()?.id) {
+    try {
+      const { profile, sees } = await api<{
+        profile: { id: string; displayName: string };
+        sees: { collection: boolean; decks: boolean };
+      }>(`/players/${encodeURIComponent(visited)}`);
+      // The profile carries the checkpoint's answer: a shelf not shown to this
+      // viewer is said so, rather than drawn empty.
+      if (!sees.decks) {
+        root.innerHTML = decksNotFoundHtml(t("{name} does not share their decks with you.", { name: profile.displayName })).toString();
+        return;
+      }
+      state.owner = { id: profile.id, name: profile.displayName };
+    } catch (err) {
+      // Drawn apart: the list's own screen would offer building a deck here.
+      root.innerHTML = decksNotFoundHtml(err instanceof ApiError ? err.message : t("Server unreachable.")).toString();
+      return;
+    }
+    if (signal.aborted) return;
+  }
+
   paint();
 
   const id = params.get("deck");
   // `?workshop=1`: the address says we are writing. Without it, we are looking.
-  state.editing = params.get("workshop") === "1";
+  // Never on someone else's deck: there is nothing there one may write.
+  state.editing = params.get("workshop") === "1" && state.owner === null;
   await (id ? loadDeck(id) : loadList());
 }

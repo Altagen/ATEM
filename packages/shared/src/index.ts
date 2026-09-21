@@ -7,7 +7,7 @@ export {
 } from "./set-code.js";
 export { LIMITS, textLengthStatus, type TextLengthStatus } from "./limits.js";
 export { AVATARS, type Avatar } from "./avatars.js";
-export { VISIBILITIES, VISIBILITY_DEFAULT, type Visibility } from "./visibility.js";
+export { isVisibility, VISIBILITIES, VISIBILITY_DEFAULT, type Visibility } from "./visibility.js";
 export {
   DUEL_PHASES, halvedLife, LIFE_BOUNDS, nextPhase, STARTING_LIFE, type DuelPhase,
 } from "./duel.js";

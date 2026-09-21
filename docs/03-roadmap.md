@@ -567,7 +567,7 @@ phases, life points — and each finds it on their profile. ✅ Measured by
 
 ---
 
-## M4 — Duellists
+## M4 — Duellists  ✅ *finished on 2026-09-21*
 
 - Player directory, search by username, friends / online filters — *done on
   2026-09-18, server side*: `GET /community/duellists`, searching the name or the
@@ -590,7 +590,13 @@ roughly right — is it worth asking them for a duel now.
   bio, decks, editing) and anyone's through the link it shares, read-only by
   construction. Friendship, blocking and presence come with the rest of M4.
 - **Viewing another player's collection and decks**, through the single access
-  checkpoint described in “Module boundaries” (02-architecture.md)
+  checkpoint described in “Module boundaries” (02-architecture.md) — *done on
+  2026-09-21*: each duellist chooses, for the collection and the decks
+  separately, **everyone**, **friends** (the default) or **only me**, in
+  Settings › Privacy. `social`'s `canView` reads the choice; `player` serves
+  the reads on its read-only tree; the collection and deck screens open
+  someone else's with `?user=`, drawing nothing that writes. A visitor never
+  reads the notes, and a refusal is “not found”.
 
 The “start a duel” button is present but inactive until the mechanics are scoped.
 

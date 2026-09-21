@@ -12,7 +12,8 @@
  * - **the tournament banner**, invented news;
  * - **the guild strip** — guilds have no module yet;
  * - **the deck list** — a profile is not a shelf: decided with Ange on
- *   2026-09-18, with the rest of what a profile does not need to carry.
+ *   2026-09-18. It links to the shelves instead, when their owner shows them
+ *   to the viewer (M4, 2026-09-21).
  *
  * The friend and block buttons are here, on someone else's profile: it is where
  * you are when you decide either.
@@ -91,10 +92,29 @@ function heroHtml(player: PlayerProfile): SafeHtml {
         </div>
       </div>
       <p class="profile-tally">${tally(player.duels)}</p>
+      ${when(!isOwner, shelvesHtml(player))}
       ${profile.bio
         ? html`<p class="showcase-bio">${profile.bio}</p>`
         : when(isOwner, html`<p class="showcase-bio muted">${t("No bio yet — “Edit profile” lets you write one.")}</p>`)}
     </div>
+  </div>`;
+}
+
+/**
+ * The way to someone's collection and decks — only those their owner shows
+ * this viewer. When neither is, the profile says so rather than leaving the
+ * visitor to wonder whether there is anything.
+ */
+function shelvesHtml(player: PlayerProfile): SafeHtml {
+  const { sees, profile } = player;
+  if (!sees.collection && !sees.decks) {
+    return html`<p class="legende profile-shelves">${t("{name} does not share their collection or decks with you.", { name: profile.displayName })}</p>`;
+  }
+  return html`<div class="profile-shelves">
+    ${when(sees.collection, html`<a class="btn-showcase-secondary is-moyen is-auto" href="/collection?user=${profile.id}">
+      <span aria-hidden="true">🗃️</span><span>${t("Collection")}</span></a>`)}
+    ${when(sees.decks, html`<a class="btn-showcase-secondary is-moyen is-auto" href="/decks?user=${profile.id}">
+      <span aria-hidden="true">🃏</span><span>${t("Decks")}</span></a>`)}
   </div>`;
 }
 

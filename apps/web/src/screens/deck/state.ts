@@ -117,6 +117,13 @@ export type DeckMoving = { kind: "deck" | "folder"; id: string };
 export type DeckDetail = DeckSummary & { cards: DeckCardEntry[] };
 
 export type DeckState = {
+  /**
+   * Whose decks these are, when they are not the viewer's (`?user=`, M4). Then
+   * nothing that writes is drawn: no workshop, no filing, no menu, no drag —
+   * the sheet already had no control that writes a card, which is what this
+   * mode was waiting for.
+   */
+  owner: { id: string; name: string } | null;
   loading: boolean;
   decks: DeckSummary[];
   /** The deck open in the workshop, when the URL designates one. */
@@ -217,6 +224,7 @@ export type DeckState = {
 };
 
 const state: DeckState = {
+  owner: null,
   loading: true,
   decks: [],
   opened: null,
@@ -246,6 +254,7 @@ const state: DeckState = {
 export const deckState = (): DeckState => state;
 
 export function resetView(): void {
+  state.owner = null;
   state.loading = true;
   state.decks = [];
   state.opened = null;

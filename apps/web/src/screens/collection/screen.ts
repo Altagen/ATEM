@@ -11,23 +11,52 @@
 import { t } from "../../platform/i18n/index.js";
 import { api, ApiError } from "../../platform/api.js";
 import { lockScroll, unlockScroll } from "../../platform/scroll-lock.js";
+import { knownUser } from "../../platform/session.js";
 import { toast } from "../../platform/ui.js";
 import {
   buildQuery, createState, EMPTY_FACETS, writePrefs,
   type CollectionItem, type Facets, type ViewState,
 } from "./state.js";
 import {
-  contentHtml, editionsHtml, filterPanelHtml, inspectHtml, shellHtml, type PrintRow,
+  contentHtml, editionsHtml, filterPanelHtml, inspectHtml, notFoundHtml, shellHtml, type PrintRow,
 } from "./view.js";
 
 const PAGE_SIZE = 60;
 
 export async function collectionScreen(
   root: HTMLElement,
-  _params: URLSearchParams,
+  params: URLSearchParams,
   signal: AbortSignal,
 ): Promise<void> {
   const state: ViewState = createState();
+
+  /**
+   * `?user=` opens someone else's collection, read-only (M4). The server's
+   * checkpoint decides whether it may be read; the profile is asked first for
+   * the owner's name, and its refusal is the screen's.
+   */
+  const visited = params.get("user");
+  if (visited && visited !== knownUser()?.id) {
+    try {
+      const { profile, sees } = await api<{
+        profile: { id: string; displayName: string };
+        sees: { collection: boolean; decks: boolean };
+      }>(`/players/${encodeURIComponent(visited)}`);
+      // The profile carries the checkpoint's answer: a shelf not shown to this
+      // viewer is said so, rather than drawn empty.
+      if (!sees.collection) {
+        root.innerHTML = notFoundHtml(t("{name} does not share their collection with you.", { name: profile.displayName })).toString();
+        return;
+      }
+      state.owner = { id: profile.id, name: profile.displayName };
+    } catch (err) {
+      root.innerHTML = notFoundHtml(err instanceof ApiError ? err.message : t("Server unreachable.")).toString();
+      return;
+    }
+    if (signal.aborted) return;
+  }
+  /** Where the list is read: one's own, or the visited owner's read-only path. */
+  const base = state.owner ? `/players/${state.owner.id}/collection` : "/collection";
   let facets: Facets = EMPTY_FACETS;
   let offset = 0;
 
@@ -108,7 +137,7 @@ export async function collectionScreen(
     }
     try {
       const page = await api<{ items: CollectionItem[]; total: number }>(
-        `/collection?${buildQuery(state, offset, PAGE_SIZE)}`,
+        `${base}?${buildQuery(state, offset, PAGE_SIZE)}`,
       );
       state.items = reset ? page.items : [...state.items, ...page.items];
       state.total = page.total;
@@ -124,7 +153,7 @@ export async function collectionScreen(
 
   async function loadFacets(): Promise<void> {
     try {
-      facets = await api<Facets>("/collection/facets");
+      facets = await api<Facets>(`${base}/facets`);
       repaintFilters();
     } catch {
       // Without facets, search, sorting and levels still work: we do not stop
@@ -133,6 +162,8 @@ export async function collectionScreen(
   }
 
   async function refreshPending(): Promise<void> {
+    // What awaits identification is the owner's business: a visitor is not told.
+    if (state.owner) return;
     try {
       const status = await api<{ pending: number; unidentified: number }>(
         "/collection/resolve-status",
@@ -196,7 +227,7 @@ export async function collectionScreen(
     closeInspect();
     openedPasscode = item.card?.passcode ?? null;
     lockScroll();
-    root.insertAdjacentHTML("beforeend", inspectHtml(item).toString());
+    root.insertAdjacentHTML("beforeend", inspectHtml(item, state.owner !== null).toString());
     // The cross and the backdrop must close: on a phone there is no Escape
     // key, and without those two listeners the sheet is a dead end.
     root.querySelector("#btn-save-notes")?.addEventListener("click", () => void saveNotes(id));

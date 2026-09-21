@@ -264,6 +264,12 @@ ATEM-old untenable.
 setting will come later; it will sit on the read path, which is already the only
 place to filter it.
 
+**Addendum of 2026-09-21 — the visibility setting.** It came with the end of M4, where
+this said it would: on the read path. Each account holds a visibility for its
+collection and one for its decks — everyone, friends (default), only me — and
+`social`'s `canView(db, viewerId, ownerId, scope)` is the one place that reads it.
+Only the owner writes, as before.
+
 **What stays private.** A scanlist is not shared: a batch not decided yet is a draft
 decision, not an inventory. That module therefore only knows `viewerId`, and has no
 notion of owner.

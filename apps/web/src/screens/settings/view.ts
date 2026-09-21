@@ -19,7 +19,7 @@
 import { CSV_EXPORT_FORMATS, type CsvExportFormat } from "@atem/shared";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
 import { locale, t } from "../../platform/i18n/index.js";
-import type { ImportLineError } from "@atem/shared";
+import type { ImportLineError, Visibility } from "@atem/shared";
 import type { SettingsState, SettingsView } from "./state.js";
 
 /** The phrase to type before deleting the account, in the interface's language. */
@@ -75,6 +75,7 @@ function rootPanel(state: SettingsState): SafeHtml {
     <div class="settings-menu-card-list">
       ${menuRow("account", "👤", t("Account"), t("Display name, email address and account details"))}
       ${menuRow("security", "🔐", t("Password"), t("Change the password you sign in with"))}
+      ${menuRow("privacy", "👁️", t("Privacy"), t("Who may look at your collection and your decks"))}
       ${menuRow("export", "⬇️", t("Export my collection"), t("Every card in a CSV file — ATEM, ScanFlip or Cardmarket"))}
       ${menuRow("import", "⬆️", t("Import a collection"), t("Read a file from ATEM, ScanFlip or Cardmarket — merging or replacing"))}
       ${menuRow("history", "📜", t("Import history"), t("The files you imported lately, and what each one did"))}
@@ -131,6 +132,50 @@ function accountPanel(state: SettingsState): SafeHtml {
       <div class="bloc-champ">
         <span class="champ-libelle">${t("Role")}</span>
         <span class="valeur">${account?.role === "admin" ? t("Instance administrator") : t("Duellist")}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+/** The three answers, in the order they open up. */
+const VISIBILITY_CHOICES: { value: Visibility; label: () => string; hint: () => string }[] = [
+  { value: "private", label: () => t("Only me"), hint: () => t("Nobody else, friends included.") },
+  { value: "friends", label: () => t("My friends"), hint: () => t("The duellists you are friends with.") },
+  { value: "everyone", label: () => t("Everyone"), hint: () => t("Every duellist on this instance.") },
+];
+
+function visibilityChoice(name: "collection" | "decks", current: Visibility | undefined): SafeHtml {
+  return html`<div class="radio-cards">
+    ${VISIBILITY_CHOICES.map((choice) => html`<label class="radio-card${current === choice.value ? " is-selected" : ""}">
+      <input type="radio" name="visibility-${name}" value="${choice.value}"
+             ${current === choice.value ? raw("checked") : raw("")} />
+      <span>
+        <span class="radio-card-label">${choice.label()}</span>
+        <span class="radio-card-hint">${choice.hint()}</span>
+      </span>
+    </label>`)}
+  </div>`;
+}
+
+/**
+ * Who may look — M4, 2026-09-21. Each choice is written as soon as it is
+ * made: two radio groups, and a save button under them would only be a second
+ * gesture for the same decision.
+ */
+function privacyPanel(state: SettingsState): SafeHtml {
+  const chosen = state.account?.visibility;
+  return html`<div class="${panelClass(state, "privacy")}">
+    ${backButton()}
+    <div class="settings-card-frame">
+      <h2 class="titre-section">👁️ ${t("Privacy")}</h2>
+      <p class="legende">${t("Your profile stays visible to every duellist; your scanlists stay yours alone.")}</p>
+      <div class="bloc-champ">
+        <span class="champ-libelle">🗃️ ${t("Who may look at my collection")}</span>
+        ${visibilityChoice("collection", chosen?.collection)}
+      </div>
+      <div class="bloc-champ">
+        <span class="champ-libelle">🃏 ${t("Who may look at my decks")}</span>
+        ${visibilityChoice("decks", chosen?.decks)}
       </div>
     </div>
   </div>`;
@@ -590,6 +635,7 @@ export function settingsHtml(state: SettingsState): SafeHtml {
     ${rootPanel(state)}
     ${accountPanel(state)}
     ${securityPanel(state)}
+    ${privacyPanel(state)}
     ${exportPanel(state)}
     ${importPanel(state)}
     ${historyPanel(state)}

@@ -2062,3 +2062,16 @@ body.density-compact .gallery {
   background: var(--border);
   margin: 0.25rem 0;
 }
+
+/* Someone else's collection says whose it is: the page's heading is read, not
+   seen, and without this line a visitor could take it for their own. */
+.collection-visitor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.6rem;
+  font-weight: 800;
+  color: var(--gold);
+}

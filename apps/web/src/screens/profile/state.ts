@@ -20,6 +20,8 @@ export type PlayerProfile = {
   friendStatus: FriendStatus;
   /** Duels recorded and won — counted by the server, never invented here. */
   duels: { played: number; won: number };
+  /** Which shelves the viewer may open — the server's checkpoint decides. */
+  sees: { collection: boolean; decks: boolean };
 };
 
 export type ProfileState = {

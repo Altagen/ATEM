@@ -1,12 +1,12 @@
 /**
  * What the settings screen holds between two paints.
  */
-import type { CsvExportFormat, ImportLineError, ParsedImport } from "@atem/shared";
+import type { CsvExportFormat, ImportLineError, ParsedImport, Visibility } from "@atem/shared";
 import type { PublicUser } from "../../platform/api.js";
 
 /** The panels, and the menu they are reached from. */
 export type SettingsView =
-  | "root" | "account" | "security" | "export" | "import" | "history" | "danger";
+  | "root" | "account" | "security" | "privacy" | "export" | "import" | "history" | "danger";
 
 /**
  * The account as its owner sees it — the public shape plus the email.
@@ -14,7 +14,11 @@ export type SettingsView =
  * Mirrors the server's `AccountDetails`: the email only ever arrives through
  * `/auth/me/account`, which answers about the caller and nobody else.
  */
-export type AccountDetails = PublicUser & { email: string };
+export type AccountDetails = PublicUser & {
+  email: string;
+  /** Who may look at the collection, and at the decks. */
+  visibility: { collection: Visibility; decks: Visibility };
+};
 
 /** What `POST /collection/import` answers — mirrors the server's `ImportResult`. */
 export type ImportResult = {

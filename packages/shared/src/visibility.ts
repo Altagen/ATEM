@@ -11,3 +11,6 @@ export const VISIBILITIES = ["everyone", "friends", "private"] as const;
 export type Visibility = (typeof VISIBILITIES)[number];
 
 export const VISIBILITY_DEFAULT: Visibility = "friends";
+
+export const isVisibility = (value: string): value is Visibility =>
+  (VISIBILITIES as readonly string[]).includes(value);

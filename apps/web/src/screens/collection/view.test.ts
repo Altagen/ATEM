@@ -4,7 +4,7 @@ import { filterPanelHtml } from "./view.js";
 import { EMPTY_FACETS, type ViewState } from "./state.js";
 
 const state = (): ViewState => ({
-  loading: false, items: [], total: 0, totalCopies: 0, pending: 0,
+  owner: null, loading: false, items: [], total: 0, totalCopies: 0, pending: 0,
   query: "", kind: "", attributes: [], races: [], frameTypes: [], properties: [],
   levels: [], ranks: [], links: [],
   rarity: "", language: "", favoritesOnly: false, unresolvedOnly: false,
