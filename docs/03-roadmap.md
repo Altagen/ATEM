@@ -580,8 +580,9 @@ phases, life points — and each finds it on their profile. ✅ Measured by
   profiles, through the single checkpoint.
 
 **Presence without a permanent connection.** `users.last_seen_at`, stamped by the
-session guard at most once every two minutes, and read as “active in the last
-quarter of an hour”. Decided with Ange on 2026-09-18: a live connection would be
+session guard at most once a minute, and read as “active in the last five
+minutes”; signing out clears it. *(Fifteen minutes until 2026-09-21: people
+showed online long after they had gone.)* Decided with Ange on 2026-09-18: a live connection would be
 exact, and held open for every visitor, to answer a question that only needs to be
 roughly right — is it worth asking them for a duel now.
 - Viewable public profile — *started on 2026-09-17*: your own profile (avatar,
