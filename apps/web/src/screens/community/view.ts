@@ -131,8 +131,8 @@ function previewHtml(state: CommunityState, one: Duellist): SafeHtml {
           ${when(one.bio !== "", html`<p class="showcase-bio">${one.bio}</p>`)}
           <div class="showcase-stats">
             <div class="showcase-stat">
-              <span class="showcase-stat-value">${since}</span>
               <span class="muted">${t("Member since")}</span>
+              <span class="showcase-stat-value">${since}</span>
             </div>
           </div>
         </div>

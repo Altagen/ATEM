@@ -550,12 +550,12 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
   return html`<main class="decks-page">
     <div class="deck-edit-head">
       <div class="deck-edit-fields">
+        <a class="btn" href="/decks?deck=${deck.id}">${t("Back")}</a>
         <label class="menu-field grow">
           ${t("Deck name")}
           <input type="text" id="edit-name" maxlength="60" value="${deck.name}"
                  placeholder="${t("Unique name…")}" />
         </label>
-        <a class="btn" href="/decks?deck=${deck.id}">${t("Back")}</a>
       </div>
       <div class="deck-edit-actions">
         <!--

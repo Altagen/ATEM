@@ -810,7 +810,10 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   cursor:pointer;border:0;background:transparent;color:inherit;text-align:left;
   font:inherit;padding:.25rem;display:flex;gap:.65rem;align-items:center;position:relative;
 }
-.deck-coll-tile .tile-open{display:block;width:100%;border:0;padding:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+/* The sheet's tiles are buttons too: without the reset they wore the
+   browser's grey (Ange, 2026-09-21). */
+.deck-coll-tile .tile-open,
+.deck-sheet-tile .tile-open{display:block;width:100%;border:0;padding:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
 .deck-open-actions{margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--border,#2a3344)}
 .deck-open-btns{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
 .in-deck-qty-label{color:#6ec8ff;font-weight:800;text-shadow:0 0 8px rgba(80,180,255,.55)}

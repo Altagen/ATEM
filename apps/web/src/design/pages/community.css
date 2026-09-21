@@ -389,7 +389,7 @@ button.player-row-name:hover { color: var(--gold); }
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
 }
 .btn-modal-block-toggle {
   appearance: none;
