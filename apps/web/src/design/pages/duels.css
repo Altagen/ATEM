@@ -382,7 +382,62 @@
  */
 .duel-focused { padding-block: 0.5rem; }
 .duel-focused .duel-board { margin-bottom: 0; }
-.duel-focus-toggle { margin-right: auto; }
+.duel-focus-toggle {
+  margin-right: auto;
+  /* An icon alone still needs a finger-sized target. */
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * The full-screen icon: four corners, drawn in CSS.
+ *
+ * Like the list and grid icons of the collection — this application carries no
+ * icon font. Eight segments, two per corner. Focused, each corner turns to
+ * point inwards — the usual “leave full screen” — which is the way out.
+ */
+.i-focus {
+  display: block;
+  width: 1.2rem;
+  height: 1.2rem;
+  position: relative;
+  --corner: 0.42rem;
+  --stroke: 2px;
+}
+.i-focus::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / var(--corner) var(--stroke),
+    linear-gradient(currentColor, currentColor) 0 0 / var(--stroke) var(--corner),
+    linear-gradient(currentColor, currentColor) 100% 0 / var(--corner) var(--stroke),
+    linear-gradient(currentColor, currentColor) 100% 0 / var(--stroke) var(--corner),
+    linear-gradient(currentColor, currentColor) 0 100% / var(--corner) var(--stroke),
+    linear-gradient(currentColor, currentColor) 0 100% / var(--stroke) var(--corner),
+    linear-gradient(currentColor, currentColor) 100% 100% / var(--corner) var(--stroke),
+    linear-gradient(currentColor, currentColor) 100% 100% / var(--stroke) var(--corner);
+  background-repeat: no-repeat;
+}
+/* Each corner's vertex moves to the inside: horizontal and vertical segments
+   now meet at (corner, corner) from each edge. The corners are shorter here,
+   or the four vertices meet in the middle and the icon reads as a cross. */
+.i-focus.is-on { --corner: 0.34rem; }
+.i-focus.is-on::before {
+  background:
+    linear-gradient(currentColor, currentColor) left 0 top var(--corner) / var(--corner) var(--stroke),
+    linear-gradient(currentColor, currentColor) left var(--corner) top 0 / var(--stroke) var(--corner),
+    linear-gradient(currentColor, currentColor) right 0 top var(--corner) / var(--corner) var(--stroke),
+    linear-gradient(currentColor, currentColor) right var(--corner) top 0 / var(--stroke) var(--corner),
+    linear-gradient(currentColor, currentColor) left 0 bottom var(--corner) / var(--corner) var(--stroke),
+    linear-gradient(currentColor, currentColor) left var(--corner) bottom 0 / var(--stroke) var(--corner),
+    linear-gradient(currentColor, currentColor) right 0 bottom var(--corner) / var(--corner) var(--stroke),
+    linear-gradient(currentColor, currentColor) right var(--corner) bottom 0 / var(--stroke) var(--corner);
+  background-repeat: no-repeat;
+}
 
 @media (max-width: 850px) {
   .duel-focused ~ .global-mobile-bottom-nav,

@@ -303,8 +303,15 @@ function boardHtml(duel: DuelDetail, state: DuelState): SafeHtml {
     </div>
 
     <div class="duel-drop-row">
-      <button type="button" class="btn duel-focus-toggle" id="btn-focus">
-        ${state.focus ? t("Leave focus") : t("Focus")}
+      <!--
+        Full screen, drawn rather than named: the word took a button's width for
+        something an icon says at a glance, and the mode is about room.
+      -->
+      <button type="button" class="btn duel-focus-toggle" id="btn-focus"
+              aria-pressed="${String(state.focus)}"
+              aria-label="${state.focus ? t("Leave focus") : t("Focus")}"
+              title="${state.focus ? t("Leave focus") : t("Focus")}">
+        <span class="i-focus${state.focus ? " is-on" : ""}" aria-hidden="true"></span>
       </button>
       <button type="button" class="btn-action-danger-red is-petit is-auto" id="btn-drop">
         ${t("Call it off")}
