@@ -74,7 +74,6 @@ function heroHtml(player: PlayerProfile): SafeHtml {
         <h1 class="profile-identity">
           <span>${profile.displayName}</span>
           <span class="muted">#${profile.tag}</span>
-          ${when(profile.role === "admin", html`<span class="settings-role-badge admin">${t("Instance administrator")}</span>`)}
         </h1>
         <div class="profile-status-row">
           <div class="profile-actions">

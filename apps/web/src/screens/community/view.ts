@@ -67,7 +67,6 @@ function row(state: CommunityState, one: Duellist): SafeHtml {
             ? html`<span class="player-row-name">${one.displayName}</span>`
             : html`<button type="button" class="player-row-name" data-preview="${one.id}">${one.displayName}</button>`}
           <span class="player-row-tag">#${one.tag}</span>
-          ${when(one.role === "admin", html`<span class="settings-role-badge admin">${t("Instance administrator")}</span>`)}
           ${when(one.friendStatus === "friends", html`<span class="friend-star-fixed" aria-hidden="true">⭐</span>`)}
         </div>
         <div class="player-row-subtitle">
@@ -114,9 +113,7 @@ function previewHtml(state: CommunityState, one: Duellist): SafeHtml {
             <h2 class="showcase-name" id="preview-name">${one.displayName} <span class="muted">#${one.tag}</span></h2>
           </div>
           <div class="showcase-grid">
-            ${one.role === "admin"
-              ? html`<span class="showcase-title-tag">${t("Instance administrator")}</span>`
-              : html`<span></span>`}
+            <span></span>
             <div class="showcase-actions">
               ${actions(one, busy)}
               <a class="btn-showcase-secondary is-petit is-auto" href="/profile?user=${one.id}">${t("View profile")}</a>

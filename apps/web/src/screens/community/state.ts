@@ -13,7 +13,6 @@ export type Duellist = {
   tag: string;
   avatar: Avatar;
   bio: string;
-  role: string;
   friendStatus: FriendStatus;
   isOnline: boolean;
   createdAt: string;

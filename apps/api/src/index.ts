@@ -6,13 +6,27 @@ import {
 } from "./modules/collection/index.js";
 import { markUnidentified } from "./modules/referential/index.js";
 import { requireJwtSecret } from "./modules/identity/secret.js";
+import { requireAdminConfig } from "./modules/identity/admin-config.js";
+import { ensureAdministrator } from "./modules/identity/index.js";
 import { installShutdownHandlers, onShutdown } from "./platform/shutdown.js";
 import { loggableError } from "./platform/errors.js";
 
-// Both configuration requirements are checked before opening the port: a
+// The configuration requirements are checked before opening the port: a
 // misconfigured instance must refuse to serve, not serve halfway.
 requireJwtSecret();
+const adminConfig = requireAdminConfig();
 const { db, sql } = createDatabase();
+
+// The configuration's administrator is made true in the database before the
+// first request: a changed password there is the password from this start on.
+try {
+  const { created } = await ensureAdministrator(db, adminConfig);
+  console.log(`[atem] administrator ${adminConfig.email} ${created ? "created" : "up to date"}`);
+} catch (err) {
+  console.error("[atem] the administrator could not be set up:", loggableError(err));
+  await sql.end();
+  process.exit(1);
+}
 
 // The resolve queue calls back into the collection, which calls back into the
 // referential. The wiring happens here, at startup: neither module needs to

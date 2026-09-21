@@ -71,9 +71,6 @@
   font-weight: 900;
   color: #fff;
 }
-/* The badge is `align-self: flex-start` for multi-line blocks; on the name's
-   single line that pinned it 13px above the name's centre. */
-.profile-identity .settings-role-badge { align-self: center; }
 .profile-status-row { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; font-size: 0.86rem; }
 .profile-actions { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; flex-wrap: wrap; }
 

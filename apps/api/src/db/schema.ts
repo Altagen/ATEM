@@ -16,3 +16,4 @@ export * from "../modules/deck/schema.js";
 export * from "../modules/social/schema.js";
 export * from "../modules/inbox/schema.js";
 export * from "../modules/duel/schema.js";
+export * from "../modules/admin/schema.js";

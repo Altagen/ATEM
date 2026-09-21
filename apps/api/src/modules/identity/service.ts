@@ -3,14 +3,14 @@
  *
  * No other module reads the `users` table: they go through `getPublicUser`.
  */
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
 import {
-  conflict, invalidInput, notFound, unauthorized, violatesConstraint,
+  conflict, forbidden, invalidInput, notFound, unauthorized, violatesConstraint,
 } from "../../platform/errors.js";
 import { checkPasswordStrength, type Avatar, type Visibility } from "@atem/shared";
 import { hashPassword, needsRehash, verifyPassword } from "./password.js";
-import { authAttempts, users, type UserRow } from "./schema.js";
+import { authAttempts, instanceSettings, users, type UserRow } from "./schema.js";
 
 export type PublicUser = {
   id: string;
@@ -21,6 +21,8 @@ export type PublicUser = {
   /** Shown by the navigation, on the button that opens the account menu. */
   avatar: Avatar;
   createdAt: Date;
+  /** The screen sends the account to the password change, and nowhere else. */
+  mustChangePassword: boolean;
 };
 
 const toPublic = (row: UserRow): PublicUser => ({
@@ -31,15 +33,66 @@ const toPublic = (row: UserRow): PublicUser => ({
   role: row.role,
   avatar: row.avatar as Avatar,
   createdAt: row.createdAt,
+  mustChangePassword: row.mustChangePassword,
 });
 
 /** Four digits, `#0042` style. Retried on collision. */
 const randomTag = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
 
+/**
+ * May anyone create an account here? The instance's one setting (Ange,
+ * 2026-09-21): open, or only the administrator creates accounts.
+ */
+export async function registrationOpen(db: Database): Promise<boolean> {
+  const [row] = await db.select().from(instanceSettings).where(eq(instanceSettings.id, 1)).limit(1);
+  // The migration writes the row; its absence is a broken database, and the
+  // safe reading of a broken database is “closed”.
+  return row?.registrationOpen ?? false;
+}
+
+export async function setRegistrationOpen(db: Database, open: boolean): Promise<boolean> {
+  const [row] = await db
+    .insert(instanceSettings)
+    .values({ id: 1, registrationOpen: open })
+    .onConflictDoUpdate({ target: instanceSettings.id, set: { registrationOpen: open, updatedAt: new Date() } })
+    .returning();
+  return row?.registrationOpen ?? open;
+}
+
+/** Signing up, by the person themselves — when the instance allows it. */
 export async function registerUser(
   db: Database,
   input: { email: string; password: string; displayName: string },
 ): Promise<{ user: PublicUser; tokenVersion: number }> {
+  if (!(await registrationOpen(db))) {
+    throw forbidden("Registration is closed on this instance: ask its administrator for an account.");
+  }
+  const row = await insertAccount(db, input, { present: true, mustChangePassword: false });
+  return { user: toPublic(row), tokenVersion: row.tokenVersion };
+}
+
+/**
+ * An account opened by the administrator, open registration or not.
+ *
+ * Its password is the administrator's choice, so they know it: the account
+ * must pick its own at its first sign-in, before anything else.
+ */
+export async function createAccountAsAdmin(
+  db: Database,
+  input: { email: string; password: string; displayName: string },
+): Promise<AdminAccount> {
+  return toAdminAccount(await insertAccount(db, input, { present: false, mustChangePassword: true }));
+}
+
+/**
+ * The account itself, however it is opened. The checks are the same for both
+ * ways in: the password rule, the address, the name.
+ */
+async function insertAccount(
+  db: Database,
+  input: { email: string; password: string; displayName: string },
+  options: { present: boolean; mustChangePassword: boolean; role?: "member" | "admin" },
+): Promise<UserRow> {
   /**
    * The rule comes from `@atem/shared`, the same function the screen uses to
    * draw its meter. ATEM-old had four diverging copies, and one of them
@@ -102,11 +155,17 @@ export async function registerUser(
     try {
       const [row] = await db
         .insert(users)
-        // Present from the first second: signing up is being there.
-        .values({ email, passwordHash, displayName, tag: randomTag(), lastSeenAt: new Date() })
+        .values({
+          email, passwordHash, displayName, tag: randomTag(),
+          role: options.role ?? "member",
+          mustChangePassword: options.mustChangePassword,
+          // Present from the first second: signing up is being there. An
+          // account someone else opened is not, until its owner signs in.
+          lastSeenAt: options.present ? new Date() : null,
+        })
         .returning();
       if (!row) throw new Error("insert returned nothing");
-      return { user: toPublic(row), tokenVersion: row.tokenVersion };
+      return row;
     } catch (err) {
       // Not `err.message`: Drizzle wraps the driver's error and the name is in
       // the cause. Reading the message made this retry dead code — see
@@ -241,7 +300,6 @@ export type Profile = {
   id: string;
   displayName: string;
   tag: string;
-  role: string;
   avatar: Avatar;
   bio: string;
   createdAt: Date;
@@ -255,12 +313,12 @@ export type Profile = {
  */
 export async function getProfile(db: Database, ownerId: string): Promise<Profile> {
   const [row] = await db.select().from(users).where(eq(users.id, ownerId)).limit(1);
-  if (!row || row.suspendedAt) throw notFound("Player not found.");
+  // The administrator is not a player: no profile, like an account that is not there.
+  if (!row || row.suspendedAt || row.role === "admin") throw notFound("Player not found.");
   return {
     id: row.id,
     displayName: row.displayName,
     tag: row.tag,
-    role: row.role,
     avatar: row.avatar as Avatar,
     bio: row.bio,
     createdAt: row.createdAt,
@@ -285,7 +343,6 @@ const toDuellist = (row: UserRow, since: number): Duellist => ({
   id: row.id,
   displayName: row.displayName,
   tag: row.tag,
-  role: row.role,
   avatar: row.avatar as Avatar,
   bio: row.bio,
   createdAt: row.createdAt,
@@ -312,6 +369,8 @@ export async function listProfiles(
     .from(users)
     .where(and(
       sql`${users.suspendedAt} is null`,
+      // Nor in the directory: the administrator's account only administers.
+      sql`${users.role} <> 'admin'`,
       options.excludeId ? sql`${users.id} <> ${options.excludeId}` : sql`true`,
       options.ids ? inArray(users.id, options.ids) : sql`true`,
       search
@@ -329,13 +388,14 @@ export async function listProfiles(
  * The identifier of an account someone may act on, or nothing.
  *
  * Suspended accounts answer like absent ones: a relation cannot be built with
- * an account that is not there.
+ * an account that is not there. The administrator's neither: it is nobody's
+ * friend, and nobody's opponent (Ange, 2026-09-21).
  */
 export async function activePlayerId(db: Database, userId: string): Promise<string | null> {
   const [row] = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.id, userId), sql`${users.suspendedAt} is null`))
+    .where(and(eq(users.id, userId), sql`${users.suspendedAt} is null`, sql`${users.role} <> 'admin'`))
     .limit(1);
   return row?.id ?? null;
 }
@@ -459,6 +519,8 @@ export async function changePassword(
     .set({
       passwordHash: await hashPassword(input.newPassword),
       tokenVersion: sql`${users.tokenVersion} + 1`,
+      // The password is now the owner's own: the account is theirs to use.
+      mustChangePassword: false,
     })
     .where(eq(users.id, userId))
     .returning();
@@ -568,4 +630,167 @@ export async function setVisibility(
   const [row] = await db.update(users).set(values).where(eq(users.id, userId)).returning();
   if (!row) throw notFound("Account not found.");
   return visibilitiesOf(row);
+}
+
+// ── Administration ──────────────────────────────────────────────────────────
+//
+// What the admin module asks of identity (R1: it never touches `users`). Every
+// function here leaves the administrator's own account out: it is not one of
+// the accounts it administers.
+
+/** An account as the console lists it — the address included, for its admin. */
+export type AdminAccount = {
+  id: string;
+  displayName: string;
+  tag: string;
+  email: string;
+  createdAt: Date;
+  lastSeenAt: Date | null;
+  suspendedAt: Date | null;
+  mustChangePassword: boolean;
+};
+
+const toAdminAccount = (row: UserRow): AdminAccount => ({
+  id: row.id,
+  displayName: row.displayName,
+  tag: row.tag,
+  email: row.email,
+  createdAt: row.createdAt,
+  lastSeenAt: row.lastSeenAt,
+  suspendedAt: row.suspendedAt,
+  mustChangePassword: row.mustChangePassword,
+});
+
+/** The console's list: newest first, searched by name, number or address. */
+export async function listAccounts(
+  db: Database,
+  options: { search?: string; limit?: number } = {},
+): Promise<AdminAccount[]> {
+  const search = options.search?.trim().toLowerCase().replace(/^#/, "") ?? "";
+  const rows = await db
+    .select()
+    .from(users)
+    .where(and(
+      ne(users.role, "admin"),
+      search
+        ? sql`(lower(${users.displayName}) like ${`%${search}%`} or ${users.tag} like ${`%${search}%`}
+              or lower(${users.email}) like ${`%${search}%`})`
+        : sql`true`,
+    ))
+    .orderBy(desc(users.createdAt))
+    .limit(options.limit ?? 200);
+  return rows.map(toAdminAccount);
+}
+
+/** The dashboard's figures — counted, never estimated. */
+export async function accountCounts(db: Database): Promise<{ players: number; online: number; suspended: number }> {
+  const since = new Date(Date.now() - PRESENCE_WINDOW_MINUTES * 60_000);
+  const [row] = await db
+    .select({
+      players: sql<number>`count(*)::int`,
+      online: sql<number>`count(*) filter (where ${users.lastSeenAt} >= ${since.toISOString()}::timestamptz
+                                            and ${users.suspendedAt} is null)::int`,
+      suspended: sql<number>`count(*) filter (where ${users.suspendedAt} is not null)::int`,
+    })
+    .from(users)
+    .where(ne(users.role, "admin"));
+  return { players: row?.players ?? 0, online: row?.online ?? 0, suspended: row?.suspended ?? 0 };
+}
+
+/** An account the console may act on — never the administrator's own. */
+async function administeredRow(db: Database, id: string): Promise<UserRow> {
+  const [row] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  if (!row || row.role === "admin") throw notFound("Account not found.");
+  return row;
+}
+
+/**
+ * Suspends or restores an account.
+ *
+ * Suspending ends every session at once (the version moves on, so no token
+ * issued before it works again, even after a restore) and takes the account
+ * out of the presence: a suspended account is not “online”.
+ */
+export async function setSuspended(db: Database, id: string, suspended: boolean): Promise<AdminAccount> {
+  await administeredRow(db, id);
+  const [row] = await db
+    .update(users)
+    .set(suspended
+      ? { suspendedAt: new Date(), tokenVersion: sql`${users.tokenVersion} + 1`, lastSeenAt: null }
+      : { suspendedAt: null })
+    .where(eq(users.id, id))
+    .returning();
+  if (!row) throw notFound("Account not found.");
+  return toAdminAccount(row);
+}
+
+/**
+ * Deletes an account from the console — the same erasure as the owner's own
+ * deletion, without the password, which only its owner has.
+ */
+export async function deleteAccountAsAdmin(db: Database, id: string): Promise<AdminAccount> {
+  const row = await administeredRow(db, id);
+  await db.transaction(async (tx) => {
+    await tx.delete(authAttempts).where(eq(authAttempts.bucket, `email:${row.email.toLowerCase()}`));
+    await tx.delete(users).where(eq(users.id, id));
+  });
+  return toAdminAccount(row);
+}
+
+/**
+ * Makes the configuration's administrator true in the database — at every
+ * start.
+ *
+ * Asked for by Ange on 2026-09-21: **one** administrator, whose credentials are
+ * written in the configuration, as code. So the configuration wins: a changed
+ * password there is the password here at the next start, and any other account
+ * found holding the role loses it.
+ *
+ * An address already carried by a **player** is refused rather than promoted:
+ * turning someone's account into the console's would hand the console to
+ * whoever holds that player's password, and take the player's collection out
+ * of every screen.
+ */
+export async function ensureAdministrator(
+  db: Database,
+  input: { email: string; password: string; displayName: string },
+): Promise<{ created: boolean }> {
+  const strength = checkPasswordStrength(input.password);
+  if (!strength.isValid) {
+    throw invalidInput("The administrator's password must be at least 16 characters long and contain an uppercase letter, a lowercase letter, a digit and a special character.");
+  }
+  const email = input.email.trim();
+  const [existing] = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.email}) = lower(${email})`)
+    .limit(1);
+
+  let adminId: string;
+  let created = false;
+  if (existing && existing.role !== "admin") {
+    throw conflict(`The administrator's address ${email} already belongs to a player's account.`);
+  }
+  if (existing) {
+    adminId = existing.id;
+    const values: Partial<UserRow> = { suspendedAt: null, mustChangePassword: false };
+    if (!(await verifyPassword(input.password, existing.passwordHash))) {
+      values.passwordHash = await hashPassword(input.password);
+      // A new password in the configuration ends the sessions of the old one.
+      values.tokenVersion = existing.tokenVersion + 1;
+    }
+    if (existing.displayName !== input.displayName.trim()) values.displayName = input.displayName.trim();
+    await db.update(users).set(values).where(eq(users.id, existing.id));
+  } else {
+    const row = await insertAccount(db, { ...input, email }, {
+      present: false, mustChangePassword: false, role: "admin",
+    });
+    adminId = row.id;
+    created = true;
+  }
+
+  // One administrator: whoever else holds the role — an earlier address in the
+  // configuration — goes back to being a member.
+  await db.update(users).set({ role: "member" }).where(and(eq(users.role, "admin"), ne(users.id, adminId)));
+  return { created };
 }

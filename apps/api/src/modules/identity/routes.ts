@@ -8,7 +8,7 @@ import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js"
 import { AVATARS, LIMITS, VISIBILITIES } from "@atem/shared";
 import {
   authenticate, changePassword, deleteAccount, getPublicUser, registerUser, signOut,
-  changeEmail, getAccount, setLocale, setVisibility, updateAccount,
+  changeEmail, getAccount, registrationOpen, setLocale, setVisibility, updateAccount,
 } from "./service.js";
 import { issueToken } from "./token.js";
 
@@ -70,6 +70,13 @@ async function readBody<T>(c: { req: { json: () => Promise<unknown> } }, schema:
 
 export function identityRoutes(db: Database) {
   const app = new Hono();
+
+  /**
+   * Whether the sign-up form should be offered at all — asked before any
+   * session exists, so the page can say registration is closed instead of
+   * letting someone fill in a form bound to be refused.
+   */
+  app.get("/registration", async (c) => c.json({ open: await registrationOpen(db) }));
 
   app.post("/register", async (c) => {
     const body = await readBody(c, RegisterBody);

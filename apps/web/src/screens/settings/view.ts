@@ -129,10 +129,6 @@ function accountPanel(state: SettingsState): SafeHtml {
         <span class="champ-libelle">${t("Account created")}</span>
         <span class="valeur">${created}</span>
       </div>
-      <div class="bloc-champ">
-        <span class="champ-libelle">${t("Role")}</span>
-        <span class="valeur">${account?.role === "admin" ? t("Instance administrator") : t("Duellist")}</span>
-      </div>
     </div>
   </div>`;
 }

@@ -9,12 +9,12 @@ import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 import type { Database } from "../../db/client.js";
-import { loggableError, unauthorized } from "../../platform/errors.js";
+import { forbidden, loggableError, notFound, unauthorized } from "../../platform/errors.js";
 import { SESSION_COOKIE } from "./cookie.js";
 import { users } from "./schema.js";
 import { readToken } from "./token.js";
 
-export type Viewer = { id: string; role: string; locale: string };
+export type Viewer = { id: string; role: string; locale: string; mustChangePassword: boolean };
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -72,13 +72,16 @@ export function attachViewer(db: Database): MiddlewareHandler {
             locale: users.locale,
             tokenVersion: users.tokenVersion,
             suspendedAt: users.suspendedAt,
+            mustChangePassword: users.mustChangePassword,
           })
           .from(users)
           .where(eq(users.id, payload.sub))
           .limit(1);
 
         if (row && !row.suspendedAt && row.tokenVersion === payload.tv) {
-          c.set("viewer", { id: row.id, role: row.role, locale: row.locale });
+          c.set("viewer", {
+            id: row.id, role: row.role, locale: row.locale, mustChangePassword: row.mustChangePassword,
+          });
           await touchLastSeen(db, row.id);
         }
       }
@@ -87,10 +90,54 @@ export function attachViewer(db: Database): MiddlewareHandler {
   };
 }
 
-/** Requires a session. To be mounted after `attachViewer`. */
+/** A session's own gestures: who am I, which language, and leaving. */
+const SESSION_ONLY = new Set(["GET /auth/me", "PATCH /auth/me/locale", "POST /auth/logout"]);
+
+/**
+ * What an account may reach **before** it has chosen its own password — one
+ * set by the administrator, who therefore knows it. Nothing else: an account
+ * someone else can sign in to must not be used until it is really its owner's.
+ */
+const BEFORE_PASSWORD_CHANGE = new Set([...SESSION_ONLY, "POST /auth/me/password"]);
+
+/**
+ * The administrator's account reaches the console and its session — nothing a
+ * player does (Ange, 2026-09-21: “c'est un admin seulement”). No collection, no
+ * friends, no duel, and no profile to rename or password to change: those
+ * come from the configuration, and a change made here would be undone at the
+ * next start.
+ */
+const adminMayReach = (method: string, path: string): boolean =>
+  path === "/admin" || path.startsWith("/admin/") || SESSION_ONLY.has(`${method} ${path}`);
+
+/**
+ * Requires a session — and holds the two accounts that may not go everywhere.
+ * To be mounted after `attachViewer`.
+ *
+ * Both rules live here, where every route already passes, rather than in each
+ * module: a route added tomorrow is covered without anyone remembering to.
+ */
 export const requireViewer: MiddlewareHandler = async (c, next) => {
+  const viewer = c.get("viewer");
   // The message is spelled out: the default of `unauthorized()` would never
   // reach the dictionary, and the screen would show it in English.
-  if (!c.get("viewer")) throw unauthorized("Authentication required.");
+  if (!viewer) throw unauthorized("Authentication required.");
+  const gesture = `${c.req.method} ${c.req.path}`;
+  if (viewer.role === "admin") {
+    if (!adminMayReach(c.req.method, c.req.path)) {
+      throw forbidden("This account administers the instance; it does not play.");
+    }
+  } else if (viewer.mustChangePassword && !BEFORE_PASSWORD_CHANGE.has(gesture)) {
+    throw forbidden("Choose your own password first.");
+  }
+  await next();
+};
+
+/**
+ * The console is the administrator's. To anyone else it does not exist: “not
+ * found”, as every refused read answers here.
+ */
+export const requireAdmin: MiddlewareHandler = async (c, next) => {
+  if (c.get("viewer")?.role !== "admin") throw notFound();
   await next();
 };

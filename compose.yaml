@@ -54,6 +54,10 @@ services:
     environment:
       DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD:-atem}@db:5432/atem
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required — generate it with “openssl rand -base64 32”}
+      # The one administrator, as code: the configuration wins at every start.
+      ATEM_ADMIN_EMAIL: ${ATEM_ADMIN_EMAIL:?ATEM_ADMIN_EMAIL is required — the administrator's address}
+      ATEM_ADMIN_PASSWORD: ${ATEM_ADMIN_PASSWORD:?ATEM_ADMIN_PASSWORD is required — 16+ characters, upper, lower, digit, special}
+      ATEM_ADMIN_NAME: ${ATEM_ADMIN_NAME:-Admin}
       # On the compose network, the API must accept the proxy's connections:
       # 127.0.0.1 would only be reachable from its own container.
       ATEM_HOST: 0.0.0.0

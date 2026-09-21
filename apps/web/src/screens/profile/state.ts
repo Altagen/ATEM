@@ -10,7 +10,6 @@ export type PlayerProfile = {
     id: string;
     displayName: string;
     tag: string;
-    role: string;
     avatar: Avatar;
     bio: string;
     createdAt: string;

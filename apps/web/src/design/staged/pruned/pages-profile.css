@@ -240,3 +240,7 @@
   font-weight: 900;
   color: #fff;
 }
+
+/* The badge is `align-self: flex-start` for multi-line blocks; on the name's
+   single line that pinned it 13px above the name's centre. */
+.profile-identity .settings-role-badge { align-self: center; }

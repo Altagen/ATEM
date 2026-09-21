@@ -19,6 +19,7 @@ import { deckRoutes } from "./modules/deck/index.js";
 import { playerRoutes } from "./modules/player/index.js";
 import { socialRoutes } from "./modules/social/index.js";
 import { inboxRoutes } from "./modules/inbox/index.js";
+import { adminRoutes } from "./modules/admin/index.js";
 import { duelRoutes } from "./modules/duel/index.js";
 
 export function createApp(db: Database) {
@@ -52,6 +53,7 @@ export function createApp(db: Database) {
   app.route("/players", playerRoutes(db));
   app.route("/community", socialRoutes(db));
   app.route("/inbox", inboxRoutes(db));
+  app.route("/admin", adminRoutes(db));
   app.route("/duels", duelRoutes(db));
 
   return app;

@@ -15,6 +15,10 @@ and above all what is excluded from it, are in
 cp .env.example .env
 # JWT_SECRET has no fallback value: without it, the server refuses to start.
 echo "JWT_SECRET=$(openssl rand -base64 32)" >> .env
+# Nor does the administrator: fill in ATEM_ADMIN_EMAIL and ATEM_ADMIN_PASSWORD
+# in .env (16+ characters, upper, lower, digit, special). It signs in at /login
+# and lands on the console, where it opens or closes registration and manages
+# the accounts.
 
 docker compose up          # or podman compose up
 ```

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { AVATARS, VISIBILITIES, VISIBILITY_DEFAULT } from "@atem/shared";
 import {
-  check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid,
+  boolean, check, index, integer, pgTable, text, timestamp, uniqueIndex, uuid,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable(
@@ -37,6 +37,12 @@ export const users = pgTable(
      */
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+    /**
+     * The password was set by the administrator, who therefore knows it: the
+     * account must choose its own before doing anything else. ATEM-old's rule
+     * for accounts opened from its console, kept.
+     */
+    mustChangePassword: boolean("must_change_password").notNull().default(false),
     /**
      * Who may look at this duellist's collection, and at their decks —
      * `VISIBILITIES`. Read by `social`'s single checkpoint (R3), nowhere else.
@@ -79,6 +85,24 @@ export const authAttempts = pgTable(
     attemptedAt: timestamp("attempted_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("auth_attempts_lookup_idx").on(t.bucket, t.action, t.attemptedAt)],
+);
+
+/**
+ * The instance's own settings — one row, `id = 1`, enforced by the check.
+ *
+ * Only registration lives here for now (Ange, 2026-09-21): either anyone may
+ * create an account, or only the administrator can. It belongs to identity,
+ * which owns the registration it governs; the admin module changes it through
+ * identity's functions (R1).
+ */
+export const instanceSettings = pgTable(
+  "instance_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    registrationOpen: boolean("registration_open").notNull().default(true),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [check("instance_settings_single_row", sql`${t.id} = 1`)],
 );
 
 export type UserRow = typeof users.$inferSelect;
