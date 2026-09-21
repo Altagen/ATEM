@@ -553,7 +553,8 @@ played in person, it does not referee one.
 - Each duellist brings a deck of their own, then **the server flips the coin**
 - The turn, phase by phase — draw, standby, main 1, battle, main 2, end — and
   life points taken in the phase under way
-- A result either player records once — the score says who won, equal is a draw
+- A result either player records once: the winner, never a score — a score
+  counts games, and two games are two duels (Ange, 2026-09-19)
 - A history both write into, kept whole: the coin, every phase, every turn,
   every life change
 - Each deck kept by identifier **and** by name, so the history reads after a
