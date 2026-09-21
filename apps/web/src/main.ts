@@ -10,11 +10,13 @@ import { releaseScroll } from "./platform/scroll-lock.js";
 import {
   guardWith, onAfterRender, register, registerFallback, startRouter,
 } from "./platform/router.js";
-import { knownUser, loadUser, setUser } from "./platform/session.js";
+import { homeOf, knownUser, loadUser, setUser } from "./platform/session.js";
 import { el, toast } from "./platform/ui.js";
 import { authScreen } from "./screens/auth/screen.js";
+import { changePasswordScreen } from "./screens/auth/change-password.js";
 import { collectionScreen } from "./screens/collection/screen.js";
 import { inboxScreen } from "./screens/inbox/screen.js";
+import { adminScreen } from "./screens/admin/screen.js";
 import { communityScreen } from "./screens/community/screen.js";
 import { deckScreen } from "./screens/deck/screen.js";
 import { duelScreen } from "./screens/duel/screen.js";
@@ -24,6 +26,8 @@ import { profileScreen } from "./screens/profile/screen.js";
 
 register("/login", authScreen("login"));
 register("/register", authScreen("register"));
+/** Only reached by an account whose password the administrator set — see the guard. */
+register("/change-password", changePasswordScreen, { requiresSession: true });
 /**
  * A route and its place in the navigation are declared in one gesture.
  *
@@ -66,11 +70,20 @@ register("/duels", duelScreen, {
 });
 register("/inbox", inboxScreen, { requiresSession: true });
 /**
+ * The console: the administrator's only screen, and none of the players'.
+ * The server answers “not found” to anyone else whatever the screen shows.
+ */
+register("/admin", adminScreen, {
+  requiresSession: true,
+  audience: "admin",
+  nav: { label: "Administration", icon: "🛡️", group: "main" },
+});
+/**
  * The account group: your profile, then your settings — in that order, which is
  * the order the account sheet and the top bar's menu list them.
  *
  * Registering a screen here is the whole of the wiring: the sheet and the menu
- * read `destinations("account")` and already know where to show it.
+ * read `destinations("account", …)` and already know where to show it.
  */
 register("/profile", profileScreen, {
   requiresSession: true,
@@ -94,7 +107,26 @@ registerFallback((root) => {
   );
 });
 
-guardWith(() => knownUser() !== null);
+/**
+ * Where each account may go — the screen's side of the server's session guard,
+ * which refuses the same things whatever this lets through.
+ *
+ * - no session: the sign-in, which brings you back where you were going;
+ * - a password set by the administrator: its change, and nothing else, until
+ *   the account is its owner's;
+ * - the administrator: the console — it does not play (Ange, 2026-09-21);
+ * - a player: everything but the console, which answers as if it did not exist.
+ */
+guardWith((route) => {
+  if (!route.requiresSession) return null;
+  const user = knownUser();
+  if (!user) {
+    return `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+  }
+  if (user.mustChangePassword) return route.path === "/change-password" ? null : "/change-password";
+  if (route.path === "/change-password") return homeOf(user);
+  return route.audience === (user.role === "admin" ? "admin" : "player") ? null : homeOf(user);
+});
 
 async function start(): Promise<void> {
   try {
@@ -105,7 +137,8 @@ async function start(): Promise<void> {
 
   // The root leads where one can go, depending on whether there is a session.
   if (window.location.pathname === "/") {
-    history.replaceState({}, "", knownUser() ? "/collection" : "/login");
+    const user = knownUser();
+    history.replaceState({}, "", user ? homeOf(user) : "/login");
   }
 
   // The navigation follows the route and the session. Hooking onto clicks left

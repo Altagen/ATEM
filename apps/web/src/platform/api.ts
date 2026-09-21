@@ -85,6 +85,8 @@ export type PublicUser = {
   role: string;
   avatar: Avatar;
   createdAt: string;
+  /** The administrator set the password: the account must choose its own first. */
+  mustChangePassword: boolean;
 };
 
 export type CardDetail = {

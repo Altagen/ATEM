@@ -40,18 +40,31 @@ export type Destination = {
   group: "main" | "account";
 };
 
+/**
+ * Who a signed-in route is for. The administrator's account only administers
+ * (Ange, 2026-09-21), so it has its own routes, and the players' are not its.
+ */
+export type Audience = "player" | "admin";
+
 type Route = {
   path: string;
   screen: Screen;
-  requiresSession?: boolean;
+  requiresSession: boolean;
+  audience: Audience;
   nav?: Destination;
 };
+
+/**
+ * What the guard is shown of a route — and what it answers: where to send the
+ * visitor instead, or `null` to let them in.
+ */
+export type RouteGate = (route: { path: string; requiresSession: boolean; audience: Audience }) => string | null;
 
 const routes: Route[] = [];
 let fallback: Screen | null = null;
 /** Aborted at the next render: this is the current screen's lifetime. */
 let screenLife = new AbortController();
-let sessionCheck: () => boolean = () => true;
+let gate: RouteGate = () => null;
 const afterRender: (() => void)[] = [];
 
 /**
@@ -69,20 +82,25 @@ export function onAfterRender(hook: () => void): void {
 export function register(
   path: string,
   screen: Screen,
-  options: { requiresSession?: boolean; nav?: Destination } = {},
+  options: { requiresSession?: boolean; audience?: Audience; nav?: Destination } = {},
 ) {
   routes.push({
     path,
     screen,
     requiresSession: options.requiresSession ?? false,
+    audience: options.audience ?? "player",
     nav: options.nav,
   });
 }
 
-/** A group's destinations, in the order they were declared. */
-export function destinations(group: Destination["group"]): { path: string; nav: Destination }[] {
+/** A group's destinations for one audience, in the order they were declared. */
+export function destinations(
+  group: Destination["group"],
+  audience: Audience,
+): { path: string; nav: Destination }[] {
   return routes
-    .filter((route): route is Route & { nav: Destination } => route.nav?.group === group)
+    .filter((route): route is Route & { nav: Destination } =>
+      route.nav?.group === group && route.audience === audience)
     .map((route) => ({ path: route.path, nav: route.nav }));
 }
 
@@ -90,8 +108,8 @@ export function registerFallback(screen: Screen) {
   fallback = screen;
 }
 
-export function guardWith(check: () => boolean) {
-  sessionCheck = check;
+export function guardWith(check: RouteGate) {
+  gate = check;
 }
 
 export function navigate(path: string, options: { replace?: boolean } = {}): void {
@@ -132,10 +150,9 @@ export async function render(): Promise<void> {
     for (const hook of afterRender) hook();
     return;
   }
-  if (match.requiresSession && !sessionCheck()) {
-    navigate(`/login?next=${encodeURIComponent(url.pathname + url.search)}`, {
-      replace: true,
-    });
+  const elsewhere = gate(match);
+  if (elsewhere !== null && elsewhere !== url.pathname + url.search) {
+    navigate(elsewhere, { replace: true });
     return;
   }
   for (const hook of afterRender) hook();

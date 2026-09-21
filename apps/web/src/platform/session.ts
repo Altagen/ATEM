@@ -15,6 +15,11 @@ export function knownUser(): PublicUser | null {
   return current;
 }
 
+/** Where an account lands: the administrator on its console, a player on the collection. */
+export function homeOf(user: PublicUser): string {
+  return user.role === "admin" ? "/admin" : "/collection";
+}
+
 export function setUser(user: PublicUser | null): void {
   current = user;
   inFlight = null;

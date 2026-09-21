@@ -96,8 +96,17 @@ player ──▶ identity   (the profile)
               │
               └──▶ inbox ──▶ identity   (what is waiting)
 
+admin ──▶ identity   (the accounts and the registration setting)
+
 every module's routes ──▶ identity   (the session guard)
 ```
+
+`admin` owns only its log, `admin_actions`: accounts and `instance_settings`
+are identity's, changed through its functions. The session guard is also where
+the two restricted accounts are held — the administrator, who reaches `/admin`
+and its session only, and an account whose password the administrator set,
+which reaches only the password change — so that a route added tomorrow is
+covered without anyone remembering to.
 
 `player` owns no table: it gathers `identity`'s `getProfile` and `deck`'s
 `listDecks`, and only reads.

@@ -24,6 +24,7 @@
 @import "./pages/community.css";
 @import "./pages/inbox.css";
 @import "./pages/duels.css";
+@import "./pages/admin.css";
 
 /* Our deliberate departures, last so that they win. */
 @import "./adjustments.css";

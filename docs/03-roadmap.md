@@ -615,8 +615,17 @@ collections while respecting their visibility settings.
    event and who caused it, never the sentence — ATEM-old stored the wording, so
    an inbox read in English kept the French of the day it arrived.
 4. **Tournaments.** Depends on duels AND guilds.
-5. **Administration.** To be reduced before being taken back — ATEM-old's area is
-   judged too complex; we will start again from a host's real needs.
+5. **Administration.** ✅ *done on 2026-09-21*, reduced with Ange from ATEM-old's
+   console to a host's needs. **One** administrator, declared in the configuration
+   (`ATEM_ADMIN_EMAIL`, `ATEM_ADMIN_PASSWORD`, `ATEM_ADMIN_NAME`) and made true at
+   every start; it only administers — out of the directory, without a profile,
+   unreachable as a friend, and the session guard lets it reach nothing but `/admin`.
+   The console: players, online and suspended counts; registration open or closed
+   (closed, only the administrator creates accounts, whose owners choose their own
+   password at first sign-in); accounts searched, suspended, restored, deleted; and a
+   log of the administrator's own actions. Left behind: invitation codes,
+   announcements, a log of the players' activity (the server's logs, and a pipe for
+   them later), promoting other administrators.
 
 ---
 

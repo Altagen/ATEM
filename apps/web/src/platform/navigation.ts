@@ -19,7 +19,7 @@
 import { api, ApiError, type PublicUser } from "./api.js";
 import { avatarLooks } from "./avatar.js";
 import { t } from "./i18n/index.js";
-import { destinations, navigate, render } from "./router.js";
+import { destinations, navigate, render, type Audience } from "./router.js";
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
 import { knownUser, setUser } from "./session.js";
 import { el, toast } from "./ui.js";
@@ -72,8 +72,16 @@ export async function refreshServiceState(): Promise<void> {
  * seconds would close an open menu under the pointer, which is the defect the
  * account sheet already taught us.
  */
+/** Whose navigation this is: the administrator's has only its console. */
+function audienceOf(user: NonNullable<ReturnType<typeof knownUser>>): Audience {
+  return user.role === "admin" ? "admin" : "player";
+}
+
 export async function refreshInbox(): Promise<void> {
-  if (!knownUser()) {
+  const user = knownUser();
+  // The administrator has no inbox, and an account still to change its password
+  // may not read one yet: asking would only collect refusals every five seconds.
+  if (!user || user.role === "admin" || user.mustChangePassword) {
     unread = 0;
     return;
   }
@@ -195,7 +203,7 @@ function link(path: string, label: string, className: string, icon?: string): HT
 function appBar(signal: AbortSignal): HTMLElement {
   const user = knownUser()!;
   const nav = el("nav", { class: "app-nav" });
-  for (const { path, nav: destination } of destinations("main")) {
+  for (const { path, nav: destination } of destinations("main", audienceOf(user))) {
     nav.append(link(path, destination.label, "nav-link"));
   }
 
@@ -208,7 +216,7 @@ function appBar(signal: AbortSignal): HTMLElement {
     ]),
     el("div", { class: "app-bar-right" }, [
       languagePill(),
-      inboxBell(),
+      ...(audienceOf(user) === "player" ? [inboxBell()] : []),
       el("span", { class: `api-pill ${service.className}` }, [t(service.text)]),
       userMenu(user, signal),
     ]),
@@ -240,7 +248,7 @@ function userMenu(user: NonNullable<ReturnType<typeof knownUser>>, signal: Abort
       ]),
     ]),
   ]);
-  for (const { path, nav: destination } of destinations("account")) {
+  for (const { path, nav: destination } of destinations("account", audienceOf(user))) {
     menu.append(
       el("a", { class: "menu-item", role: "menuitem", href: path }, [
         el("span", { "aria-hidden": "true" }, [destination.icon]),
@@ -298,8 +306,9 @@ function userMenu(user: NonNullable<ReturnType<typeof knownUser>>, signal: Abort
 }
 
 function bottomNav(): HTMLElement {
+  const user = knownUser()!;
   const nav = el("nav", { class: "global-mobile-bottom-nav", "aria-label": t("Navigation") });
-  for (const { path, nav: destination } of destinations("main")) {
+  for (const { path, nav: destination } of destinations("main", audienceOf(user))) {
     nav.append(link(path, destination.label, "global-mobile-nav-item", destination.icon));
   }
 
@@ -334,15 +343,17 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
   const list = el("nav", { class: "account-sheet-list" });
   // The inbox leads the list, as in ATEM-old: it is the one entry whose content
   // changes on its own, and the only one that can be waiting for you.
-  list.append(
-    el("a", { class: "account-sheet-item", href: "/inbox" }, [
-      el("span", { "aria-hidden": "true" }, ["📬"]),
-      el("span", {}, [t("Inbox")]),
-      ...(unread > 0 ? [el("span", { class: "account-sheet-count" }, [unread > 9 ? "9+" : String(unread)])] : []),
-      el("span", { class: "account-sheet-chev", "aria-hidden": "true" }, ["›"]),
-    ]),
-  );
-  for (const { path, nav: destination } of destinations("account")) {
+  if (audienceOf(user) === "player") {
+    list.append(
+      el("a", { class: "account-sheet-item", href: "/inbox" }, [
+        el("span", { "aria-hidden": "true" }, ["📬"]),
+        el("span", {}, [t("Inbox")]),
+        ...(unread > 0 ? [el("span", { class: "account-sheet-count" }, [unread > 9 ? "9+" : String(unread)])] : []),
+        el("span", { class: "account-sheet-chev", "aria-hidden": "true" }, ["›"]),
+      ]),
+    );
+  }
+  for (const { path, nav: destination } of destinations("account", audienceOf(user))) {
     list.append(
       el("a", { class: "account-sheet-item", href: path }, [
         el("span", { "aria-hidden": "true" }, [destination.icon]),
@@ -412,7 +423,7 @@ export function closeAccountSheet(): void {
   }
 }
 
-async function signOutNow(): Promise<void> {
+export async function signOutNow(): Promise<void> {
   try {
     await api("/auth/logout", { method: "POST" });
   } finally {
@@ -475,8 +486,9 @@ export function renderNavigation(): void {
   }
 
   // The authentication screens carry their own header, and have nothing to
-  // navigate.
-  if (!knownUser()) return;
+  // navigate — nor has the forced password change, which leads nowhere else.
+  const user = knownUser();
+  if (!user || user.mustChangePassword) return;
 
   const { backdrop, sheet } = accountSheet();
   document.body.prepend(appBar(navigationListeners.signal));

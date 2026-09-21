@@ -57,12 +57,48 @@ function safeNext(raw: string | null): string {
   return raw;
 }
 
+/**
+ * Registration closed by the administrator: the page says so, and offers the
+ * way that remains — asking them — rather than a form bound to be refused.
+ */
+function closedRegistration(root: HTMLElement): void {
+  root.append(
+    authHeader(),
+    el("div", { class: "landing-container" }, [
+      el("div", { class: "auth-main-wrapper" }, [
+        el("section", { class: "auth-card" }, [
+          el("h1", { class: "auth-card-title" }, [t("Create an account")]),
+          el("p", { class: "auth-subtitle muted", "data-registration-closed": "" }, [
+            t("Registration is closed on this instance: ask its administrator for an account."),
+          ]),
+          el("p", { class: "auth-toggle muted" }, [
+            `${t("Already have an account?")} `,
+            el("a", { class: "auth-link-btn", href: "/login" }, [t("Sign in")]),
+          ]),
+        ]),
+      ]),
+    ]),
+  );
+}
+
 export function authScreen(mode: Mode) {
-  return (root: HTMLElement, params: URLSearchParams) => {
+  return async (root: HTMLElement, params: URLSearchParams) => {
     const isRegister = mode === "register";
     const next = safeNext(params.get("next"));
 
     root.className = "auth-page";
+
+    if (isRegister) {
+      // Asked before drawing: if the answer does not come, the form is shown
+      // and the server's own refusal will say the same thing on submit.
+      const open = await api<{ open: boolean }>("/auth/registration")
+        .then((answer) => answer.open)
+        .catch(() => true);
+      if (!open) {
+        closedRegistration(root);
+        return;
+      }
+    }
 
     const email = el("input", {
       type: "email",

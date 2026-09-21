@@ -1,0 +1,35 @@
+/**
+ * The console — only what the application's shared pieces do not already
+ * draw: the directory's rows, the profile card's figures, the settings' choice
+ * cards and the decks' confirmation window carry the rest.
+ */
+.admin-tabs { margin-bottom: 1.2rem; }
+
+.admin-figures { margin-bottom: 0.2rem; }
+
+.admin-toolbar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.admin-toolbar .search-box-wrap { flex: 1 1 16rem; }
+
+.admin-form-actions { display: flex; justify-content: flex-end; gap: 0.6rem; flex-wrap: wrap; }
+
+/* A suspended account says so in the danger colour; the rest of the line stays muted. */
+.admin-state { font-weight: 700; }
+.admin-state.is-suspended { color: var(--danger); }
+
+.admin-log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.admin-log-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.8rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.88rem;
+}
+.admin-log-line time { font-size: 0.78rem; min-width: 7.5rem; }
+
+@media (max-width: 560px) {
+  .admin-toolbar > .btn-showcase-primary-full { width: 100%; justify-content: center; }
+}

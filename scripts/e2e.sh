@@ -7,14 +7,18 @@
 # a purge that fails turns the run red, so that it is seen.
 #
 # The purge reaches the database named by `ATEM_E2E_DATABASE_URL`, or by the
-# `DATABASE_URL` of `.env` — the one the development API uses.
+# `DATABASE_URL` of `.env` — the one the development API uses. The console's
+# tests read the administrator from the same `.env`.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+
+# `.env` first: the console's tests sign in as the administrator it declares,
+# and the purge reads the database address from it.
+if [ -f .env ]; then set -a; source .env; set +a; fi
 
 pnpm exec playwright test "$@"
 status=$?
 
-if [ -f .env ]; then set -a; source .env; set +a; fi
 if ! pnpm --filter @atem/api exec tsx scripts/purge-e2e-accounts.mts; then
   echo "e2e: the test accounts could not be purged." >&2
   [ "$status" -eq 0 ] && status=1
