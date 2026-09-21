@@ -181,6 +181,20 @@ test("presence is read from the last request, and the online filter follows it",
   // An hour without a request, and they are not.
   await db.execute(sql`update users set last_seen_at = now() - interval '1 hour' where id = ${seen.userId}`);
   assert.equal((await duellists(viewer.cookie)).find((item) => item.id === seen.userId)?.isOnline, false);
+
+  // Six minutes is already too long: the window is five.
+  await db.execute(sql`update users set last_seen_at = now() - interval '6 minutes' where id = ${seen.userId}`);
+  assert.equal((await duellists(viewer.cookie)).find((item) => item.id === seen.userId)?.isOnline, false);
+});
+
+test("signing out takes the account offline at once", async () => {
+  const viewer = await freshSession(app, "out-viewer");
+  const leaving = await freshSession(app, "out-leaving");
+  assert.equal((await duellists(viewer.cookie)).find((item) => item.id === leaving.userId)?.isOnline, true);
+
+  assert.equal((await req("POST", "/auth/logout", leaving.cookie)).status, 200);
+  assert.equal((await duellists(viewer.cookie)).find((item) => item.id === leaving.userId)?.isOnline, false,
+    "gone is gone: no window after a sign-out");
 });
 
 test("a relation needs two real accounts", async () => {

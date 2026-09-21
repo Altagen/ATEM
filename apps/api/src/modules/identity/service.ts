@@ -150,11 +150,18 @@ export async function authenticate(
   return { user: toPublic(row), tokenVersion: row.tokenVersion };
 }
 
-/** Invalidates every token issued for this account. */
-export async function revokeSessions(db: Database, userId: string): Promise<void> {
+/**
+ * Signing out: every token issued for this account stops working, and the
+ * account stops being shown as online.
+ *
+ * Presence used to outlive the session: whoever signed out stayed “online”
+ * for the whole window, which told the others something false (Ange,
+ * 2026-09-21). Nothing else reads `lastSeenAt`, so clearing it loses nothing.
+ */
+export async function signOut(db: Database, userId: string): Promise<void> {
   await db
     .update(users)
-    .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
+    .set({ tokenVersion: sql`${users.tokenVersion} + 1`, lastSeenAt: null })
     .where(eq(users.id, userId));
 }
 
@@ -264,12 +271,15 @@ export async function getProfile(db: Database, ownerId: string): Promise<Profile
  * A profile, plus whether the account is around.
  *
  * Presence is the identity module's to answer: it owns `lastSeenAt`, stamped by
- * the session guard. Fifteen minutes is the window — long enough that someone
- * reading a deck still counts as there, short enough that it means something.
+ * the session guard. Five minutes is the window: an open tab asks for the inbox
+ * every few seconds, so someone reading a deck stays well inside it, and a tab
+ * closed or left in the background drops out soon enough to mean something.
+ * Fifteen minutes showed people online long after they had gone (Ange,
+ * 2026-09-21).
  */
 export type Duellist = Profile & { isOnline: boolean };
 
-const PRESENCE_WINDOW_MINUTES = 15;
+const PRESENCE_WINDOW_MINUTES = 5;
 
 const toDuellist = (row: UserRow, since: number): Duellist => ({
   id: row.id,

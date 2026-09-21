@@ -36,7 +36,9 @@ function extractToken(c: Context): string | null {
  * swallowed: presence is a comfort, and must never turn a working request into
  * an error.
  */
-const PRESENCE_PERIOD = "2 minutes";
+// Well under the five-minute window of `listProfiles`, so a live tab never
+// flickers offline between two stamps.
+const PRESENCE_PERIOD = "1 minute";
 
 async function touchLastSeen(db: Database, userId: string): Promise<void> {
   try {

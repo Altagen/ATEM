@@ -7,7 +7,7 @@ import { requireViewer } from "./middleware.js";
 import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js";
 import { AVATARS, LIMITS } from "@atem/shared";
 import {
-  authenticate, changePassword, deleteAccount, getPublicUser, registerUser, revokeSessions,
+  authenticate, changePassword, deleteAccount, getPublicUser, registerUser, signOut,
   changeEmail, getAccount, setLocale, updateAccount,
 } from "./service.js";
 import { issueToken } from "./token.js";
@@ -92,7 +92,7 @@ export function identityRoutes(db: Database) {
 
   app.post("/logout", requireViewer, async (c) => {
     const viewer = c.get("viewer");
-    if (viewer) await revokeSessions(db, viewer.id);
+    if (viewer) await signOut(db, viewer.id);
     clearSessionCookie(c);
     return c.json({ ok: true });
   });
