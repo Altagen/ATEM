@@ -8,7 +8,7 @@ import { clearAttempts, enforceRateLimit, recordAttempt } from "./rate-limit.js"
 import { AVATARS, LIMITS, VISIBILITIES } from "@atem/shared";
 import {
   authenticate, changePassword, deleteAccount, getPublicUser, registerUser, signOut,
-  changeEmail, getAccount, registrationOpen, setLocale, setVisibility, updateAccount,
+  changeEmail, chooseFirstPassword, getAccount, registrationOpen, setLocale, setVisibility, updateAccount,
 } from "./service.js";
 import { issueToken } from "./token.js";
 
@@ -36,6 +36,8 @@ const AccountBody = z
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
     message: "Nothing to change.",
   });
+
+const FirstPasswordBody = z.object({ newPassword: z.string().min(1).max(LIMITS.password.max) });
 
 const VisibilityBody = z
   .object({ collection: z.enum(VISIBILITIES).optional(), decks: z.enum(VISIBILITIES).optional() })
@@ -209,6 +211,20 @@ export function identityRoutes(db: Database) {
    * buckets are the same two as signing in — the caller's address and the
    * account — so a failure here and a failure at the door count together.
    */
+  /**
+   * The first password of an account the administrator opened — the session
+   * is the proof, see `chooseFirstPassword`. No rate limit: nothing here
+   * verifies a password, so there is nothing to guess.
+   */
+  app.post("/me/first-password", requireViewer, async (c) => {
+    const viewer = c.get("viewer");
+    if (!viewer) throw invalidInput("No session.");
+    const body = await readBody(c, FirstPasswordBody);
+    const { user, tokenVersion } = await chooseFirstPassword(db, viewer.id, body.newPassword);
+    setSessionCookie(c, issueToken(user.id, tokenVersion));
+    return c.json({ user });
+  });
+
   app.post("/me/password", requireViewer, async (c) => {
     const viewer = c.get("viewer");
     if (!viewer) throw invalidInput("No session.");

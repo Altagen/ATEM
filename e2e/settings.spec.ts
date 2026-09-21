@@ -78,7 +78,7 @@ test("a password change keeps you signed in, and the new one opens the door", as
   const fresh = await browser.newPage();
   await fresh.goto("/login");
   await fresh.getByLabel("Adresse e-mail").fill(account.email);
-  await fresh.getByLabel("Mot de passe").fill(next);
+  await fresh.getByLabel("Mot de passe", { exact: true }).fill(next);
   await fresh.getByRole("button", { name: "Se connecter" }).click();
   await fresh.waitForURL("**/collection");
   await fresh.close();
@@ -120,7 +120,7 @@ test("the email address changes only with the password", async ({ page, browser 
   const fresh = await browser.newPage();
   await fresh.goto("/login");
   await fresh.getByLabel("Adresse e-mail").fill(next);
-  await fresh.getByLabel("Mot de passe").fill(account.password);
+  await fresh.getByLabel("Mot de passe", { exact: true }).fill(account.password);
   await fresh.getByRole("button", { name: "Se connecter" }).click();
   await fresh.waitForURL("**/collection");
   await fresh.close();
@@ -193,7 +193,7 @@ test("deleting the account waits for all three guards, then signs you out for go
 
   // The account is gone: its credentials no longer sign anyone in.
   await page.getByLabel("Adresse e-mail").fill(account.email);
-  await page.getByLabel("Mot de passe").fill(account.password);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(account.password);
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page).toHaveURL(/\/login/);
 });

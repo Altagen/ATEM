@@ -98,7 +98,7 @@ const SESSION_ONLY = new Set(["GET /auth/me", "PATCH /auth/me/locale", "POST /au
  * set by the administrator, who therefore knows it. Nothing else: an account
  * someone else can sign in to must not be used until it is really its owner's.
  */
-const BEFORE_PASSWORD_CHANGE = new Set([...SESSION_ONLY, "POST /auth/me/password"]);
+const BEFORE_PASSWORD_CHANGE = new Set([...SESSION_ONLY, "POST /auth/me/first-password"]);
 
 /**
  * The administrator's account reaches the console and its session — nothing a

@@ -33,3 +33,5 @@
 @media (max-width: 560px) {
   .admin-toolbar > .btn-showcase-primary-full { width: 100%; justify-content: center; }
 }
+
+.admin-more { display: flex; justify-content: center; margin-top: 0.9rem; }

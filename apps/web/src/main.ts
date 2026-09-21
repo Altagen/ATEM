@@ -5,6 +5,7 @@ import {
   closeAccountSheet, refreshInbox, refreshServiceState, renderNavigation,
 } from "./platform/navigation.js";
 import { installCardBack } from "./platform/card-back.js";
+import { installPasswordReveal } from "./platform/password-fields.js";
 import { installFocusTrap } from "./platform/focus-trap.js";
 import { releaseScroll } from "./platform/scroll-lock.js";
 import {
@@ -24,6 +25,14 @@ import { scanlistScreen } from "./screens/scanlist/screen.js";
 import { settingsScreen } from "./screens/settings/screen.js";
 import { profileScreen } from "./screens/profile/screen.js";
 
+/**
+ * The root is where “ATEM” leads, from the bar or from anywhere: it has no
+ * screen of its own, the guard sends each visitor home — the sign-in without a
+ * session, the collection for a player, the console for the administrator.
+ * It used to be resolved once, at startup: clicked later, “ATEM” led to “page
+ * not found”.
+ */
+register("/", async () => undefined);
 register("/login", authScreen("login"));
 register("/register", authScreen("register"));
 /** Only reached by an account whose password the administrator set — see the guard. */
@@ -118,8 +127,9 @@ registerFallback((root) => {
  * - a player: everything but the console, which answers as if it did not exist.
  */
 guardWith((route) => {
-  if (!route.requiresSession) return null;
   const user = knownUser();
+  if (route.path === "/") return user ? homeOf(user) : "/login";
+  if (!route.requiresSession) return null;
   if (!user) {
     return `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
   }
@@ -135,11 +145,6 @@ async function start(): Promise<void> {
     toast(t("The server is unreachable."), "error");
   }
 
-  // The root leads where one can go, depending on whether there is a session.
-  if (window.location.pathname === "/") {
-    const user = knownUser();
-    history.replaceState({}, "", user ? homeOf(user) : "/login");
-  }
 
   // The navigation follows the route and the session. Hooking onto clicks left
   // it one action behind: the click precedes the server's answer.
@@ -160,6 +165,7 @@ async function start(): Promise<void> {
   // would otherwise be the one that leaks.
   installFocusTrap();
   installCardBack();
+  installPasswordReveal();
   startRouter();
 
   // The service state is read at startup, then every minute: often enough to

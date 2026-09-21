@@ -13,6 +13,7 @@ import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { DUEL_PHASES, LIFE_BOUNDS, LIMITS, nextPhase, STARTING_LIFE, type DuelPhase } from "@atem/shared";
 import type { Database } from "../../db/client.js";
 import { conflict, forbidden, invalidInput, notFound } from "../../platform/errors.js";
+import { cursorAfter, parseCursor } from "../../platform/cursor.js";
 import { requireUuid } from "../../platform/identifiers.js";
 import { deckNameOf } from "../deck/index.js";
 import { listProfiles, type Duellist } from "../identity/index.js";
@@ -629,7 +630,7 @@ export async function listDuels(
 ): Promise<DuelPage> {
   const limit = Math.min(Math.max(options.limit ?? DUELS_PAGE, 1), 100);
   const mine = or(eq(duels.hostId, viewerId), eq(duels.guestId, viewerId));
-  const before = options.cursor ? parseCursor(options.cursor) : null;
+  const before = parseCursor(options.cursor);
 
   const rows = await db
     .select()
@@ -644,7 +645,7 @@ export async function listDuels(
       // The types are spelled out: a row comparison against two parameters
       // leaves PostgreSQL with nothing to infer them from, and it refuses.
       before
-        ? sql`(${duels.playedOn}, ${duels.id}) < (${before.playedOn}::timestamptz, ${before.id}::uuid)`
+        ? sql`(${duels.playedOn}, ${duels.id}) < (${before.at}::timestamptz, ${before.id}::uuid)`
         : undefined,
     ))
     .orderBy(desc(duels.playedOn), desc(duels.id))
@@ -655,22 +656,8 @@ export async function listDuels(
   const last = page.at(-1);
   return {
     items: page.map((row) => toDuel(row, viewerId, players)),
-    nextCursor: rows.length > limit && last ? `${last.playedOn.toISOString()}|${last.id}` : null,
+    nextCursor: rows.length > limit && last ? cursorAfter(last.playedOn, last.id) : null,
   };
-}
-
-/**
- * A cursor is a date and an identifier; anything else is simply no cursor.
- *
- * The date travels as the text it came in: inside a hand-written fragment the
- * driver has no column to infer a `Date` from, and refuses it — measured on
- * 2026-09-19, as a 500 on the second page.
- */
-function parseCursor(cursor: string): { playedOn: string; id: string } | null {
-  const [when, id] = cursor.split("|");
-  if (!when || !id) return null;
-  if (Number.isNaN(new Date(when).getTime())) return null;
-  return { playedOn: when, id: requireUuid(id) };
 }
 
 export async function getDuel(db: Database, viewerId: string, duelId: string): Promise<DuelDetail> {

@@ -39,7 +39,7 @@ export function adminRoutes(db: Database) {
 
   app.get("/overview", async (c) => c.json(await overview(db)));
 
-  app.get("/accounts", async (c) => c.json({ items: await accounts(db, c.req.query("q")) }));
+  app.get("/accounts", async (c) => c.json(await accounts(db, c.req.query("q"), c.req.query("cursor"))));
 
   app.post("/accounts", async (c) =>
     c.json({ account: await createAccount(db, await readBody(c, CreateBody)) }, 201));
@@ -60,7 +60,7 @@ export function adminRoutes(db: Database) {
     return c.json({ registrationOpen: await setRegistration(db, body.registrationOpen) });
   });
 
-  app.get("/log", async (c) => c.json({ items: await actionLog(db) }));
+  app.get("/log", async (c) => c.json(await actionLog(db, c.req.query("cursor"))));
 
   return app;
 }

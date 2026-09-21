@@ -5,6 +5,7 @@
  */
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
+import { cursorAfter, parseCursor } from "../../platform/cursor.js";
 import {
   conflict, forbidden, invalidInput, notFound, unauthorized, violatesConstraint,
 } from "../../platform/errors.js";
@@ -195,7 +196,7 @@ export async function authenticate(
     throw invalid;
   }
   if (!(await verifyPassword(input.password, row.passwordHash))) throw invalid;
-  if (row.suspendedAt) throw unauthorized("This account is suspended.");
+  if (row.suspendedAt) throw unauthorized("This account is suspended: contact the administrator of this instance.");
 
   const values: Partial<UserRow> = { lastSeenAt: new Date() };
   if (needsRehash(row.passwordHash)) {
@@ -530,6 +531,48 @@ export async function changePassword(
 }
 
 /**
+ * The first password an account chooses, after the administrator set one.
+ *
+ * No current password is asked: the session was opened with it minutes ago,
+ * and asking again proves nothing more (Ange, 2026-09-22). That is also why it
+ * is **only** open to an account that must change its password — for anyone
+ * else, a session alone must never be enough to change it.
+ */
+export async function chooseFirstPassword(
+  db: Database,
+  userId: string,
+  newPassword: string,
+): Promise<{ user: PublicUser; tokenVersion: number }> {
+  const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!row) throw notFound("Account not found.");
+  if (!row.mustChangePassword) throw forbidden("Your password is already your own: change it from the settings.");
+
+  const strength = checkPasswordStrength(newPassword);
+  if (!strength.isValid) {
+    throw invalidInput("The password does not meet the required criteria.", {
+      hasMinLength: strength.hasMinLength,
+      hasUpper: strength.hasUpper,
+      hasLower: strength.hasLower,
+      hasDigit: strength.hasDigit,
+      hasSpecial: strength.hasSpecial,
+    });
+  }
+  const [updated] = await db
+    .update(users)
+    .set({
+      passwordHash: await hashPassword(newPassword),
+      tokenVersion: sql`${users.tokenVersion} + 1`,
+      mustChangePassword: false,
+      // Choosing it is the account's real first arrival.
+      lastSeenAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning();
+  if (!updated) throw notFound("Account not found.");
+  return { user: toPublic(updated), tokenVersion: updated.tokenVersion };
+}
+
+/**
  * Changing the address you sign in with — behind your password.
  *
  * The address is what a password reset would go to the day there is one, and
@@ -661,12 +704,20 @@ const toAdminAccount = (row: UserRow): AdminAccount => ({
   mustChangePassword: row.mustChangePassword,
 });
 
-/** The console's list: newest first, searched by name, number or address. */
+/** How many accounts the console shows at once; the rest comes on demand. */
+const ACCOUNTS_PAGE = 50;
+
+/**
+ * The console's list: newest first, searched by name, number or address —
+ * **a page at a time**. It used to stop at two hundred without saying so: the
+ * two hundred and first account existed and could not be found.
+ */
 export async function listAccounts(
   db: Database,
-  options: { search?: string; limit?: number } = {},
-): Promise<AdminAccount[]> {
+  options: { search?: string; cursor?: string } = {},
+): Promise<{ items: AdminAccount[]; nextCursor: string | null }> {
   const search = options.search?.trim().toLowerCase().replace(/^#/, "") ?? "";
+  const after = parseCursor(options.cursor);
   const rows = await db
     .select()
     .from(users)
@@ -676,10 +727,16 @@ export async function listAccounts(
         ? sql`(lower(${users.displayName}) like ${`%${search}%`} or ${users.tag} like ${`%${search}%`}
               or lower(${users.email}) like ${`%${search}%`})`
         : sql`true`,
+      after ? sql`(${users.createdAt}, ${users.id}) < (${after.at}::timestamptz, ${after.id}::uuid)` : sql`true`,
     ))
-    .orderBy(desc(users.createdAt))
-    .limit(options.limit ?? 200);
-  return rows.map(toAdminAccount);
+    .orderBy(desc(users.createdAt), desc(users.id))
+    .limit(ACCOUNTS_PAGE + 1);
+  const page = rows.slice(0, ACCOUNTS_PAGE);
+  const last = page.at(-1);
+  return {
+    items: page.map(toAdminAccount),
+    nextCursor: rows.length > ACCOUNTS_PAGE && last ? cursorAfter(last.createdAt, last.id) : null,
+  };
 }
 
 /** The dashboard's figures — counted, never estimated. */

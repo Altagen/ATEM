@@ -9,6 +9,7 @@
 import { api, ApiError, type PublicUser } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { signOutNow } from "../../platform/navigation.js";
+import { watchConfirmation } from "../../platform/password-fields.js";
 import { navigate } from "../../platform/router.js";
 import { homeOf, setUser } from "../../platform/session.js";
 import { el, toast } from "../../platform/ui.js";
@@ -23,7 +24,6 @@ function field(id: string, label: string, input: HTMLInputElement): HTMLElement 
 export async function changePasswordScreen(root: HTMLElement): Promise<void> {
   root.className = "auth-page";
 
-  const current = el("input", { type: "password", autocomplete: "current-password" });
   const fresh = el("input", {
     type: "password", autocomplete: "new-password", placeholder: t("Min. 16 characters…"),
   });
@@ -35,12 +35,12 @@ export async function changePasswordScreen(root: HTMLElement): Promise<void> {
   const freshGroup = field("new-password", t("New password"), fresh);
 
   const form = el("form", { class: "auth-form", novalidate: "" }, [
-    field("temporary-password", t("Password given by the administrator"), current),
     freshGroup,
     field("confirm-password", t("Confirm password"), confirm),
     submit,
   ]);
   mountPasswordMeter(freshGroup, fresh);
+  watchConfirmation(fresh, confirm);
 
   const leave = el("button", { type: "button", class: "auth-link-btn" }, [t("Sign out")]);
   leave.addEventListener("click", () => void signOutNow());
@@ -72,9 +72,11 @@ export async function changePasswordScreen(root: HTMLElement): Promise<void> {
     }
     for (const control of form.querySelectorAll("input, button")) (control as HTMLInputElement).disabled = true;
     try {
-      const { user } = await api<{ user: PublicUser }>("/auth/me/password", {
+      // The session is the proof: the administrator's password is not asked
+      // again — it was typed to get here (Ange, 2026-09-22).
+      const { user } = await api<{ user: PublicUser }>("/auth/me/first-password", {
         method: "POST",
-        body: { currentPassword: current.value, newPassword: fresh.value },
+        body: { newPassword: fresh.value },
       });
       setUser(user);
       toast(t("Welcome, {name}.", { name: user.displayName }));
@@ -85,5 +87,5 @@ export async function changePasswordScreen(root: HTMLElement): Promise<void> {
     }
   });
 
-  current.focus();
+  fresh.focus();
 }

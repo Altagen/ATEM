@@ -15,6 +15,7 @@ import { api, ApiError, type PublicUser } from "../../platform/api.js";
 import { navigate } from "../../platform/router.js";
 import { setUser } from "../../platform/session.js";
 import { el, toast } from "../../platform/ui.js";
+import { watchConfirmation } from "../../platform/password-fields.js";
 import { mountPasswordMeter } from "../shared/password-meter.js";
 
 type Mode = "login" | "register";
@@ -154,6 +155,7 @@ export function authScreen(mode: Mode) {
         submit,
       );
       mountPasswordMeter(passwordGroup, password);
+      watchConfirmation(password, confirm);
     } else {
       form.append(
         fieldGroup("login-email", t("Email address"), email),

@@ -10,7 +10,8 @@
  * It owns one table, `admin_actions`. Accounts and the registration setting
  * are identity's, reached through its functions (R1).
  */
-import { desc } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
+import { cursorAfter, parseCursor } from "../../platform/cursor.js";
 import type { Database } from "../../db/client.js";
 import {
   accountCounts, createAccountAsAdmin, deleteAccountAsAdmin, listAccounts, registrationOpen,
@@ -34,8 +35,8 @@ export type AdminLogEntry = {
   createdAt: Date;
 };
 
-/** How many lines the console shows: the recent ones are what is looked for. */
-const LOG_LIMIT = 100;
+/** How many lines the console shows at once; older ones come on demand. */
+const LOG_PAGE = 50;
 
 const labelOf = (account: AdminAccount) => `${account.displayName}#${account.tag}`;
 
@@ -51,7 +52,8 @@ export async function overview(db: Database) {
   return { ...(await accountCounts(db)), registrationOpen: await registrationOpen(db) };
 }
 
-export const accounts = (db: Database, search?: string) => listAccounts(db, { search });
+export const accounts = (db: Database, search?: string, cursor?: string) =>
+  listAccounts(db, { search, cursor });
 
 export async function createAccount(
   db: Database,
@@ -83,13 +85,29 @@ export async function setRegistration(db: Database, open: boolean): Promise<bool
   return now;
 }
 
-export async function actionLog(db: Database): Promise<AdminLogEntry[]> {
-  const rows = await db.select().from(adminActions).orderBy(desc(adminActions.createdAt)).limit(LOG_LIMIT);
-  return rows.map((row) => ({
-    id: row.id,
-    action: row.action as AdminAction,
-    targetId: row.targetId,
-    targetLabel: row.targetLabel,
-    createdAt: row.createdAt,
-  }));
+export async function actionLog(
+  db: Database,
+  cursor?: string,
+): Promise<{ items: AdminLogEntry[]; nextCursor: string | null }> {
+  const after = parseCursor(cursor);
+  const rows = await db
+    .select()
+    .from(adminActions)
+    .where(after
+      ? sql`(${adminActions.createdAt}, ${adminActions.id}) < (${after.at}::timestamptz, ${after.id}::uuid)`
+      : undefined)
+    .orderBy(desc(adminActions.createdAt), desc(adminActions.id))
+    .limit(LOG_PAGE + 1);
+  const page = rows.slice(0, LOG_PAGE);
+  const last = page.at(-1);
+  return {
+    items: page.map((row) => ({
+      id: row.id,
+      action: row.action as AdminAction,
+      targetId: row.targetId,
+      targetLabel: row.targetLabel,
+      createdAt: row.createdAt,
+    })),
+    nextCursor: rows.length > LOG_PAGE && last ? cursorAfter(last.createdAt, last.id) : null,
+  };
 }

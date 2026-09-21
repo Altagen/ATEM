@@ -34,8 +34,11 @@ export type AdminState = {
   /** `null` while on its way: dashes, never a guessed zero. */
   overview: Overview | null;
   accounts: AdminAccount[] | null;
+  /** Where the next page of accounts starts, `null` when there is none. */
+  accountsCursor: string | null;
   search: string;
   log: AdminLogEntry[] | null;
+  logCursor: string | null;
   /** The creation form's fields, `null` while it is closed. */
   draft: { email: string; displayName: string; password: string } | null;
   /** The account whose deletion awaits confirmation. */
@@ -49,8 +52,10 @@ export const adminState = (): AdminState => ({
   tab: "overview",
   overview: null,
   accounts: null,
+  accountsCursor: null,
   search: "",
   log: null,
+  logCursor: null,
   draft: null,
   deleting: null,
   busy: new Set(),

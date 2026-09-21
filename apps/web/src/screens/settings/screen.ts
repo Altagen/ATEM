@@ -13,6 +13,7 @@ import { renderNavigation } from "../../platform/navigation.js";
 import { navigate } from "../../platform/router.js";
 import { knownUser, setUser } from "../../platform/session.js";
 import { toast } from "../../platform/ui.js";
+import { watchConfirmation } from "../../platform/password-fields.js";
 import { mountPasswordMeter } from "../shared/password-meter.js";
 import {
   settingsState, type AccountDetails, type ImportRecord, type ImportResult, type SettingsView,
@@ -208,6 +209,8 @@ export async function settingsScreen(
     const newPassword = root.querySelector<HTMLInputElement>("#input-new-password");
     const meterHost = root.querySelector<HTMLElement>("#password-meter-host");
     if (newPassword && meterHost) mountPasswordMeter(meterHost, newPassword);
+    const confirmPassword = root.querySelector<HTMLInputElement>("#input-confirm-password");
+    if (newPassword && confirmPassword) watchConfirmation(newPassword, confirmPassword);
 
     root.querySelector("#form-password")?.addEventListener("submit", async (event) => {
       event.preventDefault();

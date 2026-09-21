@@ -7,8 +7,12 @@
 import { api, ApiError } from "../../platform/api.js";
 import { t } from "../../platform/i18n/index.js";
 import { toast } from "../../platform/ui.js";
+import { mountPasswordMeter } from "../shared/password-meter.js";
 import { adminState, type AdminAccount, type AdminLogEntry, type AdminTab, type Overview } from "./state.js";
 import { adminHtml } from "./view.js";
+
+/** A page of a console list, as the server answers it. */
+type Page<T> = { items: T[]; nextCursor: string | null };
 
 /** How long typing settles before the server is asked. */
 const SEARCH_DELAY_MS = 250;
@@ -38,22 +42,34 @@ export async function adminScreen(
     }
   }
 
-  async function loadAccounts(): Promise<void> {
+  /**
+   * The accounts, from the top — or the next page after what is shown. After
+   * a gesture the list is read again from the top: what is shown must be what
+   * is there, and a longer list read again would cost more than it shows.
+   */
+  async function loadAccounts(more = false): Promise<void> {
     try {
-      const query = state.search.trim() ? `?q=${encodeURIComponent(state.search.trim())}` : "";
-      state.accounts = (await api<{ items: AdminAccount[] }>(`/admin/accounts${query}`)).items;
+      const params = new URLSearchParams();
+      if (state.search.trim()) params.set("q", state.search.trim());
+      if (more && state.accountsCursor) params.set("cursor", state.accountsCursor);
+      const page = await api<Page<AdminAccount>>(`/admin/accounts?${params}`);
+      state.accounts = more ? [...(state.accounts ?? []), ...page.items] : page.items;
+      state.accountsCursor = page.nextCursor;
       state.failure = null;
     } catch (err) {
-      state.accounts = [];
+      if (!more) state.accounts = [];
       state.failure = reason(err, t("The server is unreachable."));
     }
   }
 
-  async function loadLog(): Promise<void> {
+  async function loadLog(more = false): Promise<void> {
     try {
-      state.log = (await api<{ items: AdminLogEntry[] }>("/admin/log")).items;
+      const query = more && state.logCursor ? `?cursor=${encodeURIComponent(state.logCursor)}` : "";
+      const page = await api<Page<AdminLogEntry>>(`/admin/log${query}`);
+      state.log = more ? [...(state.log ?? []), ...page.items] : page.items;
+      state.logCursor = page.nextCursor;
     } catch (err) {
-      state.log = [];
+      if (!more) state.log = [];
       state.failure = reason(err, t("The server is unreachable."));
     }
   }
@@ -127,6 +143,13 @@ export async function adminScreen(
       }, SEARCH_DELAY_MS);
     });
 
+    root.querySelector("#btn-more-accounts")?.addEventListener("click", () => {
+      void loadAccounts(true).then(() => { if (!signal.aborted) paint(); });
+    });
+    root.querySelector("#btn-more-log")?.addEventListener("click", () => {
+      void loadLog(true).then(() => { if (!signal.aborted) paint(); });
+    });
+
     root.querySelector("#btn-create-open")?.addEventListener("click", () => {
       state.draft = { email: "", displayName: "", password: "" };
       paint();
@@ -136,6 +159,11 @@ export async function adminScreen(
       state.draft = null;
       paint();
     });
+    // The same meter as at sign-up: the server applies the same rule.
+    const temporary = root.querySelector<HTMLInputElement>("#create-password");
+    const meterHost = root.querySelector<HTMLElement>("#create-password-meter");
+    if (temporary && meterHost) mountPasswordMeter(meterHost, temporary);
+
     const form = root.querySelector<HTMLFormElement>("#form-create-account");
     form?.addEventListener("input", () => {
       if (!state.draft) return;

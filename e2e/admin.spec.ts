@@ -14,8 +14,18 @@ const ADMIN = {
 async function signInAs(page: Page, email: string, password: string): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Adresse e-mail").fill(email);
-  await page.getByLabel("Mot de passe").fill(password);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Se connecter" }).click();
+}
+
+/**
+ * “ATEM” in the top bar — a phone hides that bar, so there the root it leads
+ * to is asked directly: it is the same route either way.
+ */
+async function goHome(page: Page): Promise<void> {
+  const brand = page.locator(".app-bar .brand");
+  if (await brand.isVisible()) await brand.click();
+  else await page.goto("/");
 }
 
 async function otherBrowser(browser: Browser) {
@@ -38,6 +48,10 @@ test("the administrator lands on the console, and has nothing else", async ({ pa
 
   // A player's screen sends it back to the console.
   await page.goto("/collection");
+  await page.waitForURL("**/admin");
+  // And “ATEM” leads home — the console, for the administrator.
+  await page.getByRole("button", { name: /Comptes/ }).click();
+  await goHome(page);
   await page.waitForURL("**/admin");
   expect(await expectNoHorizontalOverflow(page)).toBe(0);
 });
@@ -66,9 +80,14 @@ test("an account the administrator opens starts by choosing its own password", a
   await expect(other.page.locator(".app-bar, .global-mobile-bottom-nav")).toHaveCount(0);
   await other.page.goto("/decks");
   await other.page.waitForURL("**/change-password");
-  await other.page.getByLabel("Mot de passe donné par l'administrateur").fill(temporary);
+  // The administrator's password was typed to get here: it is not asked again.
+  await expect(other.page.locator('input[type="password"]')).toHaveCount(2);
   await other.page.getByLabel("Nouveau mot de passe").fill(player.password);
+  // The confirmation says it differs while it is typed, not only on submit.
+  await other.page.getByLabel("Confirmation du mot de passe").fill("Something-Else-9!");
+  await expect(other.page.getByText("Les deux mots de passe ne correspondent pas.")).toBeVisible();
   await other.page.getByLabel("Confirmation du mot de passe").fill(player.password);
+  await expect(other.page.getByText("Les deux mots de passe ne correspondent pas.")).toHaveCount(0);
   await other.page.getByRole("button", { name: "Choisir ce mot de passe" }).click();
   await other.page.waitForURL("**/collection");
   await other.context.close();
@@ -91,6 +110,9 @@ test("suspending shuts a player out, restoring lets them back, deleting erases t
   // The suspended player's session is over: the next screen asks them to sign in.
   await other.page.goto("/decks");
   await other.page.waitForURL("**/login**");
+  await signInAs(other.page, player.email, player.password);
+  await expect(other.page.getByText("Ce compte est suspendu : contactez l'administrateur de l'instance."))
+    .toBeVisible();
 
   await row.getByRole("button", { name: "Réactiver" }).click();
   await expect(row.getByRole("button", { name: "Suspendre" })).toBeVisible();
@@ -132,4 +154,26 @@ test("a player never reaches the console", async ({ page }) => {
   await page.goto("/admin");
   await page.waitForURL("**/collection");
   await expect(page.getByRole("link", { name: /Administration/ })).toHaveCount(0);
+});
+
+test("“ATEM” leads a player to their collection, and a visitor to the sign-in", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForURL("**/login");
+  await signUp(page);
+  await page.goto("/decks");
+  await page.getByRole("heading", { name: "Mes decks" }).waitFor();
+  await goHome(page);
+  await page.waitForURL("**/collection");
+});
+
+test("every password field has an eye, and it shows what is typed", async ({ page }) => {
+  await page.goto("/register");
+  const field = page.locator("#reg-password");
+  await field.fill("Visible-Now-42!");
+  await expect(field).toHaveAttribute("type", "password");
+  await page.locator(".password-field").filter({ has: field }).getByRole("button", { name: "Afficher le mot de passe" }).click();
+  await expect(field).toHaveAttribute("type", "text");
+  await page.locator(".password-field").filter({ has: field }).getByRole("button", { name: "Masquer le mot de passe" }).click();
+  await expect(field).toHaveAttribute("type", "password");
+  expect(await expectNoHorizontalOverflow(page)).toBe(0);
 });

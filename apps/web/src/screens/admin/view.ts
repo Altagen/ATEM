@@ -114,9 +114,10 @@ function createForm(state: AdminState): SafeHtml {
     </div>
     <div class="bloc-champ">
       <label class="champ-libelle" for="create-password">${t("Temporary password")}</label>
-      <input type="text" id="create-password" class="search-input-gaming is-nue" autocomplete="off"
+      <input type="password" id="create-password" class="search-input-gaming is-nue" autocomplete="new-password"
              value="${draft.password}" required />
-      <p class="legende">${t("16 characters minimum, with an uppercase letter, a lowercase letter, a digit and a special character. Give it to the player yourself.")}</p>
+      <div id="create-password-meter"></div>
+      <p class="legende">${t("Give it to the player yourself: they replace it at their first sign-in.")}</p>
     </div>
     <div class="admin-form-actions">
       <button type="button" class="btn" id="btn-create-cancel">${t("Cancel")}</button>
@@ -144,7 +145,10 @@ function accountsHtml(state: AdminState): SafeHtml {
         : list.length === 0
           ? html`<div class="empty-state"><p class="empty-title">${t("No account")}</p></div>`
           : list.map((account) => accountRow(state, account))}
-    </div>`;
+    </div>
+    ${when(state.accountsCursor !== null, html`<div class="admin-more">
+      <button type="button" class="btn" id="btn-more-accounts">${t("Show more")}</button>
+    </div>`)}`;
 }
 
 const ACTION_SENTENCES: Record<AdminLogEntry["action"], () => string> = {
@@ -162,14 +166,16 @@ function logHtml(state: AdminState): SafeHtml {
   if (log.length === 0) {
     return html`<div class="empty-state"><p class="empty-title">${t("Nothing done yet")}</p></div>`;
   }
-  return html`<p class="legende">${t("The latest hundred actions of the administrator.")}</p>
-    <ul class="admin-log">
+  return html`<ul class="admin-log">
       ${log.map((entry) => html`<li class="admin-log-line">
         <time class="muted" datetime="${entry.createdAt}">${momentOf(entry.createdAt)}</time>
         <strong>${ACTION_SENTENCES[entry.action]()}</strong>
         ${when(entry.targetLabel !== null, html`<span>${entry.targetLabel ?? ""}</span>`)}
       </li>`)}
-    </ul>`;
+    </ul>
+    ${when(state.logCursor !== null, html`<div class="admin-more">
+      <button type="button" class="btn" id="btn-more-log">${t("Show more")}</button>
+    </div>`)}`;
 }
 
 function deleteModal(state: AdminState): SafeHtml {
