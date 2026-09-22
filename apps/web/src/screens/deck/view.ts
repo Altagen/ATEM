@@ -127,8 +127,8 @@ function countsBar(deck: DeckDetail, state: DeckState): SafeHtml {
       )}
     </p>
     ${when(state.limitsHelp, html`<p class="deck-limits-hint">
-      ${t("The rules: 40 to 60 cards in the Main Deck, up to 15 in the Extra and the Side. Going past them is allowed while you build, and the deck says how many are too many.")}
-      ${t("One hard limit, to protect the server: no zone holds more than {n} cards.", { n: DECK_ZONE_CAPACITY })}
+      ${t("Rules: Main 40–60, Extra and Side 15 max. You may go over while building.")}
+      ${t("Server limit: {n} cards per zone.", { n: DECK_ZONE_CAPACITY })}
     </p>`)}
   </div>`;
 }

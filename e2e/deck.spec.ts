@@ -279,7 +279,7 @@ test("the counter's “?” names the server's own limit", async ({ page }) => {
   await expect(help).toHaveAttribute("aria-expanded", "false");
   await help.click();
   await expect(help).toHaveAttribute("aria-expanded", "true");
-  await expect(page.locator(".deck-limits-hint")).toContainText("plus de 100 cartes");
+  await expect(page.locator(".deck-limits-hint")).toContainText("100 cartes par zone");
 
   await help.click();
   await expect(page.locator(".deck-limits-hint")).toHaveCount(0);
