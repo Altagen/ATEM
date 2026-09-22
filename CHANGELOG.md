@@ -1,29 +1,41 @@
 # Changelog
 
+All notable changes, by version, following [semantic versioning](https://semver.org).
+
 ## 0.1.0 (2026-09-22)
 
+The first release.
 
-### Features
+### Collection
+- Cards added by their printed set code — typed, or scanned with the phone's
+  camera by on-device OCR — and identified against the YGOPRODeck catalogue.
+- Filters on every property of a card; favourites; a note per copy.
+- Scanlists: inventory a batch, then add it to the collection or discard it.
+- CSV import and export in the ATEM, ScanFlip and Cardmarket formats.
 
-* **deck:** count the Main towards its target, and report sizes instead of refusing them ([b089e5e](https://github.com/Altagen/ATEM/commit/b089e5efa9ca7533ea3bda7f71a4aaa06813614f))
+### Decks
+- Decks built from the collection, within the banlist; folders to file them.
+- A target Main Deck size (40 to 60): the counter counts towards it, and a
+  deck past its size — Main above its target, Extra or Side above 15 — says
+  how many cards are too many instead of refusing them.
 
+### Community
+- A directory of the instance's duellists, with presence.
+- Friends, friend requests, blocking; an inbox.
+- Profiles; each duellist chooses who may see their collection and their decks
+  — everyone, friends, or only themselves.
 
-### Bug fixes
+### Duels
+- A friend is invited, each picks a deck, the server flips the coin; the
+  phases, turns and life points are followed from both phones; the winner is
+  recorded, and past duels are kept.
 
-* **deck:** check a zone's capacity under the deck's row lock ([f9490c8](https://github.com/Altagen/ATEM/commit/f9490c83c3f3b4f9292b309a1e568360de4571a3))
-* **deck:** shorten the limits note ([8dcae83](https://github.com/Altagen/ATEM/commit/8dcae8320b97a85d40140d8d48535623603c7ba8))
-* **navigation:** flag buttons for the language, and sign out on a line of its own ([091d937](https://github.com/Altagen/ATEM/commit/091d93712f0d13e0c1e9c7775fac6c49f2c7e0d3))
-* **navigation:** tidy the account sheet, and move the source link to settings ([92c53b7](https://github.com/Altagen/ATEM/commit/92c53b776a9f3f7d487eab752500d222c8219b44))
+### Administration
+- One administrator, declared in the configuration.
+- Registration open or closed; accounts created with a password their owner
+  replaces at first sign-in; suspension, restore, deletion; a log of the
+  administrator's actions.
 
-
-### Documentation
-
-* **deployment:** show the production compose file in full ([22fba18](https://github.com/Altagen/ATEM/commit/22fba186607b702964f4035150e9478082989575))
-* tighten the documentation, and show the app in the README ([aa354ce](https://github.com/Altagen/ATEM/commit/aa354cefa711d4775893788fb4063c234814aec5))
-
-## Changelog
-
-All notable changes, by version. Written by
-[release-please](https://github.com/googleapis/release-please) from the
-[conventional commits](https://www.conventionalcommits.org) that reach `main`;
-versions follow [semantic versioning](https://semver.org).
+### Running it
+- Published images on GHCR, one `compose.yaml`, and a configuration that
+  refuses to start incomplete.
