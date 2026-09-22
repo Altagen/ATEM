@@ -1,0 +1,21 @@
+# What the images are built from: the sources, never local state or secrets.
+#
+# Without this file `COPY . .` took the whole working copy into the build —
+# node_modules, and the .env with its secrets. Found on 2026-09-22, when the
+# CI's clean checkout built differently from a laptop.
+.git
+.github
+**/node_modules
+**/dist
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+data
+media
+test-results
+playwright-report
+e2e
+docs
+apps/web/.certs
+apps/web/public/tesseract

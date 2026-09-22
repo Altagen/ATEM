@@ -24,6 +24,16 @@ const duellists = async (cookie: string, query = ""): Promise<Card[]> => {
   return ((await response.json()) as { items: Card[] }).items;
 };
 
+/**
+ * The directory, searched for one account by its name.
+ *
+ * Not the whole list: it answers at most two hundred, and the test files share
+ * one database and run side by side — an account another file created first
+ * could push the one looked for past the cut. Measured on CI on 2026-09-22.
+ */
+const around = (cookie: string, account: { displayName: string }): Promise<Card[]> =>
+  duellists(cookie, `?q=${encodeURIComponent(account.displayName)}`);
+
 test("the directory answers a bounded list, and says when it cut it", async () => {
   /**
    * The screen holds the whole answer to count its chips, so an instance with
@@ -38,6 +48,37 @@ test("the directory answers a bounded list, and says when it cut it", async () =
 
 const statusOf = (items: Card[], id: string) => items.find((item) => item.id === id)?.friendStatus;
 
+test("friends and requests are in the directory whatever the cut", async () => {
+  /**
+   * Found on 2026-09-22: the page was the first two hundred names, and friends
+   * were sorted to the top after the cut — a friend named late in the
+   * alphabet never appeared on a busy instance. Two hundred and one accounts
+   * named before everyone, then a friend and a request named after them.
+   */
+  const marker = `aaa-filler-${Date.now()}`;
+  await db.execute(sql`
+    insert into users (email, password_hash, display_name, tag)
+    select ${marker} || '-' || n || '@exemple.test', 'x', 'Aaa ' || ${marker} || ' ' || n, lpad(n::text, 4, '0')
+    from generate_series(1, 201) as n`);
+  try {
+    const viewer = await freshSession(app, "zz-late-viewer");
+    const friend = await freshSession(app, "zz-late-friend");
+    const asker = await freshSession(app, "zz-late-asker");
+    await req("POST", `/community/friends/${friend.userId}`, viewer.cookie);
+    await req("POST", `/community/friends/${viewer.userId}/accept`, friend.cookie);
+    await req("POST", `/community/friends/${viewer.userId}`, asker.cookie);
+
+    const response = await req("GET", "/community/duellists", viewer.cookie);
+    const body = (await response.json()) as { items: Card[]; truncated: boolean };
+    assert.equal(body.truncated, true);
+    assert.ok(body.items.length <= 200);
+    assert.equal(statusOf(body.items, friend.userId), "friends");
+    assert.equal(statusOf(body.items, asker.userId), "pending_received");
+  } finally {
+    await db.execute(sql`delete from users where email like ${`${marker}-%`}`);
+  }
+});
+
 test("a request is pending on both sides, and accepting makes it mutual", async () => {
   const asker = await freshSession(app, "friend-asker");
   const asked = await freshSession(app, "friend-asked");
@@ -49,8 +90,8 @@ test("a request is pending on both sides, and accepting makes it mutual", async 
   // The same gesture twice sends one request: the pair is unique.
   await req("POST", `/community/friends/${asked.userId}`, asker.cookie);
 
-  assert.equal(statusOf(await duellists(asker.cookie), asked.userId), "pending_sent");
-  assert.equal(statusOf(await duellists(asked.cookie), asker.userId), "pending_received",
+  assert.equal(statusOf(await around(asker.cookie, asked), asked.userId), "pending_sent");
+  assert.equal(statusOf(await around(asked.cookie, asker), asker.userId), "pending_received",
     "the receiver sees a request to answer, not one they sent");
 
   // Only the other side may accept — otherwise anyone befriends anyone alone.
@@ -58,8 +99,8 @@ test("a request is pending on both sides, and accepting makes it mutual", async 
 
   const accepted = await req("POST", `/community/friends/${asker.userId}/accept`, asked.cookie);
   assert.equal(accepted.status, 200);
-  assert.equal(statusOf(await duellists(asker.cookie), asked.userId), "friends");
-  assert.equal(statusOf(await duellists(asked.cookie), asker.userId), "friends");
+  assert.equal(statusOf(await around(asker.cookie, asked), asked.userId), "friends");
+  assert.equal(statusOf(await around(asked.cookie, asker), asker.userId), "friends");
 });
 
 test("two people who ask each other are friends without either accepting", async () => {
@@ -70,7 +111,7 @@ test("two people who ask each other are friends without either accepting", async
   await req("POST", `/community/friends/${two.userId}`, one.cookie);
   const back = await req("POST", `/community/friends/${one.userId}`, two.cookie);
   assert.equal(((await back.json()) as { friendStatus: string }).friendStatus, "friends");
-  assert.equal(statusOf(await duellists(one.cookie), two.userId), "friends");
+  assert.equal(statusOf(await around(one.cookie, two), two.userId), "friends");
 });
 
 test("removing, refusing and cancelling all leave both at the start", async () => {
@@ -80,18 +121,18 @@ test("removing, refusing and cancelling all leave both at the start", async () =
   // Cancelling one's own request.
   await req("POST", `/community/friends/${two.userId}`, one.cookie);
   await req("DELETE", `/community/friends/${two.userId}`, one.cookie);
-  assert.equal(statusOf(await duellists(two.cookie), one.userId), "none", "nothing is left to answer");
+  assert.equal(statusOf(await around(two.cookie, one), one.userId), "none", "nothing is left to answer");
 
   // Refusing someone else's.
   await req("POST", `/community/friends/${two.userId}`, one.cookie);
   await req("DELETE", `/community/friends/${one.userId}`, two.cookie);
-  assert.equal(statusOf(await duellists(one.cookie), two.userId), "none");
+  assert.equal(statusOf(await around(one.cookie, two), two.userId), "none");
 
   // Removing an accepted friendship, from either side.
   await req("POST", `/community/friends/${two.userId}`, one.cookie);
   await req("POST", `/community/friends/${one.userId}/accept`, two.cookie);
   await req("DELETE", `/community/friends/${two.userId}`, one.cookie);
-  assert.equal(statusOf(await duellists(two.cookie), one.userId), "none");
+  assert.equal(statusOf(await around(two.cookie, one), one.userId), "none");
 });
 
 test("one's friends are answered in full, not filtered out of a bounded page", async () => {
@@ -129,8 +170,8 @@ test("a block works both ways, severs the link, and hides the profile", async ()
   assert.equal((await req("POST", `/community/blocks/${blocked.userId}`, blocker.cookie)).status, 200);
 
   // Gone from both lists, and the friendship with it.
-  assert.equal(statusOf(await duellists(blocker.cookie), blocked.userId), undefined);
-  assert.equal(statusOf(await duellists(blocked.cookie), blocker.userId), undefined);
+  assert.equal(statusOf(await around(blocker.cookie, blocked), blocked.userId), undefined);
+  assert.equal(statusOf(await around(blocked.cookie, blocker), blocker.userId), undefined);
 
   // The profile answers “not found” — in both directions, and for both.
   assert.equal((await req("GET", `/players/${blocked.userId}`, blocker.cookie)).status, 404);
@@ -143,7 +184,7 @@ test("a block works both ways, severs the link, and hides the profile", async ()
 
   assert.equal((await req("DELETE", `/community/blocks/${blocked.userId}`, blocker.cookie)).status, 200);
   assert.equal((await req("GET", `/players/${blocked.userId}`, blocker.cookie)).status, 200);
-  assert.equal(statusOf(await duellists(blocker.cookie), blocked.userId), "none",
+  assert.equal(statusOf(await around(blocker.cookie, blocked), blocked.userId), "none",
     "unblocking does not bring the friendship back");
 });
 
@@ -176,24 +217,24 @@ test("presence is read from the last request, and the online filter follows it",
   const seen = await freshSession(app, "seen-other");
 
   // Registering was a request: they are around.
-  assert.equal((await duellists(viewer.cookie)).find((item) => item.id === seen.userId)?.isOnline, true);
+  assert.equal((await around(viewer.cookie, seen)).find((item) => item.id === seen.userId)?.isOnline, true);
 
   // An hour without a request, and they are not.
   await db.execute(sql`update users set last_seen_at = now() - interval '1 hour' where id = ${seen.userId}`);
-  assert.equal((await duellists(viewer.cookie)).find((item) => item.id === seen.userId)?.isOnline, false);
+  assert.equal((await around(viewer.cookie, seen)).find((item) => item.id === seen.userId)?.isOnline, false);
 
   // Six minutes is already too long: the window is five.
   await db.execute(sql`update users set last_seen_at = now() - interval '6 minutes' where id = ${seen.userId}`);
-  assert.equal((await duellists(viewer.cookie)).find((item) => item.id === seen.userId)?.isOnline, false);
+  assert.equal((await around(viewer.cookie, seen)).find((item) => item.id === seen.userId)?.isOnline, false);
 });
 
 test("signing out takes the account offline at once", async () => {
   const viewer = await freshSession(app, "out-viewer");
   const leaving = await freshSession(app, "out-leaving");
-  assert.equal((await duellists(viewer.cookie)).find((item) => item.id === leaving.userId)?.isOnline, true);
+  assert.equal((await around(viewer.cookie, leaving)).find((item) => item.id === leaving.userId)?.isOnline, true);
 
   assert.equal((await req("POST", "/auth/logout", leaving.cookie)).status, 200);
-  assert.equal((await duellists(viewer.cookie)).find((item) => item.id === leaving.userId)?.isOnline, false,
+  assert.equal((await around(viewer.cookie, leaving)).find((item) => item.id === leaving.userId)?.isOnline, false,
     "gone is gone: no window after a sign-out");
 });
 
@@ -210,5 +251,5 @@ test("a relation needs two real accounts", async () => {
   const suspended = await freshSession(app, "suspended-friend");
   await db.execute(sql`update users set suspended_at = now() where id = ${suspended.userId}`);
   assert.equal((await req("POST", `/community/friends/${suspended.userId}`, viewer.cookie)).status, 404);
-  assert.equal((await duellists(viewer.cookie)).some((item) => item.id === suspended.userId), false);
+  assert.equal((await around(viewer.cookie, suspended)).some((item) => item.id === suspended.userId), false);
 });

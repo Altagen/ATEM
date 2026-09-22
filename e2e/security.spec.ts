@@ -62,7 +62,11 @@ test("card artwork is served by ATEM, and the browser never calls YGOPRODeck", a
   expect(source.width, "the image must really be there, not a broken one").toBeGreaterThan(0);
 
   expect(
-    requests.filter((url) => url.includes("ygoprodeck.com")),
+    // The host itself, parsed — not a substring of the whole address.
+    requests.filter((url) => {
+      const host = new URL(url).hostname;
+      return host === "ygoprodeck.com" || host.endsWith(".ygoprodeck.com");
+    }),
     "no request from the browser to YGOPRODeck",
   ).toEqual([]);
   expect(refusals, "nothing refused by the policy").toEqual([]);

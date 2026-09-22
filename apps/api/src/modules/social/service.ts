@@ -166,19 +166,34 @@ export async function listDuellists(
     blockRows.map((row) => (row.userId === viewerId ? row.blockedUserId : row.userId)),
   );
 
-  // One more than we keep: that is how we know the list was cut.
-  const rows = await listProfiles(db, {
-    search: options.search, excludeId: viewerId, limit: DIRECTORY_LIMIT + 1,
-  });
-  const items = rows
+  /**
+   * The people one has a relation with come whatever the cut.
+   *
+   * The page is the first names in alphabetical order; friends and requests
+   * used to be sorted to the top **after** it was cut, so on an instance past
+   * two hundred duellists a friend named late in the alphabet never appeared —
+   * nor in the “friends” chip, nor as a request to answer. Found on
+   * 2026-09-22, reading this function while fixing a test.
+   */
+  const [related, page] = await Promise.all([
+    listProfiles(db, { search: options.search, excludeId: viewerId, ids: [...relation.keys()] }),
+    // One more than we keep: that is how we know the list was cut.
+    listProfiles(db, { search: options.search, excludeId: viewerId, limit: DIRECTORY_LIMIT + 1 }),
+  ]);
+  const byId = new Map([...related, ...page].map((row) => [row.id, row]));
+  const items = [...byId.values()]
     .filter((row) => !hidden.has(row.id))
     .map((row) => ({ ...row, friendStatus: relation.get(row.id) ?? "none" }));
 
   const sorted = items.sort((a, b) => {
-    const mine = Number(b.friendStatus === "friends") - Number(a.friendStatus === "friends");
-    return mine !== 0 ? mine : a.displayName.localeCompare(b.displayName);
+    const mine = Number(b.friendStatus !== "none") - Number(a.friendStatus !== "none");
+    const friends = Number(b.friendStatus === "friends") - Number(a.friendStatus === "friends");
+    return friends !== 0 ? friends : mine !== 0 ? mine : a.displayName.localeCompare(b.displayName);
   });
-  return { items: sorted.slice(0, DIRECTORY_LIMIT), truncated: sorted.length > DIRECTORY_LIMIT };
+  return {
+    items: sorted.slice(0, DIRECTORY_LIMIT),
+    truncated: page.length > DIRECTORY_LIMIT || sorted.length > DIRECTORY_LIMIT,
+  };
 }
 
 /** The person a relation gesture targets — never suspended, never yourself. */

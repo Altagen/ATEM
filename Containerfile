@@ -38,23 +38,42 @@ RUN node -e "const p=require('/app/packages/shared/package.json'); \
 
 # ---
 
-FROM node:22-bookworm-slim AS runtime
-LABEL org.opencontainers.image.title="ATEM API" \
-      org.opencontainers.image.source="https://github.com/Altagen/ATEM" \
-      org.opencontainers.image.licenses="AGPL-3.0-only"
-ENV NODE_ENV=production PNPM_HOME=/pnpm PATH=/pnpm:$PATH
+# The production dependencies, for the target platform — pure JavaScript, but
+# installed where they will run all the same.
+FROM node:22-bookworm-slim AS deps
+ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
-
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 RUN pnpm install --frozen-lockfile --prod --filter @atem/api...
 
+# ---
+
+FROM node:22-bookworm-slim AS runtime
+LABEL org.opencontainers.image.title="ATEM API" \
+      org.opencontainers.image.source="https://github.com/Altagen/ATEM" \
+      org.opencontainers.image.licenses="AGPL-3.0-only"
+ENV NODE_ENV=production
+
+# No package manager in the running image: the API installs nothing, and npm,
+# corepack and yarn — with their own dependencies — were every vulnerability
+# the image scanner found in it (2026-09-22).
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+      /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+      /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn-v*
+WORKDIR /app
+
+COPY --from=deps /app/node_modules node_modules
+COPY --from=deps /app/apps/api/node_modules apps/api/node_modules
+COPY --from=deps /app/packages/shared/node_modules packages/shared/node_modules
+
 # Compiled JavaScript, and the manifest that points at it — never the sources.
 # The front is not here: nginx serves it, from its own image (Containerfile.web).
 COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY --from=build /app/packages/shared/package.runtime.json packages/shared/package.json
+COPY --from=build /app/apps/api/package.json apps/api/package.json
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/api/drizzle apps/api/drizzle
 

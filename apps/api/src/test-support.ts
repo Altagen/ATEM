@@ -72,6 +72,6 @@ export async function freshSession(app: TestApp, prefix: string) {
     displayName: `Tester ${prefix}`,
   });
   const cookie = response.headers.get("set-cookie")?.split(";")[0] ?? "";
-  const { user } = (await response.json()) as { user: { id: string } };
-  return { cookie, userId: user.id, email };
+  const { user } = (await response.json()) as { user: { id: string; displayName: string } };
+  return { cookie, userId: user.id, email, displayName: user.displayName };
 }
