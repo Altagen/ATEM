@@ -1,9 +1,12 @@
-# Runtime image of the API and the front.
+# Runtime image of the API.
 #
-# The earlier prototype only had a *build* image: the real deployment took nine manual
-# steps, systemd and nginx. That is what this file replaces.
+# Built for amd64 and arm64. The build stage runs on the builder's own platform
+# (`$BUILDPLATFORM`): TypeScript and Vite produce JavaScript, the same for
+# every architecture, so compiling under emulation would only be slower. Only
+# the runtime stage is assembled per architecture — its production
+# dependencies are pure JavaScript, with no native module to compile.
 
-FROM node:22-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
@@ -24,8 +27,7 @@ COPY . .
 # `.ts`. Measured on 2026-09-16 by bringing the stack up: migrate exited 1,
 # ERR_MODULE_NOT_FOUND, and the API behind it.
 RUN pnpm --filter @atem/shared build \
- && pnpm --filter @atem/api build \
- && pnpm --filter @atem/web build
+ && pnpm --filter @atem/api build
 
 # The entry point the **image** uses, derived from the real manifest rather than
 # written a second time: a hand-kept copy would drift on the first dependency
@@ -37,6 +39,9 @@ RUN node -e "const p=require('/app/packages/shared/package.json'); \
 # ---
 
 FROM node:22-bookworm-slim AS runtime
+LABEL org.opencontainers.image.title="ATEM API" \
+      org.opencontainers.image.source="https://github.com/Altagen/ATEM" \
+      org.opencontainers.image.licenses="AGPL-3.0-only"
 ENV NODE_ENV=production PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
@@ -47,11 +52,11 @@ COPY apps/api/package.json apps/api/
 RUN pnpm install --frozen-lockfile --prod --filter @atem/api...
 
 # Compiled JavaScript, and the manifest that points at it — never the sources.
+# The front is not here: nginx serves it, from its own image (Containerfile.web).
 COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY --from=build /app/packages/shared/package.runtime.json packages/shared/package.json
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/api/drizzle apps/api/drizzle
-COPY --from=build /app/apps/web/dist apps/web/dist
 
 # The media directory belongs to the unprivileged user. A named volume mounted
 # there takes the image's ownership on first use; created at mount time

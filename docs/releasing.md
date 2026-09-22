@@ -46,4 +46,24 @@ A fix that cannot wait for `develop`: branch from `main`, fix, pull request to
 
 ## What the checks run
 
-*To be completed with the CI configuration.*
+| Workflow | When | What |
+|---|---|---|
+| `ci.yml` — gates, types and tests | every pull request, pushes to `develop` and `main` | `scripts/check-all.sh`, the script a developer runs, against a PostgreSQL service |
+| `ci.yml` — dependency review | every pull request | refuses a new dependency with a known vulnerability (moderate and up) or a license the AGPL cannot take in |
+| `ci.yml` — secret scan | every pull request and push | gitleaks over the whole history |
+| `ci.yml` — images | pull requests to `main`, and `main` | both images built (amd64) and scanned by Trivy: a fixable HIGH or CRITICAL vulnerability fails |
+| `codeql.yml` | every pull request, pushes, and weekly | CodeQL's security queries over the TypeScript |
+| `release.yml` | a `vX.Y.Z` tag | the tag is on `main` and matches the packages and the changelog; both images scanned, then built for amd64 and arm64 and pushed with an SBOM and a provenance attestation; the GitHub release |
+
+The end-to-end tests are not in CI: they need a running instance and the card
+catalogue, which means downloading it from YGOPRODeck on every run. They run
+on a developer's machine before a release pull request is opened
+(`docs/development.md`).
+
+Dependabot opens weekly pull requests against `develop` for npm, the actions,
+the base images and the compose file. GitHub's secret scanning with push
+protection, Dependabot alerts and private vulnerability reporting are enabled
+on the repository.
+
+Every action is pinned by commit — each one checked as signed by its publisher
+when it was pinned — and every job gets only the permissions it needs.
