@@ -72,6 +72,13 @@ prototype had more, and these are the parts worth having one day:
 - **The catalogue cache setting.** Keep every downloaded artwork, or drop an
   artwork once nobody owns or plays its card — with the disk space shown.
   Today every artwork is kept, and the disk reserve protects the database.
+- **The catalogue sync from the console.** Today it is a command the host runs
+  (`node dist/modules/referential/sync.js`), and nothing schedules it: the
+  banlist and new sets only move when someone runs it. A button in the console,
+  and a schedule the administrator sets, would put it where the rest of the
+  instance is steered. Under consideration, 2026-09-23, and no hurry: a cron
+  job on the host does the same thing, and an instance owner may well prefer
+  one.
 - **An administrator acting inside a guild** (the prototype's “admin
   override”), once guilds exist — and logged like every other administrator
   action.
