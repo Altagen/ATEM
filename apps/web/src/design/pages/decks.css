@@ -1,0 +1,816 @@
+
+.deck-stepper-qty.is-in-deck,
+.qty-pill.is-in-deck {
+  color: #6ec8ff !important;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(80, 180, 255, 0.65);
+}
+.zone-ico,
+.deck-ico {
+  display: inline-block;
+  vertical-align: -0.15em;
+  flex-shrink: 0;
+}
+.qty-pill,
+.zone-pill {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--input, #0e131a);
+  border: 1px solid var(--border, #2a3344);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+@media (max-width: 900px) {
+  /**
+ * The sentence saying where the deck stands.
+ *
+ * The counters give numbers; this one gives the verdict, and what is left to
+ * do. It does not shout: it is a line of text, not a banner, because a deck
+ * under construction is the screen's **normal** state — a permanent alert would
+ * stop being read.
+ */
+.deck-status {
+  /* Stuck to the counters it explains, and quieter than them: it is a caption,
+     not a title. */
+  margin: 0 0 .85rem;
+  font-size: .85rem;
+}
+.deck-status-short { color: var(--muted); }
+.deck-status-ready { color: var(--success); font-weight: 600; }
+.deck-status-over { color: var(--err); font-weight: 600; }
+
+.deck-edit-layout {
+    grid-template-columns: 1fr;
+  }
+}
+/**
+ * The workshop's two panels are no longer cards.
+ *
+ * Each cost two edges: its own (border + 0.85rem of padding) and the page's,
+ * which had to stay wide enough to see the card stand out. On a 390px phone,
+ * 46px went on the left and as much on the right before the first thumbnail — a
+ * quarter of the screen for decoration.
+ *
+ * The Collection is not framed either: the page is the panel. What separates
+ * the two columns is their header and its rule, not a box.
+ */
+.deck-edit-collection,
+.deck-edit-zones {
+  min-width: 0;
+}
+.zone-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+.menu-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+}
+.btn-qty.is-fav,
+.btn-qty.js-fav.is-fav {
+  color: var(--gold);
+}
+.fav-tag {
+  color: var(--gold) !important;
+}
+
+/* Banlist badges (deck atelier) */
+.ban-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.ban-badge-forbidden {
+  color: #ffb4b4;
+  background: rgba(200, 40, 40, 0.25);
+  border-color: rgba(255, 80, 80, 0.45);
+}
+.ban-badge-limited {
+  color: #ffd9a8;
+  background: rgba(200, 120, 20, 0.22);
+  border-color: rgba(255, 160, 40, 0.4);
+}
+.ban-badge-semi {
+  color: #ffe9a0;
+  background: rgba(180, 160, 20, 0.2);
+  border-color: rgba(220, 200, 40, 0.35);
+}
+.card-ban-forbidden {
+  opacity: 0.72;
+}
+.ban-slash {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.15rem;
+  vertical-align: -0.1em;
+  background: linear-gradient(
+    to top left,
+    transparent 44%,
+    #ff5555 45%,
+    #ff5555 55%,
+    transparent 56%
+  );
+  border: 1.5px solid #ff5555;
+  border-radius: 50%;
+}
+
+/* ── List view, explorer style ─────────────────────────────────────────────
+ * Taken from the mock-up as is. The tree unfolded every folder at once, with
+ * their nesting and their decks: at three levels, you were reading a metro map
+ * to find a deck. The list shows one place at a time, and shares its position
+ * with the gallery.
+ */
+.drive-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.drive-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.drive-row:last-child { border-bottom: 0; }
+.drive-row:hover { background: rgba(255, 255, 255, 0.04); }
+.drive-row[draggable="true"] { cursor: grab; }
+
+.drive-main {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  /* It is a link: without this, the name, the counts and the pill all come out
+     underlined — the row looks like a paragraph of links. */
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  /**
+   * Four columns: cover, name, counts, pill.
+   *
+   * There were only three for four children, so the pill fell onto an implicit
+   * row, alone, against the left edge. Reported by the maintainer — the row view not
+   * being the default one, nobody had looked at it closely enough.
+   */
+  grid-template-columns: 2rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0.55rem 0.4rem;
+}
+.drive-ico { font-size: 1.1rem; line-height: 1; text-align: center; }
+/* A deck's cover keeps a card's ratio, very small: that is what tells a deck row
+   from a folder row at first glance. */
+.drive-ico-cover { width: 1.55rem; height: 2.25rem; display: block; border-radius: 3px; overflow: hidden; }
+.drive-ico-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.drive-text { display: flex; flex-direction: column; min-width: 0; }
+.drive-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.drive-main:hover .drive-name { color: var(--accent); }
+.drive-meta { font-size: 0.75rem; white-space: nowrap; }
+/* A deck's cover in a row: `deckCover` returns an image or the card back, and
+   both must fill the thumbnail. */
+.drive-cover, .drive-cover img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 3px; }
+
+/* ── A deck's sheet ────────────────────────────────────────────────────────
+ * Opening a deck shows it: it is a reading page, built like the collection.
+ * The pencil leads to the workshop, and nothing else here writes.
+ */
+.deck-sheet-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0 0 0.6rem;
+}
+.deck-sheet-identity { display: flex; gap: 0.75rem; align-items: center; min-width: 0; flex: 1; }
+/* The cover at a card's ratio, small: the same image as on the board. */
+.deck-sheet-cover { width: 3rem; flex-shrink: 0; display: block; }
+.deck-sheet-art {
+  width: 100%;
+  aspect-ratio: 59 / 86;
+  object-fit: cover;
+  display: block;
+  border-radius: 5px;
+}
+.deck-sheet-titles { min-width: 0; }
+/* `break-word` and not `anywhere`: the latter cut “Dragons” into “Drag / ons”
+   as soon as the action bar squeezed the column. */
+.deck-sheet-titles h1 { margin: 0; font-size: 1.3rem; overflow-wrap: break-word; }
+.deck-sheet-place { margin: 0.15rem 0 0; font-size: 0.8rem; }
+.deck-sheet-actions { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
+/* The pencil is a link — it changes screen — but it wears a button's look. */
+a.icon-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+/* On a phone the head is centred and stacked: cover, name, folder, then the
+   actions. Side by side, the name was left a column three letters wide; with
+   the cover on the left and the actions on the right, the head read as three
+   pieces with a hole in the middle (the maintainer, 2026-09-21). */
+@media (max-width: 700px) {
+  .deck-sheet-top { flex-direction: column; align-items: center; text-align: center; gap: 0.6rem; }
+  .deck-sheet-identity { flex-direction: column; flex: none; gap: 0.5rem; }
+  .deck-sheet-cover { width: 3.5rem; }
+  .deck-sheet-actions { justify-content: center; }
+  /* The counts and the verdict under it follow the head's axis. */
+  .deck-sheet-top ~ .deck-counts { justify-content: center; }
+  .deck-sheet-top ~ .deck-status { text-align: center; }
+}
+
+.deck-sheet-tile .tile-zone {
+  position: absolute;
+  left: 0.25rem;
+  bottom: 0.25rem;
+  font-size: 0.8rem;
+  filter: drop-shadow(0 1px 2px #000);
+}
+
+/* ── Folders ───────────────────────────────────────────────────────────────
+ * Navigation goes one level at a time. The breadcrumb says where you are and
+ * brings you back in one click to any level crossed — without it, going up two
+ * folders would take two round trips through the “..” card.
+ */
+.folder-path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+.folder-path-step {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+.folder-path-step:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+/* On a phone, each level is also a navigation target: 26 px high gets missed,
+   measured on a Pixel 5. */
+@media (max-width: 900px) {
+  .folder-path-step { min-height: 44px; padding-left: 0.5rem; padding-right: 0.5rem; }
+}
+/* The current level is not clicked for nothing: it stands out. */
+.folder-path-step[aria-current="page"] { color: var(--fg); font-weight: 600; cursor: default; }
+.folder-path-sep { color: var(--muted); }
+
+/* A folder takes a deck tile's place, at the same card ratio: the grid stays
+   regular whatever it holds. */
+.folder-tile-li { list-style: none; }
+.folder-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0.5rem;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.folder-tile:hover { border-color: var(--accent); transform: translateY(-2px); }
+/* The card that goes up: dotted, so it is not mistaken for a real folder at
+   first glance. */
+.folder-tile-parent { border-style: dashed; }
+.folder-open {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.2rem;
+}
+.folder-ico { font-size: 1.9rem; line-height: 1.1; }
+.folder-name {
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-meta { font-size: 0.75rem; }
+.drive-folder {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* ── The “⋯” menu ──────────────────────────────────────────────────────────
+ * It is the touch path for filing: drag and drop means aiming at a target
+ * while holding — workable with a mouse, not with a thumb — so it only exists
+ * on the desktop.
+ */
+.folder-menu-anchor { position: relative; }
+/* In a tile, the menu sits top right; in a row, it follows the flow, at the end
+   of the line. */
+.deck-tile-wrap { position: relative; height: 100%; }
+.deck-tile-wrap > .folder-menu-anchor,
+.folder-tile > .folder-menu-anchor {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+}
+/**
+ * A tile's “⋯” sits on the artwork.
+ *
+ * A bare button becomes invisible there — it was, at first render. The earlier prototype
+ * showed it on hover: a phone hovers over nothing, so it stays there, on a dark
+ * pill that sets it apart from any card.
+ */
+.deck-tile-wrap .folder-menu-btn,
+.folder-tile .folder-menu-btn {
+  background: rgba(8, 10, 16, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--fg);
+}
+/* 44 px: it is the only gesture that files a deck by finger, and measurement
+   showed 40. The application's round buttons are 40 everywhere else — this one
+   opens a menu, not a toggle. */
+.folder-menu-btn { min-width: 44px; min-height: 44px; }
+.folder-ctx-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: var(--z-modal-panel);
+  min-width: 10rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.menu-item {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  /* 44px high: this screen is handled by thumb like the rest. */
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+}
+.menu-item:hover { background: rgba(255, 255, 255, 0.06); }
+.menu-item-danger { color: var(--err); }
+
+/* ── The create and file window ────────────────────────────────────────────
+ * It replaces `window.prompt`, which had neither the application's styling nor
+ * room for a second field, and which opens at the top of the screen on a phone
+ * — far from the thumb.
+ */
+.deck-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: var(--z-modal);
+}
+.deck-modal {
+  position: fixed;
+  z-index: var(--z-modal-panel);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(26rem, calc(100vw - 1.5rem));
+  max-height: min(88vh, 640px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.deck-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.deck-modal-head h2 { margin: 0; font-size: 1.05rem; }
+.deck-modal-body {
+  overflow: auto;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.deck-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ── The move banner ───────────────────────────────────────────────────────
+ * Drive's “Move here” mode, proposed by the maintainer: you navigate, and the current
+ * screen designates the destination. It sticks to the top to stay reachable
+ * after scrolling down a long list — without it in view, you would no longer
+ * know a move is under way.
+ */
+.move-banner {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--border));
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--gold) 12%, var(--card));
+}
+.move-banner-what { display: flex; flex-direction: column; min-width: 0; }
+.move-banner-why { color: var(--caution); font-size: 0.85rem; }
+.move-banner-actions { display: flex; gap: 0.4rem; margin-left: auto; }
+
+/* ── Drag and drop, on the desktop ─────────────────────────────────────────
+ * These two classes are set by the code during the drag, never by the
+ * template: a repaint on `dragover` would replace the element the browser is
+ * following, and break off the gesture.
+ */
+.is-dragging { opacity: 0.45; }
+.is-drag-over {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* ── The deck board ────────────────────────────────────────────────────────
+ * A list of names is read; a board of artworks is recognised. It is the decks
+ * page's default view, and the cover's reason for being.
+ *
+ * `auto-fill` rather than a column count: the same rule gives six portraits on
+ * a wide screen and two on a phone, with no breakpoint to maintain.
+ */
+.deck-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.deck-tile-li { list-style: none; }
+.deck-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0.5rem;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.deck-tile:hover, .deck-tile:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+/* A card's ratio, so the artwork is neither cropped nor stretched. */
+.deck-tile-cover {
+  width: 100%;
+  aspect-ratio: 59 / 86;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px;
+}
+.deck-tile-label { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.deck-tile-name {
+  font-size: 0.92rem;
+  line-height: 1.25;
+  /* A long name must not make a tile taller than its neighbours. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-tile-meta { font-size: 0.75rem; }
+.deck-tile .zone-pill { align-self: flex-start; }
+
+/* ── Workshop panel toggle, on a phone ─────────────────────────────────────
+ * Stacked, the collection and the deck force you to scroll through the whole
+ * first one to reach the second — that is, at every card added. Above 900px
+ * the two fit side by side: the toggle has no business there.
+ */
+.deck-panel-switch { display: none; }
+
+@media (max-width: 900px) {
+  .deck-panel-switch {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.85rem;
+  }
+  .deck-panel-switch .chip { flex: 1; justify-content: center; }
+
+  .deck-edit-layout.is-panel-coll .deck-edit-zones,
+  .deck-edit-layout.is-panel-zone .deck-edit-collection { display: none; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Taken from the sheet the earlier prototype injected at runtime.
+
+   Two hundred and fifty-seven lines of minified CSS lived in a template string,
+   placed in a `<style id="decks-css">` at every mount of the page — and removed
+   then re-added at every re-render. They therefore went through neither the
+   build, nor the style gates, nor the browser cache, and nine of their
+   selectors redefined rules of this very file with nothing flagging it.
+
+   The block is taken as is, at the end of the file: that is the order it had —
+   injected after the sheet, so winning at equal specificity. Reformatting it
+   while moving it would have mixed two changes, one checkable and one not.
+   ────────────────────────────────────────────────────────────────────────── */.decks-page {
+  max-width:1280px;
+  margin:0 auto;
+  padding:1rem 1.25rem 3rem;
+}.app-bar-right {
+  display:flex;
+  align-items:center;
+  gap:.65rem;
+}.decks-manage-head h1 {
+  margin:0 0 .25rem;
+  font-size:1.35rem;
+}.decks-toolbar {
+  display:flex;
+  flex-wrap:wrap;
+  gap:.75rem;
+  align-items:flex-end;
+  margin:1rem 0 1.25rem;
+}.decks-toolbar .search {
+  flex:1;
+  min-width:160px;
+}
+.decks-toolbar-build{flex-shrink:0;white-space:nowrap;margin-left:auto}.btn-sm {
+  font-size:.8rem;
+  padding:.3rem .55rem;
+}/* Every deck wears the card back (the maintainer, 2026-09-21): the class carries its
+   picture, and the cover's own class its size. */
+.deck-cover-default {
+  display: block;
+  aspect-ratio: 59 / 86;
+  background: url("../../assets/cards/back.svg") center / cover no-repeat;
+}
+.zone-tabs {
+  display:flex;
+  flex-wrap:wrap;
+  gap:.35rem;
+  align-items:center;
+}.chip-zone {
+  display:inline-flex;
+  align-items:center;
+  gap:.3rem;
+}
+.zone-ico,.deck-ico{display:inline-block;vertical-align:-.15em;flex-shrink:0}
+.zone-ico-main{color:#7eb6ff}
+.zone-ico-extra{color:#e8c36a}
+.zone-ico-side{color:#9ad4a8}
+.qty-pill,.zone-pill{font-size:.75rem;padding:.1rem .4rem;border-radius:999px;background:var(--input,#0e131a);border:1px solid var(--border,#2a3344);display:inline-flex;align-items:center;gap:.25rem}
+.btn-icon-danger{color:#f08080}
+.btn-icon-danger:hover{color:#ffb0b0}
+/* In-deck selection ring (blue frame + ×N) */
+.item.in-deck-selected,
+.tile.in-deck-selected,
+.deck-coll-tile.in-deck-selected{
+  outline:2px solid var(--accent,#5b8def);
+  outline-offset:0;
+  border-radius:10px;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent,#5b8def) 35%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--accent,#5b8def) 20%,transparent);
+  background:color-mix(in srgb,var(--accent,#5b8def) 8%,transparent);
+}
+.item.in-deck-selected .item-main{position:relative}.in-deck-qty {
+  color:#eaf6ff;
+  background:linear-gradient(160deg,#3d9fff 0%,#1a6fe0 100%);
+  border:1px solid rgba(160,220,255,.55);
+  box-shadow:0 0 10px rgba(80,180,255,.55),0 1px 4px rgba(0,0,0,.4);
+  text-shadow:0 0 6px rgba(120,200,255,.9);
+  font-weight:800;
+  position:absolute;
+  top:.4rem;
+  right:.4rem;
+  min-width:1.7rem;
+  height:1.5rem;
+  padding:0 .4rem;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.8rem;
+  line-height:1;
+  letter-spacing:.02em;
+  border-radius:999px;
+  z-index:2;
+}
+.tile.in-deck-selected .in-deck-qty,
+.deck-coll-tile .in-deck-qty{
+  top:.35rem;right:.35rem;left:auto;
+}
+/* List: stepper stays on the RIGHT (never wrap under the row) */
+.deck-edit-coll-list .item-row{display:flex;align-items:center;gap:.65rem;flex-wrap:nowrap}
+.deck-edit-coll-list .deck-stepper{flex:0 0 auto;margin-left:auto}
+/* Gallery 6 columns + overlay on art */
+.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(6,minmax(0,1fr));gap:.55rem}
+@media(max-width:1100px){.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){.deck-edit-gallery.gallery[data-cols="6"]{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.deck-coll-tile{display:flex;flex-direction:column;gap:0;overflow:hidden;min-width:0}
+.deck-coll-tile .tile-art-wrap{position:relative}
+.deck-coll-tile .tile-body{padding:.35rem .4rem .45rem;display:flex;flex-direction:column;gap:.12rem}
+.deck-coll-tile .tile-qty.muted-own{opacity:.85;font-size:.68rem}
+.deck-stepper-overlay{
+  position:absolute;left:0;right:0;bottom:0;z-index:3;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:.1rem;padding:.22rem .25rem;
+  background:linear-gradient(to top,rgba(8,10,16,.94),rgba(8,10,16,.5) 75%,transparent);
+}
+.deck-stepper-overlay .btn-qty,.deck-stepper-overlay .btn{
+  min-width:1.55rem;height:1.45rem;padding:0 .15rem;font-size:.75rem;font-weight:700;
+  background:rgba(20,24,32,.9);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:6px;
+}
+.deck-stepper-overlay .btn-qty:disabled{opacity:.35}
+.deck-stepper-overlay .btn-qty:not(:disabled):hover,.deck-stepper-overlay .btn:hover{background:var(--accent,#5b8def);border-color:transparent}
+.deck-stepper-overlay .deck-stepper-qty{min-width:1.45rem;color:#fff;font-size:.82rem;font-weight:800;text-align:center}
+.deck-stepper-overlay .deck-stepper-qty.is-in-deck{color:#8fd4ff;text-shadow:0 0 8px rgba(100,200,255,.95)}
+/* Right zone panel: name left, stepper right */.zone-edit-list {
+  max-height:min(65vh,560px);
+  overflow:auto;
+  list-style:none;
+  margin:0;
+  padding:0;
+}
+.zone-edit-row{display:flex;align-items:center;gap:.5rem;padding:.4rem .15rem;border-bottom:1px solid rgba(42,51,68,.55);
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-radius: 8px;
+}
+.zone-edit-row:last-child{border-bottom:0}
+.zone-edit-main{flex:1;min-width:0;display:flex;align-items:center;gap:.5rem;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:.15rem;
+  grid-template-columns: 2.2rem minmax(0, 1fr);
+  appearance: none;
+}
+.zone-edit-text{display:flex;flex-direction:column;gap:.1rem;min-width:0;
+  font-size: 0.82rem;
+}
+.zone-edit-text strong{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color: #fff;
+}
+.zone-edit-text code{font-size:.72rem}
+.zone-edit-row .deck-stepper{flex:0 0 auto}
+.thumb-sm,.thumb-empty.thumb-sm{width:36px;height:52px;
+  border-radius: 4px;
+  display: block;
+}.zone-hint {
+  font-size:.75rem;
+  margin:.4rem 0 .65rem;
+  line-height:1.35;
+}
+.deck-stepper{display:inline-flex;align-items:center;gap:.25rem;flex-shrink:0}
+.deck-stepper .btn-qty,.deck-stepper .btn{min-width:2rem}
+.deck-stepper-qty{min-width:1.7rem;text-align:center;font-size:.85rem;font-weight:800;color:var(--muted,#9aa)}
+.deck-stepper-qty.is-in-deck{color:#6ec8ff;text-shadow:0 0 8px rgba(80,180,255,.65)}.deck-edit-head {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:.75rem;
+  align-items:flex-end;
+  margin-bottom:.5rem;
+}.deck-edit-fields {
+  display:flex;
+  flex-wrap:wrap;
+  gap:.65rem;
+  flex:1;
+  align-items:flex-end;
+}
+.deck-edit-fields .grow{flex:1;min-width:160px}.deck-edit-actions {
+  display:flex;
+  gap:.4rem;
+  flex-wrap:wrap;
+  flex-shrink: 0;
+}
+.deck-counts{margin:.25rem 0 .35rem;display:flex;flex-wrap:wrap;gap:.65rem 1rem;align-items:center}
+.deck-counts .count-full{color:var(--accent,#5b8def)}
+.deck-counts .count-over{color:var(--err,#f08080);font-weight:600}
+
+/**
+ * A zone below its minimum.
+ *
+ * `count-full` says “it is full” and `count-over` shouts; the third state was
+ * missing, that of a deck under construction. Without it, a twelve-card Main
+ * looked like a forty-card Main.
+ */
+.deck-counts .count-short { color: var(--caution); }
+
+/**
+ * “Saved”, long enough to read it.
+ *
+ * Cards are written at every “±”. The earlier prototype displayed “unsaved” because it
+ * worked on a draft; we say the reverse, and briefly — a permanent mark would
+ * become decoration nobody reads any more.
+ */
+.deck-counts .deck-saved {
+  color: var(--success);
+  font-weight: 600;
+}
+.deck-edit-layout {
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(280px,.9fr);
+  gap:1rem;
+  align-items:start;
+}
+@media(max-width:900px){.deck-edit-layout{grid-template-columns:1fr}}
+
+/* ── Ported from the mock-up ───────────────────────────────────────────
+ *
+ * These classes were set by the application and styled nowhere: the screen had
+ * been built by copying the mock-up's markup without its rules. They broke
+ * nothing visible — they simply left shapeless elements, and suggested a rule
+ * existed somewhere.
+ */
+
+.zone-edit-empty { padding: 0.6rem 0.4rem; font-style: italic; font-size: 0.84rem; }
+
+/* Mobile pass ported from the earlier prototype's deck sheet (survey of 3 September 2026). */
+@media (max-width: 850px) {
+  .drive-main { grid-template-columns: 1.75rem minmax(0, 1fr); row-gap: 0.1rem; }
+  .drive-meta { grid-column: 2; }
+  /* The pill follows the name and counts in the same column, instead of
+     overflowing under the cover. */
+  .drive-main .zone-pill { grid-column: 2; justify-self: start; }
+}
+
+/* ══ Rules ported from the mock-up — 3 September 2026 ══════════════════════
+ *
+ * The previous day's port only compared `@media` blocks: the whole “base” half
+ * had been left out. Thirty-one selectors were missing, and ninety-one existing
+ * rules were incomplete — those were completed in place, a second declaration
+ * would have made them drift.
+ */
+
+.deck-counts .warn {
+  color: var(--caution);
+}
+
+.deck-edit-coll-list {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.zone-edit-main:hover strong {
+  color: var(--accent);
+}
+
+.zone-edit-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── The card sheet opened from the workshop ───────────────────────────────
+ *
+ * Brought back with their markup: the full-size sheet arrived in the workshop,
+ * and these rules style it.
+ */
+.deck-edit-coll-list .item-main.js-open-card{
+  flex:1 1 auto;min-width:0;width:auto !important;max-width:none;
+  cursor:pointer;border:0;background:transparent;color:inherit;text-align:left;
+  font:inherit;padding:.25rem;display:flex;gap:.65rem;align-items:center;position:relative;
+}
+/* The sheet's tiles are buttons too: without the reset they wore the
+   browser's grey (the maintainer, 2026-09-21). */
+.deck-coll-tile .tile-open,
+.deck-sheet-tile .tile-open{display:block;width:100%;border:0;padding:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.deck-open-actions{margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--border,#2a3344)}
+.deck-open-btns{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.in-deck-qty-label{color:#6ec8ff;font-weight:800;text-shadow:0 0 8px rgba(80,180,255,.55)}

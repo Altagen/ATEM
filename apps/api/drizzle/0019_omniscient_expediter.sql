@@ -1,0 +1,2 @@
+ALTER TABLE "duels" DROP CONSTRAINT "duels_recorded_has_winner";--> statement-breakpoint
+ALTER TABLE "duels" ADD CONSTRAINT "duels_recorded_has_winner" CHECK (("duels"."status" = 'recorded') = ("duels"."winner_id" is not null or "duels"."host_id" is null or "duels"."guest_id" is null));

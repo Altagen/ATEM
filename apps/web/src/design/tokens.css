@@ -1,0 +1,174 @@
+/**
+ * ATEM design tokens — source of truth for mock AND apps/web.
+ * When palette changes: update here first, then sync apps/web/src/style.css :root.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #0b0e13;
+  --card: #121822;
+  --input: #0a0d12;
+  --border: #243044;
+
+  /* Text */
+  --fg: #e8edf5;
+  --muted: #8b97a8;
+
+  /* Accents / status */
+  --accent: #6ec8ff;
+  --accent-dim: #3a7eab;
+  --ok: #5ddea0;
+  --err: #ff7b8a;
+  --warn: #e6c07b;
+
+  /* Layout */
+  --radius: 0.75rem;
+  --radius-sm: 0.45rem;
+  --shell-max: 44rem;
+  --space-1: 0.35rem;
+  --space-2: 0.65rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+
+  /* Type */
+  --font: "Segoe UI", system-ui, sans-serif;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.85rem;
+  --fs-md: 0.95rem;
+  --fs-lg: 1.85rem;
+
+
+  /* ── ATEM signature palette ────────────────────────────────────────────────
+   * Added on 2026-08-21. These colours were hard-coded until then: #f5c542
+   * appeared 104 times in the TypeScript, 85 times in the web CSS and 52 times
+   * in the mock's, without ever being a token. Changing the project's gold
+   * therefore took 240 edits.
+   *
+   * The historical tokens --accent / --ok / --err / --warn describe an earlier
+   * palette (light blue, mint green) still used by ~106 CSS rules. The two live
+   * side by side on purpose: aligning them would change the existing rendering,
+   * which is a design decision, not a clean-up.
+   */
+  --gold: #f5c542;
+  --gold-ink: #0b0b14;
+  --danger: #ef4444;
+  /* Warning orange, distinct from the gold: on a golden background, a warning
+     in --gold reads as a variant of the brand, not as a signal. */
+  --caution: #f59e0b;
+  --success: #4ade80;
+  --info: #60a5fa;
+
+  /* Card art (physical YGO aspect ~ 59×86 mm ≈ 0.686) */
+  /*
+   * What the palette lacked and the screens wrote by hand.
+   *
+   * Five hundred and forty-five literal colours lived in `style` attributes.
+   * Naming them one by one would not have made the palette more readable;
+   * these eight come back often enough to deserve a name, and on their own
+   * they cover half the count.
+   */
+
+  /** Pure white, on a dark background: titles and labels that must stand out
+   *  more than `--fg`. A hundred and six uses. */
+  --fg-fort: #fff;
+  /** The stacked panel backgrounds, from deepest to lightest. */
+  --surface: #141420;
+  --surface-haute: #181826;
+  --surface-douce: #1a1a2b;
+  /** The purple of event cards and banners. */
+  --violet-nuit: #1e1b4b;
+  --violet-profond: #311b92;
+  --violet-royal: #4a148c;
+  /** The pale red of warning text on a dark background — `--danger` is the red
+   *  of a background or a border, not of text meant to be read. */
+  --danger-clair: #fca5a5;
+  /** The green of a confirmed state, deeper than `--success`. */
+  --succes-fonce: #10b981;
+  /** The blue-grey of secondary text on a dark background. */
+  --ardoise: #cbd5e1;
+
+  /** The black of overlays and drop shadows. It has no value of its own — it is
+   *  always black at some opacity — but naming it avoids writing three channels
+   *  where all we mean is a background growing darker. */
+  --ombre: #000;
+
+  /* The hover gold: the same hue, one notch lighter. */
+  --gold-clair: #fbbf24;
+
+  /*
+   * An announcement's light tones, for what is written **on** a tinted
+   * background.
+   *
+   * The four kinds of announcement — information, event, maintenance, urgent —
+   * each had its hue written out, in all three places that use them: the
+   * banner, the broadcast form and the community page. Ten literals for four
+   * tones.
+   *
+   * They are lighter than `--info` and `--caution`, because text laid on a
+   * background of the same family must stand out from it.
+   */
+  --info-clair: #93c5fd;
+  --jaune-clair: #fde047;
+  --caution-clair: #fdba74;
+  --violet-clair: #a78bfa;
+
+  --art-ratio: 59 / 86;
+  --thumb-w: 48px;
+  --thumb-h: 70px;
+
+  /* ── Stacking scale ──────────────────────────────────────────────────────
+   * Taken from the mock-up. `apps/web` had none: the “Account” sheet referenced
+   * `--z-modal` and `--z-modal-panel`, which did not exist — both fell back to
+   * `auto` and the announcement banner went in front. Nobody can arbitrate
+   * between “35” and “10000” without reading the whole project; these eight
+   * names say it once and for all.
+   */
+  --z-sticky: 100;      /* sticky bars in the flow (pinned search) */
+  --z-row-menu: 200;    /* action menus opened inside a table row */
+  --z-header: 300;
+  --z-modal: 500;       /* backdrop of modals, panels and the drawer */
+  --z-modal-panel: 510; /* the panel itself, just above its backdrop */
+  --z-confirm: 600;     /* confirmation stacked on top of a modal */
+  --z-toast: 700;       /* messages: nothing may hide them */
+
+  /*
+   * A page's bottom, under its last block.
+   *
+   * It was written in six places, with two values — 3rem on one side, 90px on
+   * the other — with no reason separating the two. The fixed navigation bar is
+   * already reserved by `body { padding-bottom: 74px }` below 850px: this bottom
+   * is only air, and it needs only one measure.
+   */
+  --fond-de-page: 3rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font);
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, #1a2a40 0%, transparent 55%),
+    var(--bg);
+}
+
+a {
+  color: var(--accent);
+}
+
+code {
+  font-size: 0.9em;
+  color: var(--accent);
+}

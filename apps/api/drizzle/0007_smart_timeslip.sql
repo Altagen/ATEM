@@ -1,0 +1,2 @@
+ALTER TABLE "decks" ADD COLUMN "target_main" integer DEFAULT 40 NOT NULL;--> statement-breakpoint
+ALTER TABLE "decks" ADD CONSTRAINT "decks_target_main_in_rules" CHECK ("decks"."target_main" between 40 and 60);

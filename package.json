@@ -1,0 +1,43 @@
+{
+  "name": "atem",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "version": "0.1.0",
+  "description": "ATEM — a self-hostable Yu-Gi-Oh! companion for paper players: collection and decks",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r --parallel run dev",
+    "dev:api": "pnpm --filter @atem/api dev",
+    "dev:web": "pnpm --filter @atem/web dev",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "check": "./scripts/check-all.sh",
+    "clean": "pnpm -r run clean",
+    "db:migrate": "pnpm --filter @atem/api db:migrate",
+    "db:generate": "pnpm --filter @atem/api db:generate",
+    "e2e": "./scripts/e2e.sh",
+    "e2e:ui": "playwright test --ui",
+    "e2e:shots": "./scripts/e2e.sh e2e/shots.spec.ts --reporter=list",
+    "check:css": "node scripts/check-dead-css.mjs",
+    "check:scan-band": "node scripts/check-scan-band.mjs",
+    "prune:css": "node scripts/prune-dead-css.mjs",
+    "check:exports": "node scripts/check-dead-exports.mjs",
+    "check:routes": "node scripts/check-routes.mjs",
+    "check:boundaries": "node scripts/check-module-boundaries.mjs",
+    "check:unstyled": "node scripts/check-unstyled-classes.mjs",
+    "dev:cert": "./scripts/dev-cert.sh"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": ">=0.25.0",
+      "nanoid": ">=3.3.18"
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

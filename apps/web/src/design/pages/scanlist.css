@@ -1,0 +1,162 @@
+/**
+ * Scanlists — a dated list, modelled on the import page.
+ * A batch is found again by its date; the main action sits top right, where
+ * people look for it.
+ */
+.scan-page { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem var(--fond-de-page); }
+
+.scan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.scan-head .page-title { margin: 0 0 0.3rem; }
+.scan-head p { margin: 0; max-width: 46rem; }
+.scan-new { width: auto; margin: 0; flex-shrink: 0; padding: 0.6rem 1.2rem; }
+.scan-count { margin: 0 0 1.25rem; font-size: 0.85rem; }
+
+.scan-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.scan-row {
+  appearance: none;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.15rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.scan-row:hover { border-color: var(--accent-dim); }
+.scan-row-ico { font-size: 1.3rem; }
+.scan-row-text strong { color: #fff; font-weight: 800; font-size: 0.98rem; }
+.scan-row-text .muted { font-size: 0.82rem; }
+
+/* Poured or pending: it is the only thing the eye looks for when scanning the
+   page, so it carries its colour. */
+.scan-state { font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+.scan-state.is-poured { color: var(--success); }
+.scan-state.is-pending { color: var(--caution); }
+.scan-state-big { font-size: 0.9rem; }
+.scan-li.is-poured .scan-row { opacity: 0.82; }
+
+.scan-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
+.scan-actions .btn-hero { width: auto; margin: 0; padding: 0.55rem 1.1rem; }
+.scan-actions .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.scan-trash { margin-left: auto; }
+.scan-note { margin: 0 0 1.25rem; font-size: 0.8rem; }
+
+/* ── Aiming frame ──────────────────────────────────────────────────────────
+ * It does nothing — the mock-up has no reader — but it says where to look, and
+ * that is what the real screen will show in its place.
+ */
+
+.scan-draft {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+.scan-draft-li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  font-size: 0.84rem;
+}
+.scan-draft-li .muted { font-size: 0.76rem; }
+.scan-draft-empty { padding: 0.5rem; font-size: 0.84rem; font-style: italic; }
+
+/**
+ * The batch in progress, framed.
+ *
+ * It stands apart from the list of saved batches because it does not have the
+ * same status: this one only exists in this browser, and will disappear if the
+ * tab is closed without saving it. The frame says so without one more sentence.
+ */
+.scan-draft-panel {
+  margin: 0 0 1.5rem;
+  padding: 1.1rem 1.15rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.scan-draft-panel .scan-actions:last-of-type {
+  margin-bottom: 0;
+}
+
+/*
+ * The field takes the room, the buttons keep theirs — **on a single row**.
+ *
+ * With a `14rem` basis, the code row wrapped as soon as it carried two
+ * buttons: the scanner ended up alone underneath, cut off from the field it
+ * fills. The field shrinks rather than pushing them away.
+ */
+.scan-draft-panel .add-field {
+  flex: 1 1 6rem;
+  min-width: 0;
+}
+
+.scan-draft-panel .scan-actions {
+  flex-wrap: nowrap;
+}
+
+/* The batch's two actions, though, are allowed to wrap. */
+.scan-draft-panel .scan-actions:last-of-type {
+  flex-wrap: wrap;
+}
+
+/**
+ * A row's counter, not the page's.
+ *
+ * It carried `.scan-count`, which is a summary paragraph — with its 1.25rem
+ * bottom margin. In a centre-aligned row, that margin pushed the “×2” above the
+ * “−” and “+” buttons, like an alignment defect one would have looked for in
+ * the grid.
+ */
+.scan-line-qty {
+  min-width: 2.2rem;
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The batch's actions stand apart from its last row. */
+.scan-draft-panel .scan-draft {
+  margin-bottom: 1rem;
+}
+
+/**
+ * What the pour could not place.
+ *
+ * Framed and set apart from the batch's list: these are the only rows with
+ * something left to do, and looking for them among forty others would amount
+ * to not having named them.
+ */
+.scan-errors {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--caution) 45%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--caution) 8%, var(--card));
+}
+
+.scan-errors .scan-note {
+  margin-bottom: 0.6rem;
+}

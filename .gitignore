@@ -1,0 +1,23 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+data/
+media/
+__pycache__/
+*.pyc
+.DS_Store
+
+# The OCR engine: seven megabytes of binaries, downloaded and checked by
+# fingerprint at build time (scripts/vendor-tesseract.sh). The repository keeps
+# the fingerprint, not the binary.
+apps/web/public/tesseract/
+
+# Playwright
+test-results/
+playwright-report/
+e2e/shots/
+
+# Development certificate, specific to each machine.
+apps/web/.certs/

@@ -1,0 +1,71 @@
+/*
+ * The data table from the earlier prototype's component library, taken for the
+ * import history. It styles the table itself
+ * rather than hiding behind a page container, so any screen can use it.
+ */
+.admin-table-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  /* the earlier prototype wrote `hidden`, to keep the rounded corners — which also cut off,
+     without a scrollbar, whatever a phone could not fit. `auto` clips to the
+     corners just the same, and lets the table scroll sideways. */
+  overflow-x: auto;
+}
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.admin-table td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; vertical-align: top; }
+.admin-table tr:last-child td { border-bottom: 0; }
+.admin-table strong { color: #fff; }
+
+/*
+ * On a phone, each row becomes a card and each cell names its column.
+ *
+ * The earlier prototype's markup carried `data-col` on every cell for exactly this, and no
+ * stylesheet ever read it: the four-column import history was cut off at the
+ * edge of a 393 px screen. The label comes from the attribute, so the header row
+ * is hidden rather than repeated.
+ */
+@media (max-width: 600px) {
+  .admin-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .admin-table tr {
+    display: block;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .admin-table tr:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-table td {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.3rem 1rem;
+    border-bottom: 0;
+  }
+
+  .admin-table td[data-col]::before {
+    content: attr(data-col);
+    flex: 0 0 5.5rem;
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}

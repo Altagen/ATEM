@@ -1,0 +1,115 @@
+/**
+ * The profile page.
+ *
+ * Taken from the earlier prototype's profile sheet, whose rendering the maintainer validated. The
+ * rules for what this screen does not show — trophies, title, presence, guild
+ * strip — were purged (`docs/06-deferred.md`).
+ *
+ * The earlier prototype declared some rules twice, a first block then an override further
+ * down; they are merged here, keeping the value that won.
+ */
+.profile-full-page-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem var(--fond-de-page);
+}
+
+.profile-hero-card {
+  background: #141420;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  margin-bottom: 2rem;
+}
+.profile-banner-hero {
+  height: 220px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #311b92 50%, #4a148c 100%);
+  position: relative;
+}
+.profile-banner-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(245, 197, 66, 0.2) 1px, transparent 1px);
+  background-size: 18px 18px;
+  opacity: 0.65;
+}
+.profile-hero-body {
+  padding: 0 1.5rem 1.5rem;
+  position: relative;
+}
+.profile-hero-avatar-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: -2.25rem;
+  margin-bottom: 0.85rem;
+}
+.profile-hero-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #312e81;
+  border: 5px solid #141420;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: #fff;
+}
+.profile-hero-avatar .user-avatar-badge { width: 82px; height: 82px; font-size: 42px; }
+
+/* The name takes its own line; the actions go down to the line below it. */
+.profile-identity-row { display: block; }
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.5rem;
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: #fff;
+}
+.profile-status-row { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; font-size: 0.86rem; }
+.profile-actions { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; flex-wrap: wrap; }
+
+.showcase-bio {
+  font-size: 0.92rem;
+  color: var(--fg);
+  line-height: 1.5;
+  margin: 0.8rem 0 1.1rem 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  /* A bio keeps the line breaks its owner typed. */
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.profile-section-card {
+  background: #141420;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  margin-bottom: 1.5rem;
+}
+
+/* The edit window's form holds the scrolling body and the footer: it must shrink
+   with the window, or the footer is pushed out of it. */
+.profile-edit-form { display: flex; flex-direction: column; min-height: 0; }
+
+@media (max-width: 850px) {
+  /* Name, tag and role badge on one line overflowed their frame by 13px. */
+  .profile-identity { flex-wrap: wrap; min-width: 0; }
+  .profile-status-row { gap: 0.5rem; }
+  .profile-actions { width: 100%; }
+  .profile-actions > * { flex: 1 1 9rem; justify-content: center; }
+}
+
+/* What has been played, under the name: a line of figures, not a badge. */
+.profile-tally { margin: 0.35rem 0 0; font-size: 0.86rem; color: var(--muted); font-weight: 700; }
+/* The way to the shelves someone shows the viewer. */
+.profile-shelves { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.9rem 0 0; }

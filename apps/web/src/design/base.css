@@ -1,0 +1,381 @@
+@import url("./tokens.css");
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+}
+
+h1 {
+  font-size: var(--fs-lg);
+  letter-spacing: 0.04em;
+  margin: 0 0 var(--space-1);
+}
+
+h2 {
+  margin: 0 0 0.85rem;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+.btn-primary {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
+.btn-sm {
+  padding: 0.3rem 0.55rem;
+  font-size: var(--fs-sm);
+}
+
+.tag {
+  display: inline-block;
+  font-size: var(--fs-xs);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  margin-right: 0.25rem;
+}
+
+/* Mobile pass ported from the earlier prototype's component sheet (survey of 3 September 2026). */
+@media (max-width: 900px) {
+  .inspect-panel {
+    /* Aligned to the top: centring content taller than the window pushes it
+       out of the scrollable area, and the top of the card becomes unreachable. */
+    align-items: flex-start;
+    padding: 1rem 1rem 2.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+  }
+  /* The close button does not scroll with the content: otherwise it disappears
+     as soon as you go down towards the text. */
+  .inspect-close {
+    position: fixed;
+  }
+  .inspect-layout {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    /* The row's ceiling is what cropped: stacked, it must be allowed to exceed
+       the window, since the panel scrolls. */
+    max-height: none;
+    gap: 1.15rem;
+    /* No ratio left to keep between two columns: the text returns to the
+       application's scale. */
+    font-size: 1rem;
+  }
+  .inspect-art-col {
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: none;
+  }
+  .inspect-art {
+    /**
+     * 72vh, not the full height: that leaves a glimpse of the title under the
+     * card, which says there is something to scroll to. A full-height card
+     * gives a screen that looks complete and hides its details.
+     *
+     * The computation stays the side-by-side one — height derived from the
+     * available width, never the reverse — for the same reason: an imposed
+     * height with a capped width squashes the card.
+     */
+    height: min(72vh, calc((100cqw - 0.5rem) * 86 / 59));
+    width: auto;
+    max-width: 100%;
+    max-height: none;
+  }
+  .inspect-info-col {
+    flex: 0 0 auto;
+    width: 100%;
+    /* Reading width: a line running across the whole window is hard to follow. */
+    max-width: min(100%, 34rem);
+    max-height: none;
+    /* The panel scrolls, not the sheet: two nested scroll areas would force
+       you to aim at the right one. */
+    overflow: visible;
+    padding: 0 0.25rem 1rem;
+  }
+}
+@media (max-width: 600px) {
+  .filter-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 0.85rem 0.85rem 0 0;
+  }
+}
+@media (max-width: 850px) {
+  /* The bar is fixed: without this reserve, it covers the end of the page. */
+  body { padding-bottom: 74px; }
+}
+
+/*
+ * Touch targets, ported from the earlier prototype's component sheet.
+ *
+ * Measured there: a deck's gear at 30×30, below the finger threshold. Apple's
+ * and Google's guidelines give 44 and 48 points; the mock-up holds 40, which
+ * fits the existing heights without distorting them.
+ *
+ * Only the classes this markup sets are taken: the header's brand, language
+ * pill and avatar belong to the top bar, which the application hides entirely
+ * on a phone.
+ */
+@media (max-width: 850px) {
+  .icon-btn {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+
+/*
+ * The empty state, where every screen can read it.
+ *
+ * It lived in the Collection sheet, and also served the decks and the
+ * scanlists: a shared rule filed with one of them ends up being modified for
+ * that one alone.
+ */
+.empty-state {
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.empty-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+}
+
+/*
+ * The transient message. It lived in the Collection sheet, although every
+ * screen displays it — and one more drew another by hand.
+ */
+.toast {
+  position: fixed;
+  top: 4.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  max-width: min(92vw, 26rem);
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  /*
+   * An **opaque** background, gold by default.
+   *
+   * The base rule set no background: the message floated over the collection,
+   * unreadable, and read as a display glitch rather than as information. The
+   * tones did exist further down — but in a `.toast-ok` class the markup never
+   * set, since it writes `data-kind`. Three kinds of message therefore looked
+   * identical, and transparent.
+   *
+   * `color-mix` between two opaque colours returns an opaque colour: nothing
+   * shows through, whatever page lies behind.
+   */
+  background: color-mix(in srgb, var(--gold) 16%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--border));
+  color: var(--gold-clair);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
+}
+
+/*
+ * The two departures from the gold tone, on the attribute the markup really
+ * writes.
+ *
+ * `ui.ts` sets `data-kind`, not a class: targeting `.toast-ok` touched nothing.
+ * It is the second time this defect happened — the earlier prototype took its colours from a
+ * `style.cssText` and the Collection relied on classes that did not exist. The
+ * selector now follows the markup.
+ */
+.toast[data-kind="success"] {
+  background: color-mix(in srgb, var(--success) 16%, var(--card));
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+  color: var(--success);
+}
+
+.toast[data-kind="error"] {
+  background: color-mix(in srgb, var(--err) 16%, var(--card));
+  border-color: color-mix(in srgb, var(--err) 45%, var(--border));
+  color: var(--err);
+}
+
+/**
+ * A page section's title.
+ *
+ * Brought back with the scanlists screen: the dead-CSS purge had rightly
+ * removed it while nothing set it.
+ */
+.section-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--fg-fort);
+}
+
+/**
+ * A screen's error banner.
+ *
+ * Brought back with the deck workshop: the dead-CSS purge had removed it
+ * while no screen set it.
+ *
+ * Sticky under the top bar: an error scrolled off screen is an error one
+ * believes resolved.
+ */
+.banner {
+  margin: 0 0 1rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+}
+
+.banner-err {
+  background: color-mix(in srgb, var(--err) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--err) 35%, var(--border));
+  color: var(--err);
+}
+
+.inline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.emblem.is-discrete {
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+.value-text.is-discrete {
+  color: inherit;
+}
+
+/** A section that warns rather than informs. */
+.panel-heading.is-danger {
+  color: var(--danger);
+}
+
+/** The title of a menu row or of a choice card. */
+.menu-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--fg-fort);
+}
+
+.value-text.is-danger {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+/*
+ * A field's label, outside a `.field`.
+ *
+ * It existed in three nearly identical spellings — 0.45rem, 0.35rem, 0.4rem of
+ * margin, 800 or 700 of weight — repeated twenty-two times across four screens:
+ * three ways of saying the same thing that no eye tells apart and no edit
+ * would change together.
+ *
+ * The mock-up has `.field label` for structured forms; this is for labels that
+ * live outside a field — above a group of boxes, or a list of permissions.
+ */
+.field-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/*
+ * Four roles that kept coming back without a name.
+ *
+ * A caption under a value, a row of aligned items, a spaced column, a one-line
+ * emblem: each was rewritten identically six to fourteen times across the five
+ * screens. They are not utilities — they say a role, which is why they carry a
+ * name rather than a measure.
+ */
+.caption {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/*
+ * A value, its state, and the emblem beside it.
+ *
+ * A detail panel shows the same thing everywhere: a discreet label, the value
+ * under it, sometimes a coloured state beside it. It was written by hand
+ * thirty-eight times, with four shades of size that nothing justified.
+ */
+.value-text {
+  display: block;
+  font-size: 0.98rem;
+  color: var(--fg-fort);
+}
+
+/** A caption without its own margin, when its parent already spaces it. */
+.caption.is-flush {
+  margin: 0;
+}
+
+/** A form field's block, and the gap to the next one. */
+.field-block {
+  margin-bottom: 1.25rem;
+}
+
+/*
+ * The search field without its icon.
+ *
+ * `.search-input-gaming` keeps 2.8rem on the left for the magnifier. The fields
+ * that carry none — a new account's address, for instance — cancelled that
+ * indent by hand, each with its own value. The indent becomes the mirror of
+ * the right one, 1.2rem.
+ */
+.search-input-gaming.is-bare {
+  padding-left: 1.2rem;
+}
+
+.state-text.is-ok {
+  color: var(--success);
+}
+
+/* The state of a thing: fine, or worth a look. Never an inline colour. */
+.state-text {
+  font-weight: 800;
+}

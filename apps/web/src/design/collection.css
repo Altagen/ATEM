@@ -1,0 +1,2077 @@
+
+
+/* —— App bar —— */
+.app-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  backdrop-filter: blur(10px);
+}
+
+.app-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.brand:hover {
+  color: var(--accent);
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.15rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+}
+
+.nav-link:hover {
+  color: var(--fg);
+}
+
+.nav-link.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.app-bar-right {
+  position: relative;
+}
+
+/* —— Icon buttons —— */
+.icon-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  font: inherit;
+}
+
+.icon-btn:hover {
+  color: var(--fg);
+  background: var(--input);
+  border-color: var(--border);
+}
+
+.icon-btn.is-active,
+.icon-btn[aria-pressed="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+/* CSS icons (no font pack) */.i-list,
+.i-grid,
+.i-more,
+.chevron{
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  position: relative;
+}
+
+.i-list::before {
+  content: "";
+  position: absolute;
+  inset: 0.15rem 0;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  box-shadow: 0 0.28rem 0 currentColor;
+  height: 0.2rem;
+}
+
+.i-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0.1rem;
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 40% 40%,
+    linear-gradient(currentColor, currentColor) 100% 0 / 40% 40%,
+    linear-gradient(currentColor, currentColor) 0 100% / 40% 40%,
+    linear-gradient(currentColor, currentColor) 100% 100% / 40% 40%;
+  background-repeat: no-repeat;
+}
+
+.i-more::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.22rem;
+  height: 0.22rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 -0.35rem 0 currentColor, 0 0.35rem 0 currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.chevron::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translate(-50%, -50%) rotate(45deg);
+  transition: transform 0.15s ease, top 0.15s ease;
+}
+
+.add-chevron[aria-expanded="true"] .chevron::before {
+  top: 58%;
+  transform: translate(-50%, -50%) rotate(225deg);
+}
+
+/* [hidden] must win over display:flex on menus / panels */
+[hidden] {
+  display: none !important;
+}
+
+.menu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 0.35rem 0.5rem;
+}
+
+/**
+ * A `.menu-field`'s fields, whatever their type.
+ *
+ * The rule only targeted `select`. An `input` in the same block therefore fell
+ * back on the browser's default grey, which clashes with the whole interface —
+ * The earlier prototype had the same flaw, and its “Deck name” field was grey too.
+ * Transcribing faithfully brought it along.
+ */
+.menu-field select,
+.menu-field input {
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  color: var(--fg);
+  padding: 0.35rem;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.menu-field input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* —— Page —— */
+.collection-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-sizing: border-box;
+  padding-inline: 1rem;
+}
+
+/* Search + add rail — sticky only when user pins it */
+.pin-rail {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.75rem 1.25rem 0.65rem;
+  margin: 0;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  box-shadow: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.pin-rail[data-pinned="true"] {
+  position: sticky;
+  top: 3.25rem; /* under app-bar */
+  z-index: 35;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom-color: var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 520px) {
+  .pin-rail {
+    padding: 0.55rem 0.85rem 0.55rem;
+    gap: 0.5rem;
+  }
+
+  .pin-rail[data-pinned="true"] {
+    top: 3.1rem;
+  }
+}
+
+/* Pin control — stronger active state, clearer icon */
+#btn-pin {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid transparent;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+#btn-pin:not(.is-active) {
+  color: var(--muted);
+  opacity: 0.9;
+}
+
+#btn-pin:not(.is-active):hover {
+  color: var(--fg);
+  opacity: 1;
+  border-color: var(--border);
+  background: var(--input);
+}
+
+#btn-pin.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent),
+    0 2px 10px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+#btn-pin.is-active:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--accent);
+}
+
+/* Classic pushpin silhouette (CSS) */
+.i-pin {
+  display: block;
+  width: 1.05rem;
+  height: 1.15rem;
+  position: relative;
+}
+
+/* head */
+.i-pin::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 0.72rem;
+  height: 0.72rem;
+  border: 2px solid currentColor;
+  border-radius: 50% 50% 45% 45%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* needle */
+.i-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0.62rem;
+  width: 0;
+  height: 0;
+  border-left: 0.2rem solid transparent;
+  border-right: 0.2rem solid transparent;
+  border-top: 0.48rem solid currentColor;
+  transform: translateX(-50%);
+}
+
+#btn-pin.is-active .i-pin::before {
+  background: color-mix(in srgb, currentColor 28%, transparent);
+}
+
+/* Tools bar */.tools-bar {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search {
+  flex: 1;
+  min-width: 12rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+}
+
+.search-icon {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.search input {
+  flex: 1;
+  /*
+   * An `<input>` has an intrinsic width of about twenty characters, which
+   * `flex: 1` does not make yield: without `min-width: 0`, it overflowed its
+   * label. Measured at 390 px: the bubble stopped at 188, the field went to 218
+   * — thirty pixels outside, over the display toggle.
+   *
+   * The rule comes from the earlier prototype's component sheet, which carries it with
+   * the same finding. It had never been ported: the previous day's survey only
+   * compared `@media` blocks, and this one is a base rule.
+   */
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.35rem 0;
+  outline: none;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* Add bar — unified field (input + chevron inside) · + outside */
+.add-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  max-width: 32rem;
+}
+
+.add-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.add-field:focus-within {
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.add-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.7rem 0.25rem 0.7rem 1.1rem;
+  outline: none;
+}
+
+.add-chevron {
+  appearance: none;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0.12rem 0.18rem 0.12rem 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.add-chevron:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.add-chevron[aria-expanded="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.btn-add {
+  appearance: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #061018;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.btn-add:hover {
+  filter: brightness(1.08);
+}
+
+.btn-scan {
+  appearance: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.btn-scan:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--card));
+}
+
+.i-scan {
+  width: 1.2rem;
+  height: 1.2rem;
+  display: block;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2'/%3E%3Cpath d='M17 3h2a2 2 0 0 1 2 2v2'/%3E%3Cpath d='M21 17v2a2 2 0 0 1-2 2h-2'/%3E%3Cpath d='M7 21H5a2 2 0 0 1-2-2v-2'/%3E%3Crect x='7' y='7' width='10' height='10' rx='1'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2'/%3E%3Cpath d='M17 3h2a2 2 0 0 1 2 2v2'/%3E%3Cpath d='M21 17v2a2 2 0 0 1-2 2h-2'/%3E%3Cpath d='M7 21H5a2 2 0 0 1-2-2v-2'/%3E%3Crect x='7' y='7' width='10' height='10' rx='1'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.add-advanced {
+  display: none;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 28rem;
+  padding: 0.2rem 2.9rem 0 0.1rem;
+  align-items: flex-end;
+}
+
+.add-advanced.is-open {
+  display: flex;
+}
+
+.add-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.add-select-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-left: 0.65rem;
+}
+
+.add-advanced select,
+.add-advanced input {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.85rem;
+  width: 100%;
+  min-height: 2.35rem;
+}
+
+.add-advanced select {
+  cursor: pointer;
+  padding-right: 1.5rem;
+}
+
+.add-advanced select:focus,
+.add-advanced input:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+}
+
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  min-height: 1.25rem;
+}
+
+/* Content scrolls under pin-rail */
+.content {
+  flex: 1;
+  min-height: 50vh;
+  padding: 0.85rem 1.25rem 0;
+}
+
+/* List */
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0;
+}
+
+.item:first-child {
+  padding-top: 0.25rem;
+}
+
+.item-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.item-main {
+  flex: 1;
+  display: flex;
+  gap: 0.85rem;
+  min-width: 0;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+}
+
+.item-main:hover strong {
+  color: var(--accent);
+}
+
+.item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.item-text strong {
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.item-text code {
+  font-size: 0.78rem;
+  color: var(--accent);
+  width: fit-content;
+}
+
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.7rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.stats-line {
+  font-size: 0.78rem;
+}
+
+.ok-tag {
+  color: var(--ok);
+  font-size: 0.72rem;
+}
+
+.warn {
+  color: var(--err);
+  font-size: 0.72rem;
+}
+
+.thumb {
+  width: 52px;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--input);
+  background-image: url("../assets/cards/back.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* A card with no artwork shows the earlier prototype's card back, not a “?”: a card whose
+   picture is missing is still a card (the maintainer, 2026-09-21). */
+.thumb-empty {
+  width: 52px;
+  height: 76px;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border);
+  background: url("../assets/cards/back.svg") center / cover no-repeat;
+  flex-shrink: 0;
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.btn-qty {
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btn-qty:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+.btn-qty-danger:hover {
+  border-color: color-mix(in srgb, var(--err) 50%, var(--border));
+  color: var(--err);
+}
+
+/* Gallery */
+.gallery {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.gallery[data-cols="2"] {
+  grid-template-columns: repeat(2, 1fr);
+}
+.gallery[data-cols="3"] {
+  grid-template-columns: repeat(3, 1fr);
+}
+.gallery[data-cols="4"] {
+  grid-template-columns: repeat(4, 1fr);
+}
+.gallery[data-cols="5"] {
+  grid-template-columns: repeat(5, 1fr);
+}
+.gallery[data-cols="6"] {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+/**
+ * On a narrow screen, the card's text takes the whole width.
+ *
+ * Reported by the maintainer: in list view the rows were as tall as the gallery's cards,
+ * which defeats the list. Measured on a Pixel 5: of 321 px, the three quantity
+ * buttons took 143 and the text was left with **92** — so the title wrapped in
+ * two and each attribute fell onto its own line, five of them. 215 px per card,
+ * against 123 on a wide screen with the same markup.
+ *
+ * The buttons are not the ones to give way: they are 44 px because that is the
+ * touch target size, and `adjustments.css` explains what a missed “−1” costs.
+ * So they move to their own line instead, right-aligned under the text, and the
+ * text gets the full width back: the title fits on one line and the attributes
+ * flow again.
+ */
+@media (max-width: 560px) {
+  .item-row {
+    flex-wrap: wrap;
+  }
+
+  .item-main {
+    flex: 1 1 100%;
+  }
+
+  /**
+   * The text column claims the width instead of merely fitting its content.
+   *
+   * Without this it is only as wide as its longest line — which happens to be
+   * the attributes. Measured: hide them and the column falls back to 104 px, so
+   * a long name would wrap again for a reason that has nothing to do with the
+   * name. The width must not depend on what the card happens to carry.
+   */
+  .item-text {
+    flex: 1;
+  }
+
+  /* Pushed to the right of its own line, under the text it acts on. */
+  .item-actions {
+    margin-left: auto;
+  }
+}
+
+/**
+ * Two columns on a phone, always — never one.
+ *
+ * The base rule is `auto-fill, minmax(150px, 1fr)`, which needs 316 px to fit
+ * two. A Pixel 5 gives the grid 321: it passes, by five pixels. A slightly
+ * narrower phone, or the same one with the text zoomed, falls to a **single**
+ * column and the card fills the screen — which is what the maintainer reported.
+ *
+ * Whether two cards fit side by side is not something to leave to five pixels,
+ * so the phone states it. Nothing is lost by forcing it: the column picker
+ * offers `auto, 2, 3, 4, 5, 6` — two is already the smallest anyone can choose,
+ * so this contradicts no explicit choice.
+ */
+@media (max-width: 480px) {
+  .gallery,
+  .gallery[data-cols="3"],
+  .gallery[data-cols="4"],
+  .gallery[data-cols="5"],
+  .gallery[data-cols="6"] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .app-nav .nav-link:not(.is-active) {
+    display: none;
+  }
+}
+
+.tile {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 0.55rem;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+.tile:hover {
+  border-color: var(--accent-dim);
+  transform: translateY(-1px);
+}
+
+.tile-art {
+  position: relative;
+  aspect-ratio: var(--art-ratio);
+  background: #05070a;
+  overflow: hidden;
+}
+
+.tile-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background-image: url("../assets/cards/back.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.tile-art-empty {
+  width: 100%;
+  height: 100%;
+  background: url("../assets/cards/back.svg") center / cover no-repeat;
+}
+
+.tile-qty {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+
+/**
+ * The favourite star, on the thumbnail.
+ *
+ * Same pill as the quantity, in the opposite corner, and the gold of
+ * `.fav-tag`: it is the same information, it has the same colour. Laid bare, it
+ * sat over the name printed on the card and ate its first letter.
+ */
+
+.tile-body {
+  padding: 0.55rem 0.6rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.tile-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tile-body code {
+  font-size: 0.68rem;
+  color: var(--accent);
+}.tile-star {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  line-height: 1;
+  font-size: 0.8rem;
+  color: var(--gold, var(--gold));
+  gap: 0.2rem;
+}
+
+/*
+ * The group subheading, finally in place.
+ *
+ * This rule was styled and never used: the “Group monsters by type” box
+ * remembered its state and changed nothing on screen.
+ */
+.group-header {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0 0.4rem;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-block-start: var(--space-1);
+}
+
+/* Drawer */
+
+.inspect-art-empty {
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto 1rem;
+  aspect-ratio: var(--art-ratio);
+  border-radius: 0.4rem;
+  background: url("../assets/cards/back.svg") center / cover no-repeat;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.detail-grid dt {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-grid dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--fg);
+}
+
+.effect h3 {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.effect p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+/* —— App dialog (themed confirm / alert — never window.confirm) —— */
+
+/* Toast / lightbox / utils */
+
+/* Destructive action: 5s undo window */
+
+@keyframes toast-undo-shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* —— Inspect view: full-viewport ZOOM (not a small modal) —— */
+.inspect-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(4, 8, 14, 0.78);
+  backdrop-filter: blur(14px) saturate(0.85);
+  -webkit-backdrop-filter: blur(14px) saturate(0.85);
+}
+
+.inspect-panel {
+  position: fixed;
+  z-index: var(--z-modal-panel);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* wide stage so the card can grow */
+  padding: 1.5rem 2.5rem;
+  pointer-events: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.inspect-panel > * {
+  pointer-events: auto;
+}
+
+.inspect-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  width: 2.4rem;
+  height: 2.4rem;
+  background: rgba(20, 28, 40, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f2f5fa;
+}
+
+.inspect-close:hover {
+  background: rgba(40, 55, 75, 0.9);
+}
+
+.inspect-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.5rem, 3.5vw, 3.25rem);
+  /* almost full viewport — not a 1100px modal shell */
+  width: min(1680px, 100%);
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  --inspect-part-sheet: 0.55;
+  --inspect-gap: clamp(1.25rem, 3.5cqw, 3.25rem);
+  --inspect-h: min( 94vh, calc((100cqw - var(--inspect-gap) - 0.75rem) / 1.236) );
+  --inspect-sheet: calc(var(--inspect-h) * var(--inspect-part-sheet));
+  font-size: clamp(0.8rem, calc(var(--inspect-h) / 62), 1.35rem);
+}
+
+.inspect-art-col {
+  flex: 1 1 58%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-height: 100%;
+}
+
+.inspect-art {
+  /* height-driven zoom: fill most of the screen */
+  max-height: min(94vh, 1100px);
+  /* allow wide cards when viewport allows (ratio ~0.69) */
+  max-width: min(62vw, 720px);
+  width: auto;
+  height: auto;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(0, 0, 0, 0.4);
+  object-fit: contain;
+  background: transparent;
+  aspect-ratio: 59 / 86;
+  background-image: url("../assets/cards/back.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Info lives on the blur layer — no floating “dialog card” */
+.inspect-info-col {
+  flex: 0 1 32rem;
+  width: min(100%, 36rem);
+  max-width: 38rem;
+  max-height: min(94vh, 1100px);
+  overflow: auto;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.35rem 0.35rem 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: #eef2f8;
+  scrollbar-gutter: stable;
+}
+
+.inspect-info-head h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 2.6vw, 2.15rem);
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+}
+
+.inspect-sub {
+  margin: 0.45rem 0 0;
+  font-size: 1.15rem;
+  color: rgba(220, 228, 240, 0.78) !important;
+}
+
+.inspect-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.inspect-actions .btn {
+  font-size: 0.95rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.inspect-info-body {
+  font-size: 1.15rem;
+  line-height: 1.55;
+}
+
+.inspect-info-body .detail-grid {
+  font-size: 1.15rem;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1.15rem;
+}
+
+.inspect-info-body .detail-grid dt {
+  font-size: 0.88rem;
+  color: rgba(200, 210, 225, 0.65);
+  letter-spacing: 0.04em;
+}
+
+.inspect-info-body .detail-grid dd {
+  margin-top: 0.25rem;
+  font-size: 1.12rem;
+  color: #f4f7fb;
+}
+
+.inspect-info-body .effect h3 {
+  font-size: 1rem;
+  margin-top: 1.15rem;
+  margin-bottom: 0.4rem;
+  color: rgba(200, 210, 225, 0.75);
+}
+
+.inspect-info-body .effect p {
+  font-size: 1.12rem;
+  line-height: 1.55;
+  color: rgba(235, 240, 248, 0.95);
+}
+
+.inspect-info-body .muted {
+  color: rgba(190, 200, 215, 0.7) !important;
+}
+
+/* Very wide screens: even bigger art + roomier info */
+@media (min-width: 1400px) {
+  .inspect-art {
+    max-width: min(58vw, 780px);
+    max-height: min(95vh, 1200px);
+  }
+
+  .inspect-info-col {
+    flex-basis: 36rem;
+    max-width: 40rem;
+  }
+
+  .inspect-info-head h2 {
+    font-size: 2.25rem;
+  }
+
+  .inspect-info-body {
+    font-size: 1.2rem;
+  }
+
+  .inspect-info-body .detail-grid dd,
+  .inspect-info-body .effect p {
+    font-size: 1.18rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .inspect-panel {
+    padding: 0.75rem 1rem 1.25rem;
+    align-items: flex-start;
+    overflow: auto;
+    pointer-events: auto;
+  }
+
+  .inspect-layout {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 1.15rem;
+  }
+
+  .inspect-art-col {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .inspect-art {
+    max-width: min(94vw, 400px);
+    max-height: min(52vh, 520px);
+  }
+
+  .inspect-info-col {
+    width: 100%;
+    max-width: min(94vw, 36rem);
+    max-height: none;
+    padding: 0 0.25rem 1rem;
+  }
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* —— Filter panel (wide modal) —— */
+.filter-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: var(--z-modal);
+}
+
+.filter-panel {
+  position: fixed;
+  z-index: var(--z-modal-panel);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(920px, calc(100vw - 1.5rem));
+  max-height: min(88vh, 820px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  /* The height was capped, but nothing scrolled: the content simply ran over
+     the edge. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.filter-panel[hidden] {
+  display: none !important;
+}
+
+.filter-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.filter-panel-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.filter-panel-body {
+  overflow: auto;
+  padding: 0.85rem 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.filter-panel-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--input) 50%, var(--card));
+}
+
+.filter-foot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+/* Race filter chips */
+.chip-row-races {
+  max-height: 9.5rem;
+  overflow: auto;
+}
+
+.chip-race img {
+  width: 1.05rem;
+  height: 1.05rem;
+  object-fit: contain;
+  border-radius: 0.15rem;
+  filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.3));
+}
+
+/* —— Scan modal —— */
+/*
+ * The scan modal — and the two reasons it did not work.
+ *
+ * **It went under the mobile navigation bar.** `z-index: 113` and `112` were
+ * written out, outside the named scale of `tokens.css`. The bottom bar is at
+ * `--z-header` (300), with `!important`: so it went in front of the modal, and
+ * covered exactly the row of shutter buttons. The photo could no longer be
+ * taken on a phone. That is precisely what the named scale exists to prevent,
+ * and the only screen not using it was the only one with the problem.
+ *
+ * **Twenty-one of its classes had no rule.** The markup set them —
+ * viewfinder, aiming band, shutter bar, suggestion chips — and nothing styled
+ * them. A `<video>` with no rule takes its intrinsic size, the camera stream's:
+ * hence the overflow and the horizontal scrollbar. The unstyled-classes gate
+ * (today `check-unstyled-classes.mjs`) reported them all; it was the ratchet's
+ * ceiling, set on the measured count, that absorbed them. A class set with no
+ * rule is not cosmetic debt, it is a screen that does not work.
+ */
+.scan-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: color-mix(in srgb, var(--ombre) 55%, transparent);
+}
+
+.scan-modal {
+  position: fixed;
+  z-index: var(--z-modal-panel);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(26rem, calc(100vw - 1.5rem));
+  max-height: min(90vh, 42rem);
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.scan-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.95rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: inherit;
+  z-index: 1;
+}
+
+.scan-modal-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.scan-modal-body {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+@keyframes scan-sweep {
+  0% {
+    top: 12%;
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 88%;
+    opacity: 0.3;
+  }
+}
+
+/* —— Import CSV modal —— */
+
+/* Settings — danger + history */
+
+.btn-danger {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--err, #e55) 55%, var(--border));
+  background: color-mix(in srgb, var(--err, #e55) 18%, transparent);
+  color: color-mix(in srgb, var(--err, #f88) 90%, var(--fg));
+  border-radius: var(--radius-sm, 0.35rem);
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--err, #e55) 30%, transparent);
+}
+
+.filter-block-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.filter-row .grow {
+  flex: 1;
+  min-width: 10rem;
+}
+
+/* Chips */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--input);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  line-height: 1.2;
+  transition: border-color 0.1s ease, background 0.1s ease, color 0.1s ease;
+}
+
+.chip:hover {
+  border-color: var(--accent-dim);
+}
+
+.chip.is-active {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.chip-level {
+  min-width: 2.6rem;
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* Shared YGO icon images (attr, level, rank, ST props) */
+.ygo-ico {
+  width: 1.15rem;
+  height: 1.15rem;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+.meta-bit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.meta-bit + .meta-bit::before {
+  content: "·";
+  margin: 0 0.35rem;
+  opacity: 0.45;
+  font-weight: 600;
+}
+
+.stats-line-rich {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0;
+  line-height: 1.35;
+}
+
+/* Frame color dots (YGO card frames) */
+
+@media (max-width: 600px) {
+  .filter-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 0.85rem 0.85rem 0 0;
+  }
+}
+
+/* Help control — explicit pill, not a tiny hard-to-spot circle */
+.help-q {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.65rem;
+  min-height: 1.65rem;
+  padding: 0 0.55rem 0 0.3rem;
+  margin: 0;
+  border-radius: 999px;
+  border: 1.5px solid #5ec8ff;
+  background: #1a3a55;
+  color: #e8f6ff;
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: none !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Hand trap — no official card-corner icon in API */
+
+@media (max-width: 850px) {
+  /* The band tightens: 0.75rem/1.25rem of padding on a phone is twenty pixels
+     taken from the cards. Values from the mock-up. */
+  .pin-rail {
+    padding: 0.5rem 0.85rem;
+    gap: 0.4rem;
+  }
+
+  /*
+   * The fifty-pixel offset at the top of the page, and where it came from.
+   *
+   * The band is `sticky` with `top: 3.25rem` — the height of the top bar it
+   * must settle under on a wide screen. But a sticky element does not only
+   * move down while scrolling: it is *constrained* to stay at that distance
+   * from the top, at rest included. As the page's first child its natural
+   * position is zero, so it gets pushed to 49.6 px and leaves a gap above it.
+   *
+   * On a phone the top bar does not exist — `display: none` — so there is
+   * nothing to slide under. The mock-up has set `top: 0` here from the start;
+   * it is the line that had not been ported with the others.
+   */
+  .pin-rail[data-pinned="true"] { top: 0; }
+
+  /* The “Scanlists” label gives way to its icon alone: the link's `title`
+     names it, and the row gains 90px. The label is hidden in the markup rather
+     than with `font-size: 0`, which swallowed the emoji too. */
+  .scanlist-link-label { display: none; }
+  .scanlist-link { padding-inline: 0.7rem; }
+
+  /*
+   * The toolbar row, ported from the mock-up — which had already sorted it out.
+   *
+   * `apps/web` left `flex-wrap: wrap` and a `min-width: 12rem` on the search:
+   * 389px of requested width for 363 available on a 390 phone. The “⋮” and the
+   * scanlists link therefore went to an almost empty second row — forty pixels
+   * of height for two targets. The maintainer: “it takes a lot of vertical pixels for
+   * nothing in the bar”.
+   *
+   * The earlier prototype's collection sheet carried these rules from the start.
+   * They had never been ported here. The `min-width: 0` is the half people
+   * forget: without it, a flex item refuses to shrink below its content's width,
+   * and the row breaks anyway.
+   */
+  .pin-rail .tools-bar { flex-wrap: nowrap; gap: 0.35rem; }
+  .pin-rail .search { flex: 1 1 auto; min-width: 0; }
+  /* The field carries the target's height, not its label: measured, a click on
+     the label's bottom edge did not give focus. */
+  .pin-rail .search { padding-block: 0; }
+  .pin-rail .search input { font-size: 0.85rem; min-height: 40px; padding-block: 0; }
+
+  /**
+   * The pin stays on a phone — it just changed rows.
+   *
+   * A note here used to hide it, saying pinning “makes no sense” because the
+   * band follows the scroll. It is the opposite: the rail is `sticky` at
+   * `top: 0` and 142 px tall, so while it is pinned it covers 137 px of the
+   * first gallery row. Two cards show, and scrolling never gives a third.
+   * Unpinning is what gives the phone its second row back, so the screen where
+   * vertical space is scarcest is the one that needs the control most.
+   *
+   * What that note got right is that 44 px had to come from somewhere: at 393 px
+   * the search field has only 145. The maintainer's answer was to take them from the other
+   * row instead — the set code field has 235 px there — and that is where the
+   * button now lives, for every screen size. One control, one place.
+   */
+
+  .add-bar { gap: 0.35rem; }
+  .add-bar .add-input { font-size: 0.85rem; min-height: 36px; }
+}
+
+/* ── Other printings ──────────────────────────────────────────────────────
+ *
+ * One row per known printing, the owned printing marked. The question this
+ * block answers comes up card in hand: “this one, do I already have it?” —
+ * hence the mark on the right, and the dash in its place when the answer is no.
+ * An empty cell would read as missing data.
+ */
+.editions h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+/* Rarity and language are landmarks, not the subject: they take only the room
+ * they need and do not align on a grid. */
+.edition-rarity,
+.edition-lang {
+  white-space: nowrap;
+}
+
+/* ── The Link marker compass ──────────────────────────────────────────────
+ *
+ * Three by three, as on the card: the eight directions around, the rating in
+ * the middle. Unlit arrows stay visible — their absence carries information as
+ * much as their presence, and a grid with holes would read badly.
+ */
+.link-compass-block h3 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+
+.link-compass {
+  display: grid;
+  grid-template-columns: repeat(3, 1.6rem);
+  grid-template-rows: repeat(3, 1.6rem);
+  gap: 2px;
+  justify-content: start;
+}
+
+.link-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  /* Unlit, the arrow fades without disappearing: it is the comparison with the
+   * lit ones that informs. */
+  opacity: 0.35;
+}
+
+.link-arrow.is-on {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  opacity: 1;
+}
+
+.link-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-sm);
+  background: var(--input);
+}
+
+/* In gallery view, the subheading spans the whole grid — otherwise it would
+ * take a cell and read as a card. */
+.group-header-gallery {
+  grid-column: 1 / -1;
+}
+
+.effect {
+  margin: 0 0 1.1em;
+}
+
+.inspect-panel .inspect-sub {
+  font-size: 0.85em;
+}
+
+/* ── A card's other printings: the list ───────────────────────────────── */
+
+.editions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.edition-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+}
+
+.edition-row.is-owned {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.edition-code {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The set name gives way first: it is the only column a printing can be
+ * recognised without. */
+.edition-set {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edition-owned {
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.edition-missing {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Icons and filter blocks ───────────────────────────────────────────── */
+
+/* disc matches attr badge; star almost fills disc */
+.tile-star .star-badge {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.tile-star .star-badge img {
+  width: 0.88rem;
+  height: 0.88rem;
+}
+
+.inspect-info-body .meta-ico {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.inspect-info-body .meta-ico.star-badge {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.inspect-info-body .meta-ico.star-badge img {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.filter-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+}
+
+.attr-ico-img {
+  border-radius: 50%;
+  /* soft ring so icons read on dark UI */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+/* Level / Rank: disc = same size as attr icons (1.15rem); star fills most of the disc */
+.star-badge {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.star-badge img {
+  /* large star inside fixed disc — almost edge-to-edge */
+  width: 0.95rem;
+  height: 0.95rem;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 0 0.5px rgba(0, 0, 0, 0.35));
+}
+
+.star-badge-level {
+  background: radial-gradient(circle at 35% 30%, #ff6b6b, #c62828 55%, #7f1010);
+}
+
+.star-badge-rank {
+  background: radial-gradient(circle at 35% 30%, #3a3a3a, #141414 60%, #000);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.chip-level.is-active .star-badge-level {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 0 6px color-mix(in srgb, #e53935 40%, transparent);
+}
+
+/* Inline metadata icons — same diameter as the attribute ones. */
+.meta-ico.star-badge {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.15rem;
+  vertical-align: -0.2em;
+  display: inline-grid;
+}
+
+.meta-ico.star-badge img {
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
+.chip-attr.is-active .attr-ico-img {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
+    0 0 6px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Inline icons of the list's stats. */
+.meta-ico {
+  width: 1rem;
+  height: 1rem;
+  object-fit: contain;
+  vertical-align: -0.18em;
+  margin-right: 0.2rem;
+  display: inline-block;
+}
+
+.meta-ico.race {
+  /* YGOPRODeck race icons — often dark; slight lift on dark UI */
+  filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.35));
+  border-radius: 0.15rem;
+}
+
+.meta-ico.attr {
+  border-radius: 50%;
+  width: 1rem;
+  height: 1rem;
+}
+
+.help-q-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: #5ec8ff;
+  color: #0a1620;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.help-q-text {
+  text-transform: none;
+  font-weight: 700;
+}
+
+.help-q:hover,
+.help-q:focus-visible {
+  border-color: #9adbff;
+  background: #24506f;
+  color: #fff;
+  outline: 2px solid #5ec8ff;
+  outline-offset: 2px;
+}
+
+/* ensure filter head doesn't clip the pill */.filter-block-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.45rem;
+  flex-wrap: wrap;
+}
+
+/* Real YGO spell/trap property icons (local copy of YGOPRODeck icons) */
+.st-ico-img {
+  /* inherits .ygo-ico when both classes present */
+  width: 1.15rem;
+  height: 1.15rem;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+  filter: drop-shadow(0 0 0.5px rgba(255, 255, 255, 0.35));
+}
+
+.chip-st.is-active .st-ico-img {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 60%, transparent));
+}
+
+/* ── Advanced fields, settings and copy note ───────────────────────────── */
+
+.menu-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--fg);
+  padding: 0.45rem 0.5rem;
+  cursor: pointer;
+}
+
+.add-select-wrap:not(.add-select-passcode) {
+  flex: 0 1 auto;
+}
+
+.add-select-passcode {
+  flex: 1 1 7rem;
+  min-width: 6.5rem;
+}
+
+.inspect-notes {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.inspect-notes input {
+  flex: 1;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  padding: 0.4rem 0.55rem;
+  font: inherit;
+  min-width: 0;
+  font-size: 0.9em;
+}
+
+.inspect-info-body .inspect-notes {
+  margin-top: 1rem;
+  gap: 0.5rem;
+}
+
+.inspect-info-body .inspect-notes input {
+  background: rgba(12, 18, 28, 0.55);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f2f5fa;
+  font-size: 1.05rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.inspect-info-body .inspect-notes .btn {
+  font-size: 0.95rem;
+  padding: 0.45rem 0.85rem;
+}
+
+.inspect-notes input:focus {
+  outline: none;
+  border-style: solid;
+  border-color: var(--gold);
+}
+
+/* ── Compact density ───────────────────────────────────────────────────── */
+
+/*
+ * Set on `<body>`: these rules look for it there, and moving it would mean
+ * rewriting them all for no gain.
+ */
+
+/* Density */
+body.density-compact .item {
+  padding: 0.4rem 0;
+}
+
+body.density-compact .stats-line {
+  display: none;
+}
+
+body.density-compact .thumb {
+  width: 40px;
+  height: 58px;
+}
+
+body.density-compact .gallery {
+  gap: 0.65rem;
+}
+
+
+
+
+/* —— Menus (closed by default; only .is-open shows) —— */
+.menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 15rem;
+  max-width: min(92vw, 18rem);
+  padding: 0.45rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  z-index: var(--z-row-menu);
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+
+
+.menu.is-open {
+  display: flex;
+}
+
+
+
+.menu-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+
+
+.menu-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+}
+
+/* Someone else's collection says whose it is: the page's heading is read, not
+   seen, and without this line a visitor could take it for their own. */
+.collection-visitor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.6rem;
+  font-weight: 800;
+  color: var(--gold);
+}

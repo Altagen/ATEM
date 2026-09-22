@@ -1,0 +1,372 @@
+/*
+ * The card scanner.
+ *
+ * Taken from the earlier prototype, where this one sheet served both the mock-up and the
+ * application: viewfinder at a card's ratio, aiming band, shutter bar,
+ * suggestion pills. The mock-up had no camera and showed the viewfinder in its
+ * “camera unavailable” state, a state the application knows too — the shape is
+ * the same.
+ *
+ * `design/index.css` imports it once. Copying it into another sheet would make
+ * it drift at the first adjustment — which is what had happened to the earlier prototype's
+ * scanlist sheet.
+ */
+
+/* —— Le viseur —————————————————————————————————————————————————————— */
+
+/*
+ * The ratio is a card's, not the stream's.
+ *
+ * The camera returns what it likes — often 4:3 in portrait, 16:9 in landscape
+ * — and the viewfinder must stay the same frame whatever the device, otherwise
+ * the aiming band no longer falls on the set code. Hence an imposed ratio and
+ * `object-fit: cover`: we crop the stream rather than distort the frame.
+ */
+.scan-zoom-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 58vh;
+  overflow: hidden;
+  border-radius: 0.7rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-zoom-placeholder {
+  font-size: 0.86rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+/*
+ * The aiming band: where to place the set code.
+ *
+ * It is laid out at the same proportions as the area the OCR reads, otherwise
+ * it would lie — you would frame inside the band and recognition would read
+ * elsewhere.
+ */
+.scan-zoom-band {
+  position: absolute;
+  /*
+   * These four percentages are those of `SCAN_ZOOM_BAND`, in
+   * `apps/web/src/screens/collection/ocr/engine.ts`. It is not a resemblance:
+   * it is the same band, drawn on one side and read on the other.
+   *
+   * On 2 September 2026 they were invented — 8% margin, 15% from the bottom,
+   * 12% high — while styling twenty-one classes that had no rule. The drawn
+   * band ended up at the bottom of the viewfinder, the read band in the middle:
+   * you framed the set code in one place and the OCR looked elsewhere. The maintainer:
+   * “when I scan with OCR I get ‘Nothing reliable’”. The module said so,
+   * though, right above its constants — “Must match CSS .scan-zoom-band
+   * percentages” — and nothing checked it.
+   *
+   * `scripts/check-scan-band.mjs` now compares the two.
+   */
+  left: 5%;
+  width: 90%;
+  top: 34%;
+  height: 30%;
+  border: 2px dashed color-mix(in srgb, var(--gold) 70%, transparent);
+  border-radius: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.scan-zoom-band.is-locked {
+  border-style: solid;
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+}
+
+.scan-zoom-locked-code {
+  font-family: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  color: var(--fg-fort);
+  text-shadow: 0 1px 3px color-mix(in srgb, var(--ombre) 70%, transparent);
+}
+
+.scan-status {
+  margin: 0;
+  font-size: 0.82rem;
+  text-align: center;
+  min-height: 1.2em;
+}
+
+.scan-err {
+  margin: 0;
+}
+
+/* —— The code read, and the suggestions ——————————————————————————— */
+
+.scan-code-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.scan-code-row-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.scan-code-input {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  /* 16px at least: below that, iOS zooms onto the field when it gets focus. */
+  min-height: 2.6rem;
+}
+
+.scan-code-input.is-editing,
+.scan-code-row.is-active .scan-code-input {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.scan-cand-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.scan-cand {
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-douce);
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scan-cand:hover {
+  border-color: var(--accent-dim);
+  color: var(--fg);
+}
+
+.scan-cand.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--fg-fort);
+}
+
+/* —— The shutter bar ——————————————————————————————————————————————— */
+
+/*
+ * Three fixed places: side, centre, side.
+ *
+ * The central button does not move from one state to the next — before the
+ * photo it is the shutter, after it is “+1” — because a thumb that has found
+ * its place should not have to look for it again between two cards.
+ */
+.scan-shutter-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+  gap: 0.75rem;
+  padding-top: 0.2rem;
+}
+
+/*
+ * The two secondary buttons, grouped to the left of the shutter.
+ *
+ * Four evenly spread targets would have pushed the shutter off centre, and it
+ * is the only one aimed at without looking — a pile of cards in the other
+ * hand. So it keeps the middle, and “↺” and “−1” share the left column.
+ */
+.scan-shutter-side-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-scan-shutter {
+  position: relative;
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.btn-scan-shutter:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-scan-shutter-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--fg-fort);
+}
+
+.btn-scan-shutter-core {
+  width: 3.3rem;
+  height: 3.3rem;
+  border-radius: 50%;
+  background: var(--fg-fort);
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.btn-scan-shutter:not(:disabled):active .btn-scan-shutter-core {
+  transform: scale(0.88);
+}
+
+/* While analysing, the core pulses: the wait is visible without text. */
+.btn-scan-shutter.is-busy .btn-scan-shutter-core {
+  background: var(--gold);
+  animation: scan-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes scan-pulse {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.btn-scan-shutter-side {
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-douce);
+  color: var(--fg);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.btn-scan-shutter-side:hover:not(:disabled) {
+  border-color: var(--accent-dim);
+}
+
+.btn-scan-shutter-side:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/*
+ * The “+1”: the only action that commits anything, and it shows.
+ *
+ * It had no colour — the browser gave it its default grey, indistinguishable
+ * from the “−1” next to it although one adds a card to the inventory and the
+ * other removes it. It takes the blue of the add bar's “+”: it is the same
+ * gesture, and it wears the same colour everywhere.
+ */
+.btn-scan-add-lg {
+  appearance: none;
+  min-width: 4.2rem;
+  min-height: 3.4rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #061018;
+  font-size: 1.25rem;
+  font-weight: 900;
+  padding-inline: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.btn-scan-add-lg:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn-scan-add-lg:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The arrow turning back on itself, at glyph size rather than text size. */
+.i-restart {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+/* —— On a phone: full screen, and above the bottom bar ——————————— */
+
+/*
+ * The modal takes the whole screen, including the navigation bar's space — it
+ * has its own close cross at the top right, so the bottom bar has no business
+ * there. `--z-modal-panel` puts it in front; full screen does the rest.
+ *
+ * `100dvh` and not `100vh`: on mobile, `vh` counts the browser's address bar
+ * even when it is collapsed, and the shutter bar fell below the bottom edge of
+ * the screen.
+ */
+@media (max-width: 719px) {
+  .scan-modal-zoom {
+    inset: 0;
+    left: 0;
+    top: 0;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border: none;
+    border-radius: 0;
+  }
+
+  .scan-modal-zoom .scan-modal-body {
+    /* The usable area, minus the header; the viewfinder takes what is left. */
+    min-height: calc(100dvh - 3.4rem);
+    justify-content: center;
+    padding-bottom: max(1.1rem, env(safe-area-inset-bottom));
+  }
+
+  .scan-modal-zoom .scan-zoom-viewport {
+    max-height: 46vh;
+  }
+}
+
+/*
+ * The viewfinder's video fills its frame, like artworks elsewhere.
+ *
+ * It does not join the shared rule of the earlier prototype's component sheet: that sheet
+ * was loaded by all twelve pages, and the gate rightly refused to style there a
+ * class eleven of them never set.
+ */
+.scan-zoom-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

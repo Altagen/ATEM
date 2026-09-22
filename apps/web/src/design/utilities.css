@@ -1,0 +1,21 @@
+
+
+
+
+
+/**
+ * Hides an element from the screen while leaving it readable by screen
+ * readers. The Collection page shows no title — its toolbar takes the top — but
+ * a page without an accessible title is a defect, not a design choice.
+ */
+.u-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

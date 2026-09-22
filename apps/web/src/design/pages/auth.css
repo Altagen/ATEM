@@ -1,0 +1,130 @@
+/* ── Pre-sign-in screens: landing, sign in, sign up ────────────────────────
+ *
+ * These three pages have no application shell. Before signing in there is
+ * nothing to navigate: a band with the brand and the language choice, and the
+ * content in the middle. The class names are those of `apps/web`, which remains
+ * the structural reference.
+ */
+.auth-page {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.landing-container {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2rem, 6vw, 4.5rem);
+  padding: clamp(1rem, 4vw, 3rem) clamp(1rem, 5vw, 4rem) 4rem;
+  box-sizing: border-box;
+}
+
+/* ── Header band ──────────────────────────────────────────────────────────── */
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(0.85rem, 2.5vw, 1.4rem) clamp(1rem, 5vw, 4rem);
+}
+.landing-brand { text-decoration: none; }
+.landing-logo {
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+}
+
+/* ── Sign in and sign up ──────────────────────────────────────────────────── */
+.auth-main-wrapper {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  padding: 1rem 0 2rem;
+}
+.auth-card {
+  width: 100%;
+  max-width: 26rem;
+  box-sizing: border-box;
+  padding: clamp(1.35rem, 4vw, 2.1rem);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+/* Sign-up carries two more fields and a meter: it breathes a little wider, as
+   it does in the application. */
+.auth-card.is-wide { max-width: 31rem; }
+.auth-card-title { margin: 0; font-size: 1.5rem; font-weight: 900; color: #fff; }
+.auth-subtitle { margin: 0.3rem 0 1.35rem; font-size: 0.84rem; }
+.auth-error-banner {
+  margin: 0 0 1.1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  color: var(--danger);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+.auth-form { display: flex; flex-direction: column; gap: 1rem; }
+.auth-field-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.auth-field-group label { font-size: 0.8rem; font-weight: 800; color: var(--fg); }
+.auth-field-group .field-hint { font-weight: 600; color: var(--muted); margin-left: 0.35rem; }
+.auth-input {
+  appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.92rem;
+}
+.auth-input:focus { outline: 2px solid var(--accent-dim); outline-offset: 1px; }
+.auth-input:disabled { opacity: 0.55; cursor: not-allowed; }
+.auth-submit-btn {
+  appearance: none;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-radius: 12px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+.auth-submit-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.auth-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-toggle { margin: 1.1rem 0 0; font-size: 0.84rem; text-align: center; }
+/* The toggle link is sometimes an `a`, sometimes a `button` — “Sign out” acts,
+   it does not lead elsewhere. Both must read the same: without this reset, the
+   button keeps the browser's grey background. */
+.auth-link-btn {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 800;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.auth-link-btn:hover { color: var(--gold); }
+
+/* The password meter is the one from Settings, which sign-up uses as well. It
+   is declared here so that this page carries it itself: a sheet you do not load
+   styles nothing. */
+.field-note { margin: 0.35rem 0 0; font-size: 0.76rem; }
+
+/* The message's slot is rendered once, and disappears while it is empty: a red
+   frame with no text reads as an error one cannot manage to read. */
+.auth-error-banner:empty { display: none; }
+.auth-input:disabled { opacity: 0.6; }

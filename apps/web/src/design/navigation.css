@@ -1,0 +1,399 @@
+/**
+ * The navigation shell.
+ *
+ * Three surfaces for a single state: the top bar on a wide screen, the bottom
+ * bar on a phone which replaces it **entirely**, and the account sheet the
+ * latter opens.
+ *
+ * Replacing rather than adapting is the earlier prototype's choice, and it holds: on a
+ * phone, the top bar only kept the brand, the service status and the avatar —
+ * five targets in a 62 px band, for settings nobody visits over and over. The
+ * thumb is at the bottom of the screen.
+ *
+ * The status pill and account sheet rules come from the earlier prototype's
+ * `shared-nav.css`. The bottom bar's were injected there in a `<style>` tag,
+ * every declaration marked `!important` — not by choice, but because an
+ * injected sheet has to win over those already loaded. Written here, they no
+ * longer need it.
+ */
+
+.api-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.api-pill.api-ok {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+  border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+}
+
+/* And the red counterpart, which did not exist: the indicator could not be
+ * anything but green, so this rule had no reason to be. */
+.api-pill.api-err {
+  background: color-mix(in srgb, var(--err) 15%, transparent);
+  color: var(--err);
+  border: 1px solid color-mix(in srgb, var(--err) 40%, transparent);
+}
+
+/* ── “Account” sheet ───────────────────────────────────────────────────────
+ * Taken from the mock-up. It carries what the top bar carried on a phone —
+ * brand, identity, inbox, settings, administration and language — and rises
+ * from the bottom, like the bar that opens it.
+ */
+.account-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.account-sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: var(--z-modal-panel);
+  display: flex;
+  flex-direction: column;
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--card);
+  border-top: 1px solid color-mix(in srgb, var(--gold) 30%, var(--border));
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.55);
+  /* The system gesture bar bites into the bottom of the screen. */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  /* The swipe sets a `transform`: the transition brings the panel back into
+     place when released too early, and carries it away once the threshold is
+     crossed. `touch-action` reserves the vertical gesture for the panel. */
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  touch-action: pan-y;
+}
+
+/* The handle: three pixels high, but it is what announces that the panel can
+   be pulled. With no cue, the gesture only exists for whoever guessed it. */
+.account-sheet-grip {
+  width: 2.5rem;
+  height: 4px;
+  margin: 0.5rem auto 0.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  flex-shrink: 0;
+}
+
+.account-sheet-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The brand tops the panel, alone on its line: it is the only place it
+   remains on a phone, and from there it leads back home. */
+.account-sheet-brand {
+  grid-column: 1 / -1;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.account-sheet-identity { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+
+.account-sheet-identity strong { font-size: 0.95rem; }
+
+.account-sheet-identity .muted {
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-sheet-list { display: flex; flex-direction: column; padding: 0.35rem 0; }
+
+.account-sheet-item {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  /* 52px: above the finger threshold, and spaced enough not to hit the
+     neighbouring row. */
+  min-height: 52px;
+  padding: 0 1.1rem;
+  background: transparent;
+  border: 0;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-sheet-item:hover,
+.account-sheet-item:focus-visible { background: rgba(255, 255, 255, 0.05); }
+
+.account-sheet-chev { margin-left: auto; color: var(--muted); font-size: 1.15rem; }
+
+.account-sheet-foot { padding: 0.6rem 1.1rem 1.1rem; border-top: 1px solid var(--border); }
+
+.account-sheet-logout { width: 100%; justify-content: center; color: var(--danger); }
+
+/* ── The bottom bar, on a phone ────────────────────────────────────────── */
+
+.global-mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 46rem) {
+  /**
+   * The top bar gives way, entirely.
+   *
+   * We do not keep a reduced version: that would be two navigations to keep in
+   * agreement, and one of them would end up lying about the current page.
+   */
+  .app-bar {
+    display: none;
+  }
+
+  /* Enough room not to hide a list's last row under the bar. */
+  body {
+    padding-bottom: 74px;
+  }
+
+  .global-mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: var(--z-header);
+    height: 64px;
+    align-items: center;
+    justify-content: space-around;
+    background: var(--surface-haute, #12121c);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px color-mix(in srgb, var(--ombre) 70%, transparent);
+    /* The bar sits over the page: without this, the screen's background shows
+       through between the entries while scrolling. */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .global-mobile-nav-item {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .global-mobile-nav-item span:first-child {
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .global-mobile-nav-item.is-active {
+    color: var(--gold);
+  }
+
+  /* The stroke marking the current page, hooked to the top of the entry. */
+  .global-mobile-nav-item.is-active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 3px;
+    background: var(--gold);
+    border-radius: 0 0 4px 4px;
+  }
+}
+
+/* ── The language choice ──────────────────────────────────────────────────
+ *
+ * Two joined buttons, segmented-control style: there are only two languages,
+ * and the current one reads at a glance. A drop-down would take two gestures
+ * for the same thing, and hide the current state behind the first.
+ */
+
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.lang-switch-item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  min-height: 30px;
+}
+
+.lang-switch-item.is-active {
+  background: var(--accent);
+  color: #061018;
+}
+
+.lang-switch-item:not(.is-active):hover {
+  color: var(--fg);
+}
+
+/* In the account sheet, the target is finger-sized and the block takes its room. */
+.account-sheet-foot .lang-switch {
+  align-self: center;
+}
+
+.account-sheet-foot .lang-switch-item {
+  min-height: 44px;
+  min-width: 56px;
+  font-size: 0.85rem;
+}
+
+/*
+ * A menu entry that is a link reads like the buttons beside it.
+ *
+ * The earlier prototype's user menu used `<button>` for “Settings…”. It is an `<a href>` here
+ * because it navigates — so middle-click and “open in a new tab” work — and a
+ * link carries the browser's underline and colour, which the buttons do not.
+ */
+a.menu-item {
+  text-decoration: none;
+  color: inherit;
+}
+
+/**
+ * The account menu's avatar button and head — from the earlier prototype's design.
+ */
+
+/* The avatar keeps its gold ring at all times, as in the mock-up. */
+.app-avatar {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: linear-gradient(135deg, #1e1b4b 0%, #311b92 100%);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.app-avatar:hover { transform: scale(1.05); box-shadow: 0 0 16px color-mix(in srgb, var(--gold) 40%, transparent); }
+
+.app-user-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--fg);
+}
+.app-user-menu-head .user-avatar-badge { width: 34px; height: 34px; font-size: 17px; }
+.app-user-menu-name { display: block; font-weight: 800; font-size: 0.88rem; color: #fff; }
+.app-user-menu-mail { display: block; font-size: 0.75rem; }
+
+/* The top bar's language pill — the earlier prototype's. */
+.lang-pill {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+.lang-pill:hover { background: rgba(255, 255, 255, 0.12); }
+
+
+.app-inbox-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  border: 2px solid #181824;
+  display: grid;
+  place-items: center;
+}
+
+/* The bell in the top bar, and its count. The earlier prototype styled it on
+   `.app-header-right .btn-icon`; the bar is `.app-bar-right` here. */
+.app-bar-right .btn-icon {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: #fff;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.app-bar-right .btn-icon:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--gold); }
+/* The bell carries its count in a corner: it must be able to overflow it. */
+.app-inbox { overflow: visible; }
+
+.account-sheet-count {
+  margin-left: auto;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.account-sheet-count + .account-sheet-chev { margin-left: 0.5rem; }

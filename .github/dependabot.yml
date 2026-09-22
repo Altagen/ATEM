@@ -1,0 +1,26 @@
+# Dependencies move by pull request to develop, weekly, grouped so that a week
+# of minor updates is one review rather than twenty.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: develop
+    schedule: { interval: weekly }
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule: { interval: weekly }
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: docker
+    directory: /
+    target-branch: develop
+    schedule: { interval: weekly }
+  - package-ecosystem: docker-compose
+    directory: /
+    target-branch: develop
+    schedule: { interval: weekly }

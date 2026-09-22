@@ -1,0 +1,40 @@
+/**
+ * What the profile screen holds between two paints.
+ */
+import type { Avatar } from "@atem/shared";
+import type { FriendStatus } from "../community/state.js";
+
+/** Mirrors the server's `PlayerProfile` (`GET /players/:id`). */
+export type PlayerProfile = {
+  profile: {
+    id: string;
+    displayName: string;
+    tag: string;
+    avatar: Avatar;
+    bio: string;
+    createdAt: string;
+  };
+  isOwner: boolean;
+  /** Where the relation stands, as the viewer sees it — mirrors the server. */
+  friendStatus: FriendStatus;
+  /** Duels recorded and won — counted by the server, never invented here. */
+  duels: { played: number; won: number };
+  /** Which shelves the viewer may open — the server's checkpoint decides. */
+  sees: { collection: boolean; decks: boolean };
+};
+
+export type ProfileState = {
+  /** `null` while loading; then either the profile or why it is not shown. */
+  player: PlayerProfile | null;
+  failure: string | null;
+  /** The edit window's fields, `null` when it is closed. */
+  draft: { displayName: string; bio: string; avatar: Avatar } | null;
+  saving: boolean;
+};
+
+export const profileState = (): ProfileState => ({
+  player: null,
+  failure: null,
+  draft: null,
+  saving: false,
+});

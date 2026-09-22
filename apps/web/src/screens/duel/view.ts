@@ -1,0 +1,608 @@
+/**
+ * The duels markup.
+ *
+ * Nothing to transcribe here: The earlier prototype had no duels and the design does not
+ * draw them (`docs/ref-duels.md` says why this is the one decided feature). So
+ * it is built from the pieces the rest of the application already uses — the
+ * directory's rows, the deck screen's modal, the same buttons — rather than a
+ * vocabulary of its own.
+ */
+import { DUEL_PHASES, type DuelPhase } from "@atem/shared";
+import { locale, t } from "../../platform/i18n/index.js";
+import { avatarLooks } from "../../platform/avatar.js";
+import { html, raw, when, type SafeHtml } from "../../platform/ui.js";
+import type { Duel, DuelDetail, DuelEvent, DuelSide, DuelState } from "./state.js";
+
+const day = (iso: string): string =>
+  new Date(iso).toLocaleDateString(locale(), { day: "2-digit", month: "long", year: "numeric" });
+
+/** The status, said in words — colour alone is not a signal everyone receives. */
+function statusLabel(duel: Duel): string {
+  if (duel.status === "recorded") return t("Recorded");
+  if (duel.status === "playing") return t("In progress");
+  if (duel.status === "accepted") return t("Ready to start");
+  return duel.isHost ? t("Invitation sent") : t("Invitation received");
+}
+
+/** The phases, named as the game names them. */
+function phaseName(phase: DuelPhase): string {
+  switch (phase) {
+    case "draw": return t("Draw Phase");
+    case "standby": return t("Standby Phase");
+    case "main1": return t("Main Phase 1");
+    case "battle": return t("Battle Phase");
+    case "main2": return t("Main Phase 2");
+    default: return t("End Phase");
+  }
+}
+
+/**
+ * One side of a duel. **Your own name is gold**, wherever it appears.
+ *
+ * The maintainer, on 2026-09-19: two names on a card, and the eye has to work out which
+ * one is its own before reading anything else. The colour answers that first.
+ */
+function side(one: DuelSide, verdict: "won" | "lost" | null, isYou: boolean): SafeHtml {
+  const look = one.player ? avatarLooks()[one.player.avatar] : null;
+  return html`<div class="duel-side${verdict === "won" ? " is-winner" : ""}">
+    ${look
+      ? html`<span class="user-avatar-badge" role="img" aria-label="${look.label}">${look.icon}</span>`
+      : raw("")}
+    <div class="duel-side-text">
+      <strong class="${isYou ? "is-you" : ""}">${sideName(one)}</strong>
+      <span class="caption">${one.deck.name ?? t("No deck named")}</span>
+    </div>
+    ${verdict === null
+      ? raw("")
+      : html`<span class="duel-verdict is-${verdict}">${verdict === "won" ? t("Winner") : t("Loser")}</span>`}
+  </div>`;
+}
+
+/**
+ * Who won and who lost, once the duel is recorded — and nothing before.
+ *
+ * A recorded duel says **won** or **lost**, not a score: a score counts games
+ * won, so `2–0` would need two duels. The maintainer took it out on 2026-09-19 — counting
+ * an evening is the players' business, and this list is what they count from.
+ */
+const verdictOf = (one: DuelSide): "won" | "lost" | null =>
+  one.won === null ? null : one.won ? "won" : "lost";
+
+/**
+ * A side's name: the duellist's — or “deleted account” once it is gone. The
+ * other player keeps the duels they played with them (decided on 2026-09-22).
+ */
+const sideName = (one: DuelSide): string =>
+  one.removed ? t("Deleted account") : one.player?.displayName ?? t("A duellist");
+
+/**
+ * A duel in the list: **one word for the person reading**.
+ *
+ * The maintainer, on 2026-09-19: a badge on each card is two answers to a question
+ * nobody asked here — opening the duel is where one looks at who beat whom.
+ * The overview answers “did I win?”, above the crossed swords.
+ */
+function duelRow(duel: Duel, fromPast: boolean): SafeHtml {
+  const mine = duel.isHost ? duel.host : duel.guest;
+  const outcome = verdictOf(mine);
+  // The address remembers which list this was opened from.
+  return html`<a class="player-card-row-full duel-row"
+      href="/duels?duel=${duel.id}${fromPast ? "&past=1" : ""}">
+    <div class="duel-row-line">
+      <span class="duel-status is-${duel.status}">${statusLabel(duel)}</span>
+      <span class="caption">${day(duel.playedOn)}</span>
+    </div>
+    <div class="duel-row-players">
+      ${side(duel.host, null, duel.isHost)}
+      <span class="duel-versus">
+        ${outcome === null
+          ? raw("")
+          : html`<span class="duel-outcome is-${outcome}">${outcome === "won" ? t("Winner") : t("Loser")}</span>`}
+        <span aria-hidden="true">⚔️</span>
+      </span>
+      ${side(duel.guest, null, !duel.isHost)}
+    </div>
+  </a>`;
+}
+
+/**
+ * The duels screen: **the duel now, or the ones before**.
+ *
+ * The maintainer, on 2026-09-19: one plays one duel at a time, so the screen shows that
+ * one — and files the rest under “past duels”. Invitations are not listed here
+ * at all: they wait in the inbox until they are answered, which is where one
+ * goes to answer them.
+ */
+export function listHtml(state: DuelState): SafeHtml {
+  const duels = state.duels;
+  /**
+   * The duel now: the one accepted or being played, or an invitation one has
+   * sent. An invitation **received** is not a duel one is in — it waits in the
+   * inbox until it is answered (the maintainer, 2026-09-19).
+   */
+  const current = duels?.find((duel) =>
+    duel.status === "accepted" || duel.status === "playing" || (duel.status === "proposed" && duel.isHost),
+  ) ?? null;
+  // The duels already played are paged in on their own: they accumulate.
+  const past = state.past ?? [];
+  const showing = state.showPast ? past : current ? [current] : [];
+
+  return html`<main class="community-app-container">
+    <div class="duel-head">
+      <h1 class="page-title">⚔️ ${t("Duels")}</h1>
+      ${when(!state.showPast && current === null, html`<button type="button"
+            class="btn-showcase-primary-full is-medium is-auto" id="btn-invite">
+          ${t("Invite a friend")}
+        </button>`)}
+    </div>
+
+    <div class="filter-chips-row duel-tabs" role="group" aria-label="${t("Duels")}">
+      <button type="button" class="chip-btn${state.showPast ? "" : " is-active"}"
+              data-duels="current" aria-pressed="${String(!state.showPast)}">${t("⚔️ Current duel")}</button>
+      <button type="button" class="chip-btn${state.showPast ? " is-active" : ""}"
+              data-duels="past" aria-pressed="${String(state.showPast)}">
+        ${t("📜 Past duels")}
+      </button>
+    </div>
+
+    <div class="directory-unified-frame">
+      <div class="directory-full-panel">
+        ${state.failure
+          ? html`<div class="empty-state"><p class="empty-title">${state.failure}</p></div>`
+          : (state.showPast ? state.past === null : duels === null)
+            ? html`<div class="empty-state"><p class="empty-title">${t("Loading…")}</p></div>`
+            : showing.length === 0
+              ? html`<div class="empty-state">
+                  <p class="empty-title">${state.showPast ? t("No duel played yet") : t("No duel under way")}</p>
+                  <p class="muted">${state.showPast
+                    ? t("A duel appears here once its result is recorded.")
+                    : t("Invite a friend: ATEM keeps the record of a duel played in person.")}</p>
+                </div>`
+              : html`<div class="player-cards-list-full">
+                    ${showing.map((duel) => duelRow(duel, state.showPast))}
+                  </div>
+                  ${when(state.showPast && state.pastCursor !== null,
+                    html`<div class="duel-more"><button type="button" class="btn" id="btn-more-past">
+                      ${t("Show more")}
+                    </button></div>`)}`}
+      </div>
+    </div>
+  </main>
+  ${inviteModal(state)}`;
+}
+
+/**
+ * A sentence with **your own name picked out** in it.
+ *
+ * The name is inside the translated phrase, so it is put back in by hand: the
+ * sentence is split on it and the middle wrapped. Both halves go through the
+ * escaping template like anything else.
+ */
+function withName(sentence: string, name: string, isYou: boolean): SafeHtml {
+  if (!isYou || name === "") return html`${sentence}`;
+  const at = sentence.indexOf(name);
+  if (at < 0) return html`${sentence}`;
+  return html`${sentence.slice(0, at)}<span class="is-you">${name}</span>${sentence.slice(at + name.length)}`;
+}
+
+/** One line of the history, in the words a duel is read in. */
+function eventLine(duel: DuelDetail, event: DuelEvent): SafeHtml {
+  // The side the line is about; an empty `playerId` is the deleted account's.
+  const side = event.playerId !== null && event.playerId === duel.host.player?.id ? duel.host
+    : event.playerId !== null && event.playerId === duel.guest.player?.id ? duel.guest
+      : duel.host.removed ? duel.host : duel.guest;
+  const about = side.player;
+  const name = sideName(side);
+  const mine = duel.isHost ? duel.host.player : duel.guest.player;
+  const isYou = about !== null && about.id === mine?.id;
+  // A phase event says nothing here: the phase column beside it already does.
+  const text = event.kind === "life"
+    ? t("{name}: {delta} life points", { name, delta: String(event.delta ?? 0) })
+    : event.kind === "turn"
+      ? t("{name} begins turn {n}", { name, n: String(event.turnNumber) })
+      : event.kind === "start"
+        ? t("{name} won the coin flip and begins.", { name })
+        : "";
+  return html`<tr>
+    <td data-col="${t("Turn")}">${String(event.turnNumber)}</td>
+    <td data-col="${t("Phase")}">${phaseName(event.phase)}</td>
+    <td data-col="${t("What happened")}">
+      ${withName(text, name, isYou)}${event.note ? ` — ${event.note}` : ""}
+    </td>
+    <td data-col="${t("Life points")}">${String(event.hostLife)} — ${String(event.guestLife)}</td>
+  </tr>`;
+}
+
+/** The amounts a duel deals in, offered on one's own life card. */
+const LIFE_STEPS = [-1000, -500, -100, 100, 500, 1000] as const;
+
+/**
+ * One life card. The duellist's own carries its buttons; the other's does not.
+ *
+ * The maintainer's rule, on 2026-09-19: the one who takes the damage declares it. So the
+ * opposite card is a figure to read, never a counter to reach across and move.
+ */
+function lifeCard(one: DuelSide, options: { mine: boolean; playing: boolean; busy: boolean }): SafeHtml {
+  // The other duellist's card carries no button and says nothing about it: an
+  // absent button needs no caption.
+  const look = one.player ? avatarLooks()[one.player.avatar] : null;
+  return html`<div class="duel-life${options.mine ? " is-mine" : ""}${options.playing ? " is-playing" : ""}">
+    <div class="duel-life-who">
+      ${look ? html`<span class="user-avatar-badge" role="img" aria-label="${look.label}">${look.icon}</span>` : raw("")}
+      <span class="duel-life-name">${sideName(one)}</span>
+      ${when(options.playing, html`<span class="duel-life-turn">${t("Playing")}</span>`)}
+    </div>
+    <strong class="duel-life-value" aria-live="polite">${String(one.life)}</strong>
+    ${when(options.mine, html`<div class="duel-life-steps">
+      ${LIFE_STEPS.map((step) => html`<button type="button" class="chip duel-step" data-step="${String(step)}"
+            ${options.busy ? raw("disabled") : raw("")}>${step > 0 ? `+${step}` : `−${Math.abs(step)}`}</button>`)}
+      <button type="button" class="chip duel-step" data-halve
+              ${options.busy ? raw("disabled") : raw("")}>${t("÷2")}</button>
+      <button type="button" class="chip duel-step" id="btn-life-other"
+              ${options.busy ? raw("disabled") : raw("")}>${t("Other…")}</button>
+    </div>`)}
+  </div>`;
+}
+
+/**
+ * The board: where the duel is, and everything one does from it.
+ *
+ * The maintainer, on 2026-09-19: “the best would be the history folded, and everything
+ * happening on the control panel” — the two players arrange the rest
+ * between themselves, at the table.
+ */
+function boardHtml(duel: DuelDetail, state: DuelState): SafeHtml {
+  const phase = duel.phase ?? "draw";
+  const mineIsHost = duel.isHost;
+  const mine = mineIsHost ? duel.host : duel.guest;
+  const theirs = mineIsHost ? duel.guest : duel.host;
+  const playing = duel.currentPlayerId === duel.host.player?.id ? duel.host.player : duel.guest.player;
+  const myTurn = duel.currentPlayerId === mine.player?.id;
+
+  return html`<section class="profile-section-card duel-board">
+    <div class="duel-board-head">
+      <strong class="duel-turn">${t("Turn {n}", { n: String(duel.turnNumber ?? 1) })}</strong>
+      <span class="duel-now${myTurn ? " is-you" : ""}" aria-live="polite">
+        ${myTurn ? t("Your turn") : t("{name} is playing", { name: playing?.displayName ?? t("A duellist") })}
+      </span>
+    </div>
+
+    <!--
+      Two ways of saying where the duel is, and the screen picks one.
+      Wide, the whole path is shown and one sees what comes next. On a phone in
+      focus the path becomes the phase one is in, spelled out, with its rank —
+      six chips on a narrow screen either wrap onto three lines or scroll
+      sideways, and the maintainer rightly refused both.
+    -->
+    <p class="duel-phase-now">
+      ${phaseName(phase)}
+      <span class="caption">${t("phase {n} of {total}", {
+        n: String(DUEL_PHASES.indexOf(phase) + 1), total: String(DUEL_PHASES.length),
+      })}</span>
+    </p>
+    <ol class="duel-phases" aria-label="${t("Phase")}">
+      ${DUEL_PHASES.map((one) => html`<li class="duel-phase${one === phase ? " is-current" : ""}"
+            ${one === phase ? raw('aria-current="step"') : raw("")}>${phaseName(one)}</li>`)}
+    </ol>
+
+    <div class="duel-lives">
+      ${lifeCard(mine, { mine: true, playing: myTurn, busy: state.busy })}
+      ${lifeCard(theirs, { mine: false, playing: !myTurn, busy: state.busy })}
+    </div>
+
+    <!--
+      The turn belongs to the one playing it: off their turn, the two controls
+      that move it are inert rather than hidden — one sees what will be possible
+      again, and the server refuses them anyway (the maintainer, 2026-09-19).
+
+      Calling the duel off is not one of them: it sits apart, under the other
+      duellist's card, where the hand moving the turn along does not pass.
+    -->
+    <div class="duel-actions">
+      <button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-phase"
+              ${!myTurn || phase === "end" ? raw("disabled") : raw("")}>${t("Next phase")}</button>
+      <button type="button" class="btn duel-end-turn" id="btn-end-turn"
+              ${myTurn ? raw("") : raw("disabled")}>${t("End the turn")}</button>
+      <!--
+        Ending the duel is one gesture from here: a duel stops when the players
+        stop, not only when a life total reaches zero — and after correcting a
+        total back off zero, there would otherwise be no way back to the result.
+      -->
+      <button type="button" class="btn" id="btn-finish">${t("End the duel")}</button>
+    </div>
+
+    <div class="duel-drop-row">
+      <!--
+        Full screen, drawn rather than named: the word took a button's width for
+        something an icon says at a glance, and the mode is about room.
+      -->
+      <button type="button" class="btn duel-focus-toggle" id="btn-focus"
+              aria-pressed="${String(state.focus)}"
+              aria-label="${state.focus ? t("Leave focus") : t("Focus")}"
+              title="${state.focus ? t("Leave focus") : t("Focus")}">
+        <span class="i-focus${state.focus ? " is-on" : ""}" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="btn-action-danger-red is-small is-auto" id="btn-drop">
+        ${t("Call it off")}
+      </button>
+    </div>
+  </section>`;
+}
+
+/**
+ * Zero life points: the duel is over, and the screen says so.
+ *
+ * Asked for by the maintainer on 2026-09-19. The result is not written by the
+ * application — a duel is a best of three, and only the two know what the
+ * evening was — so this offers to record it, with the decks played under the
+ * winner's name. And a way back, because a life total reaches zero by a
+ * mistyped figure as easily as by an attack.
+ */
+function victoryHtml(duel: DuelDetail): SafeHtml {
+  const beaten = duel.host.life === 0 ? duel.host : duel.guest;
+  const winner = duel.host.life === 0 ? duel.guest : duel.host;
+  return html`<section class="profile-section-card duel-victory">
+    <span class="duel-victory-cup" aria-hidden="true">🏆</span>
+    <h2 class="duel-victory-name">${t("{name} wins", { name: sideName(winner) })}</h2>
+    <p class="caption">${t("{name} is at zero life points.", { name: sideName(beaten) })}</p>
+
+    <div class="duel-victory-decks">
+      ${[winner, beaten].map((one) => html`<div class="duel-victory-deck">
+        <span class="caption">${sideName(one)}</span>
+        <strong>${one.deck.name ?? t("No deck named")}</strong>
+      </div>`)}
+    </div>
+
+    <div class="duel-actions">
+      <button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-result">
+        ${t("Record the result")}
+      </button>
+      <button type="button" class="btn" id="btn-correct">${t("Correct the life points")}</button>
+      <button type="button" class="btn-action-danger-red is-small is-auto" id="btn-drop">${t("Call it off")}</button>
+    </div>
+  </section>`;
+}
+
+/**
+ * The coin, while it turns.
+ *
+ * The server draws it (`docs/ref-duels.md`); this only shows the draw happening,
+ * because a result that appears instantly is a result one doubts. It stops on
+ * the name the server sent.
+ */
+function coinHtml(state: DuelState): SafeHtml {
+  const coin = state.coin;
+  if (!coin) return html``;
+  return html`<div class="deck-modal-backdrop is-coin"></div>
+  <div class="duel-coin" role="status" aria-live="assertive">
+    <span class="duel-coin-label">${coin.winner ? t("Begins") : t("Flipping the coin…")}</span>
+    <strong class="duel-coin-name${coin.winner ? " is-settled" : ""}">
+      ${coin.winner ?? coin.names[0]}
+    </strong>
+  </div>`;
+}
+
+export function detailHtml(state: DuelState): SafeHtml {
+  const duel = state.open;
+  if (!duel) return html`<main class="community-app-container">
+    <div class="empty-state"><p class="empty-title">${state.failure ?? t("Loading…")}</p></div>
+  </main>`;
+
+  const mine = duel.isHost ? duel.host : duel.guest;
+  const ready = duel.host.deck.id !== null && duel.guest.deck.id !== null;
+  // A duellist at zero ends the duel: nothing is played on top of that.
+  const over = duel.status === "playing" && (duel.host.life === 0 || duel.guest.life === 0);
+
+  /**
+   * Focus: the board and nothing else.
+   *
+   * The maintainer, on 2026-09-19: on a phone, a duel is followed between two hands and a
+   * mat — the summary above and the log below are two scrolls away from the
+   * life points. Everything else goes; the way out is on the board.
+   */
+  if (state.focus && duel.status === "playing" && !over) {
+    return html`<main class="community-app-container duel-focused">
+      ${boardHtml(duel, state)}
+    </main>
+    ${resultModal(state)}
+    ${lifeModal(state)}
+    ${coinHtml(state)}`;
+  }
+  return html`<main class="community-app-container">
+    <a class="settings-back-btn" href="${state.showPast ? "/duels?past=1" : "/duels"}">${t("← Duels")}</a>
+
+    <section class="profile-section-card">
+      <div class="duel-row-line">
+        <span class="duel-status is-${duel.status}">${statusLabel(duel)}</span>
+        <span class="caption">${day(duel.playedOn)}</span>
+      </div>
+      <div class="duel-row-players">
+        ${side(duel.host, verdictOf(duel.host), duel.isHost)}
+        <span class="duel-versus" aria-hidden="true">⚔️</span>
+        ${side(duel.guest, verdictOf(duel.guest), !duel.isHost)}
+      </div>
+      ${when(duel.note !== null && duel.note !== "", html`<p class="showcase-bio">${duel.note}</p>`)}
+
+      <div class="duel-actions">
+        ${when(duel.status === "proposed" && !duel.isHost, html`
+          <button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-accept">${t("Accept the duel")}</button>
+          <button type="button" class="btn-action-danger-red is-medium is-auto" id="btn-drop">
+            ${t("Decline")}
+          </button>`)}
+        ${when(duel.status === "proposed" && duel.isHost, html`
+          <p class="caption">${t("Waiting for the other duellist to accept.")}</p>
+          <button type="button" class="btn-action-danger-red is-medium is-auto" id="btn-drop">
+            ${t("Cancel the invitation")}
+          </button>`)}
+        ${when(duel.status === "accepted", html`
+          <button type="button" class="btn" id="btn-deck">${mine.deck.name ? t("Change my deck") : t("Choose my deck")}</button>
+          <button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-start"
+                  ${ready ? raw("") : raw("disabled")}>${t("Flip the coin and start")}</button>
+          <button type="button" class="btn-action-danger-red is-medium is-auto" id="btn-drop">
+            ${t("Call it off")}
+          </button>`)}
+      </div>
+      ${when(duel.status === "accepted" && !ready,
+        html`<p class="caption">${t("Both duellists choose a deck before the coin is flipped.")}</p>`)}
+    </section>
+
+    ${when(duel.status === "playing",
+      over && !state.correcting ? victoryHtml(duel) : boardHtml(duel, state))}
+
+    <!--
+      The history is folded: a duel is played on the panel above, and the two
+      players arrange the rest between themselves at the table. It is opened to
+      settle a doubt, not to follow along.
+    -->
+    ${when(duel.events.length > 0, html`<details class="profile-section-card duel-log">
+      <summary class="duel-log-summary">
+        📜 ${t("Turn by turn")}
+        <span class="muted">${t("{n} events", { n: String(duel.events.length) })}</span>
+      </summary>
+      <!-- Newest first by default: what one looks for is what just happened.
+           Read from the start, a duel tells another story, so the order turns. -->
+      <div class="duel-log-order">
+        <button type="button" class="chip" id="btn-log-order">
+          ${state.newestFirst ? t("↑ Oldest first") : t("↓ Newest first")}
+        </button>
+      </div>
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead><tr>
+            <th>${t("Turn")}</th><th>${t("Phase")}</th><th>${t("What happened")}</th><th>${t("Life points")}</th>
+          </tr></thead>
+          <tbody>${(state.newestFirst ? [...duel.events].reverse() : duel.events)
+            .map((event) => eventLine(duel, event))}</tbody>
+        </table>
+      </div>
+    </details>`)}
+  </main>
+  ${resultModal(state)}
+  ${lifeModal(state)}
+  ${deckModal(state)}
+  ${coinHtml(state)}`;
+}
+
+/** The deck picker, shared by the invitation and “choose my deck”. */
+function deckField(state: DuelState, chosen: string, id: string, label: string): SafeHtml {
+  const decks = state.decks ?? [];
+  return html`<div class="field-block">
+    <label class="field-label" for="${id}">${label}</label>
+    <select id="${id}" class="search-input-gaming is-bare">
+      <option value=""${chosen === "" ? raw(" selected") : raw("")}>${t("Not said")}</option>
+      ${decks.map((deck) => html`<option value="${deck.id}"${deck.id === chosen ? raw(" selected") : raw("")}>
+        ${deck.name}
+      </option>`)}
+    </select>
+  </div>`;
+}
+
+function inviteModal(state: DuelState): SafeHtml {
+  const invite = state.invite;
+  if (!invite) return html``;
+  const friends = state.friends ?? [];
+  return html`<div class="deck-modal-backdrop" id="duel-modal-backdrop"></div>
+  <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="invite-title">
+    <div class="deck-modal-head"><h2 id="invite-title">⚔️ ${t("Invite a friend")}</h2></div>
+    <form class="deck-modal-body" id="form-invite">
+      ${friends.length === 0
+        ? html`<p class="caption">${t("A duel is played with a friend — the Community screen is where you find them.")}</p>`
+        : html`<div class="field-block">
+            <label class="field-label" for="invite-guest">${t("Which friend?")}</label>
+            <select id="invite-guest" class="search-input-gaming is-bare">
+              ${friends.map((friend) => html`<option value="${friend.id}"${friend.id === invite.guestId ? raw(" selected") : raw("")}>
+                ${friend.displayName} #${friend.tag}
+              </option>`)}
+            </select>
+          </div>
+          <div class="field-block">
+            <label class="field-label" for="invite-date">${t("Played on")}</label>
+            <input type="date" id="invite-date" class="search-input-gaming is-bare" value="${invite.playedOn}" />
+          </div>
+          ${deckField(state, invite.deckId, "invite-deck", t("My deck (optional)"))}`}
+      <div class="deck-modal-foot">
+        <button type="button" class="btn" id="duel-modal-cancel">${t("Cancel")}</button>
+        ${when(friends.length > 0, html`<button type="submit" class="btn-showcase-primary-full is-medium is-auto"
+                ${state.busy ? raw("disabled") : raw("")}>${t("Send the invitation")}</button>`)}
+      </div>
+    </form>
+  </div>`;
+}
+
+function resultModal(state: DuelState): SafeHtml {
+  const result = state.result;
+  const duel = state.open;
+  if (!result || !duel) return html``;
+  return html`<div class="deck-modal-backdrop" id="duel-modal-backdrop"></div>
+  <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="result-title">
+    <div class="deck-modal-head"><h2 id="result-title">🏁 ${t("Record the result")}</h2></div>
+    <form class="deck-modal-body" id="form-result">
+      <p class="caption">${t("A duel has a winner and a loser. Who won?")}</p>
+      <div class="duel-winner-choice" role="group" aria-label="${t("Who won?")}">
+        ${[duel.host, duel.guest].map((one) => html`<button type="button"
+              class="chip-btn${one.player?.id === result.winnerId ? " is-active" : ""}"
+              data-winner="${one.player?.id ?? ""}"
+              aria-pressed="${String(one.player?.id === result.winnerId)}">
+            ${sideName(one)}
+          </button>`)}
+      </div>
+      <div class="field-block">
+        <label class="field-label" for="result-note">${t("A word about it (optional)")}</label>
+        <input type="text" id="result-note" class="search-input-gaming is-bare" maxlength="2000" value="${result.note}" />
+      </div>
+      <div class="deck-modal-foot">
+        <button type="button" class="btn" id="duel-modal-cancel">${t("Cancel")}</button>
+        <button type="submit" class="btn-showcase-primary-full is-medium is-auto"
+                ${state.busy || result.winnerId === "" ? raw("disabled") : raw("")}>${t("Record")}</button>
+      </div>
+    </form>
+  </div>`;
+}
+
+function lifeModal(state: DuelState): SafeHtml {
+  const life = state.life;
+  const duel = state.open;
+  if (!life || !duel) return html``;
+  return html`<div class="deck-modal-backdrop" id="duel-modal-backdrop"></div>
+  <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="life-title">
+    <div class="deck-modal-head"><h2 id="life-title">${t("My life points")}</h2></div>
+    <form class="deck-modal-body" id="form-life">
+      <p class="caption">${t("In the {phase}, turn {n}.", {
+        phase: phaseName(duel.phase ?? "draw"), n: String(duel.turnNumber ?? 1),
+      })}</p>
+      <div class="field-block">
+        <label class="field-label" for="life-amount">${t("How many")}</label>
+        <input type="number" id="life-amount" class="search-input-gaming is-bare" min="1" max="99999"
+               inputmode="numeric" value="${life.amount}" />
+      </div>
+      <div class="field-block">
+        <label class="field-label" for="life-note">${t("What happened (optional)")}</label>
+        <input type="text" id="life-note" class="search-input-gaming is-bare" maxlength="280" value="${life.note}" />
+      </div>
+      <div class="deck-modal-foot">
+        <button type="button" class="btn" id="duel-modal-cancel">${t("Cancel")}</button>
+        <button type="button" class="btn" id="btn-life-give">${t("Give back instead")}</button>
+        <button type="submit" class="btn-action-danger-red is-medium is-auto"
+                ${state.busy ? raw("disabled") : raw("")}>${t("Take them")}</button>
+      </div>
+    </form>
+  </div>`;
+}
+
+function deckModal(state: DuelState): SafeHtml {
+  const pick = state.deckPick;
+  if (!pick) return html``;
+  return html`<div class="deck-modal-backdrop" id="duel-modal-backdrop"></div>
+  <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="duel-deck-title">
+    <div class="deck-modal-head"><h2 id="duel-deck-title">🃏 ${t("My deck")}</h2></div>
+    <form class="deck-modal-body" id="form-duel-deck">
+      <p class="caption">${t("The name is kept with the duel, so its history still reads if the deck goes.")}</p>
+      ${deckField(state, pick.deckId, "duel-deck", t("My deck"))}
+      <div class="deck-modal-foot">
+        <button type="button" class="btn" id="duel-modal-cancel">${t("Cancel")}</button>
+        <button type="submit" class="btn-showcase-primary-full is-medium is-auto"
+                ${state.busy ? raw("disabled") : raw("")}>${t("Save")}</button>
+      </div>
+    </form>
+  </div>`;
+}

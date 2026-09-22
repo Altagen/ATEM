@@ -1,0 +1,295 @@
+/*
+ * Form controls from the earlier prototype's component library — buttons and
+ * fields — taken when the settings screen gave them markup to style. Only what
+ * some screen sets stays here; the rest is pruned.
+ */
+
+/* FULL WIDTH Glowing Gold Primary 'Lancer un Duel' Button */
+.btn-showcase-primary-full {
+  width: 100%;
+  background: #f5c542;
+  color: #000;
+  border: none;
+  font-weight: 900;
+  font-size: 1.02rem;
+  padding: 0.85rem 1.4rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(245, 197, 66, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+  box-sizing: border-box;
+}
+.btn-showcase-primary-full:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(245, 197, 66, 0.5);
+  background: var(--gold-clair);
+}
+/* ── Danger Gaming Button (Red) ─────────────────────────────────────────── */
+.btn-action-danger-red {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #f87171;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.55rem 1.15rem;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+.btn-action-danger-red:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45);
+}
+
+/*
+ * The disabled state, which the browser already knows. It used to be said by
+ * hand, with a different opacity on every button.
+ */
+.btn-showcase-primary-full:disabled,
+.btn-showcase-secondary:disabled,
+.btn-action-danger-red:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.search-input-gaming {
+  width: 100%;
+  box-sizing: border-box;
+  background: #1c1c2b;
+  border: 1px solid var(--border);
+  color: #fff;
+  padding: 0.95rem 1.2rem 0.95rem 2.8rem;
+  border-radius: 14px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-input-gaming:focus {
+  outline: none;
+  border-color: #f5c542;
+  box-shadow: 0 0 0 3px rgba(245, 197, 66, 0.15);
+}
+
+
+
+
+.btn-showcase-primary-full.is-medium,
+.btn-showcase-secondary.is-medium,
+.btn-action-danger-red.is-medium {
+  padding: 0.55rem 1.15rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+
+
+/*
+ * `.btn-showcase-primary-full` carries its width in its name. The modifier
+ * states the exception once, instead of repeating it in every context.
+ */
+.btn-showcase-primary-full.is-auto,
+.btn-showcase-secondary.is-auto,
+.btn-action-danger-red.is-auto {
+  width: auto;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+/*
+ * A button that is a link reads like the buttons beside it.
+ *
+ * The export's “Download” is an `<a href download>` — a link is what lets the
+ * server's BOM through and survives “save link as” — and a link carries the
+ * browser's underline, which the earlier prototype's `<button>`s never had.
+ */
+a.btn-showcase-primary-full {
+  text-decoration: none;
+}
+
+
+/**
+ * A bounded text field, with its counter (`textLengthStatus` in `@atem/shared`).
+ *
+ * Calm, warning from 90 % of the bound, full at the bound, over beyond it. The
+ * frame changes colour with the counter: two signals for the same thing, one of
+ * which does not rest on reading a number. Only `over` shows its sentence — at
+ * the bound exactly, the server still accepts the text.
+ */
+.counted-field .counted-count {
+  float: right;
+  font-weight: 900;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s ease;
+}
+.counted-field textarea {
+  /* A textarea does not inherit the page's font on its own: it came out monospace. */
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  resize: vertical;
+}
+.counted-field .counted-over {
+  margin: 0.35rem 0 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--danger);
+  display: none;
+}
+
+.counted-field.is-warn .counted-count { color: var(--caution); }
+.counted-field.is-warn textarea {
+  border-color: var(--caution);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--caution) 15%, transparent);
+}
+
+/* Full and over share the red: the field is full in both cases. */
+.counted-field.is-full .counted-count,
+.counted-field.is-over .counted-count { color: var(--danger); }
+.counted-field.is-full textarea,
+.counted-field.is-over textarea {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
+}
+.counted-field.is-over .counted-over { display: block; }
+
+
+/* ── Chrome extrait de la version app de community.css ───────────────────── */
+.search-box-wrap {
+  position: relative;
+  width: 100%;
+}
+.search-icon-inside {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+.chip-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+.chip-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.chip-btn.is-active {
+  background: rgba(245, 197, 66, 0.15);
+  border-color: #f5c542;
+  color: #f5c542;
+}
+
+
+
+
+/* ── The button scale ──────────────────────────────────────────────────────
+ *
+ * In the earlier prototype, ninety-four buttons carried their look in
+ * `style=`, in seventy-nine combinations, and its mock-up had the same flaw in
+ * another form: padding was set by context, so three sizes were written in
+ * three places, and a button moved elsewhere changed size without anyone
+ * wanting it to.
+ *
+ * Three named sizes, and four modifiers.
+ */
+.btn-showcase-primary-full.is-small,
+.btn-showcase-secondary.is-small,
+.btn-action-danger-red.is-small {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+/**
+ * The secondary button — its base rule.
+ *
+ * Only its size modifiers had been taken from the prototype: the class was
+ * cited, so the unstyled-classes gate counted it as styled, and every
+ * “Remove friend”, “Cancel request” and “Decline” rendered as a bare grey
+ * button (the maintainer, 2026-09-21). The same trap as `.btn-hero` on the scanlists.
+ */
+.btn-showcase-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: #93c5fd;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-decoration: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.5);
+}
+.btn-showcase-secondary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #60a5fa;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ── Password fields ─────────────────────────────────────────────────────
+ * The eye sits inside the field, on its right, whatever the field's own
+ * style: the wrapper is the field's box, and the input keeps its width. Added
+ * to every password field by `platform/password-fields.ts` (the maintainer, 2026-09-22).
+ */
+.password-field { position: relative; display: block; width: 100%; }
+.password-field > input { width: 100%; padding-right: 2.9rem; box-sizing: border-box; }
+.password-reveal {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  transform: translateY(-50%);
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.password-reveal:hover,
+.password-reveal[aria-pressed="true"] { opacity: 1; background: rgba(255, 255, 255, 0.06); }
+
+/* A confirmation that differs says so while it is typed. */
+.password-field > input.is-mismatch { border-color: var(--danger); outline-color: var(--danger); }
+.field-mismatch { margin: 0.35rem 0 0; font-size: 0.8rem; font-weight: 700; color: var(--danger); }
+.field-mismatch:empty { display: none; }
