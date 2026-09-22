@@ -5,7 +5,7 @@ import { users } from "../identity/schema.js";
 /**
  * What is waiting for you: friend requests, and duel invitations to come.
  *
- * **The sentence is not stored.** the earlier prototype wrote `title` and `message` into the
+ * **The sentence is not stored.** The earlier prototype wrote `title` and `message` into the
  * row, in the language of the moment: an inbox read in English still showed
  * “🤝 Demande d'ami !” for everything received before the switch, and a
  * reworded message never reached what had already been sent. Here a row holds

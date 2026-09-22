@@ -38,7 +38,7 @@ reversible choices, unlike ADR-001/003/004 — so they do not have to be settled
 
 ## ADR-003 — Lazy resolution, optional mirror *(to settle at M1)*
 
-**Context.** the earlier prototype resolves on demand: `cardsetsinfo.php` on the scanned code,
+**Context.** The earlier prototype resolves on demand: `cardsetsinfo.php` on the scanned code,
 then `cardinfo.php?id=` for the EN and FR record, then local persistence. A card
 already met is never requested again. It works and is proven.
 
@@ -165,7 +165,7 @@ guild         (empty — reserved boundary)
 > **Note (2026-09-16).** As built: scanlists became their own module, `scanlist`,
 > which pours through `collection`'s contract; decks live in `deck`; account deletion
 > landed in `identity`. `social`, `data`, `duel` and `guild` do not exist yet. The
-> current tree and the enforced dependency directions are in `05-structure.md`.
+> current tree and the enforced dependency directions are in `04-structure.md`.
 
 **Cross-reading access rule.** Viewing another player's collection or decks goes
 through a single checkpoint combining the visibility declared in `UserProfile` and

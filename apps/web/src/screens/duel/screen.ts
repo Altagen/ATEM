@@ -78,7 +78,7 @@ export async function duelScreen(
    * **A duel that is no longer there takes us back to the list.** The other
    * duellist may have called it off while this screen was open: staying on
    * “this duel could not be opened” would leave the person to work out that
-   * something happened elsewhere — The maintainer, on 2026-09-19.
+   * something happened elsewhere — the maintainer, on 2026-09-19.
    */
   async function loadDuel(): Promise<void> {
     if (!duelId) return;

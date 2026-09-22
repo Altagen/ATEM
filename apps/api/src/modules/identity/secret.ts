@@ -11,7 +11,7 @@
  */
 const MIN_LENGTH = 32;
 
-/** the earlier prototype's old fallback. Refusing it by name keeps it from coming back by copy. */
+/** The earlier prototype's old fallback. Refusing it by name keeps it from coming back by copy. */
 const HISTORICAL_FALLBACK = "atem_dev_secret_key_change_me_in_prod";
 
 let cached: string | null = null;

@@ -6,7 +6,7 @@ the next once the previous one really runs with `docker compose up`.
 Up to 0.1.0, each milestone began with a targeted look at the earlier
 prototype: only what concerned the milestone, each element classified **Take /
 Adapt / Redo**. The prototype has since left the project; what it had and ATEM
-does not do yet is in `06-deferred.md`.
+does not do yet is in `05-deferred.md`.
 
 ---
 
@@ -384,7 +384,7 @@ takes the whole tree despite the non-cascading `parent_id`.
 The maintainer: “can we tackle the deck page with folders and card previews?”. Split in three:
 previews, then the folder foundation, then the explorer.
 
-**The cover is derived, not chosen.** the earlier prototype had a `cover_url` column — so a picker
+**The cover is derived, not chosen.** The earlier prototype had a `cover_url` column — so a picker
 to write, and a fix-up to do when the card leaves the deck. Ours is the card the deck
 holds **the most copies of in the Main**, its identity in practice, with ties broken
 by passcode so the artwork does not change from one refresh to the next. Zero
@@ -422,7 +422,7 @@ size, a Side size and a link to the banlist. **Only one of the five was transpos
 and the reasons are worth keeping:
 
 - the **folder** is not chosen here: filing a deck is a move, and moving is a mode you
-  navigate — The maintainer's own design, better than a drop-down that makes you picture the
+  navigate — the maintainer's own design, better than a drop-down that makes you picture the
   tree instead of looking at it;
 - the **banlist** has no table on this side, and a link to nothing is worse than no
   link;

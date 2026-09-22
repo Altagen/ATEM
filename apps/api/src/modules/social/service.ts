@@ -2,7 +2,7 @@
  * The social module — who knows whom, and who refuses whom.
  *
  * It owns `friend_edges` and `blocks`, and exposes the **single access
- * checkpoint** rule R3 of `docs/05-structure.md` asks for: `canView`. No
+ * checkpoint** rule R3 of `docs/04-structure.md` asks for: `canView`. No
  * friendship or block test is written anywhere else — the earlier prototype had two
  * independent copies before other players' decks were even viewable.
  *
@@ -136,7 +136,7 @@ export async function friendStatusWith(
  *
  * Friends first, then by name: the list is read to find someone you know.
  *
- * **No filter parameter.** the earlier prototype had `friends`, `online` and a third that
+ * **No filter parameter.** The earlier prototype had `friends`, `online` and a third that
  * filtered the administrator role under a rank name the product does not have.
  * The screen writes the count on each of its chips, so it holds the whole list
  * whatever is selected, and filtering it again on the server would be a

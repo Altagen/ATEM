@@ -3,7 +3,7 @@
  *
  * Taken from the earlier prototype's profile sheet, whose rendering the maintainer validated. The
  * rules for what this screen does not show — trophies, title, presence, guild
- * strip — were purged (`docs/06-deferred.md`).
+ * strip — were purged (`docs/05-deferred.md`).
  *
  * The earlier prototype declared some rules twice, a first block then an override further
  * down; they are merged here, keeping the value that won.

@@ -213,7 +213,7 @@ test("deleting your account takes the collection and the batches with it", async
 test("deleting your account also takes the attempts carrying your address", async () => {
   /**
    * `auth_attempts` has no `user_id`: no cascade reaches it. But its key carries
-   * the address — `email:ange@example.com` — and that is personal data.
+   * the address — `email:someone@example.com` — and that is personal data.
    * Forgetting it would make “everything has been erased” a lie.
    */
   const { user, email } = await stockedAccount();
