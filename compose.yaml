@@ -20,7 +20,8 @@ services:
     image: docker.io/library/postgres:16-alpine
     environment:
       POSTGRES_USER: atem
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atem}
+      # Required, like the other secrets: a published default is not a password.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — choose the database password}
       POSTGRES_DB: atem
     volumes:
       - atem_pg_data:/var/lib/postgresql/data
@@ -46,7 +47,7 @@ services:
     build: { context: ., dockerfile: Containerfile }
     command: ["node", "dist/db/migrate.js"]
     environment:
-      DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD:-atem}@db:5432/atem
+      DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD}@db:5432/atem
     depends_on:
       db: { condition: service_healthy }
     restart: "no"
@@ -60,7 +61,7 @@ services:
     image: ghcr.io/altagen/atem-api:${ATEM_VERSION:-latest}
     build: { context: ., dockerfile: Containerfile }
     environment:
-      DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD:-atem}@db:5432/atem
+      DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD}@db:5432/atem
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required — generate it with “openssl rand -base64 32”}
       # The one administrator, as code: the configuration wins at every start.
       ATEM_ADMIN_EMAIL: ${ATEM_ADMIN_EMAIL:?ATEM_ADMIN_EMAIL is required — the administrator's address}
