@@ -1,15 +1,15 @@
 /**
  * Writing a collection as CSV — the three formats, and how a cell is written.
  *
- * Taken from ATEM-old's `packages/shared/src/collection.ts`, where the table of
+ * Taken from the earlier prototype, where the table of
  * formats already lived beside the column order, for the reason it gave: a
  * correct header over columns in the wrong order produces a file the other tool
  * reads wrongly without ever complaining.
  *
- * Measured against `docs/ref-csv-formats.md`, which is authoritative, ATEM-old
+ * Measured against `docs/ref-csv-formats.md`, which is authoritative, the earlier prototype
  * had three defects this file does not carry over:
  * - **Cardmarket was written with commas.** The reference says real Cardmarket
- *   exports use `;`, and ATEM-old even wrote that header with commas. Each format
+ *   exports use `;`, and the earlier prototype even wrote that header with commas. Each format
  *   now carries its own separator, header included.
  * - **Cardmarket's languages stopped at French and English**, leaving the other
  *   ISO codes as they were. The reference asks for German, Spanish, Italian,

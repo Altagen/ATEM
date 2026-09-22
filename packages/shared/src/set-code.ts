@@ -50,7 +50,7 @@ export function normalizeSetCode(raw: string): string {
  *
  * Two-letter regions are tried before one-letter ones, otherwise `PSV-E088`
  * would split on a region `E0` that does not exist. A number may start with a
- * letter, which ATEM-old's version could not read: its shape
+ * letter, which the earlier prototype's version could not read: its shape
  * `([A-Z0-9]{2,5})-([A-Z]{2})(\d{3,4})` left 3,431 printings untranslated,
  * among them every one-letter European edition.
  */

@@ -3,7 +3,7 @@
 #
 # One database per run, named by timestamp and pid: two simultaneous runs do
 # not step on each other, and a test that leaves data behind does not pollute
-# the next. The pattern comes from ATEM-old.
+# the next. The pattern comes from the earlier prototype.
 #
 # Creation and teardown go through the driver the project already has, not
 # through `psql`: the harness must require nothing the repository does not

@@ -4,7 +4,7 @@
  * While an artwork loads, the stylesheets already paint the back behind the
  * `<img>`. What they cannot cover is an image that fails — a card whose
  * artwork is not on the server's disk: the browser would draw its broken-image
- * icon over the back. This puts the back in its place, as ATEM-old did.
+ * icon over the back. This puts the back in its place, as the earlier prototype did.
  */
 import cardBack from "../assets/cards/back.svg";
 

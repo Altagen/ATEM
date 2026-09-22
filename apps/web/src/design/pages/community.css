@@ -1,7 +1,7 @@
 /**
  * The community page — the duellist directory.
  *
- * Taken as it was from ATEM-old's `design/styles/pages/community.css`, the
+ * Taken as it was from the earlier prototype's community sheet, the
  * reference. What styled the guild tab and the rank badges went to
  * `staged/pruned/pages-community.css` with the dead-CSS purge: no markup sets
  * them here, and guilds have no module yet.
@@ -184,7 +184,7 @@ button.player-row-name:hover { color: var(--gold); }
 .player-row-more { margin: 0.9rem 0 0; text-align: center; font-size: 0.82rem; }
 
 /* ── The duellist preview ────────────────────────────────────────────────────
- * ATEM-old's showcase card, opened by a click on a row. Its values were read
+ * The earlier prototype's showcase card, opened by a click on a row. Its values were read
  * off the browser on the mock with the modal open, not guessed; they came here
  * from `staged/components.css` on 2026-09-21, when Ange asked for the card back.
  */

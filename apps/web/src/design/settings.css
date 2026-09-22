@@ -232,7 +232,7 @@
 /*
  * A label's field and its action, side by side.
  *
- * ATEM-old laid these rows out entirely with inline `style="…"` attributes, which
+ * The earlier prototype laid these rows out entirely with inline `style="…"` attributes, which
  * the content security policy refuses — so the one layout they shared became this
  * class. It wraps under 480px: a field and its button do not fit side by side on
  * a phone without squeezing the field to a few letters.
@@ -322,7 +322,7 @@
 /*
  * The lines an import could not read, under its summary.
  *
- * A new class: ATEM-old showed no per-line errors before importing, and only a
+ * A new class: The earlier prototype showed no per-line errors before importing, and only a
  * count after. Bounded in height so a file of a thousand bad lines does not push
  * the import button off the screen.
  */

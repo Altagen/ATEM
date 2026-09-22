@@ -346,7 +346,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 /**
  * A tile's “⋯” sits on the artwork.
  *
- * A bare button becomes invisible there — it was, at first render. ATEM-old
+ * A bare button becomes invisible there — it was, at first render. The earlier prototype
  * showed it on hover: a phone hovers over nothing, so it stays there, on a dark
  * pill that sets it apart from any card.
  */
@@ -545,7 +545,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Taken from the sheet ATEM-old's `decks/app.ts` injected at runtime.
+   Taken from the sheet the earlier prototype injected at runtime.
 
    Two hundred and fifty-seven lines of minified CSS lived in a template string,
    placed in a `<style id="decks-css">` at every mount of the page — and removed
@@ -736,7 +736,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 /**
  * “Saved”, long enough to read it.
  *
- * Cards are written at every “±”. ATEM-old displayed “unsaved” because it
+ * Cards are written at every “±”. The earlier prototype displayed “unsaved” because it
  * worked on a draft; we say the reverse, and briefly — a permanent mark would
  * become decoration nobody reads any more.
  */

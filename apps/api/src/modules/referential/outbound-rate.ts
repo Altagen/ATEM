@@ -2,7 +2,7 @@
  * Outbound rate towards YGOPRODeck — a single token bucket for everything.
  *
  * The announced limit is 20 requests per second, and going past it earns a
- * one-hour address ban. ATEM-old lived that ban: it limited API calls but
+ * one-hour address ban. The earlier prototype lived that ban: it limited API calls but
  * **not** image downloads, which went out by another path without being
  * counted. A limiter per kind of call protects nothing — the total is what
  * counts, and `scripts/check-outbound.mjs` now refuses any `fetch` that would

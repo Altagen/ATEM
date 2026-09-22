@@ -3,7 +3,7 @@
  *
  * It touches neither the catalogue tables nor the collection's: it asks
  * `referential` what a card is, and `collection` how many are owned. That is
- * the boundary ATEM-old did not have — three of its modules wrote into the
+ * the boundary the earlier prototype did not have — three of its modules wrote into the
  * catalogue, each with its own logic.
  *
  * **Two identities, as everywhere (ADR-009)**: `ownerId` to read, `viewerId` to
@@ -323,7 +323,7 @@ export async function deleteDeck(db: Database, viewerId: string, deckId: string)
 /**
  * Sets the quantity of a card in a zone.
  *
- * **Everything is decided here, once.** ATEM-old had the right computation —
+ * **Everything is decided here, once.** the earlier prototype had the right computation —
  * `checkDeckAdd` — and never called it server-side: it was a display helper.
  * The screen greyed a button out, nothing stopped the request.
  *

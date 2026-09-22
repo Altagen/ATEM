@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 590 860" role="img" aria-label="Card back">
   <!--
     ATEM's card back — the image shown when a card's artwork is missing or has
-    not arrived yet, and the face every deck wears. Taken from ATEM-old.
+    not arrived yet, and the face every deck wears. Taken from the earlier prototype.
 
     Drawn rather than photographed: it stays sharp from a 35px thumbnail to a
     700px artwork, weighs two kilobytes and so shows at once — which is the

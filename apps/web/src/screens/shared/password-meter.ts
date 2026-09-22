@@ -1,11 +1,11 @@
 /**
  * The password strength meter.
  *
- * Markup and classes taken from ATEM-old's mock-up (`.pwd-*`, defined in
+ * Markup and classes taken from the earlier prototype's mock-up (`.pwd-*`, defined in
  * `design/components.css`). The rule itself comes from `@atem/shared` — **the
  * same function the server applies**, not a copy.
  *
- * That was the point that mattered: ATEM-old had four diverging implementations
+ * That was the point that mattered: The earlier prototype had four diverging implementations
  * of this rule, and the mock-up judged that a long phrase beats a short twisted
  * word. True in general, false here: the server requires sixteen characters
  * **and** the four families. A twenty-eight letter phrase without a digit

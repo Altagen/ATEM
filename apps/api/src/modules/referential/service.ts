@@ -2,7 +2,7 @@
  * The referential module — the catalogue of cards and printings.
  *
  * It is the **only** module that writes into `cards` and `card_prints`.
- * ATEM-old let `collection` and `decks` write there directly, which produced
+ * The earlier prototype let `collection` and `decks` write there directly, which produced
  * three competing implementations of “card not resolved yet”. Other modules now
  * go through the functions exported here.
  */
@@ -138,7 +138,7 @@ export async function upsertCard(db: Database, input: ReturnType<typeof cardFrom
  * Creates or updates a printing.
  *
  * The identity is `(set_code, rarity, language)` — the same card exists in
- * several rarities under one code. ATEM-old looked the existing row up with
+ * several rarities under one code. The earlier prototype looked the existing row up with
  * `LIMIT 20` then filtered in memory, while a unique index carries exactly
  * those three columns: past twenty printings sharing a set code, it silently
  * missed the row and created a second one.
@@ -189,7 +189,7 @@ export async function upsertPrint(
  * `POST /collection` must answer right away: the player has just scanned a card
  * and is waiting for their “+1”. So the row exists immediately, as `pending`,
  * and resolution happens afterwards. This is the legitimate need behind
- * ATEM-old's “stubs” — without the negative passcode.
+ * The earlier prototype's “stubs” — without the negative passcode.
  */
 export async function ensurePlaceholderPrint(
   db: Database,
@@ -315,7 +315,7 @@ export async function markUnidentified(db: Database, rawSetCode: string): Promis
  * English edition alone is in the database is the same card, and there is no
  * need to go back on the network to learn it. Preference goes to the exact
  * rarity and language, then rarity alone, then language alone — that order is a
- * business policy inherited from ATEM-old, not an accident.
+ * business policy inherited from the earlier prototype, not an accident.
  */
 async function findLocalPrint(
   db: Database,
@@ -524,7 +524,7 @@ export async function listPrintsForCard(db: Database, passcode: number) {
  * the referential — a card's name, its attribute, its level, the printing's
  * rarity. Doing it in memory would mean loading everything to count; doing it
  * in SQL used to mean importing our tables, which reopens exactly the door
- * ATEM-old got lost through.
+ * The earlier prototype got lost through.
  *
  * So we expose a **named subquery**, with stable columns. Other modules join it
  * like a table, filter and sort on it, and never have to know how `cards` and
@@ -547,7 +547,7 @@ export function printIndex(db: Database) {
        *
        * A card bought in English stays displayed in English under a French
        * interface — that is what is written on the cardboard lying on the
-       * table. ATEM-old did `nameFr ?? nameEn` unconditionally and showed
+       * table. The earlier prototype did `nameFr ?? nameEn` unconditionally and showed
        * French names to an English speaker.
        */
       name: sql<string>`coalesce(

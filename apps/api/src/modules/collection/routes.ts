@@ -96,7 +96,7 @@ export function collectionRoutes(db: Database) {
    * The collection as a CSV file, in one of the three formats.
    *
    * The BOM is written **here**, by the server, not by the page that links to
-   * it. ATEM-old added it in the browser, so a direct link to the export gave a
+   * it. The earlier prototype added it in the browser, so a direct link to the export gave a
    * file that Excel in a French locale read as latin-1, accents mangled
    * (`docs/ref-csv-formats.md`). The builder writes content only, so a preview
    * does not show one; the download is what needs it.

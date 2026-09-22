@@ -2,7 +2,7 @@
  * Deck folders — filing, and nothing else.
  *
  * Nothing here knows about a card: a folder holds decks and other folders, that
- * is all. The separation comes from ATEM-old, where it already held.
+ * is all. The separation comes from the earlier prototype, where it already held.
  *
  * **Three rules make up the whole subject**: the maximum depth, the absence of
  * cycles, and what happens to the contents of a folder being deleted. None of
@@ -38,7 +38,7 @@ export type DeckFolder = {
 /**
  * Every folder of one person, in one go.
  *
- * ATEM-old read the whole table again on every check — three times in a row for
+ * The earlier prototype read the whole table again on every check — three times in a row for
  * a single creation. Since we need it whole to compute a path or a depth, we
  * read it **once** and everything else works in memory. A player has a few
  * dozen at most.
@@ -85,7 +85,7 @@ const toFolder = (row: DeckFolderRow, byId: Map<string, DeckFolderRow>): DeckFol
  *
  * They also serve the screen, which greys out what the server would refuse: one
  * implementation, two callers. That is the lesson of `checkDeckAdd`, which in
- * ATEM-old greyed a button out while the server let requests through.
+ * The earlier prototype greyed a button out while the server let requests through.
  */
 const treeOf = (byId: Map<string, DeckFolderRow>): FolderNode[] =>
   [...byId.values()].map((row) => ({ id: row.id, parentId: row.parentId }));
@@ -236,7 +236,7 @@ export async function updateFolder(
 /**
  * Deleting a folder **without deleting what it holds**.
  *
- * Its subfolders and its decks move up one level. That is ATEM-old's rule, and
+ * Its subfolders and its decks move up one level. That is the earlier prototype's rule, and
  * the right one: a folder is filing, not ownership — discarding it must not
  * carry away months of building. Its database said the opposite though
  * (`on delete cascade` on the parent), and the database is what would have won

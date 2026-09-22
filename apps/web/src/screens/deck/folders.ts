@@ -3,7 +3,7 @@
  *
  * We navigate **one level at a time**, as in a file explorer: you are
  * somewhere, you see what is there, you go down or back up. That is the shape
- * ATEM-old had ended up returning to after unfolding the whole tree at once.
+ * The earlier prototype had ended up returning to after unfolding the whole tree at once.
  *
  * **What is greyed out here is refused over there**: impossible destinations
  * come from `folderCanHost`, the function the server calls to refuse. One rule,
@@ -39,7 +39,7 @@ export const decksIn = (state: DeckState, folderId: string | null): DeckSummary[
 /**
  * What the search shows.
  *
- * **It crosses folders**, unlike ATEM-old which only filtered the current
+ * **It crosses folders**, unlike the earlier prototype which only filtered the current
  * level. Searching “dragon” and finding nothing because you are in the wrong
  * folder is a wrong answer to a simple question. The path is then displayed
  * under each deck, to say where it comes from.
@@ -326,7 +326,7 @@ function modalBody(state: DeckState): { title: string; body: SafeHtml; confirm: 
       /**
        * The size aimed at, and nothing else yet.
        *
-       * ATEM-old also offered an Extra and a Side size here. They are not
+       * The earlier prototype also offered an Extra and a Side size here. They are not
        * missing: their rule minimum is zero, so a target there counts towards
        * nothing and could only refuse cards the rules allow. The folder is not
        * here either — filing a deck is a move, and moving is a mode.

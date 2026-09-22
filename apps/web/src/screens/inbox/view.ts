@@ -2,11 +2,11 @@
  * The inbox markup.
  *
  * The sentence is written **here**, from the kind of event and who caused it:
- * the row holds neither title nor message. ATEM-old stored the sentence at the
+ * the row holds neither title nor message. The earlier prototype stored the sentence at the
  * moment it happened, so an inbox read in English still showed the French of
  * the day it arrived.
  *
- * ATEM-old's inbox was a modal over the current screen, with category tabs and
+ * The earlier prototype's inbox was a modal over the current screen, with category tabs and
  * an archive. It is a screen here — the phone reaches it like any other — and it
  * carries what is waiting, without the archive nobody asked for.
  */

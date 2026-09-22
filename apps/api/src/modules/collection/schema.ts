@@ -61,7 +61,7 @@ export const ownedCards = pgTable(
 /**
  * The record of a collection import — what the settings' history shows.
  *
- * ATEM-old kept this in the browser's `localStorage`, “the server keeps no trace
+ * The earlier prototype kept this in the browser's `localStorage`, “the server keeps no trace
  * of imports”. So an import made from a phone never appeared on the computer, and
  * clearing the site's data erased what the screen called a complete journal. It
  * is a row on the server now: the account's history, wherever it is read from,

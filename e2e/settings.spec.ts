@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { addBySetCode, expectNoHorizontalOverflow, signUp } from "./helpers.js";
 
 /**
- * The settings screen — ATEM-old's, onto routes built for it.
+ * The settings screen — the earlier prototype's, onto routes built for it.
  *
  * Each test measures what a person can do and what they see, never the markup
  * that produces it: the screen is free to change shape as long as these hold.
@@ -86,7 +86,7 @@ test("a password change keeps you signed in, and the new one opens the door", as
 
 test("the email address changes only with the password", async ({ page, browser }) => {
   /**
-   * Asked for by Ange: ATEM-old's window asked for the password — and its server
+   * Asked for by Ange: The earlier prototype's window asked for the password — and its server
    * never read it. Here a wrong password changes nothing.
    */
   const account = await signUp(page);
@@ -128,7 +128,7 @@ test("the email address changes only with the password", async ({ page, browser 
 
 test("erasing the collection can be cancelled until the last second", async ({ page }) => {
   /**
-   * ATEM-old's gesture: type “collection”, then five seconds to change your
+   * The earlier prototype's gesture: type “collection”, then five seconds to change your
    * mind, during which nothing has been sent — so cancelling is real, not an
    * apology after the fact.
    */
@@ -247,7 +247,7 @@ test("a file is read before sending, then imported, and the report says what hap
   /**
    * The file is read in the browser with the server's own parser, so the panel
    * counts what it will import and names the unreadable lines before anything is
-   * sent. ATEM-old counted by splitting on line breaks and showed no error first.
+   * sent. The earlier prototype counted by splitting on line breaks and showed no error first.
    */
   await signUp(page);
   await openSettings(page);

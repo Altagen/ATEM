@@ -1,7 +1,7 @@
 /**
  * Set-code recognition in the browser.
  *
- * Taken from ATEM-old with no change of logic. Three exported functions were
+ * Taken from the earlier prototype with no change of logic. Three exported functions were
  * removed — a worker-availability flag, a loading-state label and a crop
  * preview — which served its interface and that ours does not call. Nothing
  * else moved.

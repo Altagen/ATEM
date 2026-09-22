@@ -10,7 +10,7 @@ import { cards } from "../referential/schema.js";
 /**
  * A deck folder.
  *
- * Taken from ATEM-old, **without its `sort_order` column**: it was written on
+ * Taken from the earlier prototype, **without its `sort_order` column**: it was written on
  * every creation and the screen sorted by name anyway. A column nobody reads is
  * a column that lies.
  *
@@ -26,7 +26,7 @@ export const deckFolders = pgTable(
     /**
      * The parent folder, or `null` at the root.
      *
-     * **No `cascade`, unlike ATEM-old.** Its schema cascaded while its service
+     * **No `cascade`, unlike the earlier prototype.** Its schema cascaded while its service
      * re-attached children to the grandparent: two contradictory answers to the
      * same question, and the database is what wins as soon as a deletion goes
      * anywhere but through the service. Here the database answers nothing — the
@@ -54,7 +54,7 @@ export const deckFolders = pgTable(
 /**
  * A deck.
  *
- * ATEM-old's shell, **without its `category` column**: it was marked
+ * The earlier prototype's shell, **without its `category` column**: it was marked
  * `@deprecated` there and recomputed on every write nonetheless. Debt that
  * works is worse than debt that sleeps.
  */
@@ -108,7 +108,7 @@ export const decks = pgTable(
  * That is the rule of the game: three Blue-Eyes in three set codes remain three
  * Blue-Eyes. And it is what makes the ceiling expressible.
  *
- * ATEM-old identified its rows by `(deck, zone, passcode, set_code)`. The same
+ * The earlier prototype identified its rows by `(deck, zone, passcode, set_code)`. The same
  * card therefore lived on several rows — different zones, different pinned
  * printing — and totalled six copies without any constraint aggregating them.
  * Its ceiling was checked **per row**, in Zod and in the service, which

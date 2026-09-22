@@ -1,6 +1,6 @@
 # Runtime image of the API and the front.
 #
-# ATEM-old only had a *build* image: the real deployment took nine manual
+# The earlier prototype only had a *build* image: the real deployment took nine manual
 # steps, systemd and nginx. That is what this file replaces.
 
 FROM node:22-bookworm-slim AS build

@@ -116,7 +116,7 @@ test("the quantity does not go below zero", async () => {
 });
 
 test("the quantity is capped", async () => {
-  // ATEM-old had no upper bound: a CSV with quantity=999999999 went through.
+  // The earlier prototype had no upper bound: a CSV with quantity=999999999 went through.
   const user = await newUser();
   await assert.rejects(
     () => adjustQuantity(db, user.id, { setCode: "CCCC-FR001", delta: 1001 }),
@@ -168,7 +168,7 @@ test("an account's collection ignores everyone else's", async () => {
 
 test("consolidating a provisional row loses no copy", async () => {
   // The normal path of every scanned card: the row is provisional first, then
-  // re-attached to the real edition. ATEM-old lost copies there when the
+  // re-attached to the real edition. The earlier prototype lost copies there when the
   // operation was not atomic.
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "GGGG-FR001", delta: 4 });
@@ -260,7 +260,7 @@ test("the database refuses an invented resolve status", async () => {
 
 test("the catalogue is never written by the collection", async () => {
   // A provisional card creates no row in `cards`: that is what replaces
-  // ATEM-old's negative passcodes.
+  // The earlier prototype's negative passcodes.
   const user = await newUser();
   await adjustQuantity(db, user.id, { setCode: "NNNN-FR777", delta: 1 });
 
@@ -369,7 +369,7 @@ test("two simultaneous additions lose no copy", async () => {
 
 test("the passcode identifies the card without waiting", async () => {
   // The fallback when the set code is unreadable: the eight digits at the
-  // bottom left stay legible. ATEM-old had this field; it had disappeared.
+  // bottom left stay legible. The earlier prototype had this field; it had disappeared.
   const user = await newUser();
   await seedCard(12345678, "TTTT-EN001", { en: "By Passcode", fr: "Par passcode" });
 
@@ -719,7 +719,7 @@ test("a passcode identifies a printing that was still waiting", async () => {
 
 test("clearing a collection empties it in one go, and only it", async () => {
   /**
-   * ATEM-old looped `DELETE /:id` from the browser, one request per card, and a
+   * The earlier prototype looped `DELETE /:id` from the browser, one request per card, and a
    * failure halfway left the collection half erased. One statement here — and it
    * touches only this person's printings: another collection, and this person's
    * decks, are left exactly as they were.

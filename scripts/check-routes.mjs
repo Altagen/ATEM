@@ -9,7 +9,7 @@
  * different reasons — one proves it is useful, the other that it works. A route
  * with neither has no reason to be deployed.
  *
- * ATEM-old had the reverse check (routes declared but never mounted) and was
+ * The earlier prototype had the reverse check (routes declared but never mounted) and was
  * caught out by a detail handled here: **a route quoted in a comment counted as
  * reached**. Comments call nothing.
  */

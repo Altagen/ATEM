@@ -94,7 +94,7 @@ test("bio and avatar are bounded by the server, not only by the screen", async (
   assert.equal((await req("PATCH", "/auth/me", { bio: "a".repeat(256) }, cookie)).status, 400);
   // Measured before trimming, as the counter measures it.
   assert.equal((await req("PATCH", "/auth/me", { bio: ` ${"a".repeat(255)}` }, cookie)).status, 400);
-  // ATEM-old accepted any `preset:` prefix; only the five offered go through.
+  // The earlier prototype accepted any `preset:` prefix; only the five offered go through.
   for (const avatar of ["preset:anything", "mage", "", "DRAGON"]) {
     assert.equal((await req("PATCH", "/auth/me", { avatar }, cookie)).status, 400, avatar);
   }

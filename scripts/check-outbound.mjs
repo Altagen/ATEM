@@ -1,7 +1,7 @@
 /**
  * No outbound call may escape the token bucket.
  *
- * It is the gate ATEM-old lacked, and it cost an hour of being blocked: it
+ * It is the gate the earlier prototype lacked, and it cost an hour of being blocked: it
  * limited API calls, but image downloads went out by another path, uncounted.
  * Nobody had lied — the limiter existed, it simply did not see all the traffic.
  *

@@ -5,12 +5,12 @@
  * bar on a phone which replaces it **entirely**, and the account sheet the
  * latter opens.
  *
- * Replacing rather than adapting is ATEM-old's choice, and it holds: on a
+ * Replacing rather than adapting is the earlier prototype's choice, and it holds: on a
  * phone, the top bar only kept the brand, the service status and the avatar —
  * five targets in a 62 px band, for settings nobody visits over and over. The
  * thumb is at the bottom of the screen.
  *
- * The status pill and account sheet rules come from ATEM-old's
+ * The status pill and account sheet rules come from the earlier prototype's
  * `shared-nav.css`. The bottom bar's were injected there in a `<style>` tag,
  * every declaration marked `!important` — not by choice, but because an
  * injected sheet has to win over those already loaded. Written here, they no
@@ -280,7 +280,7 @@
 /*
  * A menu entry that is a link reads like the buttons beside it.
  *
- * ATEM-old's user menu used `<button>` for “Settings…”. It is an `<a href>` here
+ * The earlier prototype's user menu used `<button>` for “Settings…”. It is an `<a href>` here
  * because it navigates — so middle-click and “open in a new tab” work — and a
  * link carries the browser's underline and colour, which the buttons do not.
  */
@@ -290,7 +290,7 @@ a.menu-item {
 }
 
 /**
- * The account menu's avatar button and head — from the design's `shell.js`,
+ * The account menu's avatar button and head — from the earlier prototype's design,
  * brought up from `staged/components.css`.
  */
 
@@ -325,7 +325,7 @@ a.menu-item {
 .app-user-menu-name { display: block; font-weight: 800; font-size: 0.88rem; color: #fff; }
 .app-user-menu-mail { display: block; font-size: 0.75rem; }
 
-/* The top bar's language pill — ATEM-old's, from `staged/components.css`. */
+/* The top bar's language pill — the earlier prototype's, from `staged/components.css`. */
 .lang-pill {
   appearance: none;
   background: rgba(255, 255, 255, 0.08);
@@ -361,7 +361,7 @@ a.menu-item {
   place-items: center;
 }
 
-/* The bell in the top bar, and its count. ATEM-old styled it on
+/* The bell in the top bar, and its count. The earlier prototype styled it on
    `.app-header-right .btn-icon`; the bar is `.app-bar-right` here. */
 .app-bar-right .btn-icon {
   position: relative;

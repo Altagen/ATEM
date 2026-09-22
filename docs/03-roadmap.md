@@ -3,9 +3,10 @@
 Each milestone is a **vertical** slice, shippable and demonstrable. We only move to
 the next once the previous one really runs with `docker compose up`.
 
-At each milestone, a targeted “ATEM-old archaeology” step: we only inspect what
-concerns the current milestone, and classify each element **Take / Adapt / Redo**.
-No exhaustive map of the old project.
+Up to 0.1.0, each milestone began with a targeted look at the earlier
+prototype: only what concerned the milestone, each element classified **Take /
+Adapt / Redo**. The prototype has since left the project; what it had and ATEM
+does not do yet is in `06-deferred.md`.
 
 ---
 
@@ -19,7 +20,7 @@ sign up, sign in, and search for a card in the full reference data.
 - Background image download, resumable
 - Sign-up / sign-in / sign-out (scrypt)
 - One page: card search by name, with image *(removed in M1: the Catalogue screen
-  it served did not exist in ATEM-old and duplicated the collection — see below)*
+  it served did not exist in the earlier prototype and duplicated the collection — see below)*
 
 **Targeted archaeology.** Monorepo configuration, compose, YGOPRODeck API client,
 authentication foundation.
@@ -33,7 +34,7 @@ step. The reference data holds the 14,524 cards and 44,517 printings.
 |---|---|
 | Full catalogue import | **12.4 s** — 14,524 cards, 44,496 printings, 12 malformed codes set aside |
 | Resolving a French set code already in the database | **39 ms**, zero network calls |
-| Splitting real set codes | **100%** (44,505 / 44,517), against 88.2% for ATEM-old |
+| Splitting real set codes | **100%** (44,505 / 44,517), against 88.2% for the earlier prototype |
 | Tests | 11 in `shared`, 7 in `api`, all green *(68 in `api` as of 2026-09-10)* |
 | Built front weight | 7.9 kB of JS, 4.5 kB of CSS |
 
@@ -69,7 +70,7 @@ without touching the database by hand.
 
 **Done and checked** — search and add by set code, grid with `+1` / `−1`,
 favourites, full-screen sheet, filters fed by what the collection really holds,
-full scan screen. ATEM-old's OCR engine is taken **as is**: 2,319 lines with no
+full scan screen. The earlier prototype's OCR engine is taken **as is**: 2,319 lines with no
 imports, with its 46 tests, all green.
 
 | Measurement | Result |
@@ -80,7 +81,7 @@ imports, with its 46 tests, all green.
 | OCR prefix dictionary | 650 prefixes, 34,746 numbers, derived from the local catalogue |
 | Tesseract engine | vendored, 4 MB, checked by SHA-256 fingerprint |
 
-**Two ATEM-old defects fixed along the way.** The first: an already identified
+**Two the earlier prototype defects fixed along the way.** The first: an already identified
 printing won over a provisional one only by chance, so consolidation never
 triggered when rarities differed — found while writing the test, not by reviewing
 the code. The second: there was no upper bound on quantities.
@@ -105,9 +106,9 @@ have revealed:
 The tests locking them also measure horizontal overflow and touch target size —
 44 px minimum, because this screen serves to inventory hundreds of cards by thumb.
 
-**Parity with ATEM-old reached on 2026-09-10** — passcode when adding and searching,
+**Parity with the earlier prototype reached on 2026-09-10** — passcode when adding and searching,
 sort direction, density, grouping by type, Xyz rank and Link rating filters, copy
-note. The Catalogue screen, which did not exist in ATEM-old and duplicated the
+note. The Catalogue screen, which did not exist in the earlier prototype and duplicated the
 collection without letting you act, is deleted.
 
 **Audit of 2026-09-10.** Run over everything shipped. Fixed: the resolution queue
@@ -202,7 +203,7 @@ collapsed the line breaks.
 209 strings, all translated.
 
 > Image preprocessing before OCR is the real hard point of this milestone, not
-> `tesseract.js` itself. What ATEM-old does here is probably the old project's most
+> `tesseract.js` itself. What the earlier prototype does here is probably the old project's most
 > valuable asset.
 
 ---
@@ -251,7 +252,7 @@ Neither prevents building a deck. *Folders and the gallery shipped on 2026-09-12
 
 ### A deck's sheet — 2026-09-13
 
-Proposed by Ange, taken from ATEM-old (`renderDetail`): **opening a deck shows it**.
+Proposed by Ange, taken from the earlier prototype (`renderDetail`): **opening a deck shows it**.
 A reading page built like the collection — cover, name, folder, counts, status
 sentence, search, list or gallery, zone tabs — and a pencil at the top right leading
 to the workshop, `?workshop=1` in the address.
@@ -319,7 +320,7 @@ The attribute had not been set on the deck row — a replacement that had failed
 silently — and **both drag tests looked at the gallery**. A view without a test
 breaks in silence: rows now have two, including a folder dragged into another.
 
-**Drag and drop comes back for the desktop**, as in ATEM-old: folders, the “..” card
+**Drag and drop comes back for the desktop**, as in the earlier prototype: folders, the “..” card
 and **the breadcrumb** are drop targets. What would be refused does not accept the
 drop, so the cursor says so before you let go.
 
@@ -331,13 +332,13 @@ is the same rule.
 
 ### The folder explorer — 2026-09-13 *(step 3 of 3)*
 
-One level at a time, breadcrumb, folders first and decks next — ATEM-old's shape, the
+One level at a time, breadcrumb, folders first and decks next — the earlier prototype's shape, the
 one it had itself come back to after unfolding the whole tree at once. Three
 departures, each for a reason:
 
 1. **Filing goes through a “⋯” menu, not drag and drop.** Aiming at a target while
    holding a finger down does not work on a phone, and it was the only way to move a
-   deck in ATEM-old. *(Drag and drop has since come back for the desktop — see
+   deck in the earlier prototype. *(Drag and drop has since come back for the desktop — see
    above.)*
 2. **The search crosses folders.** Searching “dragon” and finding nothing because you
    are in the wrong folder is a wrong answer to a simple question. Each result then
@@ -348,16 +349,16 @@ departures, each for a reason:
 
 **What the screen greys out, the server refuses**: impossible destinations come from
 `folderCanHost`, in `@atem/shared`, which the service calls too. That is the lesson of
-`checkDeckAdd` in ATEM-old — the same rule written twice ends up diverging, and it is
+`checkDeckAdd` in the earlier prototype — the same rule written twice ends up diverging, and it is
 always the screen that is right too early.
 
 ### Folders, server foundation — 2026-09-12 *(step 2 of 3)*
 
 `deck_folders`: `id`, `user_id`, `parent_id`, `name`, timestamps. **No
-`sort_order`** — ATEM-old wrote it at every creation and its screen sorted by name
+`sort_order`** — the earlier prototype wrote it at every creation and its screen sorted by name
 anyway.
 
-Three things ATEM-old did well and that we keep: a maximum depth of three levels,
+Three things the earlier prototype did well and that we keep: a maximum depth of three levels,
 cycle detection on move (subtree included), and a deletion that **re-attaches** to
 the parent instead of cascading. Three that we change:
 
@@ -372,7 +373,7 @@ the parent instead of cascading. Three that we change:
    constraint, without which the rule would not hold at the root, that is, not where
    people create the most.
 
-`category`, ATEM-old's `@deprecated`, does not come back.
+`category`, the earlier prototype's `@deprecated`, does not come back.
 
 Twelve tests, including the one holding route order (`/decks/folders` declared after
 `/decks/:id` would be swallowed) and the one checking that deleting your account
@@ -383,7 +384,7 @@ takes the whole tree despite the non-cascading `parent_id`.
 Ange: “can we tackle the deck page with folders and card previews?”. Split in three:
 previews, then the folder foundation, then the explorer.
 
-**The cover is derived, not chosen.** ATEM-old had a `cover_url` column — so a picker
+**The cover is derived, not chosen.** the earlier prototype had a `cover_url` column — so a picker
 to write, and a fix-up to do when the card leaves the deck. Ours is the card the deck
 holds **the most copies of in the Main**, its identity in practice, with ties broken
 by passcode so the artwork does not change from one refresh to the next. Zero
@@ -397,7 +398,7 @@ thumbnail.
 ### The workshop's status sentence — 2026-09-12
 
 Ange: “we are at 4/60, could we say ‘Deck incomplete’ or something like that? we had
-a few things like that in ATEM-old”. ATEM-old had two (“unsaved”, “limit exceeded”);
+a few things like that in the earlier prototype”. The earlier prototype had two (“unsaved”, “limit exceeded”);
 our deck list already carried a “Ready / Incomplete” pill, but the workshop said
 nothing.
 
@@ -416,7 +417,7 @@ judgement, two screens no longer able to contradict each other.
 
 ### The deck options window — 2026-09-16 *(M2 closed)*
 
-The last line of M2. ATEM-old had a window offering a folder, a Main size, an Extra
+The last line of M2. The earlier prototype had a window offering a folder, a Main size, an Extra
 size, a Side size and a link to the banlist. **Only one of the five was transposed**,
 and the reasons are worth keeping:
 
@@ -426,7 +427,7 @@ and the reasons are worth keeping:
 - the **banlist** has no table on this side, and a link to nothing is worse than no
   link;
 - the **Extra and Side sizes** are the interesting refusal. Their rule minimum is
-  zero, so a target there counts towards nothing; ATEM-old used them as *maxima* and
+  zero, so a target there counts towards nothing; the earlier prototype used them as *maxima* and
   displayed “limit exceeded” on a legal deck — the application inventing a rule of its
   own. What refuses stays the rules': 15, and 60 in the Main.
 - the **Main size aimed at** is the one that carries meaning. The rules allow 40 to 60
@@ -457,7 +458,7 @@ end-to-end test found it.
 
 Cards are written **at every “±”**, right away. There is no “unsaved” state to commit.
 
-ATEM-old worked on a draft: its workshop kept the deck in memory, displayed “unsaved”
+The earlier prototype worked on a draft: its workshop kept the deck in memory, displayed “unsaved”
 and waited for a button. The transcription brought back the button without the
 draft — hence a “Save” that only touched the name, and a “Nothing to save” right after
 Ange had removed cards. Enough to believe the removal had been thrown away; it had
@@ -468,7 +469,7 @@ Renaming the button “Rename” was not enough, and Ange put a finger on what r
 everything or you update nothing, but not just half of it”. **So the workshop no
 longer has any save button**: cards leave at the “±”, the name leaves when the typing
 settles (700 ms) and when the field hands focus back. The counts bar briefly says
-“Saved” after every write — the reverse of ATEM-old's mark, because the invariant is
+“Saved” after every write — the reverse of the earlier prototype's mark, because the invariant is
 the reverse.
 
 Writing the name **does not reload the deck**: one word changed, not the cards, and
@@ -481,12 +482,12 @@ explain that a deck is not finished”, Ange) but it answers another need: sayin
 a deck is **being designed**, not that its cards are waiting to be written. To be
 designed separately.
 
-**Two rules decided by Ange**, which close two gaps from the triage:
+**Two rules decided by Ange**, which close two gaps found in the earlier prototype:
 
 - **A deck counts cards, not printings.** Three Blue-Eyes across three set codes
   remain three Blue-Eyes. That is what makes the ceiling expressible in the
   database — `deck_cards` holds one row per card, and
-  `check (main + extra + side between 0 and 3)` refuses the fourth copy. ATEM-old
+  `check (main + extra + side between 0 and 3)` refuses the fourth copy. The earlier prototype
   identified its rows by `(deck, zone, passcode, set_code)`: the same card lived on
   several rows and totalled six copies. **Gap no. 1 closed by the schema**, not by
   vigilance.
@@ -497,7 +498,7 @@ designed separately.
   only reported when there is one** — four owned, three in the deck, one sold:
   nothing happens.
 
-`decks.category` is not carried over: the `@deprecated` column ATEM-old recomputed at
+`decks.category` is not carried over: the `@deprecated` column the earlier prototype recomputed at
 every write.
 
 ---
@@ -571,7 +572,7 @@ phases, life points — and each finds it on their profile. ✅ Measured by
 
 - Player directory, search by username, friends / online filters — *done on
   2026-09-18, server side*: `GET /community/duellists`, searching the name or the
-  number, with the `friends` and `online` filters. ATEM-old's third filter,
+  number, with the `friends` and `online` filters. The earlier prototype's third filter,
   “master”, filtered the administrator role under a rank name; the rank it
   suggested does not exist.
 - Preview card: username, icon, badges, link to the profile
@@ -612,10 +613,10 @@ collections while respecting their visibility settings.
 2. **Guilds.** Roles, applications, invitations, activity log.
 3. **Inbox.** ✅ *done on 2026-09-18*, brought forward: friend requests gave it
    something real to carry, and duel invitations will land in it. A row holds the
-   event and who caused it, never the sentence — ATEM-old stored the wording, so
+   event and who caused it, never the sentence — the earlier prototype stored the wording, so
    an inbox read in English kept the French of the day it arrived.
 4. **Tournaments.** Depends on duels AND guilds.
-5. **Administration.** ✅ *done on 2026-09-21*, reduced with Ange from ATEM-old's
+5. **Administration.** ✅ *done on 2026-09-21*, reduced with Ange from the earlier prototype's
    console to a host's needs. **One** administrator, declared in the configuration
    (`ATEM_ADMIN_EMAIL`, `ATEM_ADMIN_PASSWORD`, `ATEM_ADMIN_NAME`) and made true at
    every start; it only administers — out of the directory, without a profile,
@@ -653,7 +654,7 @@ Done:
   `scripts/check-csp.mjs` and exercised by `e2e/security.spec.ts`, which loads an
   artwork and fails if a single request reaches ygoprodeck.com.
 
-ATEM-old's `media/cache.ts`, `espace.ts` and `paths.ts` were triaged **TAKE**: host
+The earlier prototype's media cache was kept: host
 allowlist against SSRF, atomic writes, disk space reserve. Two of its defects were
 left behind: a download no longer runs inside a request that did not ask for an
 image, and the remote-URL fallback is gone.
@@ -664,7 +665,7 @@ image, and the remote-URL fallback is gone.
 
 | Question | Needed for |
 |---|---|
-| Front / server framework / ORM / database (default: ATEM-old's) | M0 — *settled: ATEM-old's* |
+| Front / server framework / ORM / database (default: The earlier prototype's) | M0 — *settled: The earlier prototype's* |
 | Favourite at the card or the printing level? | M1 — *settled on 2026-09-16: per printing (R10)* |
 | Mode of use of the duel assistant | After M4 |
 

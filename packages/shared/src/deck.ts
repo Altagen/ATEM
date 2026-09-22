@@ -2,7 +2,7 @@
  * The rules for building a deck.
  *
  * Pure logic, shared by the server and the screen: the workshop greys a button
- * out with the very function that refuses the write. ATEM-old had already
+ * out with the very function that refuses the write. The earlier prototype had already
  * written the essentials — and **never called them server-side**. It was a
  * display helper, not a guard.
  *
@@ -12,7 +12,7 @@
  * `deck_cards` holds one row per card, and a table constraint refuses the
  * fourth copy.
  *
- * ATEM-old could not express it: its row identity was
+ * The earlier prototype could not express it: its row identity was
  * `(deck, zone, passcode, set_code)`, so the same card lived on several rows and
  * totalled six copies without any constraint aggregating them. The ceiling was
  * checked **per row**.
@@ -50,7 +50,7 @@ export const DECK_MAX_COPIES = 3;
  * **A target refuses nothing.** It moves the line between “still building” and
  * “finished”, never the legality: the sixty-first card is refused because the
  * rules refuse it, and a forty-first is accepted whatever the target says.
- * ATEM-old used its `main_size` as a maximum and showed “limit exceeded” on a
+ * The earlier prototype used its `main_size` as a maximum and showed “limit exceeded” on a
  * perfectly legal deck — the application inventing a rule of its own.
  *
  * The default is 40, which is both the most common format and the value that
@@ -182,7 +182,7 @@ export type DeckAddCheck = {
    *
    * Ange's decision: **a deck is bounded by the collection.** You cannot put in
    * a card you do not have, so a deck is playable by construction. That is what
-   * makes ATEM-old's “owned / missing” computation moot — there is nothing to
+   * makes the earlier prototype's “owned / missing” computation moot — there is nothing to
    * be missing at the moment you add.
    */
   hardCap: number;

@@ -24,7 +24,7 @@ test("each format writes its own header, in its own order", () => {
 
 test("Cardmarket is written with semicolons, header and rows alike", () => {
   /**
-   * ATEM-old joined every format with commas and wrote Cardmarket's header with
+   * The earlier prototype joined every format with commas and wrote Cardmarket's header with
    * commas too; the reference says real Cardmarket exports use `;`.
    */
   const csv = buildCollectionCsv("cardmarket", [line()]);

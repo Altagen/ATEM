@@ -14,7 +14,7 @@ export function referentialRoutes(db: Database) {
    * The catalogue requires a session.
    *
    * It stays deliberately thin: search by name was removed along with the
-   * “Catalogue” screen, which did not exist in ATEM-old and duplicated a
+   * “Catalogue” screen, which did not exist in the earlier prototype and duplicated a
    * function the collection already provides. Adding a card to the collection
    * resolves its code through `POST /collection/adjust`, not through here.
    */

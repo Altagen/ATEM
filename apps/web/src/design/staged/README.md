@@ -1,6 +1,6 @@
 # Sheets waiting for their screen
 
-These sheets come from ATEM-old and **are not loaded**: no `@import` references
+These sheets come from the earlier prototype and **are not loaded**: no `@import` references
 them, so they add nothing to the shipped bundle.
 
 They wait for the screen they style:

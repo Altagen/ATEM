@@ -10,7 +10,7 @@ const exported: CsvExportLine[] = [
 
 test("our own export imports back unchanged, in every format", () => {
   /**
-   * ATEM-old split the text on line breaks before reading quotes, so a note
+   * The earlier prototype split the text on line breaks before reading quotes, so a note
    * holding one — which the export quotes — broke its own re-import.
    */
   for (const format of ["atem", "scanflip"] as const) {
@@ -94,7 +94,7 @@ test("a bad line is reported with its file line, and the others still read", () 
   assert.deepEqual(errors, [{ line: 4, error: "empty_set_code" }]);
 });
 
-test("JSON: ATEM-old's scanlist shape and this application's both read", () => {
+test("JSON: The earlier prototype's scanlist shape and this application's both read", () => {
   const old = parseCollectionFile(JSON.stringify({
     version: 1, scanliste: "Lot", lignes: [{ set_code: "SDRE-FR005", quantity: 3, passcode: 26976414 }],
   }));

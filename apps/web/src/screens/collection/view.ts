@@ -1,7 +1,7 @@
 /**
  * Rendering of the collection screen.
  *
- * Markup taken from ATEM-old's `apps/web/src/collection/vue.ts`, which is
+ * Markup taken from the earlier prototype's collection screen, which is
  * authoritative — the `design/pages/collection.html` mock-up is an earlier
  * version, with another set of classes.
  *
@@ -46,7 +46,7 @@ function groupTitle(item: CollectionItem): string {
  * produce an order nothing explains.
  *
  * Without grouping, the list comes out in one block, in the sort order and
- * nothing else: that is ATEM-old's default behaviour, and the right one.
+ * nothing else: that is the earlier prototype's default behaviour, and the right one.
  * Cutting by family imposes a second ordering key on top of the chosen one, and
  * one no longer finds what one is looking for.
  */
@@ -139,7 +139,7 @@ function listItem(item: CollectionItem, readOnly: boolean): SafeHtml {
 
 function tile(item: CollectionItem): SafeHtml {
   const art = item.card?.imageUrlSmall ?? item.card?.imageUrl;
-  // No “+1” here: in gallery view, you open the card to act. That is ATEM-old's
+  // No “+1” here: in gallery view, you open the card to act. That is the earlier prototype's
   // choice, and it holds — the tile is a thumbnail, not a form.
   return html`<button type="button" class="tile js-open" data-id="${item.id}">
     <div class="tile-art">
@@ -217,7 +217,7 @@ function hasActiveFilters(state: ViewState): boolean {
 /**
  * An icon's file name follows the English value, spaces turned into dashes:
  * `Sea Serpent` → `Sea-Serpent.png`. That is the convention of the assets taken
- * from ATEM-old; departing from it would break the display in silence.
+ * from the earlier prototype; departing from it would break the display in silence.
  */
 const iconFile = (value: string) => value.replace(/\s+/g, "-");
 
@@ -620,7 +620,7 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
                 aria-label="${t("Sort and filter")}" aria-haspopup="dialog"><span class="i-more" aria-hidden="true"></span></button>
         <!--
           Scanlists are reached from here, not from a tab in the bottom bar —
-          that is the place they had in ATEM-old, and it says it right: one
+          that is the place they had in the earlier prototype, and it says it right: one
           inventories a batch **before** deciding whether it enters the
           collection. A tab of the same rank as “Collection” suggested two
           inventories side by side.
@@ -697,7 +697,7 @@ export type PrintRow = {
 /**
  * The other printings of the same card.
  *
- * Taken from ATEM-old: the question “do I already have it, and in which
+ * Taken from the earlier prototype: the question “do I already have it, and in which
  * printing?” comes up in front of every card being sorted. Answering it in the
  * sheet saves looking elsewhere.
  *

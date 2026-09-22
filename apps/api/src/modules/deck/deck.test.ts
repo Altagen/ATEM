@@ -11,8 +11,8 @@ import { createDeck, deleteDeck, getDeck, listDecks, updateDeck, setDeckCard } f
 const { db } = createTestApp();
 
 /**
- * Decks — the area where ATEM-old had **no test at all**, and where the triage
- * found two functional gaps.
+ * Decks — the area where the earlier prototype had **no test at all**, and where reading
+ * it found two functional gaps.
  */
 
 async function newUser() {
@@ -78,7 +78,7 @@ test("a deck counts cards, not printings", async () => {
 
 test("the fourth copy is refused by the database itself", async () => {
   /**
-   * ATEM-old's gap n°1: its uniqueness was `(deck, zone, passcode, set_code)`,
+   * The earlier prototype's gap n°1: its uniqueness was `(deck, zone, passcode, set_code)`,
    * so the same card lived on several rows and totalled six copies. The ceiling
    * was checked per row, never aggregated.
    *
@@ -139,7 +139,7 @@ test("no more go in than one owns", async () => {
 
 test("the banlist bounds before the collection does", async () => {
   /**
-   * `checkDeckAdd` existed in ATEM-old and did this computation correctly — it
+   * `checkDeckAdd` existed in the earlier prototype and did this computation correctly — it
    * simply was **never called server-side**. It was a display helper: the
    * screen greyed a button out, nothing stopped the request.
    */

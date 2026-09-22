@@ -8,7 +8,7 @@ import {
 /**
  * The building rules, under test.
  *
- * ATEM-old had **no test at all** on decks — no service, no folders, no routes —
+ * The earlier prototype had **no test at all** on decks — no service, no folders, no routes —
  * and that is where two functional gaps were found. So that is where we start.
  */
 
@@ -63,7 +63,7 @@ test("a forbidden card is refused for the banlist, even when not owned", () => {
 
 test("the total covers the whole deck, not one zone", () => {
   /**
-   * This is ATEM-old's gap n°1: its uniqueness was
+   * This is the earlier prototype's gap n°1: its uniqueness was
    * `(deck, zone, passcode, set_code)`, so the same card lived on several rows
    * and totalled six copies. The ceiling was checked per row.
    */
@@ -170,7 +170,7 @@ test("the target moves the finish line, never the legality", () => {
 
   /**
    * The sixty-first card is refused whatever the target, and a forty-first is
-   * accepted whatever the target — ATEM-old showed “limit exceeded” there,
+   * accepted whatever the target — the earlier prototype showed “limit exceeded” there,
    * which is the application inventing a rule.
    */
   assert.equal(deckStatus({ main: 61, extra: 0, side: 0 }, 0, 60).kind, "over");

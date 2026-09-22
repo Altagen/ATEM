@@ -47,7 +47,7 @@ export function installPasswordReveal(): void {
 
 /**
  * The confirmation says it differs **as it is typed**, not only on submit —
- * ATEM-old waited for the button, and one found out after typing both twice.
+ * The earlier prototype waited for the button, and one found out after typing both twice.
  *
  * Silent while the confirmation is empty, or still a beginning of the password:
  * “different” is not true yet of what is only unfinished.

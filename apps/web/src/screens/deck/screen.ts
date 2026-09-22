@@ -3,7 +3,7 @@
  *
  * **The server decides, the screen explains.** Buttons grey out using the same
  * function that refuses the write — `checkDeckAdd`, in `@atem/shared`. That is
- * what ATEM-old lacked: it had the right computation and used it only for
+ * what the earlier prototype lacked: it had the right computation and used it only for
  * display, so a forged request went through.
  */
 import { DECK_ZONES, type DeckZone } from "@atem/shared";
@@ -732,7 +732,7 @@ export async function deckScreen(
    * Drag and drop, with the mouse.
    *
    * Asked for by Ange on the desktop: that is where the gesture is natural, and
-   * where ATEM-old had it. On a phone it does not exist — holding then aiming
+   * where the earlier prototype had it. On a phone it does not exist — holding then aiming
    * is not a thumb gesture — and it is the “Move here” mode that renders the
    * same service.
    *

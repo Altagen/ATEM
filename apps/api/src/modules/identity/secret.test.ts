@@ -4,7 +4,7 @@ import { requireJwtSecret, resetJwtSecretCache } from "./secret.js";
 
 /**
  * The signing key is the only thing preventing a third party from forging a
- * session. ATEM-old had a hard-coded fallback written in three places: an
+ * session. The earlier prototype had a hard-coded fallback written in three places: an
  * instance deployed without `JWT_SECRET` accepted tokens made by anyone who had
  * read the repository.
  *
@@ -38,7 +38,7 @@ test("a key that is too short is refused", () => {
   });
 });
 
-test("ATEM-old's old fallback is refused by name", () => {
+test("the earlier prototype's old fallback is refused by name", () => {
   // It is longer than 32 characters: only an explicit comparison stops it.
   // Refusing it by name keeps it from coming back by copy-paste.
   withSecret("atem_dev_secret_key_change_me_in_prod", () => {

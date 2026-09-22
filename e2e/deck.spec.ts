@@ -5,7 +5,7 @@ import { expectNoHorizontalOverflow, signUp } from "./helpers.js";
  * Decks — the list and the workshop.
  *
  * What counts here: the screen refuses **with the same rule** as the server.
- * ATEM-old had the right computation and only used it to grey out a button; a
+ * The earlier prototype had the right computation and only used it to grey out a button; a
  * forged request went through. Both sides now call `checkDeckAdd`.
  */
 
@@ -21,7 +21,7 @@ async function stockCollection(page: import("@playwright/test").Page, codes: str
 async function newDeck(page: import("@playwright/test").Page, name: string) {
   await page.goto("/decks");
   await createDeckHere(page, name);
-  // The name lives in a field, not a heading: it is ATEM-old's workshop, where
+  // The name lives in a field, not a heading: it is the earlier prototype's workshop, where
   // you rename without changing screen.
   await expect(page.locator("#edit-name")).toHaveValue(name);
 }
@@ -315,7 +315,7 @@ test("the deck reports what it can no longer field", async ({ page }) => {
 test("the screen says the cards are saved", async ({ page }) => {
   /**
    * That is what was missing: cards are written at every “±”, and nothing said
-   * so. ATEM-old displayed “unsaved” because it worked on a draft; we say the
+   * so. The earlier prototype displayed “unsaved” because it worked on a draft; we say the
    * reverse, and briefly.
    */
   await signUp(page);
@@ -394,7 +394,7 @@ test("the name field wears the application's styling", async ({ page }) => {
   /**
    * Reported by Ange: “a grey background that clashes with the UI”. The
    * `.menu-field` rule only targeted `select`; an `input` in the same block fell
-   * back on the browser's default grey. ATEM-old had the same flaw, and
+   * back on the browser's default grey. The earlier prototype had the same flaw, and
    * transcribing it faithfully brought it along.
    */
   await signUp(page);
@@ -413,7 +413,7 @@ test("the name field wears the application's styling", async ({ page }) => {
 
 test("every deck wears the card back, whatever it holds", async ({ page }) => {
   /**
-   * Ange, 2026-09-21: the most played card read as a random one, and ATEM-old's
+   * Ange, 2026-09-21: the most played card read as a random one, and the earlier prototype's
    * placeholder was asked for instead. A deck with cards and an empty one look
    * the same, and the back is really painted — not a missing URL.
    */
@@ -566,7 +566,7 @@ test("the workshop's sheet freezes the page behind it", async ({ page }) => {
 });
 
 /* ── Folders ──────────────────────────────────────────────────────────────
- * Taken from ATEM-old: navigation goes one level at a time, folders first,
+ * Taken from the earlier prototype: navigation goes one level at a time, folders first,
  * decks next. Filing goes through the “⋯” menu and the move banner everywhere,
  * and through drag and drop on the desktop.
  */
@@ -630,7 +630,7 @@ test("a deck is filed into a folder from its menu", async ({ page }) => {
 
 test("discarding a folder moves its contents up, losing nothing", async ({ page }) => {
   /**
-   * ATEM-old's rule, and the right one: a folder is a filing place, not an
+   * The earlier prototype's rule, and the right one: a folder is a filing place, not an
    * owner. Its database said the opposite, though.
    */
   await signUp(page);
@@ -741,7 +741,7 @@ test("in rows, the pill keeps its place", async ({ page }, info) => {
 test("a deck is filed by dragging it onto a folder", async ({ page }, info) => {
   /**
    * Asked for by Ange on the desktop, where the gesture is natural — and which
-   * ATEM-old had. On a phone it does not exist: holding then aiming is not a
+   * The earlier prototype had. On a phone it does not exist: holding then aiming is not a
    * thumb gesture, and the banner renders the same service.
    */
   test.skip(info.project.name === "mobile", "drag and drop does not exist by finger");
@@ -828,7 +828,7 @@ test("a deck is moved up by dragging it onto the breadcrumb", async ({ page }, i
 
 test("the search crosses folders, and says where each result comes from", async ({ page }) => {
   /**
-   * ATEM-old only filtered the current level: searching “dragon” and finding
+   * The earlier prototype only filtered the current level: searching “dragon” and finding
    * nothing because you are in the wrong folder is a wrong answer to a simple
    * question.
    */
@@ -878,7 +878,7 @@ test("a folder name is displayed, never executed", async ({ page }) => {
 });
 
 /* ── The deck sheet ───────────────────────────────────────────────────────
- * Proposed by Ange, taken from ATEM-old: opening a deck **shows** it. It is also
+ * Proposed by Ange, taken from the earlier prototype: opening a deck **shows** it. It is also
  * what will make showing another player's deck possible without writing a
  * second screen — it will be enough not to display the pencil.
  */
@@ -993,7 +993,7 @@ test("the size a deck aims for is the player's, and it moves the finish line", a
    * The rules allow 40 to 60 and both ends are playable, so which one a deck is
    * built towards is a decision only the player can make. What is measured here
    * is that the decision is **kept** and that it **changes the verdict** — a
-   * picker that saves nothing would be the hollow affordance ATEM-old had.
+   * picker that saves nothing would be the hollow affordance the earlier prototype had.
    */
   await signUp(page);
   await stockCollection(page, ["SDCR-FR014"]);

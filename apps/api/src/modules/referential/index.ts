@@ -3,7 +3,7 @@
  *
  * `ensurePlaceholderPrint` and `upsertPrint` are here because `collection` and
  * `deck` need them — which is precisely what spares them writing into `cards`
- * and `card_prints` themselves, as they did in ATEM-old.
+ * and `card_prints` themselves, as they did in the earlier prototype.
  */
 export {
   cardsByPasscode,

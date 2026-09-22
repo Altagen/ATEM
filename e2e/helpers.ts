@@ -56,7 +56,7 @@ export async function expectNoHorizontalOverflow(page: Page): Promise<number> {
 /**
  * Switches to gallery view.
  *
- * The collection opens as a **list**, like ATEM-old: that is where the “+1” and
+ * The collection opens as a **list**, like the earlier prototype: that is where the “+1” and
  * “−1” buttons live. The gallery is a browsing view, where you open the card to
  * act.
  */

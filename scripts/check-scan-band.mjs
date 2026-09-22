@@ -5,7 +5,7 @@
  * another, defined by `.scan-zoom-band`. They are two spellings of the same
  * thing, and nothing in the language links them.
  *
- * ATEM-old lived through the failure: the CSS percentages were invented while
+ * The earlier prototype lived through the failure: the CSS percentages were invented while
  * styling classes that had no rule, the drawn band ended up at the bottom of the
  * viewfinder and the read band in the middle. You framed the set code in one
  * place, the OCR looked elsewhere, and the scan answered “nothing reliable”

@@ -7,7 +7,7 @@
  * — the **bottom bar**, on phones, which replaces it entirely;
  * — the **account sheet**, which the bottom bar opens.
  *
- * Choosing to replace rather than adapt comes from ATEM-old, and it holds: on
+ * Choosing to replace rather than adapt comes from the earlier prototype, and it holds: on
  * mobile the top bar kept only the brand, the service state and the avatar —
  * five targets in a 62 px strip, for settings nobody visits in a loop. The
  * thumb, meanwhile, is at the bottom of the screen.
@@ -37,7 +37,7 @@ let unread = 0;
  * calling `t()` here would freeze one language for the whole session.
  */
 const SERVICE_LABELS: Record<ServiceState, { text: string; className: string }> = {
-  // “API”, as ATEM-old wrote it: a bare “Online” reads as the person's presence.
+  // “API”, as the earlier prototype wrote it: a bare “Online” reads as the person's presence.
   ok: { text: "API online", className: "api-ok" },
   unreachable: { text: "API unreachable", className: "api-err" },
   unknown: { text: "…", className: "api-warn" },
@@ -100,7 +100,7 @@ export async function refreshInbox(): Promise<void> {
 /**
  * The inbox, reached from the top bar.
  *
- * ATEM-old's bell, with its count. The badge disappears at zero rather than
+ * The earlier prototype's bell, with its count. The badge disappears at zero rather than
  * showing it: a zero is a thing to read for nothing.
  */
 function inboxBell(): HTMLElement {
@@ -115,7 +115,7 @@ function inboxBell(): HTMLElement {
 }
 
 /**
- * The language choice, in the top bar: ATEM-old's pill.
+ * The language choice, in the top bar: The earlier prototype's pill.
  *
  * It lives in the navigation rather than in the settings screen: it is changed
  * from anywhere, in one gesture, and it is the only preference there is — a
@@ -226,7 +226,7 @@ function appBar(signal: AbortSignal): HTMLElement {
 /**
  * The account, on a wide screen: your avatar opens a menu.
  *
- * ATEM-old's user menu (`header-nav.ts` and the design's `shell.js`): a round
+ * The earlier prototype's user menu: a round
  * avatar in the bar, and behind it who you are, then your destinations and
  * signing out. The name is in the menu's head rather than in the bar, where it
  * took the room of a button. Not carried over: the inbox bell, which has nothing
@@ -278,7 +278,7 @@ function userMenu(user: NonNullable<ReturnType<typeof knownUser>>, signal: Abort
   }, [look.icon]);
 
   // `.menu` is `display: none` until `.is-open` — the sheet's contract, which
-  // ATEM-old's menus already followed. Toggling `hidden` instead opens nothing.
+  // The earlier prototype's menus already followed. Toggling `hidden` instead opens nothing.
   const isOpen = (): boolean => menu.classList.contains("is-open");
   const setOpen = (open: boolean): void => {
     menu.classList.toggle("is-open", open);
@@ -341,7 +341,7 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
   close.addEventListener("click", closeAccountSheet);
 
   const list = el("nav", { class: "account-sheet-list" });
-  // The inbox leads the list, as in ATEM-old: it is the one entry whose content
+  // The inbox leads the list, as in the earlier prototype: it is the one entry whose content
   // changes on its own, and the only one that can be waiting for you.
   if (audienceOf(user) === "player") {
     list.append(

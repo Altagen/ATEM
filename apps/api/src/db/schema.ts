@@ -1,7 +1,7 @@
 /**
  * The schema aggregator — and nothing else.
  *
- * ATEM-old declared its 21 tables in a 780-line file mixing six domains. Each
+ * The earlier prototype declared its 21 tables in a 780-line file mixing six domains. Each
  * table was sound; it is their cohabitation that let three modules write into
  * the catalogue tables, each with its own logic, none knowing the other two.
  *

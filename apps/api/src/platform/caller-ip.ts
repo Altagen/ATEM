@@ -1,7 +1,7 @@
 /**
  * The caller's address, for rate limiting.
  *
- * `X-Forwarded-For` is a header **the client can write**. ATEM-old discovered
+ * `X-Forwarded-For` is a header **the client can write**. The earlier prototype discovered
  * in production that its limiting could be bypassed by forging it: a different
  * address on every request, hence a counter forever at zero.
  *

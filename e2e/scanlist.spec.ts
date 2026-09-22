@@ -169,7 +169,7 @@ test("scanlists are reached from the collection, not from a tab", async ({ page 
    * A tab of the same rank as “Collection” suggested two inventories side by
    * side. A scanlist is an antechamber: a batch is filed there **before**
    * deciding whether it enters the collection. That is the place it had in
-   * ATEM-old, and the place carries that reading.
+   * The earlier prototype, and the place carries that reading.
    */
   await signUp(page);
   const bar = info.project.name === "mobile" ? ".global-mobile-bottom-nav" : ".app-bar";

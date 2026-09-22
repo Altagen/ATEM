@@ -20,7 +20,7 @@ test("splits the common shape", () => {
 });
 
 test("splits a number that starts with a letter", () => {
-  // ATEM-old could not read these codes: its shape required digits after the
+  // The earlier prototype could not read these codes: its shape required digits after the
   // region. 5,249 real printings out of 44,517 fell into that case.
   assert.deepEqual(parseSetCode("NECH-ENS10"), {
     prefix: "NECH", region: "EN", number: "S10",

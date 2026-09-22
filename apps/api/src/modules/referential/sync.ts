@@ -5,7 +5,7 @@
  * (21 MB, 22 s) and 11,661 in French. We stay far below the 20-requests-per-
  * second limit.
  *
- * Insertion happens in batches. ATEM-old chained tens of thousands of
+ * Insertion happens in batches. The earlier prototype chained tens of thousands of
  * sequential `await`s — minutes for seconds of work.
  */
 import { sql } from "drizzle-orm";

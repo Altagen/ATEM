@@ -1,7 +1,7 @@
 /**
  * The collection screen.
  *
- * Rendering lives in `view.ts` — that is ATEM-old's validated markup. Here, the
+ * Rendering lives in `view.ts` — that is the earlier prototype's validated markup. Here, the
  * wiring: reading the API, state, and event delegation.
  *
  * The delegation is deliberate: the grid is redrawn at every filter change, and
@@ -65,7 +65,7 @@ export async function collectionScreen(
   /**
    * Density is set on `<body>`, not on the screen's root.
    *
-   * That is where the rules taken from ATEM-old look for it
+   * That is where the rules taken from the earlier prototype look for it
    * (`body.density-compact .item`), and moving it would mean rewriting those
    * rules for no gain.
    */

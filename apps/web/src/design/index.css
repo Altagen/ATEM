@@ -1,5 +1,5 @@
 /**
- * The load order, taken from ATEM-old's `design/styles/app.css`.
+ * The load order, taken from the earlier prototype.
  *
  * It is not arbitrary: `collection.css` redefines `.muted`, `.btn` and
  * `.btn-primary` already set by `base.css`, and counts on being loaded after

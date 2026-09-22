@@ -2,7 +2,7 @@
  * The errors routes know how to turn into an HTTP response.
  *
  * A service knows nothing about HTTP: it throws an error describing *what is
- * wrong*, and the route layer decides the status. ATEM-old compared strings
+ * wrong*, and the route layer decides the status. The earlier prototype compared strings
  * (`msg === "folder_max_depth"`) — a silent rename broke the response.
  */
 export type ErrorCode =

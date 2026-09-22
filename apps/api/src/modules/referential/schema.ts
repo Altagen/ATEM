@@ -26,7 +26,7 @@ export const cards = pgTable(
     level: integer("level"),
     scale: integer("scale"),
     /**
-     * A Link monster's rating and arrows. Missing from ATEM-old's schema at
+     * A Link monster's rating and arrows. Missing from the earlier prototype's schema at
      * first: Zod silently dropped the fields it did not declare, and every Link
      * card displayed “Link —”.
      */
@@ -50,7 +50,7 @@ export const cards = pgTable(
  *
  * `cardPasscode` is **nullable**, and that is this module's central decision.
  *
- * ATEM-old signalled “printing not resolved yet” with a **negative** passcode
+ * The earlier prototype signalled “printing not resolved yet” with a **negative** passcode
  * derived from a hash of the set code. The convention was implicit, copied by
  * hand into four modules as `if (cardId > 0)`, with no type-level safeguard —
  * and two different set codes could produce the same passcode through a hash

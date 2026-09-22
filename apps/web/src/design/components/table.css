@@ -1,5 +1,5 @@
 /*
- * The data table from ATEM-old's component library, brought up from
+ * The data table from the earlier prototype's component library, brought up from
  * `staged/components.css` for the import history. It styles the table itself
  * rather than hiding behind a page container, so any screen can use it.
  */
@@ -7,7 +7,7 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  /* ATEM-old wrote `hidden`, to keep the rounded corners — which also cut off,
+  /* the earlier prototype wrote `hidden`, to keep the rounded corners — which also cut off,
      without a scrollbar, whatever a phone could not fit. `auto` clips to the
      corners just the same, and lets the table scroll sideways. */
   overflow-x: auto;
@@ -29,7 +29,7 @@
 /*
  * On a phone, each row becomes a card and each cell names its column.
  *
- * ATEM-old's markup carried `data-col` on every cell for exactly this, and no
+ * The earlier prototype's markup carried `data-col` on every cell for exactly this, and no
  * stylesheet ever read it: the four-column import history was cut off at the
  * edge of a 393 px screen. The label comes from the attribute, so the header row
  * is hidden rather than repeated.

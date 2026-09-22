@@ -25,12 +25,12 @@ access layer, not an adaptation.
 of domain types shared by both.
 
 **Why.** `tesseract.js` requires JavaScript in the browser for the OCR, which already
-fixes the front. Staying in TS on the server maximises reuse of ATEM-old (interface
+fixes the front. Staying in TS on the server maximises reuse of the earlier prototype (interface
 components, mock-up, API integration) and avoids duplicating the domain types in two
 languages.
 
-**To settle at milestone M0, by looking at what ATEM-old already uses.** Front
-framework, server framework, ORM, database engine. These choices follow ATEM-old
+**To settle at milestone M0, by looking at what the earlier prototype already uses.** Front
+framework, server framework, ORM, database engine. These choices follow the earlier prototype
 **by default**, unless inspection reveals they are part of the problem. They are
 reversible choices, unlike ADR-001/003/004 — so they do not have to be settled now.
 
@@ -38,14 +38,14 @@ reversible choices, unlike ADR-001/003/004 — so they do not have to be settled
 
 ## ADR-003 — Lazy resolution, optional mirror *(to settle at M1)*
 
-**Context.** ATEM-old resolves on demand: `cardsetsinfo.php` on the scanned code,
+**Context.** the earlier prototype resolves on demand: `cardsetsinfo.php` on the scanned code,
 then `cardinfo.php?id=` for the EN and FR record, then local persistence. A card
 already met is never requested again. It works and is proven.
 
 A full mirror remains possible — the whole dump fits in one request (14,524 cards,
 21 MB, 22 s measured; 11,661 in FR).
 
-**Choice.** We keep ATEM-old's **lazy resolution** as the main mechanism. It is
+**Choice.** We keep the earlier prototype's **lazy resolution** as the main mechanism. It is
 enough for the whole priority path: scan, add, filter your collection — since you
 only filter cards you own, hence already resolved.
 
@@ -75,7 +75,7 @@ ATEM, never hot-linked to YGOPRODeck.
 **Context.** Constraint C2: `cardsetsinfo.php` only knows English codes. `LOB-FR001`
 does not answer.
 
-**Choice.** Take ATEM-old's mechanism: query with the EN equivalent
+**Choice.** Take the earlier prototype's mechanism: query with the EN equivalent
 (`LTGY-FR008` → `LTGY-EN008`), and persist **two** printings — the player's with its
 French code, and its English counterpart. Identity of a printing:
 `(set_code, rarity, language)`.
@@ -183,7 +183,7 @@ YGOPRODeck's two entry points contradict each other: the full dump writes
 one shape or the other depending on their printing year — early English editions had
 no region code.
 
-Joining on the English code, as ATEM-old did, therefore splits two halves of the same
+Joining on the English code, as the earlier prototype did, therefore splits two halves of the same
 catalogue: a card's sheet displayed “0 printings” while the database held 44,496.
 
 **Choice.** Two distinct shapes, for two uses that have nothing in common:
@@ -197,7 +197,7 @@ Confusing them was the defect. The code printed on the player's card remains the
 identity of their printing.
 
 **Checked on real data.** The split covers **100%** of the 44,517 printings, against
-88.2% for ATEM-old's shape — 5,249 more, including every one-letter European edition
+88.2% for the earlier prototype's shape — 5,249 more, including every one-letter European edition
 (`PSV-E088`) and every number starting with a letter (`NECH-ENS10`, `25YC-ENP01`).
 33,935 canonical keys, including **8 collisions** (0.02%), absorbed by the manual
 correction screen.
@@ -213,7 +213,7 @@ counted and set aside, never guessed.
 their card and is waiting for their “+1”. We cannot wait for YGOPRODeck in the
 request path.
 
-ATEM-old solved that by fabricating a card with a **negative passcode**, derived from
+The earlier prototype solved that by fabricating a card with a **negative passcode**, derived from
 a hash of the set code. The convention was implicit, copied by hand into four modules
 as `if (cardId > 0)`, with no type guard — and two set codes could produce the same
 passcode by collision, which was tested nowhere. There were **three competing
@@ -250,7 +250,7 @@ its path, every query that forgot to tell the two apart becomes a leak — and a
 
 Writing M2 with the confusion means two modules to take back instead of one. Taking
 back a security filter afterwards, on code that works, is exactly the path that made
-ATEM-old untenable.
+The earlier prototype untenable.
 
 **Choice.** Two names, and they no longer mix:
 

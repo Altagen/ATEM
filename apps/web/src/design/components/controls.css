@@ -1,5 +1,5 @@
 /*
- * Form controls from ATEM-old's component library — buttons and fields —
+ * Form controls from the earlier prototype's component library — buttons and fields —
  * brought up from `staged/components.css` when the settings screen gave them
  * markup to style. Only what some screen sets stays here; the rest is pruned back.
  */
@@ -117,7 +117,7 @@
  *
  * The export's “Download” is an `<a href download>` — a link is what lets the
  * server's BOM through and survives “save link as” — and a link carries the
- * browser's underline, which ATEM-old's `<button>`s never had.
+ * browser's underline, which the earlier prototype's `<button>`s never had.
  */
 a.btn-showcase-primary-full {
   text-decoration: none;

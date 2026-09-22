@@ -1,7 +1,7 @@
 /**
  * The admin module — the console of the instance's one administrator.
  *
- * Scoped with Ange on 2026-09-21, from ATEM-old's console reduced to what a
+ * Scoped with Ange on 2026-09-21, from the earlier prototype's console reduced to what a
  * host needs: the number of players, who may sign up, the accounts (create,
  * suspend, delete), and a log of what the administrator did. Left behind:
  * invitation codes, announcements, the audit of players' activity, the cache

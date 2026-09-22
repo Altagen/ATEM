@@ -12,7 +12,7 @@ import type { CardDetail } from "../../platform/api.js";
 /**
  * A collection row, as the API returns it — **per printing**.
  *
- * That is what ATEM-old displayed too: you see the set code you own. The
+ * That is what the earlier prototype displayed too: you see the set code you own. The
  * **count**, though, is per card — three Blue-Eyes across three codes make
  * three Blue-Eyes. The two live together without contradicting each other: the
  * row shows a printing, the ceiling looks at the card.
@@ -159,7 +159,7 @@ export type DeckState = {
   /**
    * The folder being looked at, or the root.
    *
-   * One level at a time, like a file explorer. ATEM-old had started by
+   * One level at a time, like a file explorer. The earlier prototype had started by
    * unfolding the whole tree at once: at three levels, you were reading a metro
    * map to find a deck. It ended up going back to the current level, and that
    * is where we start from.
@@ -170,7 +170,7 @@ export type DeckState = {
    *
    * **Opening a deck shows it, it does not open it for writing.** The sheet has
    * no control that writes a card; the pencil leads to the workshop, and the
-   * address says so (`?workshop=1`). That is ATEM-old's shape, and it is what
+   * address says so (`?workshop=1`). That is the earlier prototype's shape, and it is what
    * will make showing another player's deck possible without writing a second
    * screen: it will be enough not to display the pencil.
    */
@@ -207,7 +207,7 @@ export type DeckState = {
    *
    * The workshop has no save button: cards leave at every “±”, the name when
    * the typing settles. Nothing said so, and a “Save” button right next to it
-   * suggested the opposite. ATEM-old displayed “unsaved” because it worked on a
+   * suggested the opposite. The earlier prototype displayed “unsaved” because it worked on a
    * draft; we display the reverse, briefly, because there is none.
    */
   savedAt: number | null;
@@ -215,7 +215,7 @@ export type DeckState = {
    * The visible panel, on a narrow screen.
    *
    * On a phone, stacking the collection and the zones forces you to cross forty
-   * cards to reach your deck. ATEM-old had decided the same way: past 900 px
+   * cards to reach your deck. The earlier prototype had decided the same way: past 900 px
    * the two fit side by side, below that you toggle. The value is useless on a
    * wide screen, and the CSS ignores it.
    */

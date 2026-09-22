@@ -1,7 +1,7 @@
 /**
  * The console's markup.
  *
- * ATEM-old's console, reduced with Ange on 2026-09-21 to what a host needs —
+ * The earlier prototype's console, reduced with Ange on 2026-09-21 to what a host needs —
  * the count, who may sign up, the accounts, and what the administrator did —
  * and drawn with the application's own pieces rather than its 800 lines of
  * admin styles: the directory's rows, the profile card's figures, the

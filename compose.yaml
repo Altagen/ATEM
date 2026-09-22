@@ -1,7 +1,7 @@
 # The full deployment, in one command.
 #
 # `docker compose up` on a blank machine must be enough. It is M0's exit
-# criterion — and precisely what ATEM-old could not do: its own compose.yaml
+# criterion — and precisely what the earlier prototype could not do: its own compose.yaml
 # carried the warning “Dev-only. Not the application ship stack”, and the real
 # deployment took nine manual steps.
 

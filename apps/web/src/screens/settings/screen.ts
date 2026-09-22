@@ -1,7 +1,7 @@
 /**
  * The settings screen — wiring.
  *
- * Behaviour taken from ATEM-old's `settings/app.ts`, onto routes built for it:
+ * Behaviour taken from the earlier prototype's settings, onto routes built for it:
  * rename (`PATCH /auth/me`), email change behind the password
  * (`POST /auth/me/email`), password change
  * (`POST /auth/me/password`), erasing the collection (`DELETE /collection`) and
@@ -23,7 +23,7 @@ import {
   checkPasswordStrength, isCsvExportFormat, isVisibility, LIMITS, parseCollectionFile,
 } from "@atem/shared";
 
-/** How long an erase can still be cancelled. ATEM-old's five seconds, kept. */
+/** How long an erase can still be cancelled. The earlier prototype's five seconds, kept. */
 const CLEAR_DELAY_S = 5;
 
 export async function settingsScreen(
@@ -334,7 +334,7 @@ export async function settingsScreen(
      *
      * A repaint on every keystroke rebuilds the field and throws the caret out
      * of it. The button's `disabled` is the only thing that depends on what is
-     * typed, so that is all that changes — ATEM-old's way, for the same reason.
+     * typed, so that is all that changes — the earlier prototype's way, for the same reason.
      */
     const clearWord = root.querySelector<HTMLInputElement>("#input-clear-word");
     clearWord?.addEventListener("input", () => {

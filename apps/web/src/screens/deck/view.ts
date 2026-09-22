@@ -1,7 +1,7 @@
 /**
  * The decks markup — the list and the workshop.
  *
- * **Transcribed from ATEM-old**, whose interface had been validated:
+ * **Transcribed from the earlier prototype**, whose interface had been validated:
  * `decks/vue.ts`, `vue-atelier.ts` and `vue-pieces.ts`, with the classes of
  * `styles/pages/decks.css`. What is not taken is not left out by oversight but
  * for want of anything to wire it to — folders, the deck options modal and the
@@ -390,7 +390,7 @@ function deckPill(deck: DeckSummary): SafeHtml {
  * A deck's face: the card back, for every deck.
  *
  * The server used to pick the most played card; Ange, on 2026-09-21, found it
- * read as a random card and asked for ATEM-old's placeholder instead. The
+ * read as a random card and asked for the earlier prototype's placeholder instead. The
  * stylesheet paints it, so there is nothing to load.
  */
 function deckCover(cls: string): SafeHtml {
@@ -416,7 +416,7 @@ function deckDriveRow(state: DeckState, deck: DeckSummary): SafeHtml {
 /**
  * The deck in portrait, artwork large.
  *
- * That is ATEM-old's view, and the cover's reason for being: a list of names is
+ * That is the earlier prototype's view, and the cover's reason for being: a list of names is
  * only recognised by reading, a board of artworks is recognised at a glance.
  * The 59 / 86 ratio is a card's.
  */
@@ -693,7 +693,7 @@ function cardSheet(state: DeckState): SafeHtml {
 /* ── The deck sheet ───────────────────────────────────────────────────────
  *
  * **Opening a deck shows it, it does not open it for writing.** Taken from
- * ATEM-old (`renderDetail`): the sheet lists the cards as the collection lists
+ * The earlier prototype (`renderDetail`): the sheet lists the cards as the collection lists
  * them, and the pencil leads to the workshop. No control writes here.
  */
 

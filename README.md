@@ -130,7 +130,6 @@ and their reasons are in [`docs/05-structure.md`](docs/05-structure.md).
 | [`01-domain-model.md`](docs/01-domain-model.md) | The invariant core — the only frozen document |
 | [`02-architecture.md`](docs/02-architecture.md) | The decisions, with their alternatives and consequences |
 | [`03-roadmap.md`](docs/03-roadmap.md) | The milestones, and what was measured at each |
-| [`04-triage-atem-old.md`](docs/04-triage-atem-old.md) | What was taken from the previous project, and why |
 | [`05-structure.md`](docs/05-structure.md) | Module boundaries and conventions |
 | [`ref-csv-formats.md`](docs/ref-csv-formats.md) | Import/export formats, column by column |
 | [`ref-ocr.md`](docs/ref-ocr.md) | The scanner's settings, and the measurements behind them |

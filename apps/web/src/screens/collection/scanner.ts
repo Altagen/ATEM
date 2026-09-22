@@ -1,7 +1,7 @@
 /**
  * The set-code scanner.
  *
- * Markup and classes taken from ATEM-old
+ * Markup and classes taken from the earlier prototype
  * (`design/styles/components/scanner.css` and the `.scan-*` classes of
  * `collection.css`). So is the recognition engine, without a line changed: its
  * settings are the product of repeated measurements, documented in
@@ -10,7 +10,7 @@
  * **The aiming band is no longer positioned here.** It is positioned by
  * `.scan-zoom-band`, and `scripts/check-scan-band.mjs` checks that its
  * percentages are those of `SCAN_ZOOM_BAND`. Having written them in both places
- * with nothing linking them is what produced, in ATEM-old, a viewfinder showing
+ * with nothing linking them is what produced, in the earlier prototype, a viewfinder showing
  * an area the OCR did not read.
  *
  * **The field never takes focus on its own.** On a phone, focus raises the

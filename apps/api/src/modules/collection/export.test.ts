@@ -9,7 +9,7 @@ import { resetResolveQueue } from "./resolve-queue.js";
  * Exporting a collection as CSV, through the route — what a download receives.
  *
  * `docs/ref-csv-formats.md` is authoritative; each test below holds one of its
- * rules, or one of ATEM-old's defects it records.
+ * rules, or one of the earlier prototype's defects it records.
  */
 const { app, db } = createTestApp();
 
@@ -32,7 +32,7 @@ async function owned(userId: string, setCode: string, delta: number, passcode?: 
 
 test("the download starts with a BOM, is UTF-8 CSV, and is named for its format", async () => {
   /**
-   * ATEM-old added the BOM in the browser, so a direct link gave a file Excel in
+   * The earlier prototype added the BOM in the browser, so a direct link gave a file Excel in
    * a French locale read as latin-1. The server writes it now.
    */
   const { cookie, userId } = await freshSession(app, "export-bom");
@@ -185,7 +185,7 @@ test("a file over five megabytes is refused, and an unknown mode too", async () 
 
 test("each import is recorded on the server, newest first, for this account only", async () => {
   /**
-   * ATEM-old kept the history in the browser, so an import from a phone never
+   * The earlier prototype kept the history in the browser, so an import from a phone never
    * showed on the computer. It is the account's now, read from anywhere.
    */
   const mine = await freshSession(app, "history-mine");

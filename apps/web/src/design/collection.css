@@ -172,7 +172,7 @@
  *
  * The rule only targeted `select`. An `input` in the same block therefore fell
  * back on the browser's default grey, which clashes with the whole interface —
- * ATEM-old had the same flaw, and its “Deck name” field was grey too.
+ * The earlier prototype had the same flaw, and its “Deck name” field was grey too.
  * Transcribing faithfully brought it along.
  */
 .menu-field select,
@@ -658,7 +658,7 @@
   background-repeat: no-repeat;
 }
 
-/* A card with no artwork shows ATEM-old's card back, not a “?”: a card whose
+/* A card with no artwork shows the earlier prototype's card back, not a “?”: a card whose
    picture is missing is still a card (Ange, 2026-09-21). */
 .thumb-empty {
   width: 52px;

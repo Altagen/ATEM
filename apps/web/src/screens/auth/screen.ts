@@ -1,7 +1,7 @@
 /**
  * Signing in and registering.
  *
- * The markup is that of ATEM-old's approved mock-up — not a reinterpretation.
+ * The markup is that of the earlier prototype's approved mock-up — not a reinterpretation.
  * The mock-up is authoritative over the ported version: it deliberately fixes
  * three things the front had let slip (an `h1` rather than an `h2`, a real link
  * rather than a clickable `div`, and no inline styles where the port had

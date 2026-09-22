@@ -13,8 +13,7 @@
  * downloaded ahead of need — the catalogue holds 14,524 cards, and pulling
  * artworks nobody looks at is exactly the volume the guide warns against.
  *
- * Taken from ATEM-old's `media/cache.ts`, `espace.ts` and `paths.ts` (triaged
- * TAKE), with two of its defects left behind: a download no longer runs in a
+ * Taken from the earlier prototype's media cache, with two of its defects left behind: a download no longer runs in a
  * request that did not ask for an image, and there is **no fallback to the
  * remote URL** — a missing image is a missing image, not a hot-link.
  */

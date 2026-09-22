@@ -7,7 +7,7 @@ import {
 /**
  * The outbound rate towards YGOPRODeck.
  *
- * ATEM-old got banned for an hour for counting it badly: it limited API calls
+ * The earlier prototype got banned for an hour for counting it badly: it limited API calls
  * but not image downloads, which went out by another path. A limiter per kind
  * of call protects nothing — the total is what counts, and that is why there is
  * only one bucket.

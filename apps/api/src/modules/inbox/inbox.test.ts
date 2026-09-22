@@ -9,7 +9,7 @@ const { app } = createTestApp();
  *
  * The rule these tests hold: a line never outlives what it talks about. A
  * request that is cancelled, refused or blocked leaves nothing behind offering
- * to answer it — ATEM-old's inbox answered such lines with an error.
+ * to answer it — the earlier prototype's inbox answered such lines with an error.
  */
 
 const req = (method: string, path: string, cookie: string, body?: unknown) =>

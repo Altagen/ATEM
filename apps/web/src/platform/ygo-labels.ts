@@ -16,7 +16,7 @@
  * general dictionary: « Poisson » is not an interface sentence, it is the
  * French name of a catalogue value.
  *
- * Table taken from ATEM-old, where it was established from the usual names of
+ * Table taken from the earlier prototype, where it was established from the usual names of
  * the French TCG.
  */
 

@@ -31,7 +31,7 @@ const DICTIONARY = path.join(WEB, "platform/i18n/fr.ts");
 /**
  * What the check does not look at.
  *
- * The OCR engine is taken as is from ATEM-old and displays nothing: its strings
+ * The OCR engine is taken as is from the earlier prototype and displays nothing: its strings
  * are log labels. The dictionaries are the place where French is allowed to be
  * data.
  */

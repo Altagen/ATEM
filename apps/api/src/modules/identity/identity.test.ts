@@ -260,7 +260,7 @@ test("the catalogue survives an account deletion", async () => {
 
 test("the caller's address is never taken from a header a stranger can write", async () => {
   /**
-   * ATEM-old found this in production: `X-Forwarded-For` is written by the
+   * The earlier prototype found this in production: `X-Forwarded-For` is written by the
    * client, so forging a new address on every request kept its counter at zero.
    * Here the header is read only from a declared proxy.
    */
@@ -495,7 +495,7 @@ test("an email already in use is refused without saying so", async () => {
 test("the email changes only with the password, and signing in follows it", async () => {
   /**
    * Whoever changes the address takes the account, so a session is not enough.
-   * ATEM-old's window asked for the password and its server never read it.
+   * The earlier prototype's window asked for the password and its server never read it.
    */
   const session = await freshSession(app, "email-change");
   const next = freshEmail("email-changed");

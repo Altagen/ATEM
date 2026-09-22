@@ -430,7 +430,7 @@
  * toast is `.toast`, styled in `base.css`. The `.admin-table` block is a second,
  * different version of the table in `design/components/table.css`; loaded after
  * it, it silently redressed the settings' import history. `.btn.is-friend`
- * styled a button ATEM-old's row had and this one does not.
+ * styled a button the earlier prototype's row had and this one does not.
  */
 /* Custom Gaming Toast Notification Popup */
 #gaming-custom-toast {

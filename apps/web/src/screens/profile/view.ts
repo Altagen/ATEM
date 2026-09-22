@@ -1,7 +1,7 @@
 /**
  * The profile markup.
  *
- * **Transcribed from ATEM-old** (`profile/vue.ts` and the design's
+ * **Transcribed from the earlier prototype** (`profile/vue.ts` and the design's
  * `pages/profile.js`), with its classes, so its stylesheet applies unchanged.
  *
  * What was deliberately not carried over, because it showed things that were not
@@ -146,7 +146,7 @@ function friendButton(status: PlayerProfile["friendStatus"]): SafeHtml {
 }
 
 /**
- * What this duellist has played — counted, where ATEM-old showed trophies it
+ * What this duellist has played — counted, where the earlier prototype showed trophies it
  * derived from the role. Nothing is said when nothing has been recorded.
  */
 function tally(duels: PlayerProfile["duels"]): string {

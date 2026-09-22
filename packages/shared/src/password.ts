@@ -2,7 +2,7 @@
  * Password strength — **one rule, shared**.
  *
  * The server applies it on registration and on password change; the screen uses
- * it to draw its meter. It is the same function, not a copy: ATEM-old had four
+ * it to draw its meter. It is the same function, not a copy: The earlier prototype had four
  * diverging implementations — one on the server, two in the front, one in the
  * mock-up — held together by “mirror” tests checking they told the same story.
  *

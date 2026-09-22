@@ -96,7 +96,7 @@ async function insertAccount(
 ): Promise<UserRow> {
   /**
    * The rule comes from `@atem/shared`, the same function the screen uses to
-   * draw its meter. ATEM-old had four diverging copies, and one of them
+   * draw its meter. The earlier prototype had four diverging copies, and one of them
    * approved passwords the server then refused.
    */
   const strength = checkPasswordStrength(input.password);
@@ -373,7 +373,7 @@ const toDuellist = (row: UserRow, since: number): Duellist => ({
  * The accounts another duellist may be shown — suspended ones excluded.
  *
  * `search` matches the display name **or the number**: `Yugi#0042` is how people
- * give themselves out, and ATEM-old searched the name alone. Who is filtered out
+ * give themselves out, and the earlier prototype searched the name alone. Who is filtered out
  * for a relation — blocked either way — is the social module's business, not
  * this one's: it receives the list and removes them.
  */
@@ -428,7 +428,7 @@ export async function activePlayerId(db: Database, userId: string): Promise<stri
  * already taken under the new name — `Yugi#0042` becoming `YugiMaster` stays
  * `#0042`, which is what people give out and write on a deck box.
  *
- * Taken from ATEM-old's `tagForRename`, whose reasoning was right.
+ * Taken from the earlier prototype's `tagForRename`, whose reasoning was right.
  */
 async function tagForRename(
   db: Database,
@@ -449,7 +449,7 @@ async function tagForRename(
  * What the profile shows: the name you are known by, bio and avatar.
  *
  * All optional and independent — a request that carries one changes one. The
- * profile's edit window sends them together, so they land in one write: ATEM-old
+ * profile's edit window sends them together, so they land in one write: The earlier prototype
  * sent two requests, and a failed second one left the profile half saved behind a
  * success message.
  * Nothing here touches the password, which has its own route and its own
@@ -596,7 +596,7 @@ export async function chooseFirstPassword(
  *
  * The address is what a password reset would go to the day there is one, and
  * what signing in asks for: whoever changes it takes the account. So a session
- * alone is not enough — an unlocked screen would do. ATEM-old's window asked for
+ * alone is not enough — an unlocked screen would do. The earlier prototype's window asked for
  * the password and its server never read it; this one checks it, **before**
  * looking at the address, so a stolen session cannot use this route to find out
  * which addresses have an account.

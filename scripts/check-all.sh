@@ -2,7 +2,7 @@
 # Every gate, from fastest to slowest.
 #
 # A project's state is measured here, not in a hand-written status file: that
-# rule comes from ATEM-old, which emptied its MEMORY.md after finding that the
+# rule comes from the earlier prototype, which emptied its MEMORY.md after finding that the
 # agents' self-assessments were wrong on verifiable points.
 set -uo pipefail
 cd "$(dirname "$0")/.."

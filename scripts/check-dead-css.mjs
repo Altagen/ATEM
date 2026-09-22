@@ -1,7 +1,7 @@
 /**
  * No CSS rule may style a class that nothing sets.
  *
- * Ported from ATEM-old, where this check had found **362 classes declared and
+ * Ported from the earlier prototype, where this check had found **362 classes declared and
  * never used — 2,763 lines, a third of the sheets**. They all came from the
  * same movement: one version of a screen replaced by another, whose markup left
  * but whose styling stayed.

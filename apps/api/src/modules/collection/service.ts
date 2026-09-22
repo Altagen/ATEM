@@ -15,7 +15,7 @@
  * an owner where a viewer is expected — see ADR-009.
  *
  * It never writes into `cards` or `card_prints`: it calls the `referential`
- * module. That is the fix for ATEM-old's deepest flaw, where `collection` and
+ * module. That is the fix for the earlier prototype's deepest flaw, where `collection` and
  * `decks` each created their own catalogue rows, with three competing logics
  * that ignored one another.
  */
@@ -63,7 +63,7 @@ export type CollectionFilters = {
    * The API files all three under the same `level` field (and `link_value` for
    * the last), but they are not the same thing: a Rank 4 Xyz is not a Level 4
    * monster, and mixing them would produce a filter that means nothing.
-   * ATEM-old made three chip blocks of them; we keep that.
+   * The earlier prototype made three chip blocks of them; we keep that.
    */
   levels?: string[];
   ranks?: string[];
@@ -86,7 +86,7 @@ export type CollectionFilters = {
    */
   kind?: "monster" | "spell" | "trap";
   sort?: "name" | "recent" | "quantity" | "setCode";
-  /** Sort direction. ATEM-old offered it; without it you sort backwards. */
+  /** Sort direction. The earlier prototype offered it; without it you sort backwards. */
   sortDir?: "asc" | "desc";
   limit?: number;
   offset?: number;
@@ -157,7 +157,7 @@ function buildFilters(
      * passcode**.
      *
      * The passcode is the eight digits printed at the bottom left of the card:
-     * when the set code is unreadable, it is what remains legible. ATEM-old
+     * when the set code is unreadable, it is what remains legible. The earlier prototype
      * already compared it; dropping it removed a fallback.
      */
     const matched = or(
@@ -550,7 +550,7 @@ export async function adjustQuantity(
 /**
  * A row's free-form note.
  *
- * ATEM-old offered it at the bottom of the card sheet: the copy's condition,
+ * The earlier prototype offered it at the bottom of the card sheet: the copy's condition,
  * its provenance, what was paid for it. It also travels in the CSV export,
  * where it occupies the `notes` column.
  */
@@ -591,7 +591,7 @@ export async function setFavorite(
 /**
  * Empties one person's collection, in a single statement.
  *
- * ATEM-old did this from the browser, one `DELETE /:id` per card: two thousand
+ * The earlier prototype did this from the browser, one `DELETE /:id` per card: two thousand
  * requests for a two-thousand-card collection, and a failure halfway through left
  * it half erased with nothing to say so. Here it is one `DELETE … WHERE user_id`,
  * so it happens entirely or not at all.
@@ -705,7 +705,7 @@ export async function requeuePendingResolves(db: Database): Promise<number> {
  * Picks up a printing left provisional, and re-attaches the rows that pointed
  * at it to the real edition.
  *
- * **Everything holds in one transaction.** ATEM-old lived the failure: between
+ * **Everything holds in one transaction.** the earlier prototype lived the failure: between
  * deleting the provisional row and writing the consolidated one, an
  * interruption lost copies. That is not a rare case — it is the normal path of
  * every scanned card: “on an import of eight hundred cards, the window opens

@@ -1,8 +1,8 @@
 /**
- * Our deliberate departures from the sheets taken from ATEM-old.
+ * Our deliberate departures from the sheets taken from the earlier prototype.
  *
  * They live in a separate file, not melted into the original sheets: when
- * someone later asks “does this come from ATEM-old, or is it us?”, the answer
+ * someone later asks “does this come from the earlier prototype, or is it us?”, the answer
  * must be readable without any archaeology.
  *
  * Every rule here must say why it exists.
@@ -97,7 +97,7 @@
  * A page title, read but not seen.
  *
  * The original screen has no level-1 heading: the application bar says
- * “Collection”, but that is a navigation link, not a document title. ATEM-old's
+ * “Collection”, but that is a navigation link, not a document title. The earlier prototype's
  * mock-up had fixed exactly this defect on the authentication screens, going
  * from `h2` to `h1`; the remark holds here.
  *
@@ -148,7 +148,7 @@
 }
 
 /**
- * A class ATEM-old's markup set without any rule styling it — the audit had
+ * A class the earlier prototype's markup set without any rule styling it — the audit had
  * noted it, and the unstyled-classes gate confirms it.
  */
 .web-loading {
@@ -157,7 +157,7 @@
 }
 
 /**
- * The filter block: ATEM-old only styled its title, and the sections touched.
+ * The filter block: The earlier prototype only styled its title, and the sections touched.
  * It lacked breathing room of its own.
  */
 .filter-block {

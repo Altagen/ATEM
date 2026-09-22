@@ -3,10 +3,10 @@
  *
  * It owns `friend_edges` and `blocks`, and exposes the **single access
  * checkpoint** rule R3 of `docs/05-structure.md` asks for: `canView`. No
- * friendship or block test is written anywhere else — ATEM-old had two
+ * friendship or block test is written anywhere else — the earlier prototype had two
  * independent copies before other players' decks were even viewable.
  *
- * Taken from ATEM-old's `community/duellistes.ts`: the ordered pair, the state
+ * Taken from the earlier prototype: the ordered pair, the state
  * read from one side, blocking that severs the link in whatever state it was.
  */
 import { and, eq, or } from "drizzle-orm";
@@ -21,7 +21,7 @@ import { blocks, friendEdges } from "./schema.js";
  * Where a relation stands, **as one of the two sees it**.
  *
  * Not a boolean: the sender of a request needs to know it is waiting, and the
- * receiver needs to know it is theirs to answer. ATEM-old shipped `isFriend`
+ * receiver needs to know it is theirs to answer. The earlier prototype shipped `isFriend`
  * alone at first, and a sent request looked exactly like no request at all.
  */
 export type FriendStatus = "none" | "pending_sent" | "pending_received" | "friends";
@@ -136,7 +136,7 @@ export async function friendStatusWith(
  *
  * Friends first, then by name: the list is read to find someone you know.
  *
- * **No filter parameter.** ATEM-old had `friends`, `online` and a third that
+ * **No filter parameter.** the earlier prototype had `friends`, `online` and a third that
  * filtered the administrator role under a rank name the product does not have.
  * The screen writes the count on each of its chips, so it holds the whole list
  * whatever is selected, and filtering it again on the server would be a
@@ -194,7 +194,7 @@ async function target(db: Database, viewerId: string, otherId: string): Promise<
  * Asking someone to be friends — and accepting when they already asked.
  *
  * Two people who both asked have said the same thing twice: there is nothing
- * left to answer, so the crossing request is accepted on the spot (ATEM-old's
+ * left to answer, so the crossing request is accepted on the spot (the earlier prototype's
  * decision, kept). Asking twice changes nothing: the pair is unique.
  */
 export async function requestFriend(

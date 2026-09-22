@@ -53,7 +53,7 @@ register("/collection", collectionScreen, {
  * They are reached from the collection's toolbar. A tab of the same rank as
  * “Collection” suggested two inventories side by side, whereas a scanlist is an
  * antechamber: a batch is filed there before deciding whether it enters the
- * collection. That is the place they had in ATEM-old, and it carries that
+ * collection. That is the place they had in the earlier prototype, and it carries that
  * reading.
  */
 register("/scanlists", scanlistScreen, { requiresSession: true });

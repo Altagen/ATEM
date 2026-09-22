@@ -29,7 +29,7 @@ test("each person gets their own attempt on the same code", async () => {
   });
 
   /**
-   * ATEM-old's bug, in one line: de-duplication was by code alone. If A had
+   * The earlier prototype's bug, in one line: de-duplication was by code alone. If A had
    * already queued `LOB-FR001`, B's entry was dropped as a duplicate — and B's
    * row stayed provisional indefinitely. The work to do is not “resolve this
    * code”, it is “repair this person's row”.

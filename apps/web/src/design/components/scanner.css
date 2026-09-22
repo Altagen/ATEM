@@ -1,14 +1,14 @@
 /*
  * The card scanner.
  *
- * Taken from ATEM-old, where this one sheet served both the mock-up and the
+ * Taken from the earlier prototype, where this one sheet served both the mock-up and the
  * application: viewfinder at a card's ratio, aiming band, shutter bar,
  * suggestion pills. The mock-up had no camera and showed the viewfinder in its
  * “camera unavailable” state, a state the application knows too — the shape is
  * the same.
  *
  * `design/index.css` imports it once. Copying it into another sheet would make
- * it drift at the first adjustment — which is what had happened to ATEM-old's
+ * it drift at the first adjustment — which is what had happened to the earlier prototype's
  * scanlist sheet.
  */
 
@@ -360,7 +360,7 @@
 /*
  * The viewfinder's video fills its frame, like artworks elsewhere.
  *
- * It does not join the shared rule of ATEM-old's `components.css`: that sheet
+ * It does not join the shared rule of the earlier prototype's component sheet: that sheet
  * was loaded by all twelve pages, and the gate rightly refused to style there a
  * class eleven of them never set.
  */

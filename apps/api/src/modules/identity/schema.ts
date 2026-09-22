@@ -39,7 +39,7 @@ export const users = pgTable(
     suspendedAt: timestamp("suspended_at", { withTimezone: true }),
     /**
      * The password was set by the administrator, who therefore knows it: the
-     * account must choose its own before doing anything else. ATEM-old's rule
+     * account must choose its own before doing anything else. The earlier prototype's rule
      * for accounts opened from its console, kept.
      */
     mustChangePassword: boolean("must_change_password").notNull().default(false),

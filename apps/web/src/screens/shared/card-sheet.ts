@@ -4,7 +4,7 @@
  * The collection and the deck workshop display the same thing — the artwork
  * large, the characteristics, the effect — and differ in what can be done from
  * there: removing a copy on one side, placing it in a zone on the other.
- * ATEM-old had two distinct functions repeating the same markup; there were
+ * The earlier prototype had two distinct functions repeating the same markup; there were
  * therefore two places to fix an alignment.
  *
  * The content specific to each screen goes through `headActions` and `extra`.

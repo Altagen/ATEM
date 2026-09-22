@@ -81,7 +81,7 @@ type Prefs = Pick<
 >;
 
 /**
- * ATEM-old's default values, taken as they are.
+ * The earlier prototype's default values, taken as they are.
  *
  * I had picked four others without saying so: gallery view, sort by recent
  * addition, descending order, and grouping by type enabled. A collection

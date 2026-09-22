@@ -3,11 +3,11 @@
  * scanlist export.
  *
  * `docs/ref-csv-formats.md` is authoritative, and this follows it rule by rule.
- * Taken from ATEM-old's `collection/csv.ts` — the alias table, the separator
+ * Taken from the earlier prototype — the alias table, the separator
  * detection, the language table — with its defects measured and left behind:
  *
  * - **It split the text into lines before reading quotes.** A cell holding a line
- *   break is quoted on export — a note written on two lines — so ATEM-old could
+ *   break is quoted on export — a note written on two lines — so the earlier prototype could
  *   not import its own export back as soon as a note had one. This reads the whole
  *   text with one state machine: a line break inside quotes is part of the cell.
  * - **Quantity had no upper bound**: `999999999` went through. The reference aligns
@@ -236,7 +236,7 @@ function parseCsv(text: string): ParsedImport {
 /**
  * A JSON scanlist export — both shapes the reference requires.
  *
- * ATEM-old's (`set_code`, `lignes`) and this application's own (`setCode`,
+ * The earlier prototype's (`set_code`, `lignes`) and this application's own (`setCode`,
  * `lines`, a `null` passcode for an unidentified card); a bare array too, and the
  * `rows` envelope. Other keys are ignored without error.
  */

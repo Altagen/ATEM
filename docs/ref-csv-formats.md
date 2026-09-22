@@ -1,11 +1,11 @@
 # Reference — collection import / export formats
 
-Knowledge extracted from ATEM-old, where it worked. This document is
+Knowledge extracted from the earlier prototype, where it worked. This document is
 authoritative: **it survives the rewrite even if all the code is thrown away.**
 
 ## Common rules
 
-**Encoding** UTF-8. **BOM**: on export, ATEM-old added it *client-side* — a direct
+**Encoding** UTF-8. **BOM**: on export, the earlier prototype added it *client-side* — a direct
 link to `/export.csv` therefore produced a file that Excel in a French locale reads
 as latin-1, mangling the accents.
 → **ATEM decision: the BOM is written server-side.** On import, a leading BOM is
@@ -58,7 +58,7 @@ Unrecognised value → first two characters, lowercased.
 
 **`quantity`**: `1` by default if the column is missing, non-numeric, zero or
 negative — silently, without a line error.
-→ **ATEM decision**: add an **upper bound** (ATEM-old had none, a CSV with
+→ **ATEM decision**: add an **upper bound** (the earlier prototype had none, a CSV with
 `quantity=999999999` went through). Aligned on the scanlists' bound: **1000**.
 
 ## The three formats
@@ -88,13 +88,13 @@ Separator **`;`** (real Cardmarket exports use it) · file
 
 - **No passcode column** — Cardmarket identifies by the set number.
 - `set_code` → column `Card Number`; `notes` → column `Comments`.
-- **Language spelled out**: `fr` → `French`, `en` → `English`. ATEM-old only
+- **Language spelled out**: `fr` → `French`, `en` → `English`. The earlier prototype only
   translated those two and left the others as ISO codes. → **To complete**: de, es,
   it, pt, ja, ko.
 
 ## JSON format (scanlist)
 
-### ATEM-old's format
+### The earlier prototype's format
 
 ```json
 {
@@ -135,7 +135,7 @@ English keys, and **does not follow the rule above** for unidentified cards:
 }
 ```
 
-The import accepts both shapes — ATEM-old's files, and this one — and treats a
+The import accepts both shapes — the earlier prototype's files, and this one — and treats a
 `null` passcode as absent.
 
 ## Import modes
@@ -146,7 +146,7 @@ The import accepts both shapes — ATEM-old's files, and this one — and treats
   (`delta = file − existing`), not added. Rows owned but absent from the file are
   kept intact. If only the note changes, only the note is written.
 - **`replace`**: same treatment, then every owned row whose `set_code` does not
-  appear in the file is **brought to zero**. ATEM-old deleted it; a row at zero is
+  appear in the file is **brought to zero**. The earlier prototype deleted it; a row at zero is
   kept for its note and favourite (R9, `docs/01-domain-model.md`), exactly as
   removing the last copy by hand does. Rows at zero are not exported. A **failed** file line **still counts as
   present** and spares the matching row — deliberate behaviour, to keep: a partly
@@ -157,10 +157,10 @@ to the report (`{line, set_code, error}`) without interrupting the following one
 Returned summary: `mode`, `imported`, `removed`, `failed`, `errors[]`.
 
 **History**: each import records its file name, mode and the three counts on the
-server (`GET /collection/imports`, 50 newest). ATEM-old kept it in the browser's
+server (`GET /collection/imports`, 50 newest). The earlier prototype kept it in the browser's
 `localStorage`, lost with the browser and invisible from another device.
 
-**Duplicate `set_code` in the same file**: ATEM-old did “last line wins”, with no
+**Duplicate `set_code` in the same file**: The earlier prototype did “last line wins”, with no
 test or specification, while scanlist creation merges.
 → **ATEM decision: merge**, adding up quantities and keeping the first identified
 name.

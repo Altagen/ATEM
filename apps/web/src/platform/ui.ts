@@ -42,7 +42,7 @@ export function toast(message: string, kind: "info" | "error" | "success" = "inf
 /**
  * A template that escapes by default.
  *
- * The markup taken from ATEM-old is bulky: writing it node by node would make
+ * The markup taken from the earlier prototype is bulky: writing it node by node would make
  * it unreadable and impossible to transpose. So we assemble strings — but
  * **every interpolation is escaped**, with no exception to ask for.
  *

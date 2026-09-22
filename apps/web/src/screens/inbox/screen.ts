@@ -2,7 +2,7 @@
  * The inbox screen — wiring.
  *
  * Answering a friend request goes through the community routes, the ones the
- * directory already uses: ATEM-old had a second pair under `/inbox`, which
+ * directory already uses: The earlier prototype had a second pair under `/inbox`, which
  * could drift from the first without anything noticing.
  *
  * Opening the inbox marks what is in it as read — that is what opening it

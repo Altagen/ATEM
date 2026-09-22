@@ -219,7 +219,7 @@ h2 {
  * writes.
  *
  * `ui.ts` sets `data-kind`, not a class: targeting `.toast-ok` touched nothing.
- * It is the second time this defect happened — ATEM-old took its colours from a
+ * It is the second time this defect happened — the earlier prototype took its colours from a
  * `style.cssText` and the Collection relied on classes that did not exist. The
  * selector now follows the markup.
  */

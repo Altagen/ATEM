@@ -1,5 +1,5 @@
 /**
- * Password hashing. Ported from ATEM-old, where it was already mature.
+ * Password hashing. Ported from the earlier prototype, where it was already mature.
  *
  * **The format carries its parameters.** A hash written `salt:hash` does not
  * say at what cost it was produced: raising that cost — which has to happen

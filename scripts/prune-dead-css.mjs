@@ -4,7 +4,7 @@
  * Removed rules are written to `design/staged/pruned/`, one file per original
  * sheet. They are no longer loaded, so they weigh nothing; and the day the
  * screen they styled arrives, we know where they are instead of rediscovering
- * them in ATEM-old.
+ * them in the earlier prototype.
  *
  * Usage: node scripts/prune-dead-css.mjs [--dry]
  */

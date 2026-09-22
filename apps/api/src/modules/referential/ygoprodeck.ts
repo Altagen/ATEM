@@ -4,7 +4,7 @@
  * Two lessons learned the hard way, written down here:
  *
  * — **Zod silently drops the fields it does not declare.** `linkval` and
- *   `linkmarkers` were missing from ATEM-old's schema, and every Link card
+ *   `linkmarkers` were missing from the earlier prototype's schema, and every Link card
  *   displayed “Link —”. The field existed, the value never arrived. Any
  *   addition here must be tested against a real payload, never against an
  *   object rebuilt by hand.

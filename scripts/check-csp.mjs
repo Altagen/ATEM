@@ -118,7 +118,7 @@ for (const { file, text } of sources) {
  * `style-src 'self'` and inline styles cannot both be true.
  *
  * The screens carry no `style="…"` attribute; that is what lets the policy stay
- * strict where ATEM-old had to give up. The day one comes back, the browser
+ * strict where the earlier prototype had to give up. The day one comes back, the browser
  * refuses it silently — so it is refused here instead.
  */
 const inlineStyles = sources

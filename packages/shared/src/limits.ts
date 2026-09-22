@@ -1,7 +1,7 @@
 /**
  * The bounds, in one place.
  *
- * ATEM-old lived the drift this file prevents: the same limit decided in three
+ * The earlier prototype lived the drift this file prevents: the same limit decided in three
  * different places, with three values, so that the interface counter showed
  * green on input the API refused.
  *
@@ -12,7 +12,7 @@
 export const LIMITS = {
   password: { min: 16, max: 512 },
   displayName: { min: 2, max: 32 },
-  /** The profile's bio — ATEM-old's 255, which its counter and its schema agreed on. */
+  /** The profile's bio — the earlier prototype's 255, which its counter and its schema agreed on. */
   bio: { max: 255 },
   email: { max: 254 },
   setCode: { max: 32 },
@@ -43,7 +43,7 @@ export const LIMITS = {
  * The length is `String.length`, UTF-16 units — an emoji outside the basic
  * plane counts two. That is also what `z.string().max()` counts, and the only
  * measure that holds here: a counter in graphemes would show 248 while the
- * server refused 256. Taken from ATEM-old's `textLengthStatus`.
+ * server refused 256. Taken from the earlier prototype's `textLengthStatus`.
  */
 export type TextLengthStatus = {
   length: number;

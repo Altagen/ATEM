@@ -2,7 +2,7 @@
  * The topology of deck folders — depth, cycles, moves.
  *
  * **One implementation, two callers.** The server refuses, the screen greys
- * out: if each computed its own answer, we would fall back into ATEM-old's
+ * out: if each computed its own answer, we would fall back into the earlier prototype's
  * flaw, where `checkDeckAdd` served the display while the server let requests
  * through. Here both call the same functions.
  *
@@ -13,7 +13,7 @@
 /**
  * How deep folders nest.
  *
- * Three levels, as in ATEM-old. It is not a technical limit: past that you can
+ * Three levels, as in the earlier prototype. It is not a technical limit: past that you can
  * no longer find anything without remembering your own filing, and a
  * four-level breadcrumb no longer fits on a phone.
  */

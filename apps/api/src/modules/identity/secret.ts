@@ -1,7 +1,7 @@
 /**
  * The token signing key — read once, with no fallback value.
  *
- * ATEM-old had a hard-coded fallback written in three places. An instance
+ * The earlier prototype had a hard-coded fallback written in three places. An instance
  * deployed without `JWT_SECRET` therefore accepted tokens forged by anyone who
  * had read the repository. The constant's name announced the danger without
  * preventing it: a safeguard that relies on vigilance is not one.
@@ -11,7 +11,7 @@
  */
 const MIN_LENGTH = 32;
 
-/** ATEM-old's old fallback. Refusing it by name keeps it from coming back by copy. */
+/** the earlier prototype's old fallback. Refusing it by name keeps it from coming back by copy. */
 const HISTORICAL_FALLBACK = "atem_dev_secret_key_change_me_in_prod";
 
 let cached: string | null = null;

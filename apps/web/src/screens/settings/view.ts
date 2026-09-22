@@ -1,7 +1,7 @@
 /**
  * The settings markup — a menu, and one panel per section.
  *
- * **Transcribed from ATEM-old** (`settings/vue.ts`), whose hierarchical design was
+ * **Transcribed from the earlier prototype** (`settings/vue.ts`), whose hierarchical design was
  * validated: a list of rows, each opening its own panel with a way back. Its
  * classes are kept as they were, so its stylesheet applies unchanged.
  *
@@ -25,7 +25,7 @@ import type { SettingsState, SettingsView } from "./state.js";
 /** The phrase to type before deleting the account, in the interface's language. */
 export function deletionPhrase(): string {
   // Asking someone to type a formula in a language they did not choose is its own
-  // small barrier — ATEM-old's rule, kept.
+  // small barrier — the earlier prototype's rule, kept.
   return locale() === "en" ? "delete my account" : "supprimer mon compte";
 }
 
@@ -87,7 +87,7 @@ function rootPanel(state: SettingsState): SafeHtml {
 /**
  * The account panel.
  *
- * ATEM-old also showed the account's UUID with a copy button. It is not carried
+ * The earlier prototype also showed the account's UUID with a copy button. It is not carried
  * over: an internal identifier is of no use to the person reading it, and a
  * button that copies it is surface with no job.
  */
@@ -209,7 +209,7 @@ function securityPanel(state: SettingsState): SafeHtml {
 }
 
 /**
- * What each format is for — ATEM-old's descriptions, as dictionary phrases.
+ * What each format is for — the earlier prototype's descriptions, as dictionary phrases.
  *
  * Read at display time rather than at module load: declared once, they would
  * freeze the language of the first render.
@@ -230,7 +230,7 @@ function formatHint(format: CsvExportFormat): string {
  *
  * The download is a plain link to the route, not a script building a blob: the
  * server writes the BOM a spreadsheet needs, and a link is also what survives a
- * right-click “save as”. ATEM-old ended the panel by printing the route's URL —
+ * right-click “save as”. The earlier prototype ended the panel by printing the route's URL —
  * developer plumbing on a player's screen, and a wrong URL at that — which is
  * not carried over.
  */
@@ -319,7 +319,7 @@ function errorList(errors: ImportLineError[]): SafeHtml {
  *
  * The file is **read in the browser first**, with the very parser the server
  * uses, so the panel says how many lines it will import and which it cannot read
- * before anything is sent. ATEM-old counted the lines by splitting on line breaks,
+ * before anything is sent. The earlier prototype counted the lines by splitting on line breaks,
  * which miscounts as soon as a note spans two — and showed nothing of the errors
  * until after the import.
  *
@@ -565,7 +565,7 @@ export function emailMismatch(state: SettingsState): boolean {
 }
 
 /**
- * Changing the email address — ATEM-old's window.
+ * Changing the email address — the earlier prototype's window.
  *
  * It asked for the password too, and its server never read it. Here the server
  * refuses without it (`POST /auth/me/email`): whoever changes the address takes

@@ -2,7 +2,7 @@
 
 > **Status: validated on 2026-09-09, revised on 2026-09-16.** This document is frozen. Screens, filters and
 > export formats stay open; the entities and relations below only change through an explicit, recorded decision.
-> That is the guarantee we will not reproduce ATEM-old's drift. The 2026-09-16 revision is such a decision:
+> That is the guarantee we will not reproduce the earlier prototype's drift. The 2026-09-16 revision is such a decision:
 > every change is listed, with its reason, in the decision record at the end.
 
 ---
@@ -37,7 +37,7 @@ Measured: `LOB-EN001` and `PSV-E088` answer; `LOB-FR001` and `SDK-FR001` return
 
 → A French code is resolved by **switching the region to EN** for the query
 (`LTGY-FR008` → `LTGY-EN008`), then **keeping the French code** as the printing's
-identity on the user's side. That is exactly what ATEM-old does
+identity on the user's side. That is exactly what the earlier prototype does
 (`toEnglishLookupSetCode`), and it is validated by use.
 
 **C3 — The FR translation is partial.**
@@ -82,7 +82,7 @@ quantities of **all** printings of that card in the collection.
 
 **Context.** C2: only English codes are indexed by YGOPRODeck.
 
-**Procedure** (taken from ATEM-old, proven):
+**Procedure** (taken from the earlier prototype, proven):
 
 ```
 1. Normalise         "ltgy fr008"  → "LTGY-FR008"   (uppercase, spaces → dash)
@@ -280,10 +280,10 @@ who delegated the recommendation for each line.
 | R6 | `ReferentialImport` job table | the idempotent `catalogue:sync` command | **Document follows.** A refresh is replayed by running the command again. A job table comes when refreshes are scheduled. |
 | R7 | `User.status`; `UserProfile (display_name, tag, avatar, banner, bio)` | `suspended_at`, `role`, `token_version` on `users`; `display_name`/`tag` there too; no profile table | **Document follows.** Session revocation and suspension are what the identity module needs. Since 2026-09-17 `bio` (255) and `avatar` (one of five presets, checked by the database) sit on `users` too, with the profile screen; there is still no profile table, and no banner — nothing chooses one. |
 | R8 | `visibility_profile/collection/decks`, “in the core right now” | `collection_visibility`, `deck_visibility` | **Settled on 2026-09-21** with M4: collection and decks each everyone / friends (default) / only me, read by `social`'s single checkpoint. The profile itself has no setting: it stays visible to every signed-in duellist but a blocked one. |
-| R9 | `CollectionItem (user_id, card_print_id)` PK, `quantity > 0` | `owned_cards` with an id, the printed `set_code` copied, `notes`, `quantity` 0..1000 | **Document follows.** The printed code is the inventory's truth even when unresolved; notes are ATEM-old parity; a row at zero is kept so its note and favourite survive a re-purchase (tested). The bounds are checked inside the write's transaction, not by a `CHECK`: PostgreSQL evaluates a check on the row proposed for insertion, before `ON CONFLICT` turns it into an update, which breaks the race-free `quantity + delta` write — tried and measured. |
+| R9 | `CollectionItem (user_id, card_print_id)` PK, `quantity > 0` | `owned_cards` with an id, the printed `set_code` copied, `notes`, `quantity` 0..1000 | **Document follows.** The printed code is the inventory's truth even when unresolved; notes are the earlier prototype parity; a row at zero is kept so its note and favourite survive a re-purchase (tested). The bounds are checked inside the write's transaction, not by a `CHECK`: PostgreSQL evaluates a check on the row proposed for insertion, before `ON CONFLICT` turns it into an update, which breaks the race-free `quantity + delta` write — tried and measured. |
 | R10 | Favourite at card or printing level: open question (roadmap) | per printing | **Settled: per printing.** It is where the star lives on screen, one row per edition. |
 | R11 | `ScanListEntry (raw_set_code, card_print_id nullable)` | `scanlist_lines (set_code, name, passcode)`, `poured_at` | **Document follows.** A batch records what was read, independently of the reference data — pouring is what resolves. `poured_at` makes pouring a single, idempotent write. |
 | R12 | `Deck.description`, `cover_card_passcode`, `visibility` | absent | **Document follows.** The cover is derived from the most played card (2026-09-12); the description field had no screen and was removed as dead surface (2026-09-13); visibility per R8. |
-| R13 | `DeckEntry (deck_id, section, card_passcode)` PK, `quantity 1..3`, `position` | `deck_cards (deck_id, passcode)` with `main_qty`/`extra_qty`/`side_qty` | **Document follows.** One row per card is what makes the three-copy rule a database constraint across zones — ATEM-old's per-zone rows let a card total six. No `position`: display is sorted. |
+| R13 | `DeckEntry (deck_id, section, card_passcode)` PK, `quantity 1..3`, `position` | `deck_cards (deck_id, passcode)` with `main_qty`/`extra_qty`/`side_qty` | **Document follows.** One row per card is what makes the three-copy rule a database constraint across zones — the earlier prototype's per-zone rows let a card total six. No `position`: display is sorted. |
 | R14 | “a deck must never be physically deleted once used” | hard delete, and the duel **copies the deck's name** | **Document does not follow, deliberately (2026-09-18).** A duel keeps the deck's identifier (`on delete set null`) *and* its name at the time: “played with Blue-Eyes” stays true once the deck is gone. A soft delete would leave ghost decks in the deck screen, which is where people file, not where they read history. See `docs/ref-duels.md`. |
 | R15 | `Friendship`, `Block`, `ImportJob` | absent | **Planned** — M4 and M3, as the roadmap says. Not gaps. |

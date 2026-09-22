@@ -5,7 +5,7 @@
  * looks for rules without markup; this one looks for markup without rules.
  *
  * It was written after shipping a Catalogue screen where eight classes out of
- * ten no longer existed: the sheets taken from ATEM-old had replaced ours, and
+ * ten no longer existed: the sheets taken from the earlier prototype had replaced ours, and
  * the screen was left unstyled. Nothing had reported it — not the types, not the
  * tests, not the dead-CSS check, which looked the other way. It had to be seen
  * by eye.

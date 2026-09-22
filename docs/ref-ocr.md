@@ -1,6 +1,6 @@
 # Reference — set code recognition (OCR)
 
-**ATEM-old's most valuable asset.** These settings are the product of repeated
+**The earlier prototype's most valuable asset.** These settings are the product of repeated
 measurements, not a theoretical choice. Reproducing them from memory would cost
 days.
 
@@ -38,7 +38,7 @@ SCAN_ZOOM_BAND = { x: 0.05, y: 0.34, w: 0.90, h: 0.30 }
 **These coordinates are kept in sync with the CSS rule `.scan-zoom-band`.** A
 mismatch between the two **breaks scanning silently**: the camera shows the player an
 area the OCR does not read. `scripts/check-scan-band.mjs` compares them on every
-`pnpm check` — ATEM-old had nothing checking it.
+`pnpm check` — the earlier prototype had nothing checking it.
 
 ## Preprocessing — six treatments, tried in order
 

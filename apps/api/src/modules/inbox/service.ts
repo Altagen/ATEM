@@ -4,7 +4,7 @@
  * It owns `notifications` and nothing else. Other modules ask it to record an
  * event (`notify`) or to take back one that has lost its meaning (`withdraw`):
  * a friend request that is cancelled leaves no message behind, which is what
- * ATEM-old's inbox got right and its notification table nearly lost.
+ * The earlier prototype's inbox got right and its notification table nearly lost.
  */
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
@@ -66,7 +66,7 @@ export async function notify(
  * Takes back events that have lost their meaning.
  *
  * A cancelled or refused friend request must not leave a line offering to
- * accept something that no longer exists — in ATEM-old, answering it returned
+ * accept something that no longer exists — in the earlier prototype, answering it returned
  * an error nobody could act on.
  */
 export async function withdraw(

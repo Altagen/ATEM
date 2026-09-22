@@ -5,7 +5,7 @@
  * “Share profile” copies. The server says whether it is yours (`isOwner`), so the
  * edit button never depends on the screen guessing.
  *
- * Saving sends name, bio and avatar in **one** `PATCH /auth/me`: ATEM-old sent two
+ * Saving sends name, bio and avatar in **one** `PATCH /auth/me`: The earlier prototype sent two
  * requests and announced success when the second had failed.
  */
 import { LIMITS, textLengthStatus, type Avatar } from "@atem/shared";

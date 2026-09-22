@@ -1,7 +1,7 @@
 /**
  * The router.
  *
- * A table of routes, not a cascade of `if`s. ATEM-old dispatched in a 250-line
+ * A table of routes, not a cascade of `if`s. The earlier prototype dispatched in a 250-line
  * `if/else`: readable at ten screens, not at all beyond.
  */
 /**
@@ -121,7 +121,7 @@ export function navigate(path: string, options: { replace?: boolean } = {}): voi
 /**
  * Replaces the root node instead of emptying it.
  *
- * ATEM-old lived the bug this fixes: a screen left behind, whose request came
+ * The earlier prototype lived the bug this fixes: a screen left behind, whose request came
  * back late, kept writing into the next screen's DOM. By replacing the node,
  * the old screen writes into an element detached from the page — harmless, and
  * with nothing to cancel.

@@ -2,7 +2,7 @@
 
 ## The ailment to treat
 
-ATEM-old declared its 21 tables in **a single 780-line file**, mixing users,
+The earlier prototype declared its 21 tables in **a single 780-line file**, mixing users,
 invitations, rate limiting, settings, guilds, notifications, cards, decks and
 scanlists. Each table taken alone is sound; it is their cohabitation that poisons.
 Direct consequence: three modules wrote into the catalogue tables, each with its
@@ -66,7 +66,7 @@ to write in it.
 ## The four boundary rules
 
 **R1 — A module never reads or writes another module's tables.** It calls a
-function exported by that module's `index.ts`. ATEM-old had a model of this rule
+function exported by that module's `index.ts`. The earlier prototype had a model of this rule
 well applied: `scanlists/service.ts` touched no foreign table and went through
 `addToCollection`. We generalise that pattern — today `scanlist` pours through
 `collection`'s `adjustQuantity`. `scripts/check-module-boundaries.mjs` enforces
@@ -80,7 +80,7 @@ implementations of the provisional card. `collection` and `deck` do not write in
 **R3 — A single access-control point.** `social` exposes `canView(db, viewerId,
 ownerId)`, and it is the only place a block is tested. `player` calls it before
 answering a profile; `deck` and `collection` will call it the day their reads open
-to other players. ATEM-old already had two independent copies, before other
+to other players. The earlier prototype already had two independent copies, before other
 players' decks and collections were even viewable — the third was guaranteed.
 
 **R4 — A single dependency direction.** As the imports stand today:
@@ -119,7 +119,7 @@ not a special case.
 ## The provisional card — decision
 
 The need is real: `POST /collection/adjust` must answer immediately, without
-waiting for YGOPRODeck. ATEM-old marked the provisional state with a **negative
+waiting for YGOPRODeck. The earlier prototype marked the provisional state with a **negative
 passcode** derived from a hash of the set code — an implicit convention copied by
 hand into four modules, with no type guard, and an untested collision risk.
 
@@ -140,21 +140,21 @@ URLs. The only French lives where it is data: the i18n dictionary
 (`apps/web/src/platform/i18n/fr.ts`), the Yu-Gi-Oh! vocabulary
 (`platform/ygo-labels.ts`), French card names in test data, and the French
 interface strings the end-to-end tests assert. The application itself still
-displays in French by default. ATEM-old mixed both languages in its identifiers
+displays in French by default. The earlier prototype mixed both languages in its identifiers
 (`erreurs.ts` next to `service.ts`), with no rule.
 
-**Comments** — we keep ATEM-old's best practice: a comment explains the *why* and
+**Comments** — we keep the earlier prototype's best practice: a comment explains the *why* and
 the incident behind the choice, not the *what*. A comment paraphrasing the code is
 useless; a comment saying “pure black and white made 8 and S look alike” avoids
 making the mistake again.
 
 **Tests** — co-located, native `node --test` runner. Integration tests on a
-throwaway, timestamped PostgreSQL database, destroyed on exit (ATEM-old's
+throwaway, timestamped PostgreSQL database, destroyed on exit (the earlier prototype's
 mechanism taken as is).
 
 **Two inherited rules, and they apply to agents too:**
 - **Never fabricate data.** No invented fallback, no demo content displayed on
   error.
 - **Never write a prose project status file.** A state is measured by an
-  executable gate. ATEM-old emptied its `MEMORY.md` precisely because agents'
+  executable gate. The earlier prototype emptied its `MEMORY.md` precisely because agents'
   self-assessments had turned out wrong on verifiable points.

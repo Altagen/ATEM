@@ -1,7 +1,7 @@
 /**
  * The duels markup.
  *
- * Nothing to transcribe here: ATEM-old had no duels and the design does not
+ * Nothing to transcribe here: The earlier prototype had no duels and the design does not
  * draw them (`docs/ref-duels.md` says why this is the one decided feature). So
  * it is built from the pieces the rest of the application already uses — the
  * directory's rows, the deck screen's modal, the same buttons — rather than a

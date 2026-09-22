@@ -2,7 +2,7 @@
  * A module never touches another module's internal files.
  *
  * It is rule R1 of `docs/05-structure.md`, and it does not exist for style: in
- * ATEM-old, `collection` and `decks` wrote directly into the catalogue's tables.
+ * The earlier prototype, `collection` and `decks` wrote directly into the catalogue's tables.
  * The result was **three competing implementations** of “card not resolved
  * yet”, each unaware of the other two, and a negative passcode whose sign
  * carried a business meaning copied by hand into four files.
@@ -74,7 +74,7 @@ for (const file of files(MODULES_DIR)) {
      * The distinction is this: a schema referencing another says “my row
      * depends on its row”. A *service* reading another's schema says “I know how
      * its tables are built” — and that is what produced three competing logics
-     * in ATEM-old.
+     * in the earlier prototype.
      */
     const isSchemaToSchema =
       file.endsWith(`${path.sep}schema.ts`) && entry === "schema.js";

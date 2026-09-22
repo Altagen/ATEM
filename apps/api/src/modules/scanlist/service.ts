@@ -10,7 +10,7 @@
  * It writes neither into `cards`, nor `card_prints`, nor `owned_cards`:
  * pouring goes through `collection`, which itself goes through `referential`.
  * Same rule as everywhere here, and it matters most at the pour — exactly where
- * ATEM-old would have been tempted to write directly.
+ * The earlier prototype would have been tempted to write directly.
  */
 import { and, desc, eq, sql } from "drizzle-orm";
 import { LIMITS, normalizeSetCode, type PourResult, type ScanlistDetail, type ScanlistLine, type ScanlistSummary } from "@atem/shared";

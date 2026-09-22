@@ -1,7 +1,7 @@
 /**
  * The scanlists' markup.
  *
- * Classes taken from ATEM-old's mock-up
+ * Classes taken from the earlier prototype's mock-up
  * (`design/styles/pages/scanlist.css`), whose stylesheet had been waiting in
  * `design/staged/pages/scanlist.css` since the start of the milestone.
  */

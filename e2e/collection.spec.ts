@@ -6,7 +6,7 @@ import {
 test.describe("Collection", () => {
   test("unpinning the search bar gives the phone its second row back", async ({ page }) => {
     /**
-     * Asked for by Ange, who remembered the control from ATEM-old — and it
+     * Asked for by Ange, who remembered the control from the earlier prototype — and it
      * turned out to be the missing half of the gallery complaint.
      *
      * The rail is `sticky` at `top: 0` and 142 px tall, so while it is pinned it
@@ -65,9 +65,9 @@ test.describe("Collection", () => {
   test("the gallery keeps two columns on a phone, however narrow", async ({ page }) => {
     /**
      * Reported by Ange: in gallery view the cards were nearly fullscreen, where
-     * ATEM-old showed four — two columns, two rows.
+     * The earlier prototype showed four — two columns, two rows.
      *
-     * The cause was not the tile, which is identical to ATEM-old's, but the
+     * The cause was not the tile, which is identical to the earlier prototype's, but the
      * base rule: `auto-fill, minmax(150px, 1fr)` needs 316 px to fit two, and a
      * Pixel 5 gives the grid 321. It passed by five pixels — and a narrower
      * phone, or the same one with the text zoomed, fell to a single column.
@@ -194,7 +194,7 @@ test.describe("Collection", () => {
     // The name comes from the catalogue, in French: that proves the switch to
     // the English code worked without losing the language.
     await expect(grid.getByText("Grande Baleine")).toBeVisible();
-    // The collection opens as a list, like ATEM-old.
+    // The collection opens as a list, like the earlier prototype.
     await expect(page.locator(".item-list")).toBeVisible();
     await expect(page.locator(".meta-line")).toContainText("1/1");
   });
@@ -294,7 +294,7 @@ test.describe("Collection", () => {
   });
 
   test("the filters offer the attribute icons", async ({ page }) => {
-    // The icons come from ATEM-old; their file name follows the English value. A
+    // The icons come from the earlier prototype; their file name follows the English value. A
     // broken image does not show in a text test.
     await signUp(page);
     await addBySetCode(page, "LTGY-FR008");
@@ -711,10 +711,10 @@ test.describe("Navigation", () => {
 });
 
 
-test.describe("Parity with ATEM-old", () => {
+test.describe("Parity with the earlier prototype", () => {
   test("the passcode identifies a card whose code cannot be read", async ({ page }) => {
     // The fallback when the set code cannot be read: the eight digits at the
-    // bottom left. The field existed in ATEM-old and had disappeared.
+    // bottom left. The field existed in the earlier prototype and had disappeared.
     await signUp(page);
     await addBySetCode(page, "LTGY-FR008");
 
@@ -764,7 +764,7 @@ test.describe("Parity with ATEM-old", () => {
   });
 
   test("the collection comes out in sort order, without grouping", async ({ page }) => {
-    // It is ATEM-old's default behaviour, and the right one: cutting by family
+    // It is the earlier prototype's default behaviour, and the right one: cutting by family
     // imposes a second ordering key on top of the chosen one, and you no longer
     // find what you are looking for.
     await signUp(page);
@@ -833,7 +833,7 @@ test.describe("Parity with ATEM-old", () => {
 test("the account block does not overlap itself", async ({ page }, testInfo) => {
   /**
    * The username once touched the sign-out button: the right-hand block's layout
-   * lived in a `style` attribute in ATEM-old, not in its sheet.
+   * lived in a `style` attribute in the earlier prototype, not in its sheet.
    *
    * On 2026-09-17 the two merged into the user menu, so that exact collision can
    * no longer happen — and this test, which aimed at those two elements, timed

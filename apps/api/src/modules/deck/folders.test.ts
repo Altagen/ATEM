@@ -10,7 +10,7 @@ const { app, db } = createTestApp();
 /**
  * Deck folders.
  *
- * ATEM-old had the right logic — depth, cycles, re-attaching — and **no test at
+ * The earlier prototype had the right logic — depth, cycles, re-attaching — and **no test at
  * all**. That is exactly the kind of code nobody rereads and that comes undone
  * at the first refactor: three rules that speak of a tree, none of which fits
  * in a column constraint.
@@ -119,7 +119,7 @@ test("a moved folder takes its levels with it", async () => {
 
 test("deleting a folder moves its contents up, losing nothing", async () => {
   /**
-   * ATEM-old's rule, and the right one — but its database said the opposite:
+   * The earlier prototype's rule, and the right one — but its database said the opposite:
    * the `parent_id` cascaded while its service re-attached. Two contradictory
    * answers, and the database is what wins as soon as a deletion goes
    * elsewhere. Here the database answers nothing, the transaction does

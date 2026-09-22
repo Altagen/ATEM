@@ -5,7 +5,7 @@ import { users } from "../identity/schema.js";
 /**
  * A friendship: **one row for two people**.
  *
- * Taken from ATEM-old, whose reasoning was right and whose defect it had already
+ * Taken from the earlier prototype, whose reasoning was right and whose defect it had already
  * fixed: its first table stored accepted friendships twice, one row per
  * direction, and “pending” existed only as an inbox message — deleting the
  * message erased the request without the sender ever knowing.

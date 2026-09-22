@@ -1,7 +1,7 @@
 /**
- * The community markup — ATEM-old's duellist directory.
+ * The community markup — the earlier prototype's duellist directory.
  *
- * Transcribed from its `community/vue.ts` and the design's `community.js`, with
+ * Transcribed from its community screen and its mock-up, with
  * their classes. Left out, because the data behind them does not exist: the rank
  * badge, the derived “title”, and the guild badge on each row — guilds have no
  * module yet. The guild tab of the original screen goes with them, and with it
@@ -31,7 +31,7 @@ function chip(state: CommunityState, filter: CommunityFilter, label: string, cou
 /**
  * What one can do about a relation, in the state it is in.
  *
- * Four states, four different gestures: ATEM-old shipped a single “Add” that
+ * Four states, four different gestures: The earlier prototype shipped a single “Add” that
  * said nothing about a request already sent.
  */
 function actions(one: Duellist, busy: boolean): SafeHtml {
@@ -87,7 +87,7 @@ function row(state: CommunityState, one: Duellist): SafeHtml {
 }
 
 /**
- * The duellist's card, opened from a row — ATEM-old's `PlayerPreview`.
+ * The duellist's card, opened from a row — the earlier prototype's `PlayerPreview`.
  *
  * What it shows is what the row already holds: the card is a closer look, not
  * a second request. The profile is one link further.
