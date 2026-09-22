@@ -90,6 +90,7 @@ export const FR: Record<string, string> = {
   "Ascending": "Croissant",
   "At least 16 characters": "Au moins 16 caractères",
   "ATEM home": "Accueil ATEM",
+  "ATEM is free software, under the AGPL-3.0 license.": "ATEM est un logiciel libre, sous licence AGPL-3.0.",
   "ATK / DEF": "ATK / DEF",
   "ATK": "ATK",
   "Attribute": "Attribut",
