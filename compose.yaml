@@ -1,9 +1,12 @@
 # The full deployment, in one command.
 #
-# `docker compose up` on a blank machine must be enough. It is M0's exit
-# criterion — and precisely what the earlier prototype could not do: its own compose.yaml
-# carried the warning “Dev-only. Not the application ship stack”, and the real
-# deployment took nine manual steps.
+# With the published images — all an instance needs is this file and a .env:
+#   docker compose pull && docker compose up -d
+# From the sources, in a clone of the repository:
+#   docker compose up -d --build
+#
+# ATEM_VERSION picks the release (a tag such as 0.1.0); it defaults to the
+# latest one. See docs/deployment.md.
 
 services:
   db:
@@ -36,6 +39,10 @@ services:
   migrate:
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
+    # The API's image, run once with another command. The build line is the
+    # API's too: a service without one may be pulled before the API's build
+    # has tagged the image, and the second build reuses every cached layer.
+    image: ghcr.io/altagen/atem-api:${ATEM_VERSION:-latest}
     build: { context: ., dockerfile: Containerfile }
     command: ["node", "dist/db/migrate.js"]
     environment:
@@ -50,6 +57,7 @@ services:
     # escalate to.
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
+    image: ghcr.io/altagen/atem-api:${ATEM_VERSION:-latest}
     build: { context: ., dockerfile: Containerfile }
     environment:
       DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD:-atem}@db:5432/atem
@@ -72,6 +80,14 @@ services:
       # compose hands out a different address on every recreation, which is why
       # this is a subnet and not an address.
       ATEM_TRUSTED_PROXIES: ${ATEM_TRUSTED_PROXIES:-10.89.42.0/24}
+      # The tunable ones, documented in .env.example, with the code's own
+      # defaults: without these lines they were settable in .env and read by
+      # nobody — found on 2026-09-22, when the release test hit the sign-up
+      # ceiling it was meant to loosen.
+      ATEM_REGISTER_ATTEMPTS_MAX: ${ATEM_REGISTER_ATTEMPTS_MAX:-5}
+      ATEM_LOGIN_ATTEMPTS_MAX: ${ATEM_LOGIN_ATTEMPTS_MAX:-10}
+      ATEM_DISK_RESERVE_BYTES: ${ATEM_DISK_RESERVE_BYTES:-209715200}
+      ATEM_DB_POOL: ${ATEM_DB_POOL:-10}
     volumes:
       - atem_media:/app/data/media
     depends_on:
@@ -89,6 +105,7 @@ services:
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     cap_add: [CHOWN, NET_BIND_SERVICE, SETGID, SETUID]
+    image: ghcr.io/altagen/atem-web:${ATEM_VERSION:-latest}
     build: { context: ., dockerfile: Containerfile.web }
     ports:
       - "${ATEM_PUBLIC_PORT:-8080}:80"
