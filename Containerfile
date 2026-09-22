@@ -6,7 +6,7 @@
 # the runtime stage is assembled per architecture — its production
 # dependencies are pure JavaScript, with no native module to compile.
 
-FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM node:26-bookworm-slim AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
@@ -40,7 +40,7 @@ RUN node -e "const p=require('/app/packages/shared/package.json'); \
 
 # The production dependencies, for the target platform — pure JavaScript, but
 # installed where they will run all the same.
-FROM node:22-bookworm-slim AS deps
+FROM node:26-bookworm-slim AS deps
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /app
@@ -51,7 +51,7 @@ RUN pnpm install --frozen-lockfile --prod --filter @atem/api...
 
 # ---
 
-FROM node:22-bookworm-slim AS runtime
+FROM node:26-bookworm-slim AS runtime
 LABEL org.opencontainers.image.title="ATEM API" \
       org.opencontainers.image.source="https://github.com/Altagen/ATEM" \
       org.opencontainers.image.licenses="AGPL-3.0-only"
