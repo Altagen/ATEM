@@ -9,6 +9,10 @@ export type DuelStatus = "proposed" | "accepted" | "playing" | "recorded";
 /** Mirrors the server's `DuelSide`. */
 export type DuelSide = {
   player: Duellist | null;
+  /** The account was deleted — its recorded duels stay with the other player. */
+  removed: boolean;
+  /** Whether this side won; `null` until the duel is recorded. */
+  won: boolean | null;
   deck: { id: string | null; name: string | null };
   life: number;
 };
@@ -20,7 +24,7 @@ export type DuelEvent = {
   kind: "start" | "phase" | "turn" | "life";
   turnNumber: number;
   phase: DuelPhase;
-  authorId: string;
+  authorId: string | null;
   playerId: string | null;
   delta: number | null;
   hostLife: number;

@@ -168,6 +168,7 @@ export const FR: Record<string, string> = {
   "Delete for good": "Supprimer définitivement",
   "Delete my account": "Supprimer mon compte",
   "Delete this account?": "Supprimer ce compte ?",
+  "Deleted account": "Compte supprimé",
   "Display name, email address and account details": "Pseudo, adresse email et détails du compte",
   "Download": "Télécharger",
   "Dragon": "Dragon",

@@ -49,7 +49,7 @@ function side(one: DuelSide, verdict: "won" | "lost" | null, isYou: boolean): Sa
       ? html`<span class="user-avatar-badge" role="img" aria-label="${look.label}">${look.icon}</span>`
       : raw("")}
     <div class="duel-side-text">
-      <strong class="${isYou ? "is-you" : ""}">${one.player?.displayName ?? t("A duellist")}</strong>
+      <strong class="${isYou ? "is-you" : ""}">${sideName(one)}</strong>
       <span class="legende">${one.deck.name ?? t("No deck named")}</span>
     </div>
     ${verdict === null
@@ -65,10 +65,15 @@ function side(one: DuelSide, verdict: "won" | "lost" | null, isYou: boolean): Sa
  * won, so `2–0` would need two duels. Ange took it out on 2026-09-19 — counting
  * an evening is the players' business, and this list is what they count from.
  */
-const verdictOf = (duel: Duel, one: DuelSide): "won" | "lost" | null => {
-  if (duel.winnerId === null || one.player === null) return null;
-  return duel.winnerId === one.player.id ? "won" : "lost";
-};
+const verdictOf = (one: DuelSide): "won" | "lost" | null =>
+  one.won === null ? null : one.won ? "won" : "lost";
+
+/**
+ * A side's name: the duellist's — or “deleted account” once it is gone. The
+ * other player keeps the duels they played with them (decided on 2026-09-22).
+ */
+const sideName = (one: DuelSide): string =>
+  one.removed ? t("Deleted account") : one.player?.displayName ?? t("A duellist");
 
 /**
  * A duel in the list: **one word for the person reading**.
@@ -79,7 +84,7 @@ const verdictOf = (duel: Duel, one: DuelSide): "won" | "lost" | null => {
  */
 function duelRow(duel: Duel, fromPast: boolean): SafeHtml {
   const mine = duel.isHost ? duel.host : duel.guest;
-  const outcome = verdictOf(duel, mine);
+  const outcome = verdictOf(mine);
   // The address remembers which list this was opened from.
   return html`<a class="player-card-row-full duel-row"
       href="/duels?duel=${duel.id}${fromPast ? "&past=1" : ""}">
@@ -182,8 +187,12 @@ function withName(sentence: string, name: string, isYou: boolean): SafeHtml {
 
 /** One line of the history, in the words a duel is read in. */
 function eventLine(duel: DuelDetail, event: DuelEvent): SafeHtml {
-  const about = event.playerId === duel.host.player?.id ? duel.host.player : duel.guest.player;
-  const name = about?.displayName ?? t("A duellist");
+  // The side the line is about; an empty `playerId` is the deleted account's.
+  const side = event.playerId !== null && event.playerId === duel.host.player?.id ? duel.host
+    : event.playerId !== null && event.playerId === duel.guest.player?.id ? duel.guest
+      : duel.host.removed ? duel.host : duel.guest;
+  const about = side.player;
+  const name = sideName(side);
   const mine = duel.isHost ? duel.host.player : duel.guest.player;
   const isYou = about !== null && about.id === mine?.id;
   // A phase event says nothing here: the phase column beside it already does.
@@ -220,7 +229,7 @@ function lifeCard(one: DuelSide, options: { mine: boolean; playing: boolean; bus
   return html`<div class="duel-life${options.mine ? " is-mine" : ""}${options.playing ? " is-playing" : ""}">
     <div class="duel-life-who">
       ${look ? html`<span class="user-avatar-badge" role="img" aria-label="${look.label}">${look.icon}</span>` : raw("")}
-      <span class="duel-life-name">${one.player?.displayName ?? t("A duellist")}</span>
+      <span class="duel-life-name">${sideName(one)}</span>
       ${when(options.playing, html`<span class="duel-life-turn">${t("Playing")}</span>`)}
     </div>
     <strong class="duel-life-value" aria-live="polite">${String(one.life)}</strong>
@@ -334,12 +343,12 @@ function victoryHtml(duel: DuelDetail): SafeHtml {
   const winner = duel.host.life === 0 ? duel.guest : duel.host;
   return html`<section class="profile-section-card duel-victory">
     <span class="duel-victory-cup" aria-hidden="true">🏆</span>
-    <h2 class="duel-victory-name">${t("{name} wins", { name: winner.player?.displayName ?? t("A duellist") })}</h2>
-    <p class="legende">${t("{name} is at zero life points.", { name: beaten.player?.displayName ?? t("A duellist") })}</p>
+    <h2 class="duel-victory-name">${t("{name} wins", { name: sideName(winner) })}</h2>
+    <p class="legende">${t("{name} is at zero life points.", { name: sideName(beaten) })}</p>
 
     <div class="duel-victory-decks">
       ${[winner, beaten].map((one) => html`<div class="duel-victory-deck">
-        <span class="legende">${one.player?.displayName ?? t("A duellist")}</span>
+        <span class="legende">${sideName(one)}</span>
         <strong>${one.deck.name ?? t("No deck named")}</strong>
       </div>`)}
     </div>
@@ -408,9 +417,9 @@ export function detailHtml(state: DuelState): SafeHtml {
         <span class="legende">${day(duel.playedOn)}</span>
       </div>
       <div class="duel-row-players">
-        ${side(duel.host, verdictOf(duel, duel.host), duel.isHost)}
+        ${side(duel.host, verdictOf(duel.host), duel.isHost)}
         <span class="duel-versus" aria-hidden="true">⚔️</span>
-        ${side(duel.guest, verdictOf(duel, duel.guest), !duel.isHost)}
+        ${side(duel.guest, verdictOf(duel.guest), !duel.isHost)}
       </div>
       ${when(duel.note !== null && duel.note !== "", html`<p class="showcase-bio">${duel.note}</p>`)}
 
@@ -534,7 +543,7 @@ function resultModal(state: DuelState): SafeHtml {
               class="chip-btn${one.player?.id === result.winnerId ? " is-active" : ""}"
               data-winner="${one.player?.id ?? ""}"
               aria-pressed="${String(one.player?.id === result.winnerId)}">
-            ${one.player?.displayName ?? t("A duellist")}
+            ${sideName(one)}
           </button>`)}
       </div>
       <div class="bloc-champ">

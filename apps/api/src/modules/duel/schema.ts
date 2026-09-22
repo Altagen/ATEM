@@ -18,9 +18,16 @@ export const duels = pgTable(
   "duels",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    /** Who invited, and who was invited. Both are participants, equal afterwards. */
-    hostId: uuid("host_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    guestId: uuid("guest_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    /**
+     * Who invited, and who was invited. Both are participants, equal afterwards.
+     *
+     * `null` once that account is deleted — and only on a recorded duel: the
+     * other player keeps the duel they played, against a “deleted account”
+     * (decided on 2026-09-22). A duel not yet recorded is deleted with the
+     * account instead, since a duel that did not happen leaves no trace.
+     */
+    hostId: uuid("host_id").references(() => users.id, { onDelete: "set null" }),
+    guestId: uuid("guest_id").references(() => users.id, { onDelete: "set null" }),
     /** `proposed` → `accepted` → `playing` → `recorded`. Refusing deletes the row. */
     status: text("status").notNull().default("proposed"),
     /** The day it is played — chosen, not the row's creation: one records it in the evening. */
@@ -72,8 +79,13 @@ export const duels = pgTable(
       "duels_winner_played",
       sql`${t.winnerId} is null or ${t.winnerId} in (${t.hostId}, ${t.guestId})`,
     ),
-    // A recorded duel has its winner, and only a recorded one has it.
-    check("duels_recorded_has_winner", sql`(${t.status} = 'recorded') = (${t.winnerId} is not null)`),
+    // A recorded duel has its winner, and only a recorded one has it — unless
+    // the winner's account was deleted: the key then leaves it empty, and the
+    // empty side is the one that won (`toDuel`).
+    check(
+      "duels_recorded_has_winner",
+      sql`(${t.status} = 'recorded') = (${t.winnerId} is not null or ${t.hostId} is null or ${t.guestId} is null)`,
+    ),
     // A duel being played is somewhere: on a turn, in a phase, with someone to play it.
     check(
       "duels_playing_has_place",
@@ -105,8 +117,8 @@ export const duelEvents = pgTable(
     kind: text("kind").notNull(),
     turnNumber: integer("turn_number").notNull(),
     phase: text("phase").notNull(),
-    /** Who wrote it. */
-    authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    /** Who wrote it — `null` once that account is deleted, like the duel's side. */
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
     /** Who it is about: the turn's player, or whoever lost the life points. */
     playerId: uuid("player_id").references(() => users.id, { onDelete: "set null" }),
     /** Life points taken (negative) or given back (positive), on a `life` event. */

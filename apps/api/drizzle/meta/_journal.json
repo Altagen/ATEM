@@ -127,6 +127,20 @@
       "when": 1790024098200,
       "tag": "0017_premium_northstar",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790058672993,
+      "tag": "0018_quiet_marvel_zombies",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790059367062,
+      "tag": "0019_omniscient_expediter",
+      "breakpoints": true
     }
   ]
 }

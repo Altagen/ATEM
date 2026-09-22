@@ -20,7 +20,15 @@ if (!url) {
 
 const sql = postgres(url, { max: 1 });
 try {
-  const gone = await sql`delete from users where email like '%@example.test'`;
+  const gone = await sql.begin(async (tx) => {
+    // Their duels first, whole: between two test accounts there is nobody to
+    // keep them for, and left to the foreign keys a recorded duel would be
+    // emptied one column at a time and break its own rule mid-way (see
+    // `forgetPlayerDuels`).
+    await tx`delete from duels where host_id in (select id from users where email like '%@example.test')
+                                 or guest_id in (select id from users where email like '%@example.test')`;
+    return tx`delete from users where email like '%@example.test'`;
+  });
   console.log(`purge-e2e-accounts: ${gone.count} test account(s) deleted.`);
 } finally {
   await sql.end();

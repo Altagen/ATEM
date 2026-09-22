@@ -136,6 +136,18 @@ Blue-Eyes” stays true even when that deck is gone.
 > deck screen, which is where people file, not where they read history. Copying
 > the name costs one column and keeps both screens honest.
 
+## When an account is deleted
+
+**The other player keeps the duels they played.** Decided on 2026-09-22: a
+recorded duel is a memory shared by two people, and one of them leaving does
+not take it from the other. The deleted side reads **“deleted account”**; its
+deck name, its life totals and its lines in the history stay. If it was the
+winner, the winner reads as that side still.
+
+**A duel not yet recorded goes with the account** — proposed, accepted or being
+played. It did not happen, and it would otherwise hold the other player's one
+duel under way.
+
 ## A winner, not a score
 
 **A duel has a winner and a loser, and that is what is recorded.** ATEM first

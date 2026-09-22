@@ -8,7 +8,7 @@ export {
   type Duellist, type Profile, type PublicUser, type Visibilities,
 } from "./service.js";
 export {
-  accountCounts, createAccountAsAdmin, deleteAccountAsAdmin, ensureAdministrator, listAccounts,
+  accountCounts, createAccountAsAdmin, onAccountDeletion, deleteAccountAsAdmin, ensureAdministrator, listAccounts,
   registrationOpen, setRegistrationOpen, setSuspended, type AdminAccount,
 } from "./service.js";
 export { identityRoutes } from "./routes.js";

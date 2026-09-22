@@ -269,6 +269,28 @@ export async function setLocale(
  * The catalogue's printings stay: they belong to nobody, and
  * `card_prints.card_passcode` is `set null` for that reason.
  */
+/**
+ * What other modules must do before an account goes, that the foreign keys
+ * cannot say — a condition, not a cascade. Registered where the application is
+ * put together (`app.ts`), so identity depends on nobody: today the duels
+ * forget their unfinished games (`forgetPlayerDuels`).
+ */
+type DeletionListener = (db: Database, userId: string) => Promise<void>;
+const deletionListeners = new Set<DeletionListener>();
+
+export function onAccountDeletion(listener: DeletionListener): void {
+  deletionListeners.add(listener);
+}
+
+/** The erasure itself, whoever asked for it: listeners, attempts, then the row. */
+async function eraseAccount(db: Database, row: UserRow): Promise<void> {
+  await db.transaction(async (tx) => {
+    for (const listener of deletionListeners) await listener(tx as unknown as Database, row.id);
+    await tx.delete(authAttempts).where(eq(authAttempts.bucket, `email:${row.email.toLowerCase()}`));
+    await tx.delete(users).where(eq(users.id, row.id));
+  });
+}
+
 export async function deleteAccount(
   db: Database,
   viewerId: string,
@@ -280,10 +302,7 @@ export async function deleteAccount(
     throw unauthorized("Incorrect password.");
   }
 
-  await db.transaction(async (tx) => {
-    await tx.delete(authAttempts).where(eq(authAttempts.bucket, `email:${row.email.toLowerCase()}`));
-    await tx.delete(users).where(eq(users.id, viewerId));
-  });
+  await eraseAccount(db, row);
 }
 
 export async function getPublicUser(db: Database, userId: string): Promise<PublicUser> {
@@ -787,10 +806,7 @@ export async function setSuspended(db: Database, id: string, suspended: boolean)
  */
 export async function deleteAccountAsAdmin(db: Database, id: string): Promise<AdminAccount> {
   const row = await administeredRow(db, id);
-  await db.transaction(async (tx) => {
-    await tx.delete(authAttempts).where(eq(authAttempts.bucket, `email:${row.email.toLowerCase()}`));
-    await tx.delete(users).where(eq(users.id, id));
-  });
+  await eraseAccount(db, row);
   return toAdminAccount(row);
 }
 

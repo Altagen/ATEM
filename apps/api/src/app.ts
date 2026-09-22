@@ -11,7 +11,7 @@ import type { Database } from "./db/client.js";
 import { AppError, loggableError } from "./platform/errors.js";
 import { attachCallerIp } from "./platform/caller-ip.js";
 import { bodyLimit, csrfGuard, securityHeaders } from "./platform/security.js";
-import { attachViewer, identityRoutes } from "./modules/identity/index.js";
+import { attachViewer, identityRoutes, onAccountDeletion } from "./modules/identity/index.js";
 import { mediaRoutes, referentialRoutes } from "./modules/referential/index.js";
 import { collectionRoutes } from "./modules/collection/index.js";
 import { scanlistRoutes } from "./modules/scanlist/index.js";
@@ -20,10 +20,14 @@ import { playerRoutes } from "./modules/player/index.js";
 import { socialRoutes } from "./modules/social/index.js";
 import { inboxRoutes } from "./modules/inbox/index.js";
 import { adminRoutes } from "./modules/admin/index.js";
-import { duelRoutes } from "./modules/duel/index.js";
+import { duelRoutes, forgetPlayerDuels } from "./modules/duel/index.js";
 
 export function createApp(db: Database) {
   const app = new Hono();
+
+  // What an account's deletion asks of the other modules, beyond the foreign
+  // keys: identity calls these, and knows none of them.
+  onAccountDeletion(forgetPlayerDuels);
 
   app.use("*", securityHeaders);
   app.use("*", bodyLimit(6 * 1024 * 1024));

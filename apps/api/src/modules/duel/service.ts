@@ -25,7 +25,16 @@ export type DuelStatus = "proposed" | "accepted" | "playing" | "recorded";
 
 /** One side of a duel, as the screens read it. */
 export type DuelSide = {
+  /** `null` when the account is not shown — suspended, or deleted (`removed`). */
   player: Duellist | null;
+  /** The account was deleted: the screen says so rather than “a duellist”. */
+  removed: boolean;
+  /**
+   * Whether this side won — `null` until the duel is recorded. Said by the
+   * server because a deleted winner leaves `winnerId` empty: on a recorded
+   * duel, an empty winner is the side whose account is gone.
+   */
+  won: boolean | null;
   deck: { id: string | null; name: string | null };
   life: number;
 };
@@ -36,7 +45,8 @@ export type DuelEvent = {
   kind: "start" | "phase" | "turn" | "life";
   turnNumber: number;
   phase: DuelPhase;
-  authorId: string;
+  /** `null` once the author's account is deleted. */
+  authorId: string | null;
   playerId: string | null;
   delta: number | null;
   hostLife: number;
@@ -71,17 +81,23 @@ const EVENT_NOTE_MAX = 280;
 type DuelRow = typeof duels.$inferSelect;
 
 function toDuel(row: DuelRow, viewerId: string, players: Map<string, Duellist>): Duel {
+  const won = (side: string | null): boolean | null =>
+    row.status !== "recorded" ? null : row.winnerId !== null ? side === row.winnerId : side === null;
   return {
     id: row.id,
     status: row.status as DuelStatus,
     playedOn: row.playedOn,
     host: {
-      player: players.get(row.hostId) ?? null,
+      player: row.hostId ? players.get(row.hostId) ?? null : null,
+      removed: row.hostId === null,
+      won: won(row.hostId),
       deck: { id: row.hostDeckId, name: row.hostDeckName },
       life: row.hostLife,
     },
     guest: {
-      player: players.get(row.guestId) ?? null,
+      player: row.guestId ? players.get(row.guestId) ?? null : null,
+      removed: row.guestId === null,
+      won: won(row.guestId),
       deck: { id: row.guestDeckId, name: row.guestDeckName },
       life: row.guestLife,
     },
@@ -97,7 +113,8 @@ function toDuel(row: DuelRow, viewerId: string, players: Map<string, Duellist>):
 }
 
 async function playersOf(db: Database, rows: DuelRow[]): Promise<Map<string, Duellist>> {
-  const ids = [...new Set(rows.flatMap((row) => [row.hostId, row.guestId]))];
+  const ids = [...new Set(rows.flatMap((row) => [row.hostId, row.guestId]))]
+    .filter((id): id is string => id !== null);
   const profiles = await listProfiles(db, { ids });
   return new Map(profiles.map((profile) => [profile.id, profile]));
 }
@@ -114,6 +131,16 @@ async function own(db: Database, viewerId: string, duelId: string): Promise<Duel
     .limit(1);
   if (!row) throw notFound("Duel not found.");
   return row;
+}
+
+/**
+ * The two players of a duel not yet recorded — always both there: deleting an
+ * account deletes its unfinished duels (`forgetPlayerDuels`). Only a recorded
+ * duel can have lost a side, and no gesture writes on a recorded duel.
+ */
+function seated(row: DuelRow): DuelRow & { hostId: string; guestId: string } {
+  if (row.hostId === null || row.guestId === null) throw notFound("Duel not found.");
+  return { ...row, hostId: row.hostId, guestId: row.guestId };
 }
 
 /** A duel being played, of the caller's. */
@@ -347,7 +374,7 @@ export async function proposeDuel(
 
 /** Accepting: only the invited player, and only while it is an invitation. */
 export async function acceptDuel(db: Database, viewerId: string, duelId: string): Promise<Duel> {
-  const row = await own(db, viewerId, duelId);
+  const row = seated(await own(db, viewerId, duelId));
   if (row.guestId !== viewerId) throw forbidden("Only the invited duellist can accept.");
   if (row.status !== "proposed") throw conflict("This duel is no longer an invitation.");
   // One duel at a time, on both sides of the table.
@@ -558,8 +585,9 @@ export async function changeLife(
  * is not a history.
  */
 export async function dropDuel(db: Database, viewerId: string, duelId: string): Promise<void> {
-  const row = await own(db, viewerId, duelId);
-  if (row.status === "recorded") throw conflict("A recorded duel stays.");
+  const found = await own(db, viewerId, duelId);
+  if (found.status === "recorded") throw conflict("A recorded duel stays.");
+  const row = seated(found);
 
   await db.delete(duels).where(eq(duels.id, row.id));
   await withdraw(db, { userId: row.guestId, kind: "duel_invite", actorId: row.hostId });
@@ -578,9 +606,10 @@ export async function recordDuel(
   duelId: string,
   input: { winnerId: string; note?: string | null },
 ): Promise<Duel> {
-  const row = await own(db, viewerId, duelId);
-  if (row.status === "proposed") throw conflict("This duel has not been accepted yet.");
-  if (row.status === "recorded") throw conflict("This duel already has its result.");
+  const found = await own(db, viewerId, duelId);
+  if (found.status === "proposed") throw conflict("This duel has not been accepted yet.");
+  if (found.status === "recorded") throw conflict("This duel already has its result.");
+  const row = seated(found);
 
   const winnerId = requireUuid(input.winnerId);
   if (winnerId !== row.hostId && winnerId !== row.guestId) {
@@ -683,3 +712,27 @@ export async function duelTally(
 }
 
 export { DUEL_PHASES };
+
+/**
+ * What an account's deletion does to its duels — called by identity before
+ * the account goes (see `onAccountDeletion`). The unfinished ones are deleted:
+ * a duel that did not happen leaves no trace, and the other player is free to
+ * start another. The recorded ones stay, and the foreign keys leave the
+ * deleted side empty: the other player keeps the duel they played, against a
+ * “deleted account” (decided on 2026-09-22).
+ */
+export async function forgetPlayerDuels(db: Database, userId: string): Promise<void> {
+  await db.delete(duels).where(and(
+    or(eq(duels.hostId, userId), eq(duels.guestId, userId)),
+    ne(duels.status, "recorded"),
+  ));
+  /**
+   * The side and the winner are emptied **in one statement**. Left to the
+   * foreign keys, each is its own update, in the order the keys were created:
+   * the winner went first, the side was still there, and the recorded duel
+   * broke its own rule — the deletion failed. Measured on 2026-09-22.
+   */
+  const clearedWinner = sql`case when ${duels.winnerId} = ${userId}::uuid then null else ${duels.winnerId} end`;
+  await db.update(duels).set({ hostId: null, winnerId: clearedWinner }).where(eq(duels.hostId, userId));
+  await db.update(duels).set({ guestId: null, winnerId: clearedWinner }).where(eq(duels.guestId, userId));
+}

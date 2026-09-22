@@ -23,9 +23,9 @@ type Duel = {
   turnNumber: number | null;
   phase: string | null;
   currentPlayerId: string | null;
-  host: { deck: { id: string | null; name: string | null }; life: number; score: number | null };
-  guest: { deck: { id: string | null; name: string | null }; life: number; score: number | null };
-  events?: { kind: string; phase: string; turnNumber: number; delta: number | null; authorId: string; note: string | null }[];
+  host: { deck: { id: string | null; name: string | null }; life: number; player: unknown; removed: boolean; won: boolean | null };
+  guest: { deck: { id: string | null; name: string | null }; life: number; player: unknown; removed: boolean; won: boolean | null };
+  events?: { kind: string; phase: string; turnNumber: number; delta: number | null; authorId: string | null; note: string | null }[];
 };
 
 /** Two friends with a deck each — what a duel needs before the coin. */
@@ -452,4 +452,35 @@ test("a deck is one's own, and its name outlives it", async () => {
   const kept = await duelOf(guest.cookie, duel.id);
   assert.equal(kept.host.deck.name, "Blue-Eyes");
   assert.equal(kept.host.deck.id, null, "the link is gone, the name is not");
+});
+
+test("a deleted account's recorded duels stay with its opponent, its unfinished ones go", async () => {
+  /**
+   * Decided on 2026-09-22: the other player keeps the duel they played, against
+   * a “deleted account”; a duel that did not happen leaves no trace, and does
+   * not keep the other player from starting another.
+   */
+  const table = await accepted("duel-gone");
+  const { host, guest, duel } = table;
+  await req("POST", `/duels/${duel.id}/start`, host.cookie);
+  assert.equal((await req("POST", `/duels/${duel.id}/result`, host.cookie, { winnerId: host.userId })).status, 200);
+
+  // A second, unfinished duel between the same two.
+  const pending = (await (await req("POST", "/duels", guest.cookie, { guestId: host.userId })).json()) as Duel;
+  assert.equal(pending.status, "proposed");
+
+  assert.equal((await req("DELETE", "/auth/me", host.cookie, { password: "Un-Mot-De-Passe-1!" })).status, 200);
+
+  const kept = await duelOf(guest.cookie, duel.id);
+  assert.equal(kept.status, "recorded");
+  assert.equal(kept.host.removed, true);
+  assert.equal(kept.host.player, null);
+  assert.equal(kept.winnerId, null, "the winner was the deleted account");
+  assert.deepEqual([kept.host.won, kept.guest.won], [true, false],
+    "and the screen is still told who won");
+  assert.ok(kept.events?.some((event) => event.authorId === null), "its lines stay, unsigned");
+
+  assert.equal((await req("GET", `/duels/${pending.id}`, guest.cookie)).status, 404, "the unfinished one is gone");
+  const past = (await (await req("GET", "/duels?past=1", guest.cookie)).json()) as { items: { id: string }[] };
+  assert.ok(past.items.some((one) => one.id === duel.id));
 });
