@@ -13,7 +13,7 @@
  * from the same thing, it must read the same.
  */
 import {
-  DECK_ZONE_LIMITS, DECK_ZONES, checkDeckAdd, deckStatus, isExtraDeckCard,
+  DECK_ZONE_CAPACITY, DECK_ZONE_LIMITS, DECK_ZONES, checkDeckAdd, deckStatus, deckZoneSize, isExtraDeckCard,
   parseBanlistStatus, type BanlistStatus, type DeckZone,
 } from "@atem/shared";
 import { t } from "../../platform/i18n/index.js";
@@ -96,35 +96,41 @@ const thumbnail = (url: string | null | undefined, cls = "thumb"): SafeHtml =>
     : html`<div class="thumb-empty ${cls === "thumb" ? "" : cls}"></div>`;
 
 /**
- * The zone counter, with its limits.
+ * The zone counter, with its sizes.
  *
  * It is the only thing you look at while building: how many are missing, and
  * whether you have gone over. `count-full` says “it is full” without shouting;
- * `count-over` shouts, because a deck above the limit is unplayable.
+ * `count-over` shouts, because the zone holds more than it is meant to.
+ *
+ * The denominator is **the size the zone is built towards** — the deck's own
+ * target for the Main. It was the rules' sixty, and a deck aimed at forty read
+ * “40/60” once finished (the maintainer, 2026-09-22).
  */
 function countsBar(deck: DeckDetail, state: DeckState): SafeHtml {
-  return html`<p class="meta-line deck-counts">
-    ${DECK_ZONES.map((zone) => {
-      const { max } = DECK_ZONE_LIMITS[zone];
-      /**
-       * The denominator is the **rules' ceiling**, not the target: it answers
-       * “how many more may I legally put in?”, which does not depend on what
-       * this deck is aiming for. The target decides the shortfall colour only,
-       * and only in the Main — the other two zones have no floor to fall short
-       * of.
-       */
-      const floor = zone === "main" ? deck.targetMain : DECK_ZONE_LIMITS[zone].min;
-      const n = deck.counts[zone];
-      const cls = n > max ? "count-over" : n >= max ? "count-full" : n < floor ? "count-short" : "";
-      return html`<span class="${cls}"
-        >${zoneIcon(zone)} ${ZONE_LABELS[zone]} <strong>${n}</strong>/${max}</span
-      >`;
-    })}
-    ${when(
-      state.savedAt !== null,
-      html`<span class="deck-saved">${t("Saved")}</span>`,
-    )}
-  </p>`;
+  return html`<div class="deck-counts-wrap">
+    <p class="meta-line deck-counts">
+      ${DECK_ZONES.map((zone) => {
+        const size = deckZoneSize(zone, deck.targetMain);
+        const n = deck.counts[zone];
+        const cls = n > size ? "count-over" : n === size ? "count-full" : zone === "main" ? "count-short" : "";
+        return html`<span class="${cls}"
+          >${zoneIcon(zone)} ${ZONE_LABELS[zone]} <strong>${n}</strong>/${size}</span
+        >`;
+      })}
+      <button type="button" class="help-q" id="btn-deck-limits" aria-expanded="${String(state.limitsHelp)}">
+        <span class="help-q-mark" aria-hidden="true">?</span>
+        <span class="help-q-text">${t("Limits")}</span>
+      </button>
+      ${when(
+        state.savedAt !== null,
+        html`<span class="deck-saved">${t("Saved")}</span>`,
+      )}
+    </p>
+    ${when(state.limitsHelp, html`<p class="deck-limits-hint">
+      ${t("The rules: 40 to 60 cards in the Main Deck, up to 15 in the Extra and the Side. Going past them is allowed while you build, and the deck says how many are too many.")}
+      ${t("One hard limit, to protect the server: no zone holds more than {n} cards.", { n: DECK_ZONE_CAPACITY })}
+    </p>`)}
+  </div>`;
 }
 
 const ZONE_LABELS: Record<DeckZone, string> = { main: "Main", extra: "Extra", side: "Side" };
@@ -145,12 +151,20 @@ function deckStatusHtml(deck: DeckDetail): SafeHtml {
   const status = deckStatus(deck.counts, deck.missing, deck.targetMain);
   switch (status.kind) {
     case "over":
+      // Counted from the deck's own size: a deck aimed at forty holding
+      // forty-three has three too many, although sixty would be legal.
       return html`<p class="deck-status deck-status-over">
         ⚠
-        ${t("Too many cards: remove {n} from the {zone}.", {
-          n: status.excess,
-          zone: ZONE_LABELS[status.zone],
-        })}
+        ${status.zone === "main"
+          ? t("Main Deck: {n} too many (aiming for {target}).", {
+            n: status.excess,
+            target: deck.targetMain,
+          })
+          : t("{zone} Deck: {n} too many ({max} at most).", {
+            n: status.excess,
+            zone: ZONE_LABELS[status.zone],
+            max: DECK_ZONE_LIMITS[status.zone].max,
+          })}
       </p>`;
     case "missing":
       // It does not happen while building — the “+” refuses — but it does

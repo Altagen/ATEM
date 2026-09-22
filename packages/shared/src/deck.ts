@@ -31,15 +31,6 @@ export type DeckZone = (typeof DECK_ZONES)[number];
 export const DECK_MAX_COPIES = 3;
 
 /**
- * Zone sizes, as the rules of the game set them.
- *
- * **The maximum is refused, the minimum is signalled.** A sixty-first card in
- * the Main Deck is legal in no situation: we refuse it. A twelve-card deck, on
- * the other hand, is a deck under construction — refusing it would prevent
- * building it. The distinction is the same as for the three-copy rule: what can
- * never be true is forbidden, what is not true yet is said.
- */
-/**
  * The size a player is building the Main Deck **towards** — their own, per deck.
  *
  * The rules give a range, 40 to 60, and both ends are playable: a 40-card deck
@@ -47,11 +38,11 @@ export const DECK_MAX_COPIES = 3;
  * deck is aiming for is the player's decision, and nothing in the cards says it.
  * So it is stored per deck, and it is what “how many left?” counts towards.
  *
- * **A target refuses nothing.** It moves the line between “still building” and
- * “finished”, never the legality: the sixty-first card is refused because the
- * rules refuse it, and a forty-first is accepted whatever the target says.
- * The earlier prototype used its `main_size` as a maximum and showed “limit exceeded” on a
- * perfectly legal deck — the application inventing a rule of its own.
+ * **A target refuses nothing, but it is the deck's size.** Below it, the deck
+ * is still being built; above it, the deck has that many cards too many — a
+ * deck aimed at 40 holding 43 is not a 43-card deck, it is a 40-card deck with
+ * three to take out (the maintainer, 2026-09-22). Both are said, neither is
+ * refused.
  *
  * The default is 40, which is both the most common format and the value that
  * makes the verdict identical to what it was before targets existed.
@@ -65,11 +56,38 @@ export const DECK_MAIN_TARGET_DEFAULT = 40;
  */
 export const DECK_MAIN_TARGET_STEPS = [40, 45, 50, 55, 60] as const;
 
+/**
+ * Zone sizes, as the rules of the game set them.
+ *
+ * **Said, not refused.** A deck is a thing being worked on: a player sorting
+ * out a Side Deck may well hold twenty candidates for a while, and refusing the
+ * sixteenth would only send them to a notepad. So a zone above its size is
+ * reported — how many too many, and where — and the write goes through. What
+ * is refused is `DECK_ZONE_CAPACITY`, which is not a rule of the game.
+ */
 export const DECK_ZONE_LIMITS = {
   main: { min: 40, max: 60 },
   extra: { min: 0, max: 15 },
   side: { min: 0, max: 15 },
 } as const satisfies Record<DeckZone, { min: number; max: number }>;
+
+/**
+ * The one ceiling a zone cannot go past: a hundred cards.
+ *
+ * Not a rule of the game — the game's sizes are only reported — but a bound on
+ * what a deck costs the server: every read of a deck returns all its cards,
+ * and nothing else would stop a script from filling one without end. A hundred
+ * is well beyond any format, so a player only meets it by trying to.
+ */
+export const DECK_ZONE_CAPACITY = 100;
+
+/**
+ * The size a zone is built towards: the deck's own target for the Main, the
+ * rules' maximum for the other two. It is the counter's denominator and the
+ * line past which cards are “too many”.
+ */
+export const deckZoneSize = (zone: DeckZone, targetMain: number): number =>
+  zone === "main" ? targetMain : DECK_ZONE_LIMITS[zone].max;
 
 /**
  * Where a deck stands, in a single verdict.
@@ -82,7 +100,9 @@ export const DECK_ZONE_LIMITS = {
  * **One state at a time, by severity.** Three simultaneous warnings do not get
  * read: we name what prevents play first, what is left to do next.
  *
- * - `over`: above a limit — the deck is refused in tournament.
+ * - `over`: above its size — the Main above its target, the Extra or the Side
+ *   above fifteen. Accepted while building, but not what the deck is meant to
+ *   be.
  * - `missing`: it holds more copies than the collection has. That does not
  *   happen while building (the “+” refuses), but it happens when a card is
  *   later removed from the collection.
@@ -109,7 +129,7 @@ export function deckStatus(
   targetMain: number,
 ): DeckStatus {
   for (const zone of DECK_ZONES) {
-    const excess = counts[zone] - DECK_ZONE_LIMITS[zone].max;
+    const excess = counts[zone] - deckZoneSize(zone, targetMain);
     if (excess > 0) return { kind: "over", zone, excess };
   }
   if (missing > 0) return { kind: "missing", missing };

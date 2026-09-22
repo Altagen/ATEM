@@ -12,7 +12,7 @@
  */
 import { and, desc, eq, inArray } from "drizzle-orm";
 import {
-  checkDeckAdd, DECK_MAX_COPIES, DECK_ZONE_LIMITS, isExtraDeckCard, missingCopies,
+  checkDeckAdd, DECK_MAX_COPIES, DECK_ZONE_CAPACITY, DECK_ZONE_LIMITS, isExtraDeckCard, missingCopies,
   type DeckBlockReason, type DeckZone,
 } from "@atem/shared";
 import type { Database } from "../../db/client.js";
@@ -391,18 +391,19 @@ export async function setDeckCard(
   }
 
   /**
-   * The zone does not overflow.
+   * The zone stays within what the server holds.
    *
-   * A sixty-first card in the Main is legal in no situation; a twelve-card
-   * deck, on the other hand, is a deck in progress. So we refuse the maximum
-   * and let the minimum be said elsewhere.
+   * The game's sizes are not checked here: a zone above them is reported on
+   * the screen, not refused (the maintainer, 2026-09-22). The capacity is the
+   * server's own bound, so a deck cannot be grown without end.
    */
   const zoneTotal =
     rows.reduce((sum, row) => sum + row[`${input.zone}Qty`], 0) -
     (existingRow?.[`${input.zone}Qty`] ?? 0) +
     quantity;
-  if (zoneTotal > DECK_ZONE_LIMITS[input.zone].max) {
-    throw invalidInput(ZONE_FULL_LABELS[input.zone]);
+  if (zoneTotal > DECK_ZONE_CAPACITY) {
+    // Spelled out, like the copies: the translation gate reads literals only.
+    throw invalidInput("A zone holds no more than 100 cards.");
   }
 
   const zones = {
@@ -455,11 +456,4 @@ const BLOCKED_LABELS: Record<DeckBlockReason, string> = {
   banlist: "The banlist does not allow that many.",
   not_owned: "You do not own enough copies of this card.",
   max_copies: "A deck may hold no more than 3 copies of a card.",
-};
-
-/** A full zone is named: “the Main Deck” speaks, “main” does not. */
-const ZONE_FULL_LABELS: Record<DeckZone, string> = {
-  main: "The Main Deck is full — 60 cards maximum.",
-  extra: "The Extra Deck is full — 15 cards maximum.",
-  side: "The Side Deck is full — 15 cards maximum.",
 };

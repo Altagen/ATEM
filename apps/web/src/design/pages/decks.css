@@ -22,8 +22,7 @@
   align-items: center;
   gap: 0.25rem;
 }
-@media (max-width: 900px) {
-  /**
+/**
  * The sentence saying where the deck stands.
  *
  * The counters give numbers; this one gives the verdict, and what is left to
@@ -41,7 +40,8 @@
 .deck-status-ready { color: var(--success); font-weight: 600; }
 .deck-status-over { color: var(--err); font-weight: 600; }
 
-.deck-edit-layout {
+@media (max-width: 900px) {
+  .deck-edit-layout {
     grid-template-columns: 1fr;
   }
 }
@@ -732,6 +732,25 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
  * looked like a forty-card Main.
  */
 .deck-counts .count-short { color: var(--caution); }
+
+/**
+ * What the sizes mean, behind the counter's “?”.
+ *
+ * The rules' sizes are only reported, and the one limit that refuses is the
+ * server's: said once, on demand, so the counter itself stays a counter.
+ */
+.deck-counts-wrap { margin: 0.25rem 0 0.35rem; }
+.deck-counts-wrap .deck-counts { margin: 0; }
+.deck-limits-hint {
+  margin: 0.45rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
 
 /**
  * “Saved”, long enough to read it.

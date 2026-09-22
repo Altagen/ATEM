@@ -429,18 +429,25 @@ and the reasons are worth keeping:
 - the **Extra and Side sizes** are the interesting refusal. Their rule minimum is
   zero, so a target there counts towards nothing; the earlier prototype used them as *maxima* and
   displayed “limit exceeded” on a legal deck — the application inventing a rule of its
-  own. What refuses stays the rules': 15, and 60 in the Main.
+  own. Their size is the rules' 15 — reported when passed, not refused (below).
 - the **Main size aimed at** is the one that carries meaning. The rules allow 40 to 60
   and both ends are playable: a 40-card deck draws its combo more often, a 60-card one
   survives decking out. Nothing in the cards says which a deck is going for — only the
   player does.
 
-**What it changes, and what it does not.** The target moves the line between “still
-building” and “ready”, never legality: the sixty-first card is still refused, the
-forty-first still accepted. The counter keeps the rules' ceiling as its denominator —
-`Main 45/60` answers “how many more may I legally add?”, which no target changes —
-while the sentence carries the intention: “Deck incomplete: 15 more in the Main
-(aiming for 60).”
+**What it changes, and what it does not.** The target is the Main Deck's size: below it
+the deck is still being built, above it the deck has cards too many. The counter counts
+towards it — `Main 45/60` on a deck aimed at 60 — and the sentence carries the
+intention: “Deck incomplete: 15 more in the Main (aiming for 60).”
+
+**Sizes are said, not refused** (the maintainer, 2026-09-22). The counter used to keep
+the rules' sixty as its denominator, and a finished forty-card deck read “40/60”; and
+the sixty-first Main card or sixteenth Extra card was refused. Now a deck aimed at 40
+may hold 43 — “Main Deck: 3 too many (aiming for 40)” — and the Extra or Side may pass
+15 the same way: a deck is worked on, and a Side sorted out of twenty candidates is a
+normal state. The one refusal left is not a rule of the game but the server's bound,
+`DECK_ZONE_CAPACITY`: a hundred cards per zone, so no deck grows without end. The
+counter's “?” says both.
 
 The default is 40, which is both the usual format and the value that makes every
 verdict identical to what it was before targets existed. The migration gives 40 to

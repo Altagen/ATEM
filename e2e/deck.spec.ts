@@ -224,10 +224,65 @@ test("the zone counter carries the limits", async ({ page }) => {
   await stockCollection(page, ["LTGY-FR008"]);
   await newDeck(page, "Counter");
 
+  // The Main counts towards the deck's own target — forty by default — not the
+  // rules' sixty: a finished forty-card deck read “40/60” (the maintainer, 2026-09-22).
   const counter = page.locator(".deck-counts");
-  await expect(counter).toContainText("Main");
-  await expect(counter).toContainText("/60");
-  await expect(counter).toContainText("/15");
+  await expect(counter).toContainText("Main 0/40");
+  await expect(counter).toContainText("Extra 0/15");
+  await expect(counter).toContainText("Side 0/15");
+});
+
+/**
+ * A deck read back with more cards than it is built for.
+ *
+ * Forty-three real cards would take minutes of clicking; what is under test is
+ * what the screen says about a count, so the count is what gets changed, on
+ * the deck's way back from the server.
+ */
+async function overfill(page: import("@playwright/test").Page, counts: { main: number; extra: number; side: number }) {
+  await page.route(/\/api\/decks\/[0-9a-f-]{36}$/, async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const response = await route.fetch();
+    const deck = await response.json();
+    await route.fulfill({ response, json: { ...deck, counts } });
+  });
+  await page.reload();
+}
+
+test("a deck past its target says how many cards are too many, and refuses nothing", async ({ page }) => {
+  // The maintainer, 2026-09-22: 43 cards in a deck aimed at 40 is allowed, and
+  // the deck says there are three too many.
+  await signUp(page);
+  await newDeck(page, "Overfull");
+  await overfill(page, { main: 43, extra: 0, side: 0 });
+
+  await expect(page.locator(".deck-status")).toContainText("Main Deck : 3 en trop (objectif 40)");
+  await expect(page.locator(".deck-counts .count-over")).toContainText("Main 43/40");
+});
+
+test("the Extra and the Side say they are past fifteen", async ({ page }) => {
+  await signUp(page);
+  await newDeck(page, "Crowded Extra");
+  await overfill(page, { main: 40, extra: 17, side: 0 });
+
+  await expect(page.locator(".deck-status")).toContainText("Extra Deck : 2 en trop (15 au maximum)");
+  await expect(page.locator(".deck-counts .count-over")).toContainText("Extra 17/15");
+});
+
+test("the counter's “?” names the server's own limit", async ({ page }) => {
+  // The one limit that refuses is not a rule of the game: it is said, on
+  // demand, so nobody meets it as a surprise.
+  await signUp(page);
+  await newDeck(page, "Limits");
+
+  const help = page.getByRole("button", { name: "Limites" });
+  await expect(help).toHaveAttribute("aria-expanded", "false");
+  await help.click();
+  await expect(help).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator(".deck-limits-hint")).toContainText("plus de 100 cartes");
+
+  await help.click();
+  await expect(page.locator(".deck-limits-hint")).toHaveCount(0);
 });
 
 test("the name is written by itself, with no button", async ({ page }) => {
@@ -1014,8 +1069,7 @@ test("the size a deck aims for is the player's, and it moves the finish line", a
   await expect(status).toContainText("objectif 60");
   await expect(status).toHaveClass(/deck-status-short/);
 
-  // The denominator stays the rules' ceiling: it answers “how many more may I
-  // legally add?”, which the target does not change.
+  // The denominator follows: the Main counts towards the deck's own size.
   await expect(page.locator(".deck-counts")).toContainText("Main 1/60");
 
   // And it survives a reload: it was written, not just displayed.

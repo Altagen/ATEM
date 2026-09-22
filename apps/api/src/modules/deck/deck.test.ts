@@ -5,7 +5,7 @@ import { registerUser } from "../identity/service.js";
 import { upsertCard, upsertPrint } from "../referential/index.js";
 import { adjustQuantity } from "../collection/service.js";
 import { resetResolveQueue } from "../collection/resolve-queue.js";
-import { DECK_MAIN_TARGET_DEFAULT } from "@atem/shared";
+import { DECK_MAIN_TARGET_DEFAULT, DECK_ZONE_CAPACITY } from "@atem/shared";
 import { createDeck, deleteDeck, getDeck, listDecks, updateDeck, setDeckCard } from "./service.js";
 
 const { db } = createTestApp();
@@ -347,31 +347,38 @@ test("a malformed deck identifier is refused, not crashed on", async () => {
   }
 });
 
-test("a full zone refuses the extra card", async () => {
+test("a zone may go past the game's size, not past the server's capacity", async () => {
   /**
-   * The maximum is refused, the minimum is signalled: a sixteenth Extra card is
-   * legal in no situation, whereas a twelve-card deck is a deck under
-   * construction.
+   * The game's sizes are reported on the screen, not refused: a sixteenth
+   * Extra card goes through (the maintainer, 2026-09-22). What stops a zone is
+   * the server's capacity — and its sentence names the same number as the
+   * constant, which a test filling the zone to it keeps honest.
    */
   const user = await newUser();
-  const deck = await createDeck(db, user.id, "Full Extra");
+  const deck = await createDeck(db, user.id, "Crowded Side");
 
-  // Fifteen different Extra cards, one of each.
-  for (let i = 0; i < 15; i += 1) {
+  const fullRows = Math.floor(DECK_ZONE_CAPACITY / 3);
+  for (let i = 0; i < fullRows; i += 1) {
     const passcode = 72000100 + i;
-    await seed(passcode, `DKEX-FR${String(100 + i)}`, { owner: user.id, copies: 1, extra: true });
-    await setDeckCard(db, user.id, deck.id, { passcode, zone: "extra", quantity: 1 });
+    await seed(passcode, `DKCR-FR${String(100 + i)}`, { owner: user.id, copies: 3 });
+    await setDeckCard(db, user.id, deck.id, { passcode, zone: "side", quantity: 3 });
   }
-  assert.equal((await getDeck(db, user.id, deck.id)).counts.extra, 15);
+  const filled = (await getDeck(db, user.id, deck.id)).counts.side;
+  assert.ok(filled > 15, "past the rules' fifteen");
 
-  await seed(72000200, "DKEX-FR200", { owner: user.id, copies: 1, extra: true });
+  const last = 72000100 + fullRows;
+  await seed(last, `DKCR-FR${String(100 + fullRows)}`, { owner: user.id, copies: 3 });
+  const room = DECK_ZONE_CAPACITY - filled;
+  if (room > 0) await setDeckCard(db, user.id, deck.id, { passcode: last, zone: "side", quantity: room });
+  assert.equal((await getDeck(db, user.id, deck.id)).counts.side, DECK_ZONE_CAPACITY);
+
   await assert.rejects(
-    () => setDeckCard(db, user.id, deck.id, { passcode: 72000200, zone: "extra", quantity: 1 }),
-    /Extra Deck is full/,
+    () => setDeckCard(db, user.id, deck.id, { passcode: last, zone: "side", quantity: room + 1 }),
+    new RegExp(`no more than ${DECK_ZONE_CAPACITY} cards`),
   );
 });
 
-test("replacing a quantity in a full zone stays possible", async () => {
+test("replacing a quantity in a zone at its size stays possible", async () => {
   // The total is computed **outside the row being rewritten**: going from 3 to
   // 2 in a maxed-out zone must not be refused as an addition.
   const user = await newUser();
@@ -383,7 +390,7 @@ test("replacing a quantity in a full zone stays possible", async () => {
   }
   assert.equal((await getDeck(db, user.id, deck.id)).counts.side, 15);
 
-  // The zone is full, but we are reducing: that is allowed.
+  // The zone is at its size, but we are reducing: that is allowed.
   const reduced = await setDeckCard(db, user.id, deck.id, {
     passcode: 72000300, zone: "side", quantity: 1,
   });
