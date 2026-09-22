@@ -25,6 +25,14 @@ target outright, for when another instance already holds the port.
 works from a phone on the local network — `pnpm dev:web -- --host` then exposes
 the front, which otherwise listens on the loopback only.
 
+To run the production stack from the sources — the images built from the
+working copy rather than pulled — layer `compose.build.yaml` over
+`compose.yaml`:
+
+```sh
+docker compose -f compose.yaml -f compose.build.yaml up -d --build
+```
+
 The scanner's prefix dictionary, `apps/web/public/ocr/set-prefixes.json`, is
 derived from the catalogue and committed; `pnpm --filter @atem/api
 ocr:build-dict` rebuilds it after a catalogue sync brings new sets.

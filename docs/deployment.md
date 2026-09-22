@@ -2,7 +2,8 @@
 
 One instance is **one community**: a group of friends, a club, a shop. It runs
 as four containers — PostgreSQL, a one-shot migration, the API, and nginx
-serving the front — described by `compose.yaml`.
+serving the front — described by one file, `compose.yaml`, shown in full
+[below](#the-compose-file).
 
 ## Requirements
 
@@ -24,8 +25,8 @@ The published images live on GitHub's container registry:
 ```sh
 mkdir atem && cd atem
 # The two files, from the release you are installing:
-curl -fsSLO https://raw.githubusercontent.com/Altagen/ATEM/v0.1.0/compose.yaml
-curl -fsSL https://raw.githubusercontent.com/Altagen/ATEM/v0.1.0/.env.example -o .env
+curl -fsSLO https://raw.githubusercontent.com/Altagen/ATEM/0.1.0/compose.yaml
+curl -fsSL https://raw.githubusercontent.com/Altagen/ATEM/0.1.0/.env.example -o .env
 ```
 
 Fill in `.env` — at least the four required values:
@@ -57,6 +58,134 @@ signs in with the configured address and password and lands on the console.
 or the database password, compose stops with a message naming what is missing;
 with a weak administrator password, or an administrator address that already
 belongs to a player, the API does. An instance never runs half-configured.
+
+## The compose file
+
+This is `compose.yaml` as the release ships it — the file the install above
+downloads. Nothing in it needs editing: every value comes from `.env`.
+
+<!-- compose.yaml: begin -->
+```yaml
+# ATEM — production deployment, with the published images.
+#
+# This file and a .env (from .env.example) are all an instance needs:
+#   docker compose pull
+#   docker compose up -d
+# ATEM_VERSION picks the release (0.1.0, …); it defaults to the latest one.
+# Everything is explained in docs/deployment.md. To build the images from the
+# sources instead, add compose.build.yaml (see docs/development.md).
+
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    # PostgreSQL starts as root to take ownership of its data directory, then
+    # drops to the postgres user: these capabilities are what that needs.
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    environment:
+      POSTGRES_USER: atem
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — choose the database password}
+      POSTGRES_DB: atem
+    volumes:
+      - atem_pg_data:/var/lib/postgresql/data
+    ports:
+      # On the loopback only: for backups and inspection from the host itself,
+      # never exposed to the network.
+      - "127.0.0.1:${ATEM_DB_PORT:-55432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atem -d atem"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # The database schema, brought to the version's before the API starts —
+  # at every start, so an upgrade migrates by itself.
+  migrate:
+    image: ghcr.io/altagen/atem-api:${ATEM_VERSION:-latest}
+    command: ["node", "dist/db/migrate.js"]
+    restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD}@db:5432/atem
+    depends_on:
+      db: { condition: service_healthy }
+
+  api:
+    image: ghcr.io/altagen/atem-api:${ATEM_VERSION:-latest}
+    restart: unless-stopped
+    # An unprivileged user on a port above 1024: no capability at all.
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    environment:
+      DATABASE_URL: postgres://atem:${POSTGRES_PASSWORD}@db:5432/atem
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required — generate it with “openssl rand -base64 32”}
+      # The one administrator: the configuration wins at every start.
+      ATEM_ADMIN_EMAIL: ${ATEM_ADMIN_EMAIL:?ATEM_ADMIN_EMAIL is required — the administrator's address}
+      ATEM_ADMIN_PASSWORD: ${ATEM_ADMIN_PASSWORD:?ATEM_ADMIN_PASSWORD is required — 16+ characters, upper, lower, digit, special}
+      ATEM_ADMIN_NAME: ${ATEM_ADMIN_NAME:-Admin}
+      ATEM_HOST: 0.0.0.0
+      ATEM_PORT: 3000
+      # Card artworks, on a volume: YGOPRODeck blacklists repeated downloads.
+      ATEM_MEDIA_DIR: /app/data/media
+      # The bundled nginx's range, fixed below, so each visitor is rate-limited
+      # on their own address. Add your reverse proxy's address after it.
+      ATEM_TRUSTED_PROXIES: ${ATEM_TRUSTED_PROXIES:-10.89.42.0/24}
+      ATEM_REGISTER_ATTEMPTS_MAX: ${ATEM_REGISTER_ATTEMPTS_MAX:-5}
+      ATEM_LOGIN_ATTEMPTS_MAX: ${ATEM_LOGIN_ATTEMPTS_MAX:-10}
+      ATEM_DISK_RESERVE_BYTES: ${ATEM_DISK_RESERVE_BYTES:-209715200}
+      ATEM_DB_POOL: ${ATEM_DB_POOL:-10}
+    volumes:
+      - atem_media:/app/data/media
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  web:
+    image: ghcr.io/altagen/atem-web:${ATEM_VERSION:-latest}
+    restart: unless-stopped
+    # nginx binds port 80, then drops its workers to the nginx user.
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, NET_BIND_SERVICE, SETGID, SETUID]
+    ports:
+      - "${ATEM_PUBLIC_PORT:-8080}:80"
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  atem_pg_data:
+  atem_media:
+
+# Fixed, so ATEM_TRUSTED_PROXIES can name it on every machine.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.89.42.0/24
+```
+<!-- compose.yaml: end -->
+
+What it sets up:
+
+- **`db`** — PostgreSQL 16, its data on the `atem_pg_data` volume, reachable
+  from the host only (`127.0.0.1`), for backups.
+- **`migrate`** — runs once at every start, before the API, and brings the
+  schema to the version's: upgrading needs no manual step.
+- **`api`** — the API, as an unprivileged user with no capability; the card
+  artworks on the `atem_media` volume.
+- **`web`** — nginx, serving the front and forwarding `/api/` and `/media/` to
+  the API, on `ATEM_PUBLIC_PORT`. Put your HTTPS reverse proxy in front of it.
+- `restart: unless-stopped`: the instance comes back by itself after a reboot.
+- A fixed network range, `10.89.42.0/24`, so `ATEM_TRUSTED_PROXIES` can name
+  the bundled nginx on every machine.
 
 ## The administrator
 
@@ -164,8 +293,12 @@ migrations have run is not supported — restore the backup instead.
 
 ## Building the images yourself
 
-In a clone of the repository, `docker compose up -d --build` builds both images
-from the sources and runs them, under the same names.
+In a clone of the repository, `compose.build.yaml` adds the build lines to the
+production file; the images keep their names, so the rest of this page holds:
+
+```sh
+docker compose -f compose.yaml -f compose.build.yaml up -d --build
+```
 
 ## Health
 

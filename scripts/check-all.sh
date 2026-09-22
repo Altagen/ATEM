@@ -49,6 +49,7 @@ step "Disjoint test fixtures" node scripts/check-test-fixtures.mjs
 step "Dead CSS" node scripts/check-dead-css.mjs
 step "Unstyled classes" node scripts/check-unstyled-classes.mjs
 step "Dead exports" node scripts/check-dead-exports.mjs
+step "Deployment page" node scripts/check-deployment-doc.mjs
 step "Types" pnpm typecheck
 step "Unit and integration tests" pnpm test
 
