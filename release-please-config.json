@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "bootstrap-sha": "e7e2adac8f6fa0722b519d96441c724aee6692d3",
   "include-v-in-tag": false,
+  "include-v-in-release-name": false,
   "include-component-in-tag": false,
   "packages": {
     ".": {
@@ -75,8 +75,7 @@
           "section": "Style",
           "hidden": true
         }
-      ],
-      "release-as": "0.1.0"
+      ]
     }
   }
 }

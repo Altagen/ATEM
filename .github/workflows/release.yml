@@ -72,8 +72,14 @@ jobs:
     env:
       VERSION: ${{ needs.release-please.outputs.version }}
       TAG: ${{ needs.release-please.outputs.tag }}
-      IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.image.name }}
     steps:
+      # Image references are lowercase only, and the owner is not: the push
+      # survived it (metadata-action lowercases), the SBOM step did not (0.1.0).
+      - name: Name the image
+        env:
+          OWNER: ${{ github.repository_owner }}
+          NAME: ${{ matrix.image.name }}
+        run: echo "IMAGE=ghcr.io/${OWNER,,}/${NAME}" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.release-please.outputs.tag }}
