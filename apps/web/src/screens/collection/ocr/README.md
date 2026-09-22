@@ -28,7 +28,7 @@ Camera → freeze frame → crop SCAN_ZOOM_BAND (CSS must match)
 ### UI contract (recovery-first)
 
 - **Found something useful** → review mode: green band, chips, textbox visible, **no focus** (keyboard stays down).
-- **Nothing reliable** → stay in live camera mode; status “Rien de fiable…”; user recaptures.
+- **Nothing reliable** → stay in live camera mode; the status asks for another capture.
 - **✎ / tap field** → keyboard on demand only.
 - Chips = `filterLogicalScanChoices` (catalogue-backed near-misses only).
 

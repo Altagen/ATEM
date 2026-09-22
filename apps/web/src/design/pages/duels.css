@@ -234,7 +234,7 @@
  * The history folds away.
  *
  * A duel is played on the panel; the log is opened to settle a doubt, not to
- * follow along — Ange, on 2026-09-19.
+ * follow along — The maintainer, on 2026-09-19.
  */
 .duel-log { padding-block: 1rem; }
 .duel-log-summary {
@@ -340,7 +340,7 @@
 /*
  * A recorded duel wears its verdict.
  *
- * Yellow for the winner, red for the loser — Ange, on 2026-09-19. It replaces
+ * Yellow for the winner, red for the loser — The maintainer, on 2026-09-19. It replaces
  * the score, which counted games and therefore counted wrong: `2–0` would need
  * two duels.
  */
@@ -380,7 +380,7 @@
 /*
  * Focus: the board and nothing else, for a phone on the table.
  *
- * The bottom navigation goes with the rest — one taps “Quitter le focus” to
+ * The bottom navigation goes with the rest — one taps “Leave focus” to
  * come back — and the board takes the height it needs without scrolling: the
  * life points are what one reaches for between two attacks.
  */
@@ -452,8 +452,8 @@
   /*
    * Focus, on a phone: everything under everything else.
    *
-   * Nothing is squeezed sideways here — Ange, on 2026-09-19, on scrolling to
-   * read the phases: “pourquoi tu ne fais pas l'un en dessous de l'autre ?”.
+   * Nothing is squeezed sideways here — The maintainer, on 2026-09-19, on scrolling to
+   * read the phases: “why not put one under the other?”.
    * So the path of six chips gives way to the phase one is in, the two life
    * totals stack, and the buttons follow in the order they are used: the phase,
    * the turn, the end of the duel, then leaving.

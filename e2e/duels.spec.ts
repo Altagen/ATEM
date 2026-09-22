@@ -95,7 +95,7 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   await expect(friend.page.locator(".duel-phase.is-current")).toHaveText("Draw Phase");
 
   /**
-   * The phases are moved by the duellist whose turn it is (Ange, 2026-09-19).
+   * The phases are moved by the duellist whose turn it is (the maintainer, 2026-09-19).
    * The coin decides who that is, so the test asks rather than assumes — from
    * the tab that has just seen it fall.
    */
@@ -116,7 +116,7 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   }
 
   /**
-   * Life points are declared by the one who takes them (Ange, 2026-09-19).
+   * Life points are declared by the one who takes them (the maintainer, 2026-09-19).
    * The other duellist's card carries no button at all.
    */
   const theirOwnCard = friend.page.locator(".duel-life.is-mine");
@@ -158,7 +158,7 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
   /**
    * Zero life points ends the duel: the winner's screen takes the panel's
    * place, names the decks, and offers to record — with the score it already
-   * knows (Ange, 2026-09-19).
+   * knows (the maintainer, 2026-09-19).
    */
   await page.locator(".duel-life.is-mine").getByRole("button", { name: "Autre…" }).click();
   await page.locator("#life-amount").fill("8000");
@@ -223,7 +223,7 @@ test("a duel: decks, coin flip, phases, life points, result", async ({ page, bro
 
 test("focus shows the board alone, and the duel ends from it", async ({ page, browser }) => {
   /**
-   * Ange, on a phone: a duel is followed between two hands and a mat, and the
+   * The maintainer, on a phone: a duel is followed between two hands and a mat, and the
    * summary above and the log below are two scrolls from the life points. And
    * after correcting a total off zero there was no way back to the result but
    * to take the points down again.
@@ -300,7 +300,7 @@ test("an invitation can be declined, and leaves nothing behind", async ({ page, 
 
 test("a duel called off elsewhere takes the other duellist back to the list", async ({ page, browser }) => {
   /**
-   * Ange, on 2026-09-19: he called a duel off and the other screen sat there
+   * The maintainer, on 2026-09-19: he called a duel off and the other screen sat there
    * until it was reloaded by hand.
    */
   await signUp(page);

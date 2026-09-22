@@ -102,7 +102,7 @@ const BEFORE_PASSWORD_CHANGE = new Set([...SESSION_ONLY, "POST /auth/me/first-pa
 
 /**
  * The administrator's account reaches the console and its session — nothing a
- * player does (Ange, 2026-09-21: “c'est un admin seulement”). No collection, no
+ * player does (the maintainer, 2026-09-21: “it is an administrator, nothing more”). No collection, no
  * friends, no duel, and no profile to rename or password to change: those
  * come from the configuration, and a change made here would be undone at the
  * next start.

@@ -12,7 +12,7 @@ const { app, db } = createTestApp();
  *
  * The service already receives an identity; these tests check **where it comes
  * from**. That is the question the `ownerId` / `viewerId` seam made explicit
- * (ADR-009), and the one Ange asked: another player must not be able to modify
+ * (ADR-009), and the one the maintainer asked: another player must not be able to modify
  * anything.
  */
 
@@ -72,7 +72,7 @@ test("a deck's full life cycle goes through its routes", async () => {
 
 test("nobody writes into someone else's deck, even knowing its identifier", async () => {
   /**
-   * This is the guarantee Ange asked for. The writing identity comes from the
+   * This is the guarantee the maintainer asked for. The writing identity comes from the
    * **session**, never from the path: knowing a deck's identifier grants no
    * right over it.
    *

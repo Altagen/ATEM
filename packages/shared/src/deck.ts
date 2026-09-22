@@ -180,7 +180,7 @@ export type DeckAddCheck = {
   /**
    * The real ceiling: `min(3, owned)`.
    *
-   * Ange's decision: **a deck is bounded by the collection.** You cannot put in
+   * The maintainer's decision: **a deck is bounded by the collection.** You cannot put in
    * a card you do not have, so a deck is playable by construction. That is what
    * makes the earlier prototype's “owned / missing” computation moot — there is nothing to
    * be missing at the moment you add.

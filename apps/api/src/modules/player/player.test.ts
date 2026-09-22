@@ -58,7 +58,7 @@ test("another duellist reads the profile — and nothing private", async () => {
   /**
    * A profile carries no deck list.
    *
-   * Decided with Ange on 2026-09-18: nothing goes on a profile for the sake of
+   * Decided with the maintainer on 2026-09-18: nothing goes on a profile for the sake of
    * filling it, and one does not look a duellist up to read their shelf.
    */
   assert.equal("decks" in body, false, "a profile is not a shelf");

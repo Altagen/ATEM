@@ -2,7 +2,7 @@
  * What every password field shares: an eye to see what one types, and a
  * confirmation that says it differs while it is typed.
  *
- * Asked for by Ange on 2026-09-22. The eye is installed on **every** password
+ * Asked for by the maintainer on 2026-09-22. The eye is installed on **every** password
  * field of the application by one observer rather than by each screen: a form
  * added tomorrow gets it without anyone remembering to, and the screens that
  * repaint their markup get it back at every paint.

@@ -6,7 +6,7 @@ import {
 test.describe("Collection", () => {
   test("unpinning the search bar gives the phone its second row back", async ({ page }) => {
     /**
-     * Asked for by Ange, who remembered the control from the earlier prototype — and it
+     * Asked for by the maintainer, who remembered the control from the earlier prototype — and it
      * turned out to be the missing half of the gallery complaint.
      *
      * The rail is `sticky` at `top: 0` and 142 px tall, so while it is pinned it
@@ -15,7 +15,7 @@ test.describe("Collection", () => {
      * on a phone because the band follows the scroll; measuring says the
      * opposite, and this test is what says it out loud.
      *
-     * Where the 44 px come from was Ange's answer, not mine: the button sits on
+     * Where the 44 px come from was the maintainer's answer, not mine: the button sits on
      * the **set code row**, not the search one. Both are the same rail, so
      * either would be honest — but at 393 px the search field has 145 px and
      * the set code field 235. Measured after the move: search untouched at 145,
@@ -52,7 +52,7 @@ test.describe("Collection", () => {
     await page.getByRole("button", { name: "Épingler la barre" }).click();
     await toBottom();
 
-    // Two columns, two rows — the view Ange asked for.
+    // Two columns, two rows — the view the maintainer asked for.
     expect(await clearTiles(), "unpinned, the bar scrolls away").toBe(4);
 
     // And the choice is kept: it is a preference, not a gesture to repeat.
@@ -64,7 +64,7 @@ test.describe("Collection", () => {
 
   test("the gallery keeps two columns on a phone, however narrow", async ({ page }) => {
     /**
-     * Reported by Ange: in gallery view the cards were nearly fullscreen, where
+     * Reported by the maintainer: in gallery view the cards were nearly fullscreen, where
      * The earlier prototype showed four — two columns, two rows.
      *
      * The cause was not the tile, which is identical to the earlier prototype's, but the
@@ -104,7 +104,7 @@ test.describe("Collection", () => {
 
   test("in list view, a card's text takes the width instead of stacking", async ({ page }) => {
     /**
-     * Reported by Ange on a phone: the list's rows were as tall as the
+     * Reported by the maintainer on a phone: the list's rows were as tall as the
      * gallery's cards, which defeats the list.
      *
      * Measured on a Pixel 5 before the fix: of 321 px, the three quantity
@@ -144,7 +144,7 @@ test.describe("Collection", () => {
 
   test("arriving at the collection does not raise the keyboard", async ({ page }) => {
     /**
-     * Reported by Ange on a phone: opening the collection to *look* at it put
+     * Reported by the maintainer on a phone: opening the collection to *look* at it put
      * the focus in the set code field, so the keyboard rose over half the
      * screen for a field nobody had asked for. The same defect had already been
      * fixed on the scanner, for the same reason.

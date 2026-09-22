@@ -628,7 +628,7 @@ test("an unreadable level filter does not bring the query down", async () => {
 
 test("a supplied passcode does not fabricate a second printing of the same code", async () => {
   /**
-   * Reported by Ange from the workshop: two rows for the same card, the same
+   * Reported by the maintainer from the workshop: two rows for the same card, the same
    * code displayed twice, and “×2 owned” on each.
    *
    * The passcode path returned a brand-new printing directly — with no rarity,

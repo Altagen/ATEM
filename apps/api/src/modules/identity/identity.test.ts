@@ -327,7 +327,7 @@ test("sign-in attempts are capped, per address and per account", async () => {
 
 test("a taken address is refused without saying it is taken", async () => {
   /**
-   * Asked for by Ange: the screen stays vague, the log keeps the reason. It
+   * Asked for by the maintainer: the screen stays vague, the log keeps the reason. It
    * removes the plain membership test — “is this address registered here?” —
    * that the old wording answered for anyone who asked.
    *

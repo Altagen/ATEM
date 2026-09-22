@@ -28,7 +28,7 @@ export const LIFE_BOUNDS = { min: 0, max: 99_999 } as const;
 /**
  * Half the life points, rounded **up**.
  *
- * “Halve your life points” leaves 2001 on 4001, not 2000: Ange's rule on
+ * “Halve your life points” leaves 2001 on 4001, not 2000: The maintainer's rule on
  * 2026-09-19, and the one that favours the player being asked to pay. Shared so
  * the button and the server agree on the figure.
  */

@@ -9,7 +9,7 @@ import { actionLog, setRegistration } from "./service.js";
 const { app, db } = createTestApp();
 
 /**
- * The console — scoped with Ange on 2026-09-21: one administrator from the
+ * The console — scoped with the maintainer on 2026-09-21: one administrator from the
  * configuration, who only administers; registration open or closed; accounts
  * created, suspended, deleted; and a log of what was done.
  */
@@ -195,7 +195,7 @@ test("the configuration's administrator is the only one, and wins at every start
 
 test("deleting an account flushes everything it held, and nothing the catalogue holds", async () => {
   /**
-   * Ange, 2026-09-22: a deleted account must leave nothing behind — collection,
+   * The maintainer, 2026-09-22: a deleted account must leave nothing behind — collection,
    * scanlists, decks and folders, settings, friends, blocks, inbox, duels —
    * while the catalogue's cards stay, the other players need them. Every table
    * pointing at an account is listed here: a new one forgotten in a cascade

@@ -164,7 +164,7 @@
    * Four columns: cover, name, counts, pill.
    *
    * There were only three for four children, so the pill fell onto an implicit
-   * row, alone, against the left edge. Reported by Ange — the row view not
+   * row, alone, against the left edge. Reported by the maintainer — the row view not
    * being the default one, nobody had looked at it closely enough.
    */
   grid-template-columns: 2rem minmax(0, 1fr) auto auto;
@@ -225,7 +225,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 /* On a phone the head is centred and stacked: cover, name, folder, then the
    actions. Side by side, the name was left a column three letters wide; with
    the cover on the left and the actions on the right, the head read as three
-   pieces with a hole in the middle (Ange, 2026-09-21). */
+   pieces with a hole in the middle (the maintainer, 2026-09-21). */
 @media (max-width: 700px) {
   .deck-sheet-top { flex-direction: column; align-items: center; text-align: center; gap: 0.6rem; }
   .deck-sheet-identity { flex-direction: column; flex: none; gap: 0.5rem; }
@@ -438,7 +438,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 }
 
 /* ── The move banner ───────────────────────────────────────────────────────
- * Drive's “Move here” mode, proposed by Ange: you navigate, and the current
+ * Drive's “Move here” mode, proposed by the maintainer: you navigate, and the current
  * screen designates the destination. It sticks to the top to stay reachable
  * after scrolling down a long list — without it in view, you would no longer
  * know a move is under way.
@@ -580,7 +580,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 .decks-toolbar-build{flex-shrink:0;white-space:nowrap;margin-left:auto}.btn-sm {
   font-size:.8rem;
   padding:.3rem .55rem;
-}/* Every deck wears the card back (Ange, 2026-09-21): the class carries its
+}/* Every deck wears the card back (the maintainer, 2026-09-21): the class carries its
    picture, and the cover's own class its size. */
 .deck-cover-default {
   display: block;
@@ -808,7 +808,7 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
   font:inherit;padding:.25rem;display:flex;gap:.65rem;align-items:center;position:relative;
 }
 /* The sheet's tiles are buttons too: without the reset they wore the
-   browser's grey (Ange, 2026-09-21). */
+   browser's grey (the maintainer, 2026-09-21). */
 .deck-coll-tile .tile-open,
 .deck-sheet-tile .tile-open{display:block;width:100%;border:0;padding:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
 .deck-open-actions{margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--border,#2a3344)}

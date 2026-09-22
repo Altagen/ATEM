@@ -41,7 +41,7 @@ const toPublic = (row: UserRow): PublicUser => ({
 const randomTag = () => String(Math.floor(Math.random() * 10000)).padStart(4, "0");
 
 /**
- * May anyone create an account here? The instance's one setting (Ange,
+ * May anyone create an account here? The instance's one setting (the maintainer,
  * 2026-09-21): open, or only the administrator creates accounts.
  */
 export async function registrationOpen(db: Database): Promise<boolean> {
@@ -130,7 +130,7 @@ async function insertAccount(
      * The refusal does not say **why**, the log does.
      *
      * “That address is already in use” hands an attacker a membership test for
-     * any address they care to try. Asked for by Ange: the screen stays vague,
+     * any address they care to try. Asked for by the maintainer: the screen stays vague,
      * the operator keeps the real reason.
      *
      * Be clear about what this does and does not buy. It removes the plain
@@ -215,7 +215,7 @@ export async function authenticate(
  * account stops being shown as online.
  *
  * Presence used to outlive the session: whoever signed out stayed “online”
- * for the whole window, which told the others something false (Ange,
+ * for the whole window, which told the others something false (the maintainer,
  * 2026-09-21). Nothing else reads `lastSeenAt`, so clearing it loses nothing.
  */
 export async function signOut(db: Database, userId: string): Promise<void> {
@@ -352,7 +352,7 @@ export async function getProfile(db: Database, ownerId: string): Promise<Profile
  * the session guard. Five minutes is the window: an open tab asks for the inbox
  * every few seconds, so someone reading a deck stays well inside it, and a tab
  * closed or left in the background drops out soon enough to mean something.
- * Fifteen minutes showed people online long after they had gone (Ange,
+ * Fifteen minutes showed people online long after they had gone (the maintainer,
  * 2026-09-21).
  */
 export type Duellist = Profile & { isOnline: boolean };
@@ -409,7 +409,7 @@ export async function listProfiles(
  *
  * Suspended accounts answer like absent ones: a relation cannot be built with
  * an account that is not there. The administrator's neither: it is nobody's
- * friend, and nobody's opponent (Ange, 2026-09-21).
+ * friend, and nobody's opponent (the maintainer, 2026-09-21).
  */
 export async function activePlayerId(db: Database, userId: string): Promise<string | null> {
   const [row] = await db
@@ -553,7 +553,7 @@ export async function changePassword(
  * The first password an account chooses, after the administrator set one.
  *
  * No current password is asked: the session was opened with it minutes ago,
- * and asking again proves nothing more (Ange, 2026-09-22). That is also why it
+ * and asking again proves nothing more (the maintainer, 2026-09-22). That is also why it
  * is **only** open to an account that must change its password — for anyone
  * else, a session alone must never be enough to change it.
  */
@@ -814,7 +814,7 @@ export async function deleteAccountAsAdmin(db: Database, id: string): Promise<Ad
  * Makes the configuration's administrator true in the database — at every
  * start.
  *
- * Asked for by Ange on 2026-09-21: **one** administrator, whose credentials are
+ * Asked for by the maintainer on 2026-09-21: **one** administrator, whose credentials are
  * written in the configuration, as code. So the configuration wins: a changed
  * password there is the password here at the next start, and any other account
  * found holding the role loses it.

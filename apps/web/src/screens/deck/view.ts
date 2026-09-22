@@ -132,7 +132,7 @@ const ZONE_LABELS: Record<DeckZone, string> = { main: "Main", extra: "Extra", si
 /**
  * Where the deck stands, in one sentence.
  *
- * Ange: “we are at 4/60, could we say ‘Deck incomplete’ or something like
+ * The maintainer: “we are at 4/60, could we say ‘Deck incomplete’ or something like
  * that?”. `Main 4/60` is a number: you have to know the forty-card rule to know
  * whether it is good. The sentence says what is left to do, in cards, so that
  * nobody has to subtract in their head.
@@ -389,7 +389,7 @@ function deckPill(deck: DeckSummary): SafeHtml {
 /**
  * A deck's face: the card back, for every deck.
  *
- * The server used to pick the most played card; Ange, on 2026-09-21, found it
+ * The server used to pick the most played card; the maintainer, on 2026-09-21, found it
  * read as a random card and asked for the earlier prototype's placeholder instead. The
  * stylesheet paints it, so there is nothing to load.
  */
@@ -560,7 +560,7 @@ function editHtml(state: DeckState, deck: DeckDetail): SafeHtml {
       <div class="deck-edit-actions">
         <!--
           No save button, and that is intended.
-          Ange: “either you update everything or you update nothing, but not
+          The maintainer: “either you update everything or you update nothing, but not
           just half of it”. Cards leave at every “±”; the name leaves when the
           typing settles and when the field hands focus back. The counts bar
           says “Saved” in both cases.

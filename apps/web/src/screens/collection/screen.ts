@@ -446,7 +446,7 @@ export async function collectionScreen(
      *
      * Without this, removing the last card of an unidentified row left
      * “1 awaiting identification” on screen until a full reload — a number that
-     * no longer matched anything. Reported by Ange after deleting a card made
+     * no longer matched anything. Reported by the maintainer after deleting a card made
      * up on purpose.
      */
     await refreshPending();
@@ -464,7 +464,7 @@ export async function collectionScreen(
      * pill sits next to the name — in gallery view, it is a star on the
      * thumbnail. Only the button was toggled by hand: the pill appeared only at
      * the next repaint, so the screen gave two different answers about the same
-     * fact. Ange read it as a favourite that had not been saved, which is the
+     * fact. The maintainer read it as a favourite that had not been saved, which is the
      * reasonable conclusion — it had been, though, and it did come back after a
      * reload.
      *

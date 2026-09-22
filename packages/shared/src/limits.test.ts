@@ -20,7 +20,7 @@ test("the length is counted as the server counts it, in UTF-16 units", () => {
 });
 
 test("halving life points rounds up, in the payer's favour", () => {
-  // Ange's rule on 2026-09-19: 4001 halved leaves 2001, not 2000.
+  // The maintainer's rule on 2026-09-19: 4001 halved leaves 2001, not 2000.
   assert.equal(halvedLife(8000), 4000);
   assert.equal(halvedLife(4001), 2001);
   assert.equal(halvedLife(1), 1, "one point is not lost by halving");

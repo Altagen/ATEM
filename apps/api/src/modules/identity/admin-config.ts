@@ -1,7 +1,7 @@
 /**
  * The administrator, as the configuration declares it.
  *
- * Ange, 2026-09-21: one administrator, with credentials “as code”, written in
+ * The maintainer, 2026-09-21: one administrator, with credentials “as code”, written in
  * the configuration. No fallback, like `JWT_SECRET`: an instance without an
  * administrator cannot close its registration or suspend anyone, and one with a
  * default password has an administrator anybody can be. So a missing value

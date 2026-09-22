@@ -73,7 +73,7 @@ export async function changePasswordScreen(root: HTMLElement): Promise<void> {
     for (const control of form.querySelectorAll("input, button")) (control as HTMLInputElement).disabled = true;
     try {
       // The session is the proof: the administrator's password is not asked
-      // again — it was typed to get here (Ange, 2026-09-22).
+      // again — it was typed to get here (the maintainer, 2026-09-22).
       const { user } = await api<{ user: PublicUser }>("/auth/me/first-password", {
         method: "POST",
         body: { newPassword: fresh.value },

@@ -631,7 +631,7 @@ export async function resolveStatus(
 /**
  * How many copies of a card, **across all printings**.
  *
- * This is the rule Ange set for decks: we count by card, not by set code. Three
+ * This is the rule the maintainer set for decks: we count by card, not by set code. Three
  * Blue-Eyes as `LOB-FR001`, `MAGO-FR001` and `SDBE-FR001` make three Blue-Eyes
  * — that is what the three-copy rule looks at, and what bounds a deck.
  *

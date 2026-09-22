@@ -122,7 +122,7 @@ modules' entire public surface. One more gate: `check-outbound.mjs`.
 **Scanning was tried on physical cards on 2026-09-10**, on a phone, over the local
 network. It was the last point no test could cover: no test browser has a camera,
 and the OCR settings had been measured without the gesture's ergonomics being
-measured. Ange's verdict: “the user experience is very comfortable”.
+measured. The maintainer's verdict: “the user experience is very comfortable”.
 
 Three defects found there, and nowhere else:
 
@@ -145,7 +145,7 @@ clean instead of a special case: a batch's “−1” decrements its line, floor
 and cannot reach the collection — there is no path. The line stays visible at zero,
 to show what you just cancelled; it is dropped at save time.
 
-**Nothing survives without explicit confirmation** (Ange's decision): no
+**Nothing survives without explicit confirmation** (the maintainer's decision): no
 `localStorage`, no half-state found again three days later without knowing what it
 holds. The draft survives in-app navigation and dies with the tab.
 
@@ -252,7 +252,7 @@ Neither prevents building a deck. *Folders and the gallery shipped on 2026-09-12
 
 ### A deck's sheet — 2026-09-13
 
-Proposed by Ange, taken from the earlier prototype (`renderDetail`): **opening a deck shows it**.
+Proposed by the maintainer, taken from the earlier prototype (`renderDetail`): **opening a deck shows it**.
 A reading page built like the collection — cover, name, folder, counts, status
 sentence, search, list or gallery, zone tabs — and a pencil at the top right leading
 to the workshop, `?workshop=1` in the address.
@@ -276,7 +276,7 @@ at the next render. The collection screen had the same defect, silently.
 
 ### Deck audit — 2026-09-13
 
-Run at Ange's request, before closing. Three dead surfaces removed, and two touch
+Run at the maintainer's request, before closing. Three dead surfaces removed, and two touch
 targets enlarged.
 
 **`notes`.** The route accepted it, validated it, wrote it to the database — and no
@@ -300,7 +300,7 @@ screen included. It is a global decision, not a touch-up of the decks page.
 
 ### Moving: “here”, and drag and drop — 2026-09-13
 
-Ange, about the destination picker shipped the day before: “rather than having a menu
+The maintainer, about the destination picker shipped the day before: “rather than having a menu
 and selecting the tree in a drop-down (which gets super long when you have lots of
 folders) just do it like Google Drive”. Rightly, and it was step 3's weak point: a
 drop-down grows with the number of folders, and it forces you to **picture** the tree
@@ -315,7 +315,7 @@ A deliberate consequence: **the destination also disappears from the creation
 window**. The deck is born where you are looking, and moves afterwards like
 everything else. The same drop-down was there, with the same defect.
 
-**Defect found by Ange the next day**: “drag and drop doesn't work in list mode?”.
+**Defect found by the maintainer the next day**: “drag and drop doesn't work in list mode?”.
 The attribute had not been set on the deck row — a replacement that had failed
 silently — and **both drag tests looked at the gallery**. A view without a test
 breaks in silence: rows now have two, including a folder dragged into another.
@@ -343,7 +343,7 @@ departures, each for a reason:
 2. **The search crosses folders.** Searching “dragon” and finding nothing because you
    are in the wrong folder is a wrong answer to a simple question. Each result then
    says where it comes from.
-3. **A window replaces `window.prompt`** to create a deck — asked for by Ange. It
+3. **A window replaces `window.prompt`** to create a deck — asked for by the maintainer. It
    carried the name **and** the destination, which a native prompt cannot do, and the
    deck is born where you are looking rather than created then moved.
 
@@ -381,7 +381,7 @@ takes the whole tree despite the non-cascading `parent_id`.
 
 ### Deck previews — 2026-09-12 *(step 1 of 3 of the decks page)*
 
-Ange: “can we tackle the deck page with folders and card previews?”. Split in three:
+The maintainer: “can we tackle the deck page with folders and card previews?”. Split in three:
 previews, then the folder foundation, then the explorer.
 
 **The cover is derived, not chosen.** the earlier prototype had a `cover_url` column — so a picker
@@ -397,7 +397,7 @@ thumbnail.
 
 ### The workshop's status sentence — 2026-09-12
 
-Ange: “we are at 4/60, could we say ‘Deck incomplete’ or something like that? we had
+The maintainer: “we are at 4/60, could we say ‘Deck incomplete’ or something like that? we had
 a few things like that in the earlier prototype”. The earlier prototype had two (“unsaved”, “limit exceeded”);
 our deck list already carried a “Ready / Incomplete” pill, but the workshop said
 nothing.
@@ -422,7 +422,7 @@ size, a Side size and a link to the banlist. **Only one of the five was transpos
 and the reasons are worth keeping:
 
 - the **folder** is not chosen here: filing a deck is a move, and moving is a mode you
-  navigate — Ange's own design, better than a drop-down that makes you picture the
+  navigate — The maintainer's own design, better than a drop-down that makes you picture the
   tree instead of looking at it;
 - the **banlist** has no table on this side, and a link to nothing is worse than no
   link;
@@ -461,10 +461,10 @@ Cards are written **at every “±”**, right away. There is no “unsaved” s
 The earlier prototype worked on a draft: its workshop kept the deck in memory, displayed “unsaved”
 and waited for a button. The transcription brought back the button without the
 draft — hence a “Save” that only touched the name, and a “Nothing to save” right after
-Ange had removed cards. Enough to believe the removal had been thrown away; it had
+The maintainer had removed cards. Enough to believe the removal had been thrown away; it had
 not.
 
-Renaming the button “Rename” was not enough, and Ange put a finger on what remained:
+Renaming the button “Rename” was not enough, and the maintainer put a finger on what remained:
 “it is odd UX to validate the cards automatically but not the name… either you update
 everything or you update nothing, but not just half of it”. **So the workshop no
 longer has any save button**: cards leave at the “±”, the name leaves when the typing
@@ -478,11 +478,11 @@ Emptied, the field takes the deck's name back rather than sending an empty strin
 server would refuse: a deck always has a name.
 
 **The notion of a draft is still wanted** (“we would need the notion of a *draft* to
-explain that a deck is not finished”, Ange) but it answers another need: saying that
+explain that a deck is not finished”, the maintainer) but it answers another need: saying that
 a deck is **being designed**, not that its cards are waiting to be written. To be
 designed separately.
 
-**Two rules decided by Ange**, which close two gaps found in the earlier prototype:
+**Two rules decided by the maintainer**, which close two gaps found in the earlier prototype:
 
 - **A deck counts cards, not printings.** Three Blue-Eyes across three set codes
   remain three Blue-Eyes. That is what makes the ceiling expressible in the
@@ -505,7 +505,7 @@ every write.
 
 ## The repository moves to English — 2026-09-14 to 16
 
-“Everything must be in English, it is a project that will go on GitHub”, Ange. Six
+“Everything must be in English, it is a project that will go on GitHub”, the maintainer. Six
 batches, each with every gate and the full test suite green: the translation key
 (1), `packages/shared` (2), `apps/api` (3), `apps/web` and the URLs (4), end-to-end
 tests, scripts and configuration (5), documentation (6). Commit messages were
@@ -555,7 +555,7 @@ played in person, it does not referee one.
 - The turn, phase by phase — draw, standby, main 1, battle, main 2, end — and
   life points taken in the phase under way
 - A result either player records once: the winner, never a score — a score
-  counts games, and two games are two duels (Ange, 2026-09-19)
+  counts games, and two games are two duels (the maintainer, 2026-09-19)
 - A history both write into, kept whole: the coin, every phase, every turn,
   every life change
 - Each deck kept by identifier **and** by name, so the history reads after a
@@ -584,7 +584,7 @@ phases, life points — and each finds it on their profile. ✅ Measured by
 **Presence without a permanent connection.** `users.last_seen_at`, stamped by the
 session guard at most once a minute, and read as “active in the last five
 minutes”; signing out clears it. *(Fifteen minutes until 2026-09-21: people
-showed online long after they had gone.)* Decided with Ange on 2026-09-18: a live connection would be
+showed online long after they had gone.)* Decided with the maintainer on 2026-09-18: a live connection would be
 exact, and held open for every visitor, to answer a question that only needs to be
 roughly right — is it worth asking them for a duel now.
 - Viewable public profile — *started on 2026-09-17*: your own profile (avatar,
@@ -616,7 +616,7 @@ collections while respecting their visibility settings.
    event and who caused it, never the sentence — the earlier prototype stored the wording, so
    an inbox read in English kept the French of the day it arrived.
 4. **Tournaments.** Depends on duels AND guilds.
-5. **Administration.** ✅ *done on 2026-09-21*, reduced with Ange from the earlier prototype's
+5. **Administration.** ✅ *done on 2026-09-21*, reduced with the maintainer from the earlier prototype's
    console to a host's needs. **One** administrator, declared in the configuration
    (`ATEM_ADMIN_EMAIL`, `ATEM_ADMIN_PASSWORD`, `ATEM_ADMIN_NAME`) and made true at
    every start; it only administers — out of the directory, without a profile,
@@ -673,7 +673,7 @@ image, and the remote-URL fallback is gone.
 
 ## Foundation before M2 — laid on 2026-09-11
 
-Breakdown asked for by Ange: “which needs come before the others?”
+Breakdown asked for by the maintainer: “which needs come before the others?”
 
 **The missing foundation was not the account, it was the distinction between *owner*
 and *viewer*.** See ADR-009. It is the only point whose cost grows with every feature
@@ -684,7 +684,7 @@ Done:
 
 - `ownerId` / `viewerId` separated in every `collection` signature; `scanlist` only
   knows `viewerId` — an undecided batch is private by nature;
-- this iteration's access rule, decided by Ange: no RBAC, any session **reads** any
+- this iteration's access rule, decided by the maintainer: no RBAC, any session **reads** any
   inventory, only the owner **writes**;
 - account deletion, with the inventory of what goes — including `auth_attempts`,
   which does not cascade but whose key carries the address.

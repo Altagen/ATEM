@@ -659,7 +659,7 @@
 }
 
 /* A card with no artwork shows the earlier prototype's card back, not a “?”: a card whose
-   picture is missing is still a card (Ange, 2026-09-21). */
+   picture is missing is still a card (the maintainer, 2026-09-21). */
 .thumb-empty {
   width: 52px;
   height: 76px;
@@ -726,7 +726,7 @@
 /**
  * On a narrow screen, the card's text takes the whole width.
  *
- * Reported by Ange: in list view the rows were as tall as the gallery's cards,
+ * Reported by the maintainer: in list view the rows were as tall as the gallery's cards,
  * which defeats the list. Measured on a Pixel 5: of 321 px, the three quantity
  * buttons took 143 and the text was left with **92** — so the title wrapped in
  * two and each attribute fell onto its own line, five of them. 215 px per card,
@@ -771,7 +771,7 @@
  * The base rule is `auto-fill, minmax(150px, 1fr)`, which needs 316 px to fit
  * two. A Pixel 5 gives the grid 321: it passes, by five pixels. A slightly
  * narrower phone, or the same one with the text zoomed, falls to a **single**
- * column and the card fills the screen — which is what Ange reported.
+ * column and the card fills the screen — which is what the maintainer reported.
  *
  * Whether two cards fit side by side is not something to leave to five pixels,
  * so the phone states it. Nothing is lost by forcing it: the column picker
@@ -1031,10 +1031,10 @@
   max-width: 100%;
   max-height: 100%;
   min-height: 0;
-  --inspect-part-fiche: 0.55;
+  --inspect-part-sheet: 0.55;
   --inspect-gap: clamp(1.25rem, 3.5cqw, 3.25rem);
   --inspect-h: min( 94vh, calc((100cqw - var(--inspect-gap) - 0.75rem) / 1.236) );
-  --inspect-fiche: calc(var(--inspect-h) * var(--inspect-part-fiche));
+  --inspect-sheet: calc(var(--inspect-h) * var(--inspect-part-sheet));
   font-size: clamp(0.8rem, calc(var(--inspect-h) / 62), 1.35rem);
 }
 
@@ -1596,7 +1596,7 @@
    * `apps/web` left `flex-wrap: wrap` and a `min-width: 12rem` on the search:
    * 389px of requested width for 363 available on a 390 phone. The “⋮” and the
    * scanlists link therefore went to an almost empty second row — forty pixels
-   * of height for two targets. Ange: “it takes a lot of vertical pixels for
+   * of height for two targets. The maintainer: “it takes a lot of vertical pixels for
    * nothing in the bar”.
    *
    * The earlier prototype's collection sheet carried these rules from the start.
@@ -1622,7 +1622,7 @@
    * vertical space is scarcest is the one that needs the control most.
    *
    * What that note got right is that 44 px had to come from somewhere: at 393 px
-   * the search field has only 145. Ange's answer was to take them from the other
+   * the search field has only 145. The maintainer's answer was to take them from the other
    * row instead — the set code field has 235 px there — and that is where the
    * button now lives, for every screen size. One control, one place.
    */

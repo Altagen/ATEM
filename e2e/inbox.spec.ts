@@ -85,7 +85,7 @@ test("declining leaves nothing behind, on either side", async ({ page, browser }
 
 test("the badge appears on its own, without reloading the page", async ({ page, browser }) => {
   /**
-   * Ange, on 2026-09-19: he was on another screen when a request arrived and
+   * The maintainer, on 2026-09-19: he was on another screen when a request arrived and
    * had to refresh to see it. The count is asked for every five seconds now.
    */
   await signUp(page);

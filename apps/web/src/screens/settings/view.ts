@@ -57,21 +57,21 @@ function backButton(): SafeHtml {
 function menuRow(view: SettingsView, icon: string, title: string, hint: string, danger = false): SafeHtml {
   return html`<button type="button" class="settings-menu-row-btn${danger ? " danger" : ""}"
           data-target-view="${view}">
-    <div class="rangee">
-      <span class="emblemette" aria-hidden="true">${icon}</span>
+    <div class="inline-row">
+      <span class="emblem" aria-hidden="true">${icon}</span>
       <div>
-        <strong class="valeur is-discrete">${title}</strong>
-        <span class="legende">${hint}</span>
+        <strong class="value-text is-discrete">${title}</strong>
+        <span class="caption">${hint}</span>
       </div>
     </div>
-    <span class="emblemette is-discrete" aria-hidden="true">›</span>
+    <span class="emblem is-discrete" aria-hidden="true">›</span>
   </button>`;
 }
 
 function rootPanel(state: SettingsState): SafeHtml {
   return html`<div class="${panelClass(state, "root")}">
-    <h1 class="titre-section">⚙️ ${t("Settings")}</h1>
-    <p class="legende">${t("Your account, your password and your data.")}</p>
+    <h1 class="panel-heading">⚙️ ${t("Settings")}</h1>
+    <p class="caption">${t("Your account, your password and your data.")}</p>
     <div class="settings-menu-card-list">
       ${menuRow("account", "👤", t("Account"), t("Display name, email address and account details"))}
       ${menuRow("security", "🔐", t("Password"), t("Change the password you sign in with"))}
@@ -102,32 +102,32 @@ function accountPanel(state: SettingsState): SafeHtml {
   return html`<div class="${panelClass(state, "account")}">
     ${backButton()}
     <div class="settings-card-frame">
-      <h2 class="titre-section">👤 ${t("Account")}</h2>
+      <h2 class="panel-heading">👤 ${t("Account")}</h2>
 
-      <form class="bloc-champ" id="form-display-name">
-        <label class="champ-libelle" for="input-display-name">${t("Display name")}</label>
+      <form class="field-block" id="form-display-name">
+        <label class="field-label" for="input-display-name">${t("Display name")}</label>
         <div class="settings-detail-row">
-          <input type="text" id="input-display-name" class="search-input-gaming is-nue" minlength="2"
+          <input type="text" id="input-display-name" class="search-input-gaming is-bare" minlength="2"
                  maxlength="32" autocomplete="nickname" value="${account?.displayName ?? ""}" required />
-          <span class="legende">#${account?.tag ?? "—"}</span>
-          <button type="submit" class="btn-showcase-primary-full is-moyen is-auto">${t("Rename")}</button>
+          <span class="caption">#${account?.tag ?? "—"}</span>
+          <button type="submit" class="btn-showcase-primary-full is-medium is-auto">${t("Rename")}</button>
         </div>
-        <p class="legende">${t("Your number stays the same unless someone already has it under the new name.")}</p>
+        <p class="caption">${t("Your number stays the same unless someone already has it under the new name.")}</p>
       </form>
 
-      <div class="bloc-champ">
-        <span class="champ-libelle">${t("Email address")}</span>
+      <div class="field-block">
+        <span class="field-label">${t("Email address")}</span>
         <div class="settings-detail-row">
-          <span class="valeur" id="current-email">${account?.email ?? "—"}</span>
-          <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-open-email">
+          <span class="value-text" id="current-email">${account?.email ?? "—"}</span>
+          <button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-open-email">
             ${t("Change email address")}
           </button>
         </div>
       </div>
 
-      <div class="bloc-champ">
-        <span class="champ-libelle">${t("Account created")}</span>
-        <span class="valeur">${created}</span>
+      <div class="field-block">
+        <span class="field-label">${t("Account created")}</span>
+        <span class="value-text">${created}</span>
       </div>
     </div>
   </div>`;
@@ -163,14 +163,14 @@ function privacyPanel(state: SettingsState): SafeHtml {
   return html`<div class="${panelClass(state, "privacy")}">
     ${backButton()}
     <div class="settings-card-frame">
-      <h2 class="titre-section">👁️ ${t("Privacy")}</h2>
-      <p class="legende">${t("Your profile stays visible to every duellist; your scanlists stay yours alone.")}</p>
-      <div class="bloc-champ">
-        <span class="champ-libelle">🗃️ ${t("Who may look at my collection")}</span>
+      <h2 class="panel-heading">👁️ ${t("Privacy")}</h2>
+      <p class="caption">${t("Your profile stays visible to every duellist; your scanlists stay yours alone.")}</p>
+      <div class="field-block">
+        <span class="field-label">🗃️ ${t("Who may look at my collection")}</span>
         ${visibilityChoice("collection", chosen?.collection)}
       </div>
-      <div class="bloc-champ">
-        <span class="champ-libelle">🃏 ${t("Who may look at my decks")}</span>
+      <div class="field-block">
+        <span class="field-label">🃏 ${t("Who may look at my decks")}</span>
         ${visibilityChoice("decks", chosen?.decks)}
       </div>
     </div>
@@ -181,28 +181,28 @@ function securityPanel(state: SettingsState): SafeHtml {
   return html`<div class="${panelClass(state, "security")}">
     ${backButton()}
     <div class="settings-card-frame">
-      <h2 class="titre-section">🔐 ${t("Password")}</h2>
-      <p class="legende">
+      <h2 class="panel-heading">🔐 ${t("Password")}</h2>
+      <p class="caption">
         ${t("Changing it signs you out everywhere else. This device stays signed in.")}
       </p>
       <form id="form-password">
-        <div class="bloc-champ">
-          <label class="champ-libelle" for="input-current-password">${t("Current password")}</label>
-          <input type="password" id="input-current-password" class="search-input-gaming is-nue"
+        <div class="field-block">
+          <label class="field-label" for="input-current-password">${t("Current password")}</label>
+          <input type="password" id="input-current-password" class="search-input-gaming is-bare"
                  autocomplete="current-password" required />
         </div>
-        <div class="bloc-champ">
-          <label class="champ-libelle" for="input-new-password">${t("New password")}</label>
-          <input type="password" id="input-new-password" class="search-input-gaming is-nue"
+        <div class="field-block">
+          <label class="field-label" for="input-new-password">${t("New password")}</label>
+          <input type="password" id="input-new-password" class="search-input-gaming is-bare"
                  autocomplete="new-password" required />
           <div id="password-meter-host"></div>
         </div>
-        <div class="bloc-champ">
-          <label class="champ-libelle" for="input-confirm-password">${t("Confirm the new password")}</label>
-          <input type="password" id="input-confirm-password" class="search-input-gaming is-nue"
+        <div class="field-block">
+          <label class="field-label" for="input-confirm-password">${t("Confirm the new password")}</label>
+          <input type="password" id="input-confirm-password" class="search-input-gaming is-bare"
                  autocomplete="new-password" required />
         </div>
-        <button type="submit" class="btn-showcase-primary-full is-moyen is-auto">${t("Change the password")}</button>
+        <button type="submit" class="btn-showcase-primary-full is-medium is-auto">${t("Change the password")}</button>
       </form>
     </div>
   </div>`;
@@ -238,21 +238,21 @@ function exportPanel(state: SettingsState): SafeHtml {
   const spec = CSV_EXPORT_FORMATS.find((format) => format.id === state.exportFormat)!;
   return html`<div class="${panelClass(state, "export")}">
     ${backButton()}
-    <div class="bloc-champ">
-      <h2 class="titre-section">⬇️ ${t("Export my collection")}</h2>
-      <p class="legende">${t("Every card, with its quantity, in a file other tools can read.")}</p>
+    <div class="field-block">
+      <h2 class="panel-heading">⬇️ ${t("Export my collection")}</h2>
+      <p class="caption">${t("Every card, with its quantity, in a file other tools can read.")}</p>
     </div>
 
     <p class="export-lead">
       ${state.ownedCount === null
-        ? html`<span class="legende">${t("Reading the collection…")}</span>`
+        ? html`<span class="caption">${t("Reading the collection…")}</span>`
         : html`<strong>${state.ownedCount === 1
             ? t("1 printing")
             : t("{n} printings", { n: state.ownedCount })}</strong>`}
     </p>
 
-    <div class="bloc-champ">
-      <span class="champ-libelle">${t("File format")}</span>
+    <div class="field-block">
+      <span class="field-label">${t("File format")}</span>
       <div class="radio-cards">
         ${CSV_EXPORT_FORMATS.map(
           (format) => html`<label class="radio-card${state.exportFormat === format.id ? " is-selected" : ""}">
@@ -267,12 +267,12 @@ function exportPanel(state: SettingsState): SafeHtml {
       </div>
     </div>
 
-    <div class="bloc-champ">
-      <span class="champ-libelle">${t("Columns")} — <code>${spec.filename}</code></span>
+    <div class="field-block">
+      <span class="field-label">${t("Columns")} — <code>${spec.filename}</code></span>
       <pre class="export-preview">${spec.columns.join(spec.separator)}</pre>
     </div>
 
-    <a class="btn-showcase-primary-full is-moyen is-auto" id="btn-export-run"
+    <a class="btn-showcase-primary-full is-medium is-auto" id="btn-export-run"
        href="/api/collection/export?format=${state.exportFormat}" download="${spec.filename}">
       ⬇️ ${t("Download")}
     </a>
@@ -331,13 +331,13 @@ function importPanel(state: SettingsState): SafeHtml {
   const file = state.importFile;
   return html`<div class="${panelClass(state, "import")}">
     ${backButton()}
-    <div class="bloc-champ">
-      <h2 class="titre-section">⬆️ ${t("Import a collection")}</h2>
-      <p class="legende">${t("A CSV file made by ATEM, ScanFlip or Cardmarket, or a JSON scanlist export.")}</p>
+    <div class="field-block">
+      <h2 class="panel-heading">⬆️ ${t("Import a collection")}</h2>
+      <p class="caption">${t("A CSV file made by ATEM, ScanFlip or Cardmarket, or a JSON scanlist export.")}</p>
     </div>
 
-    <div class="bloc-champ">
-      <span class="champ-libelle">${t("File")}</span>
+    <div class="field-block">
+      <span class="field-label">${t("File")}</span>
       <!--
         The browser's own file field is kept — it is what opens the picker and what
         a keyboard reaches — but not shown: it writes “Choose File / No file
@@ -350,11 +350,11 @@ function importPanel(state: SettingsState): SafeHtml {
       <label for="import-file" class="btn import-file-button">
         📄 ${file ? t("Choose another file") : t("Choose a file")}
       </label>
-      <p class="legende">${t("Headers are recognised by their usual names — set_code, Card Number, QTY… Only the set code column is required.")}</p>
+      <p class="caption">${t("Headers are recognised by their usual names — set_code, Card Number, QTY… Only the set code column is required.")}</p>
     </div>
 
-    <div class="bloc-champ">
-      <span class="champ-libelle">${t("What to do with the cards you already own")}</span>
+    <div class="field-block">
+      <span class="field-label">${t("What to do with the cards you already own")}</span>
       <div class="radio-cards">
         <label class="radio-card${state.importMode === "merge" ? " is-selected" : ""}">
           <input type="radio" name="import-mode" value="merge" ${state.importMode === "merge" ? raw("checked") : raw("")} />
@@ -382,11 +382,11 @@ function importPanel(state: SettingsState): SafeHtml {
           </p>
           ${errorList(file.preview.errors)}
           ${when(state.importMode === "replace",
-            html`<p class="legende-danger">${t("In Replace mode, every card this file does not mention goes back to zero copies.")}</p>`)}`
-        : html`<p class="legende">${t("No file read yet.")}</p>`}
+            html`<p class="caption-danger">${t("In Replace mode, every card this file does not mention goes back to zero copies.")}</p>`)}`
+        : html`<p class="caption">${t("No file read yet.")}</p>`}
     </div>
 
-    <button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-import-run"
+    <button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-import-run"
             ${file && file.preview.rows.length > 0 && !state.importBusy ? raw("") : raw("disabled")}>
       ${state.importBusy ? t("Importing…") : html`⬆️ ${t("Import")}`}
     </button>
@@ -407,14 +407,14 @@ function historyPanel(state: SettingsState): SafeHtml {
   const items = state.history;
   return html`<div class="${panelClass(state, "history")}">
     ${backButton()}
-    <div class="bloc-champ">
-      <h2 class="titre-section">📜 ${t("Import history")}</h2>
-      <p class="legende">${t("Your latest imports, whichever device you made them from.")}</p>
+    <div class="field-block">
+      <h2 class="panel-heading">📜 ${t("Import history")}</h2>
+      <p class="caption">${t("Your latest imports, whichever device you made them from.")}</p>
     </div>
     ${items === null
-      ? html`<p class="legende">${t("Loading…")}</p>`
+      ? html`<p class="caption">${t("Loading…")}</p>`
       : items.length === 0
-        ? html`<p class="legende">${t("No import yet. This history fills up with the first file you import.")}</p>`
+        ? html`<p class="caption">${t("No import yet. This history fills up with the first file you import.")}</p>`
         : html`<div class="admin-table-container">
             <table class="admin-table">
               <thead>
@@ -427,7 +427,7 @@ function historyPanel(state: SettingsState): SafeHtml {
                   <td data-col="${t("Date")}">${new Date(item.createdAt).toLocaleString(locale())}</td>
                   <td data-col="${t("Result")}">
                     <span>
-                    <span class="etat is-ok">${(item.imported) === 1 ? t("1 imported") : t("{n} imported", { n: item.imported })}</span>
+                    <span class="state-text is-ok">${(item.imported) === 1 ? t("1 imported") : t("{n} imported", { n: item.imported })}</span>
                     ${when(item.removed > 0, html` · ${(item.removed) === 1 ? t("1 back to zero") : t("{n} back to zero", { n: item.removed })}`)}
                     ${when(item.failed > 0, html` · ${(item.failed) === 1 ? t("1 in error") : t("{n} in error", { n: item.failed })}`)}</span>
                   </td>
@@ -442,29 +442,29 @@ function dangerPanel(state: SettingsState): SafeHtml {
   const count = state.ownedCount === null ? "—" : String(state.ownedCount);
   return html`<div class="${panelClass(state, "danger")}">
     ${backButton()}
-    <div class="zone-danger">
-      <h2 class="zone-danger-titre">⚠️ ${t("Danger zone")}</h2>
-      <p class="zone-danger-avertissement">${t("The actions below are final.")}</p>
+    <div class="danger-zone">
+      <h2 class="danger-zone-title">⚠️ ${t("Danger zone")}</h2>
+      <p class="danger-zone-warning">${t("The actions below are final.")}</p>
 
-      <div class="bloc-champ">
-        <h3 class="titre-menu">🗑️ ${t("Erase my collection")}</h3>
-        <p class="legende-danger">
+      <div class="field-block">
+        <h3 class="menu-title">🗑️ ${t("Erase my collection")}</h3>
+        <p class="caption-danger">
           ${state.ownedCount === 1
             ? t("Removes the only printing in your collection. Your decks are kept, and will say what they can no longer field.")
             : t("Removes all {n} printings from your collection. Your decks are kept, and will say what they can no longer field.", { n: count })}
         </p>
-        <button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-open-clear"
+        <button type="button" class="btn-action-danger-red is-medium is-auto" id="btn-open-clear"
                 ${state.ownedCount === 0 ? raw("disabled") : raw("")}>
           🗑️ ${t("Erase the collection")}
         </button>
       </div>
 
-      <div class="bloc-champ is-suivant">
-        <h3 class="titre-menu">💀 ${t("Delete my account")}</h3>
-        <p class="legende-danger is-collee">
+      <div class="field-block is-next">
+        <h3 class="menu-title">💀 ${t("Delete my account")}</h3>
+        <p class="caption-danger is-flush">
           ${t("Immediately, with no retention period: your collection, your decks, your folders and your batches disappear with it.")}
         </p>
-        <button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-open-delete">
+        <button type="button" class="btn-action-danger-red is-medium is-auto" id="btn-open-delete">
           💀 ${t("Delete my account")}
         </button>
       </div>
@@ -482,26 +482,26 @@ function clearModal(state: SettingsState): SafeHtml {
   if (state.modal !== "clear") return html``;
   const exact = state.clearWord.trim().toLowerCase() === "collection";
   return html`<div class="deck-modal-backdrop" id="settings-modal-backdrop"></div>
-  <div class="deck-modal modal-carte is-danger" role="dialog" aria-modal="true"
+  <div class="deck-modal modal-card is-danger" role="dialog" aria-modal="true"
        aria-labelledby="clear-title">
-    <div class="modal-danger-entete">
-      <span class="emblemette" aria-hidden="true">⚠️</span>
-      <h2 class="titre-section" id="clear-title">${t("Erase the collection")}</h2>
+    <div class="modal-danger-head">
+      <span class="emblem" aria-hidden="true">⚠️</span>
+      <h2 class="panel-heading" id="clear-title">${t("Erase the collection")}</h2>
     </div>
-    <p class="modal-danger-intro">
+    <p class="modal-danger-lead">
       ${state.ownedCount === 1
         ? t("This erases the only printing in your collection.")
         : t("This erases all {n} printings in your collection.", {
             n: state.ownedCount === null ? "—" : String(state.ownedCount),
           })}
     </p>
-    <form id="form-clear" class="encadre-recopie">
+    <form id="form-clear" class="retype-frame">
       <label for="input-clear-word">${t("Type “collection” to confirm")}</label>
-      <input type="text" id="input-clear-word" class="search-input-gaming is-nue" autocomplete="off"
+      <input type="text" id="input-clear-word" class="search-input-gaming is-bare" autocomplete="off"
              value="${state.clearWord}" />
       <div class="deck-modal-foot">
         <button type="button" class="btn" id="settings-modal-cancel">${t("Cancel")}</button>
-        <button type="submit" class="btn-action-danger-red is-moyen is-auto" ${exact ? raw("") : raw("disabled")}>
+        <button type="submit" class="btn-action-danger-red is-medium is-auto" ${exact ? raw("") : raw("disabled")}>
           ${t("Erase")}
         </button>
       </div>
@@ -513,20 +513,20 @@ function deleteModal(state: SettingsState): SafeHtml {
   if (state.modal !== "delete") return html``;
   const phrase = deletionPhrase();
   return html`<div class="deck-modal-backdrop" id="settings-modal-backdrop"></div>
-  <div class="deck-modal modal-carte is-danger" role="dialog" aria-modal="true"
+  <div class="deck-modal modal-card is-danger" role="dialog" aria-modal="true"
        aria-labelledby="delete-title">
-    <div class="modal-danger-entete">
-      <span class="emblemette" aria-hidden="true">💀</span>
-      <h2 class="titre-section" id="delete-title">${t("Delete my account")}</h2>
+    <div class="modal-danger-head">
+      <span class="emblem" aria-hidden="true">💀</span>
+      <h2 class="panel-heading" id="delete-title">${t("Delete my account")}</h2>
     </div>
-    <form id="form-delete" class="encadre-recopie">
+    <form id="form-delete" class="retype-frame">
       <label for="input-delete-phrase">
         ${t("Type “{phrase}” to confirm", { phrase })}
       </label>
-      <input type="text" id="input-delete-phrase" class="search-input-gaming is-nue" autocomplete="off"
+      <input type="text" id="input-delete-phrase" class="search-input-gaming is-bare" autocomplete="off"
              value="${state.deletion.phrase}" />
       <label for="input-delete-password">${t("Your password")}</label>
-      <input type="password" id="input-delete-password" class="search-input-gaming is-nue"
+      <input type="password" id="input-delete-password" class="search-input-gaming is-bare"
              autocomplete="current-password" value="${state.deletion.password}" />
       <label class="menu-check">
         <input type="checkbox" id="input-delete-ack"${state.deletion.acknowledged ? raw(" checked") : raw("")} />
@@ -534,7 +534,7 @@ function deleteModal(state: SettingsState): SafeHtml {
       </label>
       <div class="deck-modal-foot">
         <button type="button" class="btn" id="settings-modal-cancel">${t("Cancel")}</button>
-        <button type="submit" class="btn-action-danger-red is-moyen is-auto"
+        <button type="submit" class="btn-action-danger-red is-medium is-auto"
                 ${deletionReady(state) ? raw("") : raw("disabled")}>
           ${t("Delete my account")}
         </button>
@@ -580,32 +580,32 @@ function emailModal(state: SettingsState): SafeHtml {
       <h2 id="email-title">✉️ ${t("Change email address")}</h2>
     </div>
     <form id="form-email" class="deck-modal-body">
-      <div class="bloc-champ">
-        <span class="champ-libelle">${t("Current email address")}</span>
-        <span class="valeur">${state.account?.email ?? "—"}</span>
+      <div class="field-block">
+        <span class="field-label">${t("Current email address")}</span>
+        <span class="value-text">${state.account?.email ?? "—"}</span>
       </div>
-      <div class="bloc-champ">
-        <label class="champ-libelle" for="input-new-email">${t("New email address")}</label>
-        <input type="email" id="input-new-email" class="search-input-gaming is-nue" maxlength="254"
+      <div class="field-block">
+        <label class="field-label" for="input-new-email">${t("New email address")}</label>
+        <input type="email" id="input-new-email" class="search-input-gaming is-bare" maxlength="254"
                autocomplete="email" value="${draft.email}" required />
       </div>
-      <div class="bloc-champ">
-        <label class="champ-libelle" for="input-confirm-email">${t("Confirm the new email address")}</label>
-        <input type="email" id="input-confirm-email" class="search-input-gaming is-nue" maxlength="254"
+      <div class="field-block">
+        <label class="field-label" for="input-confirm-email">${t("Confirm the new email address")}</label>
+        <input type="email" id="input-confirm-email" class="search-input-gaming is-bare" maxlength="254"
                autocomplete="off" value="${draft.confirm}" required />
-        <p class="legende" id="email-mismatch" role="alert"${emailMismatch(state) ? raw("") : raw(" hidden")}>
+        <p class="caption" id="email-mismatch" role="alert"${emailMismatch(state) ? raw("") : raw(" hidden")}>
           ${t("The two addresses do not match.")}
         </p>
       </div>
-      <div class="bloc-champ">
-        <label class="champ-libelle" for="input-email-password">${t("Your password")}</label>
-        <input type="password" id="input-email-password" class="search-input-gaming is-nue"
+      <div class="field-block">
+        <label class="field-label" for="input-email-password">${t("Your password")}</label>
+        <input type="password" id="input-email-password" class="search-input-gaming is-bare"
                autocomplete="current-password" value="${draft.password}" required />
       </div>
 
       <div class="deck-modal-foot">
         <button type="button" class="btn" id="settings-modal-cancel">${t("Cancel")}</button>
-        <button type="submit" class="btn-showcase-primary-full is-moyen is-auto"
+        <button type="submit" class="btn-showcase-primary-full is-medium is-auto"
                 ${emailChangeReady(state) ? raw("") : raw("disabled")}>
           ${t("Change email address")}
         </button>

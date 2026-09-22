@@ -40,7 +40,7 @@
 
 .friend-star-fixed { color: var(--gold); font-size: 0.95rem; line-height: 1; }
 
-/* .status-dot sert à Communauté, Ma Guilde et Profil : elle appartient au chrome. */
+/* .status-dot serves several screens: it belongs to the shared chrome. */
 .status-dot {
   width: 8px;
   height: 8px;

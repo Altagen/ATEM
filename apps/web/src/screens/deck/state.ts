@@ -108,7 +108,7 @@ export type DeckModal =
  * **Moving is not a window, it is a mode.** A tree drop-down grows with the
  * number of folders and forces you to picture the tree instead of looking at
  * it; here you navigate normally, and “Move here” drops at the place you have
- * in front of you. That is Google Drive's gesture, proposed by Ange, and it is
+ * in front of you. That is Google Drive's gesture, proposed by the maintainer, and it is
  * the only one that keeps touch navigation as the single way to designate a
  * place.
  */
@@ -283,7 +283,7 @@ export function inDeck(passcode: number): number {
  * Counts copies **per card**, all printings taken together.
  *
  * The API returns printings: three Blue-Eyes across three set codes make three
- * rows. A deck counts cards — that is the rule Ange laid down, and the one that
+ * rows. A deck counts cards — that is the rule the maintainer laid down, and the one that
  * governs the three-copy ceiling. So we add up without losing the rows, which
  * keep the code actually owned.
  */

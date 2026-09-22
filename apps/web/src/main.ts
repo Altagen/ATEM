@@ -123,7 +123,7 @@ registerFallback((root) => {
  * - no session: the sign-in, which brings you back where you were going;
  * - a password set by the administrator: its change, and nothing else, until
  *   the account is its owner's;
- * - the administrator: the console — it does not play (Ange, 2026-09-21);
+ * - the administrator: the console — it does not play (the maintainer, 2026-09-21);
  * - a player: everything but the console, which answers as if it did not exist.
  */
 guardWith((route) => {

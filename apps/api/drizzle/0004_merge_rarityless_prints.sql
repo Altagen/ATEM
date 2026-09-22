@@ -4,7 +4,7 @@
 -- passcode was provided, **without consulting the local index** and with no
 -- rarity. A code already resolved as “Common” therefore ended up with a second
 -- printing of the same code and language, with an empty rarity — and the
--- collection held rows on both. Reported by Ange from the workshop: the same card
+-- collection held rows on both. Reported by the maintainer from the workshop: the same card
 -- twice, the same code displayed twice.
 --
 -- The code is fixed; this defect ran, so the repair ships with the fix.

@@ -37,20 +37,20 @@ function chip(state: CommunityState, filter: CommunityFilter, label: string, cou
 function actions(one: Duellist, busy: boolean): SafeHtml {
   const inert = busy ? raw(" disabled") : raw("");
   if (one.friendStatus === "friends") {
-    return html`<button type="button" class="btn-showcase-secondary is-petit is-auto"
+    return html`<button type="button" class="btn-showcase-secondary is-small is-auto"
             data-remove="${one.id}"${inert}>${t("Remove friend")}</button>`;
   }
   if (one.friendStatus === "pending_sent") {
-    return html`<button type="button" class="btn-showcase-secondary is-petit is-auto"
+    return html`<button type="button" class="btn-showcase-secondary is-small is-auto"
             data-remove="${one.id}"${inert}>⌛ ${t("Cancel request")}</button>`;
   }
   if (one.friendStatus === "pending_received") {
-    return html`<button type="button" class="btn-showcase-primary-full is-petit is-auto"
+    return html`<button type="button" class="btn-showcase-primary-full is-small is-auto"
             data-accept="${one.id}"${inert}>${t("Accept")}</button>
-      <button type="button" class="btn-showcase-secondary is-petit is-auto"
+      <button type="button" class="btn-showcase-secondary is-small is-auto"
               data-remove="${one.id}"${inert}>${t("Decline")}</button>`;
   }
-  return html`<button type="button" class="btn-showcase-primary-full is-petit is-auto"
+  return html`<button type="button" class="btn-showcase-primary-full is-small is-auto"
           data-add="${one.id}"${inert}>${t("➕ Add friend")}</button>`;
 }
 
@@ -79,7 +79,7 @@ function row(state: CommunityState, one: Duellist): SafeHtml {
     </div>
     <div class="player-row-actions">
       ${blocked
-        ? html`<button type="button" class="btn-showcase-secondary is-petit is-auto"
+        ? html`<button type="button" class="btn-showcase-secondary is-small is-auto"
                   data-unblock="${one.id}"${busy ? raw(" disabled") : raw("")}>${t("Unblock")}</button>`
         : actions(one, busy)}
     </div>
@@ -116,7 +116,7 @@ function previewHtml(state: CommunityState, one: Duellist): SafeHtml {
             <span></span>
             <div class="showcase-actions">
               ${actions(one, busy)}
-              <a class="btn-showcase-secondary is-petit is-auto" href="/profile?user=${one.id}">${t("View profile")}</a>
+              <a class="btn-showcase-secondary is-small is-auto" href="/profile?user=${one.id}">${t("View profile")}</a>
             </div>
             <span></span>
             <div class="showcase-actions">

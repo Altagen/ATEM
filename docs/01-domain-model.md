@@ -125,7 +125,7 @@ codes**, a single one ends with letters after its digits — `BLAR-EN10K`, whose
 `BLAR-EN10` does not exist. Retrying without the suffix only after the exact code
 fails would therefore never touch a legitimate code.
 
-**Ange's decision on 2026-09-10: we do not do it.** The case only comes up when
+**The maintainer's decision on 2026-09-10: we do not do it.** The case only comes up when
 copying a code from the wiki instead of reading it on the card, which is not the
 gesture the application serves. The limit is noted here so it is recognised if it
 comes up, rather than diagnosed again.
@@ -267,7 +267,7 @@ ImportJob                   -- M3, owned by `data` (R15)
 
 The model above was compared with the code, entity by entity. Each gap was settled one
 way or the other — the document follows the code when the code carries a decision
-taken since, the code must follow the document when the code is wrong. Decided by Ange,
+taken since, the code must follow the document when the code is wrong. Decided by the maintainer,
 who delegated the recommendation for each line.
 
 | # | 2026-09-09 model | As built | Decision and reason |

@@ -232,7 +232,7 @@ test("the zone counter carries the limits", async ({ page }) => {
 
 test("the name is written by itself, with no button", async ({ page }) => {
   /**
-   * Ange: “it is odd UX to validate the cards automatically but not the name…
+   * The maintainer: “it is odd UX to validate the cards automatically but not the name…
    * either you update everything or you update nothing, but not just half of
    * it”. You type, you touch nothing else, and it is written.
    */
@@ -248,7 +248,7 @@ test("the name is written by itself, with no button", async ({ page }) => {
 
 test("the workshop has no save button", async ({ page }) => {
   /**
-   * Reported three times by Ange, in three ways. The button answered nothing
+   * Reported three times by the maintainer, in three ways. The button answered nothing
    * when the name had not changed; called “Enregistrer” next to cards written at
    * the “±”, it suggested they were waiting; and renamed “Renommer”, it left
    * one half of the screen to confirm by hand while the other went by itself.
@@ -263,7 +263,7 @@ test("the workshop has no save button", async ({ page }) => {
 
 test("the workshop says where the deck stands, not only how many", async ({ page }) => {
   /**
-   * Ange: “we are at 4/60, could we say ‘Deck incomplete’ or something like
+   * The maintainer: “we are at 4/60, could we say ‘Deck incomplete’ or something like
    * that?”. The counter is a number: you have to know the forty-card rule to
    * read it. The sentence carries it, and says what is left to do.
    */
@@ -331,7 +331,7 @@ test("the screen says the cards are saved", async ({ page }) => {
 });
 
 test("placed cards survive a reload", async ({ page }) => {
-  // The question Ange was asking, and that the screen did not answer.
+  // The question the maintainer was asking, and that the screen did not answer.
   await signUp(page);
   await stockCollection(page, ["LTGY-FR008", "LTGY-FR008"]);
   await newDeck(page, "Persistence");
@@ -392,7 +392,7 @@ test("an emptied name overwrites nothing: the field takes the deck's back", asyn
 
 test("the name field wears the application's styling", async ({ page }) => {
   /**
-   * Reported by Ange: “a grey background that clashes with the UI”. The
+   * Reported by the maintainer: “a grey background that clashes with the UI”. The
    * `.menu-field` rule only targeted `select`; an `input` in the same block fell
    * back on the browser's default grey. The earlier prototype had the same flaw, and
    * transcribing it faithfully brought it along.
@@ -413,7 +413,7 @@ test("the name field wears the application's styling", async ({ page }) => {
 
 test("every deck wears the card back, whatever it holds", async ({ page }) => {
   /**
-   * Ange, 2026-09-21: the most played card read as a random one, and the earlier prototype's
+   * The maintainer, 2026-09-21: the most played card read as a random one, and the earlier prototype's
    * placeholder was asked for instead. A deck with cards and an empty one look
    * the same, and the back is really painted — not a missing URL.
    */
@@ -461,7 +461,7 @@ test("the list's search filters without touching the network", async ({ page }) 
    *
    * Two more `goto` per test were enough to trip the development server —
    * `ERR_TOO_MANY_RETRIES`, intermittently. And it is the real gesture anyway:
-   * “Tous les decks” is there for that.
+   * “All decks” is there for that.
    */
   await signUp(page);
   await newDeck(page, "Dragons");
@@ -477,7 +477,7 @@ test("the list's search filters without touching the network", async ({ page }) 
 
 test("clicking a card in the workshop opens it full size", async ({ page }) => {
   /**
-   * Asked for by Ange: “when I click a card from the workshop, it should zoom
+   * Asked for by the maintainer: “when I click a card from the workshop, it should zoom
    * like in the collection”. It is the same sheet — same component, same
    * classes. What changes is what you can do from there: put a copy in the
    * active zone.
@@ -695,7 +695,7 @@ test("a folder is not dropped into itself, and the banner says why", async ({ pa
 
 test("in rows, the pill keeps its place", async ({ page }, info) => {
   /**
-   * Reported by Ange: “the little ‘Incomplete’ pill looks odd on desktop”.
+   * Reported by the maintainer: “the little ‘Incomplete’ pill looks odd on desktop”.
    * `.drive-main` declared three columns for four children — so the pill fell
    * onto an implicit row, alone, against the left edge, left even of the cover.
    * And the link having no `text-decoration`, everything in it was underlined.
@@ -740,7 +740,7 @@ test("in rows, the pill keeps its place", async ({ page }, info) => {
 
 test("a deck is filed by dragging it onto a folder", async ({ page }, info) => {
   /**
-   * Asked for by Ange on the desktop, where the gesture is natural — and which
+   * Asked for by the maintainer on the desktop, where the gesture is natural — and which
    * The earlier prototype had. On a phone it does not exist: holding then aiming is not a
    * thumb gesture, and the banner renders the same service.
    */
@@ -761,7 +761,7 @@ test("a deck is filed by dragging it onto a folder", async ({ page }, info) => {
 
 test("in rows too, a deck is dragged onto a folder", async ({ page }, info) => {
   /**
-   * Reported by Ange: “drag and drop does not work in list mode?”. Rightly —
+   * Reported by the maintainer: “drag and drop does not work in list mode?”. Rightly —
    * the attribute had not been set on the row, and both drag tests looked at
    * the gallery. A view without a test is a view that breaks in silence.
    */
@@ -878,7 +878,7 @@ test("a folder name is displayed, never executed", async ({ page }) => {
 });
 
 /* ── The deck sheet ───────────────────────────────────────────────────────
- * Proposed by Ange, taken from the earlier prototype: opening a deck **shows** it. It is also
+ * Proposed by the maintainer, taken from the earlier prototype: opening a deck **shows** it. It is also
  * what will make showing another player's deck possible without writing a
  * second screen — it will be enough not to display the pencil.
  */

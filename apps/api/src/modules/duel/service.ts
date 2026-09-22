@@ -154,7 +154,7 @@ async function playing(db: Database, viewerId: string, duelId: string): Promise<
 /**
  * The turn belongs to the one playing it.
  *
- * Ange, on 2026-09-19: nobody advances someone else's turn at the table, so no
+ * The maintainer, on 2026-09-19: nobody advances someone else's turn at the table, so no
  * screen may do it either. Life points are the other half of the same rule —
  * each declares their own — and both are refused here rather than merely hidden.
  */
@@ -213,8 +213,8 @@ async function writeEvent(
  * The life points of one duellist, in one phase — **one event, not one per tap**.
  *
  * Taking 3000 means tapping −1000 three times, and three rows saying “−1000”
- * tell nobody anything; they only make the table grow. Ange, on 2026-09-19:
- * “le mieux serait de faire un événement de dommage à chaque phase”. So the taps
+ * tell nobody anything; they only make the table grow. The maintainer, on 2026-09-19:
+ * “the best would be one damage event per phase”. So the taps
  * of a phase add up into that phase's event, and the history reads “turn 4,
  * Battle Phase, −3000”.
  *
@@ -527,7 +527,7 @@ export async function endTurn(db: Database, viewerId: string, duelId: string): P
 /**
  * Life points, **declared by the one who takes them**, in the phase under way.
  *
- * Asked for by Ange on 2026-09-19: the player who loses the points is the one
+ * Asked for by the maintainer on 2026-09-19: the player who loses the points is the one
  * who says so. It is how it goes at the table — nobody reaches across to move
  * the other's counter — and it removes the one gesture a duel could argue
  * about. A change aimed at the other player is refused here, whatever a screen
@@ -598,7 +598,7 @@ export async function dropDuel(db: Database, viewerId: string, duelId: string): 
  *
  * **A winner, not a score.** A score counts games won, so `2–0` would need two
  * duels; counting an evening is the players' business, and the list of past
- * duels is what they count from (Ange, 2026-09-19).
+ * duels is what they count from (the maintainer, 2026-09-19).
  */
 export async function recordDuel(
   db: Database,

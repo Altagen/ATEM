@@ -65,8 +65,8 @@ export async function refreshServiceState(): Promise<void> {
  *
  * Asked for every few seconds rather than held open on a live connection: the
  * question is one integer behind a partial index, and a socket per visitor is a
- * lot of machinery for a badge. Ange, on 2026-09-19: “il devrait y avoir un
- * polling toutes les 5 secondes pour éviter d'avoir à refresh une page”.
+ * lot of machinery for a badge. The maintainer, on 2026-09-19: “there should be
+ * polling every 5 seconds so that one does not have to refresh a page”.
  *
  * **The bar is rebuilt only when the number changes.** Rebuilding it every few
  * seconds would close an open menu under the pointer, which is the defect the

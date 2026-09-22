@@ -1,7 +1,7 @@
 /**
  * The console's markup.
  *
- * The earlier prototype's console, reduced with Ange on 2026-09-21 to what a host needs —
+ * The earlier prototype's console, reduced with the maintainer on 2026-09-21 to what a host needs —
  * the count, who may sign up, the accounts, and what the administrator did —
  * and drawn with the application's own pieces rather than its 800 lines of
  * admin styles: the directory's rows, the profile card's figures, the
@@ -45,7 +45,7 @@ function overviewHtml(state: AdminState): SafeHtml {
       ${figure(o?.suspended, t("Suspended"))}
     </div>
     <div class="settings-card-frame">
-      <h2 class="titre-section">🔐 ${t("Registration")}</h2>
+      <h2 class="panel-heading">🔐 ${t("Registration")}</h2>
       <div class="radio-cards">
         ${choice(true, t("Open"), t("Anyone may create an account."))}
         ${choice(false, t("Closed"), t("Only the administrator creates accounts."))}
@@ -86,11 +86,11 @@ function accountRow(state: AdminState, account: AdminAccount): SafeHtml {
     </div>
     <div class="player-row-actions">
       ${account.suspendedAt
-        ? html`<button type="button" class="btn-showcase-secondary is-petit is-auto"
+        ? html`<button type="button" class="btn-showcase-secondary is-small is-auto"
                   data-restore="${account.id}"${inert}>${t("Restore")}</button>`
-        : html`<button type="button" class="btn-showcase-secondary is-petit is-auto"
+        : html`<button type="button" class="btn-showcase-secondary is-small is-auto"
                   data-suspend="${account.id}"${inert}>${t("Suspend")}</button>`}
-      <button type="button" class="btn-action-danger-red is-petit is-auto"
+      <button type="button" class="btn-action-danger-red is-small is-auto"
               data-delete="${account.id}"${inert}>${t("Delete")}</button>
     </div>
   </div>`;
@@ -100,28 +100,28 @@ function createForm(state: AdminState): SafeHtml {
   const draft = state.draft;
   if (!draft) return html``;
   return html`<form class="settings-card-frame" id="form-create-account">
-    <h2 class="titre-section">➕ ${t("Create an account")}</h2>
-    <p class="legende">${t("The player chooses their own password at their first sign-in.")}</p>
-    <div class="bloc-champ">
-      <label class="champ-libelle" for="create-email">${t("Email address")}</label>
-      <input type="email" id="create-email" class="search-input-gaming is-nue" autocomplete="off"
+    <h2 class="panel-heading">➕ ${t("Create an account")}</h2>
+    <p class="caption">${t("The player chooses their own password at their first sign-in.")}</p>
+    <div class="field-block">
+      <label class="field-label" for="create-email">${t("Email address")}</label>
+      <input type="email" id="create-email" class="search-input-gaming is-bare" autocomplete="off"
              value="${draft.email}" required />
     </div>
-    <div class="bloc-champ">
-      <label class="champ-libelle" for="create-name">${t("Display name")}</label>
-      <input type="text" id="create-name" class="search-input-gaming is-nue" autocomplete="off"
+    <div class="field-block">
+      <label class="field-label" for="create-name">${t("Display name")}</label>
+      <input type="text" id="create-name" class="search-input-gaming is-bare" autocomplete="off"
              minlength="2" maxlength="32" value="${draft.displayName}" required />
     </div>
-    <div class="bloc-champ">
-      <label class="champ-libelle" for="create-password">${t("Temporary password")}</label>
-      <input type="password" id="create-password" class="search-input-gaming is-nue" autocomplete="new-password"
+    <div class="field-block">
+      <label class="field-label" for="create-password">${t("Temporary password")}</label>
+      <input type="password" id="create-password" class="search-input-gaming is-bare" autocomplete="new-password"
              value="${draft.password}" required />
       <div id="create-password-meter"></div>
-      <p class="legende">${t("Give it to the player yourself: they replace it at their first sign-in.")}</p>
+      <p class="caption">${t("Give it to the player yourself: they replace it at their first sign-in.")}</p>
     </div>
     <div class="admin-form-actions">
       <button type="button" class="btn" id="btn-create-cancel">${t("Cancel")}</button>
-      <button type="submit" class="btn-showcase-primary-full is-moyen is-auto">${t("Create the account")}</button>
+      <button type="submit" class="btn-showcase-primary-full is-medium is-auto">${t("Create the account")}</button>
     </div>
   </form>`;
 }
@@ -135,7 +135,7 @@ function accountsHtml(state: AdminState): SafeHtml {
         <input type="search" id="account-search" class="search-input-gaming" autocomplete="off"
                placeholder="${t("Name, number or address…")}" value="${state.search}" />
       </div>
-      ${when(state.draft === null, html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto"
+      ${when(state.draft === null, html`<button type="button" class="btn-showcase-primary-full is-medium is-auto"
               id="btn-create-open">➕ ${t("Create an account")}</button>`)}
     </div>
     ${createForm(state)}
@@ -185,10 +185,10 @@ function deleteModal(state: AdminState): SafeHtml {
   <div class="deck-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
     <div class="deck-modal-head"><h2 id="delete-title">🗑 ${t("Delete this account?")}</h2></div>
     <div class="deck-modal-body">
-      <p class="legende">${t("{name} and everything it holds — collection, decks, duels, friends — are erased. It cannot be undone.", { name: `${account.displayName}#${account.tag}` })}</p>
+      <p class="caption">${t("{name} and everything it holds — collection, decks, duels, friends — are erased. It cannot be undone.", { name: `${account.displayName}#${account.tag}` })}</p>
       <div class="deck-modal-foot">
         <button type="button" class="btn" id="btn-delete-cancel">${t("Cancel")}</button>
-        <button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-delete-confirm">
+        <button type="button" class="btn-action-danger-red is-medium is-auto" id="btn-delete-confirm">
           ${t("Delete for good")}
         </button>
       </div>

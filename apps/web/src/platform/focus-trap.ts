@@ -79,7 +79,7 @@ function onDialogOpened(dialog: HTMLElement): void {
    * The container, **never the first field it happens to contain**.
    *
    * Focusing a text input raises the keyboard on a phone, over a window nobody
-   * asked to type in — the defect Ange reported on the collection, and the one
+   * asked to type in — the defect the maintainer reported on the collection, and the one
    * the scanner had before it. A window that needs the cursor somewhere says so
    * itself, and the line above leaves it alone.
    */

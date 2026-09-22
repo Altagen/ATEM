@@ -54,7 +54,7 @@ async function seed(
 
 test("a deck counts cards, not printings", async () => {
   /**
-   * The rule Ange set, and what makes the ceiling expressible: three Blue-Eyes
+   * The rule the maintainer set, and what makes the ceiling expressible: three Blue-Eyes
    * in three set codes remain three Blue-Eyes.
    */
   const user = await newUser();
@@ -114,7 +114,7 @@ test("the total covers every zone at once", async () => {
 });
 
 test("a card one does not own does not go into a deck", async () => {
-  // Ange's decision: a deck is bounded by the collection, hence playable.
+  // The maintainer's decision: a deck is bounded by the collection, hence playable.
   const user = await newUser();
   await seed(70000004, "DKDK-FR004");
   const deck = await createDeck(db, user.id, "Without the card");
@@ -216,7 +216,7 @@ test("setting zero removes the card from the deck", async () => {
 
 test("a shortfall is signalled only when there is one", async () => {
   /**
-   * Ange's clarification: four copies owned, three in the deck, one sold —
+   * The maintainer's clarification: four copies owned, three in the deck, one sold —
    * nothing happens. The deck only speaks up when a card is genuinely missing.
    */
   const user = await newUser();
@@ -270,7 +270,7 @@ test("two people may name their deck alike", async () => {
 
 test("writing into someone else's deck is forbidden, and says so", async () => {
   /**
-   * Asked by Ange: “even if someone forces the route to modify it, in the end
+   * Asked by the maintainer: “even if someone forces the route to modify it, in the end
    * they get a 403”.
    *
    * **Not found and forbidden are not the same answer.** A read can blur the

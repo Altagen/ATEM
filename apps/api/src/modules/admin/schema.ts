@@ -1,7 +1,7 @@
 import { index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
- * What the administrator did — asked for by Ange on 2026-09-21.
+ * What the administrator did — asked for by the maintainer on 2026-09-21.
  *
  * One row per gesture, written by the admin module alone. The account it was
  * about is kept **by label** (`Name#0042`) as well as by identifier: deleting

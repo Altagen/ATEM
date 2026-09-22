@@ -45,7 +45,7 @@ test("the ceiling is the lowest of the three", () => {
 });
 
 test("a card you do not own cannot be added", () => {
-  // Ange's decision: a deck is bounded by the collection, hence playable by
+  // The maintainer's decision: a deck is bounded by the collection, hence playable by
   // construction.
   const issue = checkDeckAdd({ owned: 0, inDeck: 0 });
   assert.equal(issue.canAdd, false);
@@ -103,7 +103,7 @@ test("the Extra Deck is recognised by the frame, not by the name", () => {
 
 test("a shortfall is signalled only when there is one", () => {
   /**
-   * Ange's clarification: four copies owned, three in the deck, one sold —
+   * The maintainer's clarification: four copies owned, three in the deck, one sold —
    * nothing happens. Silence when all is well.
    */
   assert.equal(missingCopies(3, 4), 0, "more than needed");

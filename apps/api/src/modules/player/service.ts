@@ -6,7 +6,7 @@
  * its routes are mounted on a tree that refuses every write.
  *
  * The profile is deliberately thin — name, avatar, bio, and what has been played.
- * Decided with Ange on 2026-09-18: nothing goes on a profile for the sake of
+ * Decided with the maintainer on 2026-09-18: nothing goes on a profile for the sake of
  * filling it, and a duellist's decks are not what one looks a profile up for.
  *
  * Any signed-in duellist may read any profile but a blocked one. The collection

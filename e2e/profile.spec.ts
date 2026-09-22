@@ -107,7 +107,7 @@ test("the shared link opens the profile for another duellist, who cannot edit it
   await visitor.goto(new URL(link).pathname + new URL(link).search);
 
   await expect(visitor.getByRole("heading", { level: 1 })).toContainText(owner.displayName);
-  // A profile carries no deck list: decided with Ange on 2026-09-18.
+  // A profile carries no deck list: decided with the maintainer on 2026-09-18.
   // …“Decks” in the navigation bar is not the profile's doing, hence `main`.
   await expect(visitor.locator("main").getByText("Decks", { exact: true })).toHaveCount(0);
   await expect(visitor.getByRole("button", { name: "Modifier le profil" })).toHaveCount(0);

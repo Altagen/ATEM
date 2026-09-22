@@ -86,22 +86,21 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
 
-/* ── Porté de la maquette ──────────────────────────────────────────────
+/* ── Ported from the mock-up ───────────────────────────────────────────
  *
- * Ces classes étaient posées par l'application et habillées nulle part :
- * l'écran avait été construit en recopiant le balisage de la maquette sans
- * ses règles. Elles ne cassaient rien de visible — elles laissaient
- * simplement des éléments sans forme, et faisaient croire qu'une règle
- * existait quelque part.
+ * These classes were set by the application and styled nowhere: the screen
+ * had been built by copying the mock-up's markup without its rules. They broke
+ * nothing visible — they simply left elements without shape, and made one
+ * believe a rule existed somewhere.
  */
 
 
 /*
- * Le retour des sous-pages, à hauteur de doigt.
+ * The sub-pages' way back, at finger height.
  *
- * Mesuré à 390px : 120×31. Large, donc facile à viser latéralement, mais sous
- * le seuil en hauteur — la maquette tient 40px pour ce genre de cible, et
- * c'est le seul contrôle de l'application qui restait en dessous.
+ * Measured at 390px: 120×31. Wide, so easy to aim at sideways, but under the
+ * threshold in height — the mock-up keeps 40px for this kind of target, and it
+ * was the only control of the application still below it.
  */
 @media (max-width: 850px) {
   .settings-back-btn {
@@ -109,32 +108,31 @@
   }
 }
 
-/* ══ Règles portées de la maquette — 3 septembre 2026 ══════════════════════
+/* ══ Rules ported from the mock-up — 3 September 2026 ═════════════════════
  *
- * Le portage de la veille ne comparait que les blocs `@media` : toute la
- * moitié « de base » était restée dehors. Trente et un sélecteurs manquaient,
- * et quatre-vingt-onze règles existantes étaient incomplètes — celles-là ont
- * été complétées sur place, une seconde déclaration les aurait fait diverger.
+ * The previous day's port had only compared the `@media` blocks: the whole
+ * “base” half had stayed out. Thirty-one selectors were missing, and
+ * ninety-one existing rules were incomplete — those were completed in place, as
+ * a second declaration would have let them diverge.
  */
 
 .deck-edit-fields .settings-back-btn {
   flex-shrink: 0;
 }
 
-/* ══ La Zone de danger et ses boîtes, en feuille ═══════════════════════════
+/* ══ The danger zone and its windows, in the sheet ════════════════════════
  *
- * Le second bloc — supprimer son compte — a été porté en recopiant l'habillage
- * du premier sur les balises : le même encadré rouge écrit deux fois, la même
- * boîte écrite trois fois. Le cliquet des styles en ligne l'a vu monter, et il
- * avait raison : c'est exactement la dérive qu'il surveille, le même bouton
- * habillé sept fois de sept façons.
+ * The second block — deleting one's account — was ported by copying the first
+ * one's look onto the tags: the same red frame written twice, the same window
+ * written three times — the drift where the same button ends up styled seven
+ * ways.
  *
- * Les règles ci-dessous nomment ce qui se répétait. Elles ne changent aucune
- * mesure — chaque valeur est celle qui était sur la balise.
+ * The rules below name what was repeated. They change no measure: each value
+ * is the one that was on the tag.
  */
 
-/** La carte d'une boîte modale : le panneau blanc au centre du voile. */
-.modal-carte {
+/** A modal window's card: the panel in the middle of the veil. */
+.modal-card {
   position: relative;
   width: 100%;
   max-width: 520px;
@@ -144,21 +142,21 @@
   border-radius: 20px;
   box-shadow: 0 20px 60px color-mix(in srgb, var(--ombre) 80%, transparent);
 }
-/** La même, quand ce qu'elle demande ne se défait pas. */
-.modal-carte.is-danger {
+/** The same, when what it asks for cannot be undone. */
+.modal-card.is-danger {
   border-color: color-mix(in srgb, var(--danger) 40%, transparent);
   box-shadow: 0 20px 60px color-mix(in srgb, var(--ombre) 90%, transparent);
 }
 
-/** Le panneau rouge qui rassemble les actions définitives. */
-.zone-danger {
+/** The red panel that gathers the irreversible actions. */
+.danger-zone {
   padding: 1.75rem;
   background: color-mix(in srgb, var(--danger) 5%, transparent);
   border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
   border-radius: 20px;
   box-shadow: 0 20px 50px color-mix(in srgb, var(--ombre) 60%, transparent);
 }
-.zone-danger-titre {
+.danger-zone-title {
   margin: 0 0 1.25rem;
   padding-bottom: 0.85rem;
   font-size: 1.35rem;
@@ -166,63 +164,63 @@
   color: var(--danger);
   border-bottom: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
 }
-.zone-danger-avertissement {
+.danger-zone-warning {
   margin-bottom: 1.5rem;
   font-size: 0.88rem;
   color: var(--danger-clair);
 }
-/** Un second bloc dans le panneau, séparé du premier par un filet. */
-.zone-danger .bloc-champ.is-suivant {
+/** A second block in the panel, separated from the first by a rule. */
+.danger-zone .field-block.is-next {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
 }
-.zone-danger .legende-danger {
+.danger-zone .caption-danger {
   margin: 0 0 1rem;
   font-size: 0.82rem;
   color: var(--muted);
 }
-.zone-danger .legende-danger.is-collee {
+.danger-zone .caption-danger.is-flush {
   margin-bottom: 0.6rem;
 }
 
-/** L'en-tête d'une boîte de danger : un emblème et son titre. */
-.modal-danger-entete {
+/** A danger window's head: an emblem and its title. */
+.modal-danger-head {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
-.modal-danger-entete .emblemette {
+.modal-danger-head .emblem {
   font-size: 1.6rem;
 }
-.modal-danger-intro {
+.modal-danger-lead {
   margin: 0 0 1.25rem;
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--danger-clair);
 }
 
-/** L'encadré où l'on recopie le mot qui débloque le bouton. */
-.encadre-recopie {
+/** The frame where one types the word that unlocks the button. */
+.retype-frame {
   padding: 1rem;
   background: color-mix(in srgb, var(--danger) 8%, transparent);
   border: 1px dashed color-mix(in srgb, var(--danger) 40%, transparent);
   border-radius: 12px;
 }
-.encadre-recopie > label {
+.retype-frame > label {
   display: block;
   margin-bottom: 0.4rem;
   font-size: 0.82rem;
   font-weight: 800;
   color: var(--fg-fort);
 }
-.encadre-recopie strong {
+.retype-frame strong {
   font-size: 0.95rem;
   color: var(--danger-clair);
   text-decoration: underline;
 }
-.encadre-recopie .search-input-gaming {
+.retype-frame .search-input-gaming {
   padding-left: 1rem;
   font-size: 0.9rem;
   border-color: color-mix(in srgb, var(--danger) 50%, transparent);
@@ -253,10 +251,10 @@
 
 /* Modals */
 
-/* ── Import / export CSV ───────────────────────────────────────────────────
- * Le vocabulaire de la maquette : des cartes à cocher plutôt qu'un `select`,
- * un bilan de lecture avant d'appliquer, un journal qui dit les erreurs. Les
- * classes sont les siennes, à l'identique.
+/* ── CSV import / export ───────────────────────────────────────────────────
+ * The mock-up's vocabulary: choice cards rather than a `select`, a reading
+ * summary before applying, a log that states the errors. The classes are its
+ * own, unchanged.
  */
 .radio-cards { display: flex; flex-direction: column; gap: 0.55rem; }
 
@@ -300,8 +298,8 @@
 }
 
 
-/* Les colonnes doivent rester alignées : l'en-tête se lit ici comme il
-   s'ouvrira dans un tableur, sans retour à la ligne inventé. */
+/* The columns must stay aligned: the header reads here as it will open in a
+   spreadsheet, with no invented line break. */
 .export-preview {
   margin: 0;
   padding: 0.8rem 0.9rem;

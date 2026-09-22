@@ -83,7 +83,7 @@ test("a duel is proposed to a friend, accepted, and the result names the winner"
   assert.equal((await req("POST", `/duels/${duel.id}/accept`, guest.cookie)).status, 200);
   assert.equal((await req("POST", `/duels/${duel.id}/accept`, guest.cookie)).status, 409);
 
-  // Either player records it, and it is a winner — not a score (Ange, 2026-09-19).
+  // Either player records it, and it is a winner — not a score (the maintainer, 2026-09-19).
   const recorded = await req("POST", `/duels/${duel.id}/result`, guest.cookie, {
     winnerId: host.userId, note: "Serré.",
   });
@@ -124,7 +124,7 @@ test("the winner is one of the two, and the profile counts what was won", async 
 test("past duels are answered a page at a time", async () => {
   /**
    * One duel is under way at a time, but the ones played accumulate for as long
-   * as one plays. Ange asked whether they were paged: they are now.
+   * as one plays. The maintainer asked whether they were paged: they are now.
    */
   const table = await ready("duel-page");
   for (let index = 0; index < 3; index += 1) {
@@ -212,7 +212,7 @@ test("the phases follow one another, moved by the duellist whose turn it is", as
   const opener = started.currentPlayerId;
   const first = await sides(duel, host, guest);
 
-  // Nobody advances someone else's turn (Ange, 2026-09-19).
+  // Nobody advances someone else's turn (the maintainer, 2026-09-19).
   assert.equal((await req("POST", `/duels/${duel.id}/phase`, first.waiting.cookie)).status, 403);
   assert.equal((await req("POST", `/duels/${duel.id}/turn`, first.waiting.cookie)).status, 403);
   assert.equal((await duelOf(host.cookie, duel.id)).phase, "draw", "nothing moved");
@@ -240,7 +240,7 @@ test("the phases follow one another, moved by the duellist whose turn it is", as
 
 test("each duellist declares their own life points, and only their own", async () => {
   /**
-   * Ange's rule on 2026-09-19: the one who takes the damage says so. It is how
+   * The maintainer's rule on 2026-09-19: the one who takes the damage says so. It is how
    * it goes at the table, and it removes the one gesture a duel could argue
    * about.
    */
@@ -283,7 +283,7 @@ test("each duellist declares their own life points, and only their own", async (
 
 test("the taps of one phase add up into that phase's event", async () => {
   /**
-   * Ange, on 2026-09-19: taking 3000 means tapping −1000 three times, and three
+   * The maintainer, on 2026-09-19: taking 3000 means tapping −1000 three times, and three
    * rows saying “−1000” tell nobody anything — they only make the table grow.
    */
   const { host, guest, duel } = await accepted("duel-merge");
@@ -359,7 +359,7 @@ test("nothing is played before the start, or after the result", async () => {
 
 test("one duel at a time: a second is refused while one is under way", async () => {
   /**
-   * Ange, on 2026-09-19: one plays one duel, at one table. Invitations are not
+   * The maintainer, on 2026-09-19: one plays one duel, at one table. Invitations are not
    * duels under way — they wait in the inbox — but accepting one while a duel
    * is on is refused, on both sides of the table.
    */

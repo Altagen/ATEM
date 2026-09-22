@@ -26,7 +26,7 @@ export async function duelScreen(
   /**
    * Which list one is on lives in the address, not only in memory.
    *
-   * Ange, on 2026-09-19: opening a past duel and coming back landed on the
+   * The maintainer, on 2026-09-19: opening a past duel and coming back landed on the
    * current one, two clicks from where he was. The address carries it, so the
    * way back — and a reload, and the browser's own back button — all return to
    * the list that was being read.
@@ -78,7 +78,7 @@ export async function duelScreen(
    * **A duel that is no longer there takes us back to the list.** The other
    * duellist may have called it off while this screen was open: staying on
    * “this duel could not be opened” would leave the person to work out that
-   * something happened elsewhere — Ange, on 2026-09-19.
+   * something happened elsewhere — The maintainer, on 2026-09-19.
    */
   async function loadDuel(): Promise<void> {
     if (!duelId) return;
@@ -501,7 +501,7 @@ export async function duelScreen(
     /**
      * Waiting for the other to start is the one moment a few seconds are long.
      *
-     * Ange, on 2026-09-19: the duellist who did not flip the coin waited
+     * The maintainer, on 2026-09-19: the duellist who did not flip the coin waited
      * without a sign. So the beat is quicker while the duel has not begun, and
      * when the poll finds that it has, **this screen shows the coin too** — it
      * settles straight on the name, because it has already been drawn.

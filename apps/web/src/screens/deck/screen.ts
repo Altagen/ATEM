@@ -172,7 +172,7 @@ export async function deckScreen(
   /**
    * Lights “Saved” up, then clears it.
    *
-   * Cards are written at every “±”, with no button — and nothing said so. Ange
+   * Cards are written at every “±”, with no button — and nothing said so. The maintainer
    * removed cards, pressed “Save”, and read “Nothing to save”: enough to
    * believe the removal had been thrown away. It had not been, but the screen
    * did not say so either.
@@ -214,7 +214,7 @@ export async function deckScreen(
    *
    * The previous `window.prompt` had neither the application's style nor room
    * for a second field — and on a phone it opens at the top of the screen, far
-   * from the thumb. Asked for by Ange along with the folders.
+   * from the thumb. Asked for by the maintainer along with the folders.
    */
   function openWindow(modal: NonNullable<DeckState["modal"]>): void {
     state.modal = modal;
@@ -466,7 +466,7 @@ export async function deckScreen(
     /**
      * The name is written like the cards: **with no button**.
      *
-     * Ange: “either you update everything or you update nothing, but not just
+     * The maintainer: “either you update everything or you update nothing, but not just
      * half of it”. A workshop where cards left at the “±” and where the name
      * waited for a button forced you to guess which of the two halves was safe
      * — and that is exactly the doubt that made them write it.
@@ -731,7 +731,7 @@ export async function deckScreen(
   /**
    * Drag and drop, with the mouse.
    *
-   * Asked for by Ange on the desktop: that is where the gesture is natural, and
+   * Asked for by the maintainer on the desktop: that is where the gesture is natural, and
    * where the earlier prototype had it. On a phone it does not exist — holding then aiming
    * is not a thumb gesture — and it is the “Move here” mode that renders the
    * same service.

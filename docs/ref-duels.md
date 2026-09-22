@@ -19,7 +19,7 @@ players tell it.
 ## One duel at a time
 
 **A duellist has at most one duel under way** — accepted or being played. Asked
-for by Ange on 2026-09-19: one plays one duel, at one table, and a screen that
+for by the maintainer on 2026-09-19: one plays one duel, at one table, and a screen that
 lists three “in progress” is a screen one has to sort out before playing.
 
 Invitations are not duels under way: they wait in the inbox, as many as people
@@ -90,7 +90,7 @@ What can be done while it is `playing`:
   turn when its player says so, not when the application decides.
 
 **Each duellist declares their own life points, and only their own.** Asked for
-by Ange on 2026-09-19: the one who takes the damage is the one who says so. It is
+by the maintainer on 2026-09-19: the one who takes the damage is the one who says so. It is
 how it goes at the table — nobody reaches across to move the other's counter —
 and it removes the one gesture a duel could argue about. The server refuses a
 change aimed at the other player, whatever the screen offers.
@@ -103,14 +103,14 @@ Life points are declared at any moment, in whatever phase the duel is in.
 
 **One life event per duellist and per phase, not per tap.** Taking 3000 means
 tapping −1000 three times, and three rows saying “−1000” tell nobody anything —
-Ange, on 2026-09-19: “sinon en base de données ça va être compliqué, ça va
-devenir gigantesque”. So the taps of one phase add up into the single event of
+The maintainer, on 2026-09-19: “otherwise the database will get complicated, it will
+become gigantic”. So the taps of one phase add up into the single event of
 that phase: the history reads “turn 4, Battle Phase, −3000”, which is what
 happened. A gain cancelling a loss in the same phase leaves **no** event at all:
 nothing happened that phase.
 
-**The turn belongs to the one playing it.** Ange, on 2026-09-19: “un joueur ne
-peut pas contrôler les phases de l'adversaire, comme ses life points.” Nobody
+**The turn belongs to the one playing it.** the maintainer, on 2026-09-19: “a player cannot
+control the opponent's phases, nor their life points.” Nobody
 advances someone else's turn at the table, and the application does not let a
 screen do what a hand would not. Every event keeps who wrote it all the same.
 
@@ -151,7 +151,7 @@ duel under way.
 ## A winner, not a score
 
 **A duel has a winner and a loser, and that is what is recorded.** ATEM first
-kept a score — `2–1` — and Ange took it out on 2026-09-19: a score counts games
+kept a score — `2–1` — and the maintainer took it out on 2026-09-19: a score counts games
 won, so `2–0` needs two duels. Counting how many one has won against someone
 over an evening is the players' business, and the list of past duels is what
 they count from.

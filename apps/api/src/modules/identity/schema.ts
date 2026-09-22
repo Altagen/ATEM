@@ -52,7 +52,7 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
-    // Case must not create two accounts: `Ange@x.fr` and `ange@x.fr` are the
+    // Case must not create two accounts: `the maintainer@x.fr` and `ange@x.fr` are the
     // same person to everyone but a naive index.
     uniqueIndex("users_email_uidx").on(sql`lower(${t.email})`),
     uniqueIndex("users_name_tag_uidx").on(t.displayName, t.tag),
@@ -90,7 +90,7 @@ export const authAttempts = pgTable(
 /**
  * The instance's own settings — one row, `id = 1`, enforced by the check.
  *
- * Only registration lives here for now (Ange, 2026-09-21): either anyone may
+ * Only registration lives here for now (the maintainer, 2026-09-21): either anyone may
  * create an account, or only the administrator can. It belongs to identity,
  * which owns the registration it governs; the admin module changes it through
  * identity's functions (R1).

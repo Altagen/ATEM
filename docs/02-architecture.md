@@ -243,7 +243,7 @@ things at once: *who this data belongs to* and *who is asking for it*. The code 
 safe — but **safe by accident**: it held because you could not be someone else.
 Twelve queries filtered on it.
 
-Yet Ange's priorities include, right after decks, “viewing other players' profiles,
+Yet the maintainer's priorities include, right after decks, “viewing other players' profiles,
 decks and collections”. The day a read route carries another player's identity in
 its path, every query that forgot to tell the two apart becomes a leak — and a
 `POST` copying that pattern would let anyone write into anyone's data.
@@ -259,7 +259,7 @@ The earlier prototype untenable.
 | `ownerId` | who the data belongs to. A **read** takes it. |
 | `viewerId` | who is asking, as the session establishes it. A **write** takes it, and only it. |
 
-**The access rule, for this iteration** (decided by Ange): no RBAC. Any session may
+**The access rule, for this iteration** (decided by the maintainer): no RBAC. Any session may
 **read** anyone's collection and decks. Only the owner **writes**. A visibility
 setting will come later; it will sit on the read path, which is already the only
 place to filter it.
@@ -290,7 +290,7 @@ all. The profile itself is written through `PATCH /auth/me`, which takes the
 session's identity and nothing from the path.
 
 **The owner and the visitor on screen — one rule for every resource.** Asked for by
-Ange on 2026-09-17: “only a player can modify their own information”, for the
+The maintainer on 2026-09-17: “only a player can modify their own information”, for the
 profile now and for decks and collections the day they are shown to others. Three
 layers, always the same:
 
@@ -309,7 +309,7 @@ visitor, and follows the rule (`GET /players/:id`). Decks and collections follow
 when their reads open to others (M4) — adding an `isOwner` to them before then would
 be the always-true field described above.
 
-**Addendum of 2026-09-13 — 404 on read, 403 on write.** Asked for by Ange: “even if
+**Addendum of 2026-09-13 — 404 on read, 403 on write.** Asked for by the maintainer: “even if
 you try to go to the route to edit it, in the end you get a 403”.
 
 The two refusals do not say the same thing, and the difference depends on the
@@ -385,7 +385,7 @@ it completely is a solved problem — accept the registration, write nothing, an
 the address's owner that someone tried — but it needs SMTP, which ATEM does not have
 and is not going to grow for this.
 
-**Decision, by Ange on 2026-09-16.** The screen says “An account cannot be created
+**Decision, by the maintainer on 2026-09-16.** The screen says “An account cannot be created
 with this email address.” The server logs the real reason, with the address, for the
 operator. We do **not** send email, and we do **not** pretend the registration
 succeeded — a success that creates nothing would break the very next step, signing

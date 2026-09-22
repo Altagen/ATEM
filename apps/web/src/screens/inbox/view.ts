@@ -67,12 +67,12 @@ function line(state: InboxState, item: InboxItem): SafeHtml {
           ${when(!item.isRead, html`<span class="inbox-unread-dot" aria-label="${t("Unread")}"></span>`)}
           ${icon} ${text}
         </strong>
-        <span class="legende">${when_(item.createdAt)}</span>
+        <span class="caption">${when_(item.createdAt)}</span>
         <div class="inbox-item-actions">
           ${when(item.kind === "friend_request" && item.actor !== null, html`
-            <button type="button" class="btn-showcase-primary-full is-petit is-auto"
+            <button type="button" class="btn-showcase-primary-full is-small is-auto"
                     data-accept="${item.actor?.id ?? ""}" data-item-id="${item.id}"${inert}>${t("Accept")}</button>
-            <button type="button" class="btn-showcase-secondary is-petit is-auto"
+            <button type="button" class="btn-showcase-secondary is-small is-auto"
                     data-decline="${item.actor?.id ?? ""}" data-item-id="${item.id}"${inert}>${t("Decline")}</button>`)}
           ${when(aboutDuel(item) && item.subjectId !== null,
             html`<a class="btn-inbox-tool" href="/duels?duel=${item.subjectId ?? ""}">${t("See the duel")}</a>`)}

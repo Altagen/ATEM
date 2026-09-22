@@ -40,8 +40,8 @@
 /*
  * The actions of a line must look like actions.
  *
- * Ange, on 2026-09-19: “‘Voir les duels’ et ‘Voir profil’ n'ont pas de hover, et
- * ont la même couleur, gris sur gris”, and the cross gave no sign either. They
+ * The maintainer, on 2026-09-19: “‘See the duels’ and ‘See profile’ have no hover, and
+ * the same colour, grey on grey”, and the cross gave no sign either. They
  * carry a readable colour and a border at rest, and light up under the pointer —
  * the affordance is there before the hand moves, not after.
  */

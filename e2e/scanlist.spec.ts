@@ -86,7 +86,7 @@ test("pouring brings the batch in, once only", async ({ page }) => {
 
 test("the batch in progress does not survive a reload", async ({ page }) => {
   /**
-   * Ange's decision: nothing survives without explicit confirmation. No
+   * The maintainer's decision: nothing survives without explicit confirmation. No
    * `localStorage`, no half-state found again three days later without knowing
    * what it holds. You scan again.
    */

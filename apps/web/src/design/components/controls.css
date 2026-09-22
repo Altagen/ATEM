@@ -54,8 +54,8 @@
 }
 
 /*
- * L'état désactivé, que le navigateur connaît déjà. Il se disait à la main,
- * avec une opacité différente à chaque bouton.
+ * The disabled state, which the browser already knows. It used to be said by
+ * hand, with a different opacity on every button.
  */
 .btn-showcase-primary-full:disabled,
 .btn-showcase-secondary:disabled,
@@ -86,9 +86,9 @@
 
 
 
-.btn-showcase-primary-full.is-moyen,
-.btn-showcase-secondary.is-moyen,
-.btn-action-danger-red.is-moyen {
+.btn-showcase-primary-full.is-medium,
+.btn-showcase-secondary.is-medium,
+.btn-action-danger-red.is-medium {
   padding: 0.55rem 1.15rem;
   font-size: 0.85rem;
   font-weight: 800;
@@ -97,8 +97,8 @@
 
 
 /*
- * `.btn-showcase-primary-full` porte sa largeur dans son nom. Le modificateur
- * dit l'exception une fois, au lieu de la reprendre à chaque contexte.
+ * `.btn-showcase-primary-full` carries its width in its name. The modifier
+ * states the exception once, instead of repeating it in every context.
  */
 .btn-showcase-primary-full.is-auto,
 .btn-showcase-secondary.is-auto,
@@ -213,21 +213,19 @@ a.btn-showcase-primary-full {
 
 
 
-/* ── L'échelle des boutons ─────────────────────────────────────────────────
+/* ── The button scale ──────────────────────────────────────────────────────
  *
- * Portée depuis l'application, où quatre-vingt-quatorze boutons portaient leur
- * habillage en `style=`, en soixante-dix-neuf combinaisons. La maquette avait
- * le même défaut sous une autre forme : le rembourrage se réglait par le
- * contexte — `.guild-dir-actions .btn-showcase-secondary`, `.recruit-actions
- * .btn-showcase-secondary` — donc trois tailles écrites à trois endroits, et
- * un bouton déplacé changeait de taille sans que personne l'ait voulu.
+ * In the earlier prototype, ninety-four buttons carried their look in
+ * `style=`, in seventy-nine combinations, and its mock-up had the same flaw in
+ * another form: padding was set by context, so three sizes were written in
+ * three places, and a button moved elsewhere changed size without anyone
+ * wanting it to.
  *
- * Trois tailles nommées, et quatre modificateurs. Les deux dépôts emploient
- * désormais les mêmes mots.
+ * Three named sizes, and four modifiers.
  */
-.btn-showcase-primary-full.is-petit,
-.btn-showcase-secondary.is-petit,
-.btn-action-danger-red.is-petit {
+.btn-showcase-primary-full.is-small,
+.btn-showcase-secondary.is-small,
+.btn-action-danger-red.is-small {
   padding: 0.4rem 0.85rem;
   font-size: 0.78rem;
   font-weight: 800;
@@ -238,8 +236,8 @@ a.btn-showcase-primary-full {
  *
  * Only its size modifiers had been taken from the prototype: the class was
  * cited, so the unstyled-classes gate counted it as styled, and every
- * “Retirer des amis”, “Annuler la demande” and “Refuser” rendered as a bare grey
- * button (Ange, 2026-09-21). The same trap as `.btn-hero` on the scanlists.
+ * “Remove friend”, “Cancel request” and “Decline” rendered as a bare grey
+ * button (the maintainer, 2026-09-21). The same trap as `.btn-hero` on the scanlists.
  */
 .btn-showcase-secondary {
   display: inline-flex;
@@ -268,7 +266,7 @@ a.btn-showcase-primary-full {
 /* ── Password fields ─────────────────────────────────────────────────────
  * The eye sits inside the field, on its right, whatever the field's own
  * style: the wrapper is the field's box, and the input keeps its width. Added
- * to every password field by `platform/password-fields.ts` (Ange, 2026-09-22).
+ * to every password field by `platform/password-fields.ts` (the maintainer, 2026-09-22).
  */
 .password-field { position: relative; display: block; width: 100%; }
 .password-field > input { width: 100%; padding-right: 2.9rem; box-sizing: border-box; }

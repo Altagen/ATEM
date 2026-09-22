@@ -24,7 +24,7 @@ async function openSettings(page: Page) {
 
 test("settings are reachable from the navigation, on a phone and on a computer", async ({ page }) => {
   /**
-   * Asked for by Ange. On a computer the top bar showed the name as plain text,
+   * Asked for by the maintainer. On a computer the top bar showed the name as plain text,
    * so settings could not be reached at all; the phone's account sheet read the
    * account group and found nothing in it.
    */
@@ -39,13 +39,13 @@ test("renaming shows the new name everywhere, and keeps the number", async ({ pa
   await openSettings(page);
   await page.locator('[data-target-view="account"]').click();
 
-  const tagBefore = await page.locator("#form-display-name .legende").first().textContent();
+  const tagBefore = await page.locator("#form-display-name .caption").first().textContent();
   const renamed = `Renamed ${Date.now().toString().slice(-5)}`;
   await page.locator("#input-display-name").fill(renamed);
   await page.getByRole("button", { name: "Renommer" }).click();
 
   await expect(page.locator("#input-display-name")).toHaveValue(renamed);
-  await expect(page.locator("#form-display-name .legende").first()).toHaveText(tagBefore ?? "");
+  await expect(page.locator("#form-display-name .caption").first()).toHaveText(tagBefore ?? "");
   expect(account.displayName).not.toBe(renamed);
 
   // The navigation carries the name too, and must not keep the old one.
@@ -86,7 +86,7 @@ test("a password change keeps you signed in, and the new one opens the door", as
 
 test("the email address changes only with the password", async ({ page, browser }) => {
   /**
-   * Asked for by Ange: The earlier prototype's window asked for the password — and its server
+   * Asked for by the maintainer: The earlier prototype's window asked for the password — and its server
    * never read it. Here a wrong password changes nothing.
    */
   const account = await signUp(page);

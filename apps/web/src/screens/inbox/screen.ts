@@ -110,7 +110,7 @@ export async function inboxScreen(
   /**
    * What arrives while one is looking at the inbox appears in it.
    *
-   * Ange, on 2026-09-19: the badge lit up in the bar while the inbox itself sat
+   * The maintainer, on 2026-09-19: the badge lit up in the bar while the inbox itself sat
    * still, and he had to click it to see the line. The list asks on the same
    * beat as the badge — and marks what it brings as read, since the inbox is
    * open in front of the person.

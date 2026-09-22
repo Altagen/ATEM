@@ -111,7 +111,7 @@ async function loadDeck(db: Database, ownerId: string, deckId: string) {
  * in front of us, and answering “not found” when trying to modify it would be a
  * lie nothing explains.
  *
- * Asked by Ange: “even if someone forces the route to modify it, in the end
+ * Asked by the maintainer: “even if someone forces the route to modify it, in the end
  * they get a 403”. The guarantee lives **here**, in the service, and not in the
  * screen that hides the pencil: a screen guards nothing.
  */
@@ -329,7 +329,7 @@ export async function deleteDeck(db: Database, viewerId: string, deckId: string)
  *
  * Three bounds overlap, and the lowest decides: the rule of the game (three per
  * deck, guaranteed in the database by a constraint), the banlist (which moves
- * with the catalogue, hence here), and the collection — Ange's decision: you do
+ * with the catalogue, hence here), and the collection — The maintainer's decision: you do
  * not put in a deck a card you do not have.
  */
 export async function setDeckCard(

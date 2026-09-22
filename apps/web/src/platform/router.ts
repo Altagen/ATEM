@@ -42,7 +42,7 @@ export type Destination = {
 
 /**
  * Who a signed-in route is for. The administrator's account only administers
- * (Ange, 2026-09-21), so it has its own routes, and the players' are not its.
+ * (the maintainer, 2026-09-21), so it has its own routes, and the players' are not its.
  */
 export type Audience = "player" | "admin";
 

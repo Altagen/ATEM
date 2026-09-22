@@ -11,7 +11,7 @@
  * - **the presence** — this application has no live connection to measure it;
  * - **the tournament banner**, invented news;
  * - **the guild strip** — guilds have no module yet;
- * - **the deck list** — a profile is not a shelf: decided with Ange on
+ * - **the deck list** — a profile is not a shelf: decided with the maintainer on
  *   2026-09-18. It links to the shelves instead, when their owner shows them
  *   to the viewer (M4, 2026-09-21).
  *
@@ -77,14 +77,14 @@ function heroHtml(player: PlayerProfile): SafeHtml {
         </h1>
         <div class="profile-status-row">
           <div class="profile-actions">
-            ${when(isOwner, html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-edit-profile">
+            ${when(isOwner, html`<button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-edit-profile">
               <span aria-hidden="true">✏️</span><span>${t("Edit profile")}</span>
             </button>`)}
             ${when(!isOwner, friendButton(player.friendStatus))}
             <button type="button" class="btn" id="btn-share-profile">
               <span aria-hidden="true">🔗</span><span>${t("Share profile")}</span>
             </button>
-            ${when(!isOwner, html`<button type="button" class="btn-action-danger-red is-moyen is-auto" id="btn-block">
+            ${when(!isOwner, html`<button type="button" class="btn-action-danger-red is-medium is-auto" id="btn-block">
               <span aria-hidden="true">⛔</span><span>${t("Block")}</span>
             </button>`)}
           </div>
@@ -107,12 +107,12 @@ function heroHtml(player: PlayerProfile): SafeHtml {
 function shelvesHtml(player: PlayerProfile): SafeHtml {
   const { sees, profile } = player;
   if (!sees.collection && !sees.decks) {
-    return html`<p class="legende profile-shelves">${t("{name} does not share their collection or decks with you.", { name: profile.displayName })}</p>`;
+    return html`<p class="caption profile-shelves">${t("{name} does not share their collection or decks with you.", { name: profile.displayName })}</p>`;
   }
   return html`<div class="profile-shelves">
-    ${when(sees.collection, html`<a class="btn-showcase-secondary is-moyen is-auto" href="/collection?user=${profile.id}">
+    ${when(sees.collection, html`<a class="btn-showcase-secondary is-medium is-auto" href="/collection?user=${profile.id}">
       <span aria-hidden="true">🗃️</span><span>${t("Collection")}</span></a>`)}
-    ${when(sees.decks, html`<a class="btn-showcase-secondary is-moyen is-auto" href="/decks?user=${profile.id}">
+    ${when(sees.decks, html`<a class="btn-showcase-secondary is-medium is-auto" href="/decks?user=${profile.id}">
       <span aria-hidden="true">🃏</span><span>${t("Decks")}</span></a>`)}
   </div>`;
 }
@@ -135,12 +135,12 @@ function friendButton(status: PlayerProfile["friendStatus"]): SafeHtml {
     </button>`;
   }
   if (status === "pending_received") {
-    return html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-friend-accept">
+    return html`<button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-friend-accept">
       <span aria-hidden="true">🤝</span><span>${t("Accept")}</span>
     </button>
     <button type="button" class="btn" id="btn-friend-remove">${t("Decline")}</button>`;
   }
-  return html`<button type="button" class="btn-showcase-primary-full is-moyen is-auto" id="btn-friend-add">
+  return html`<button type="button" class="btn-showcase-primary-full is-medium is-auto" id="btn-friend-add">
     <span aria-hidden="true">➕</span><span>${t("Add friend")}</span>
   </button>`;
 }
@@ -170,28 +170,28 @@ function editModalHtml(state: ProfileState): SafeHtml {
     </div>
     <form class="profile-edit-form" id="form-profile-edit">
       <div class="deck-modal-body">
-        <p class="legende">${t("Your display name, your bio and your avatar.")}</p>
+        <p class="caption">${t("Your display name, your bio and your avatar.")}</p>
 
-        <div class="bloc-champ">
-          <label class="champ-libelle" for="edit-display-name">${t("Display name")}</label>
-          <input type="text" id="edit-display-name" class="search-input-gaming is-nue"
+        <div class="field-block">
+          <label class="field-label" for="edit-display-name">${t("Display name")}</label>
+          <input type="text" id="edit-display-name" class="search-input-gaming is-bare"
                  minlength="${String(LIMITS.displayName.min)}" maxlength="${String(LIMITS.displayName.max)}"
                  autocomplete="nickname" value="${draft.displayName}" required />
         </div>
 
         <!-- No maxlength: it would cut a paste short without a word. The whole text
              is accepted, the counter says what is too much, saving waits. -->
-        <div class="bloc-champ counted-field is-${bio.state}" id="edit-bio-field">
-          <label class="champ-libelle" for="edit-bio">${t("Bio")}
+        <div class="field-block counted-field is-${bio.state}" id="edit-bio-field">
+          <label class="field-label" for="edit-bio">${t("Bio")}
             <span class="counted-count">${String(bio.length)}/${String(bio.limit)}</span>
           </label>
-          <textarea id="edit-bio" class="search-input-gaming is-nue" rows="4"
+          <textarea id="edit-bio" class="search-input-gaming is-bare" rows="4"
                     aria-invalid="${String(bio.state === "over")}">${draft.bio}</textarea>
           <p class="counted-over" role="alert">${overMessage(bio)}</p>
         </div>
 
-        <div class="bloc-champ">
-          <span class="champ-libelle" id="edit-avatar-label">${t("Duellist avatar")}</span>
+        <div class="field-block">
+          <span class="field-label" id="edit-avatar-label">${t("Duellist avatar")}</span>
           <div class="avatar-choice-grid" role="group" aria-labelledby="edit-avatar-label">
             ${AVATARS.map((avatar) => html`<button type="button"
                   class="avatar-choice${avatar === draft.avatar ? " is-selected" : ""}"
@@ -206,7 +206,7 @@ function editModalHtml(state: ProfileState): SafeHtml {
       <!-- Outside the scrolling body: the buttons stay in view however long the form. -->
       <div class="deck-modal-foot">
         <button type="button" class="btn" id="profile-modal-cancel">${t("Cancel")}</button>
-        <button type="submit" class="btn-showcase-primary-full is-moyen is-auto" id="profile-modal-save" ${draftReady(state) ? raw("") : raw("disabled")}>
+        <button type="submit" class="btn-showcase-primary-full is-medium is-auto" id="profile-modal-save" ${draftReady(state) ? raw("") : raw("disabled")}>
           ${t("Save changes")}
         </button>
       </div>
