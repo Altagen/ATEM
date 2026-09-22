@@ -142,19 +142,26 @@ function languagePill(): HTMLElement {
 }
 
 /**
- * The language choice, in the phone's account sheet: two finger-sized buttons,
- * where the choice has the room and the thumb needs a target.
+ * The language choice, in the phone's account sheet: the top bar's flag pill,
+ * once per language and side by side across the sheet — the current one in
+ * gold, the other one tap away.
  */
 function languageSwitch(): HTMLElement {
   const user = knownUser()!;
   const group = el("div", { class: "lang-switch", role: "group", "aria-label": t("Language") });
 
-  for (const code of ["fr", "en"] as const) {
+  for (const { code, flag, label } of [
+    { code: "fr", flag: "🇫🇷", label: "FR" },
+    { code: "en", flag: "🇬🇧", label: "EN" },
+  ] as const) {
     const button = el("button", {
       type: "button",
-      class: `lang-switch-item${user.locale === code ? " is-active" : ""}`,
+      class: `lang-pill lang-switch-item${user.locale === code ? " is-active" : ""}`,
       "aria-pressed": String(user.locale === code),
-    }, [t(code === "fr" ? "FR" : "EN")]);
+    }, [
+      el("span", { "aria-hidden": "true" }, [flag]),
+      el("span", {}, [t(label)]),
+    ]);
 
     button.addEventListener("click", () => {
       if (user.locale === code) return;
@@ -377,7 +384,6 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
     "aria-label": t("My account"),
     hidden: "",
   }, [
-    el("span", { class: "account-sheet-grip", "aria-hidden": "true" }),
     // Two lines across the whole width: the brand and the way out, then who
     // you are and the service's state.
     el("header", { class: "account-sheet-head" }, [

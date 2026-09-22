@@ -52,6 +52,8 @@
   z-index: var(--z-modal);
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
+  /* A drag on the dimmed page is not a pull-to-refresh. */
+  touch-action: none;
 }
 
 .account-sheet {
@@ -68,22 +70,10 @@
   box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.55);
   /* The system gesture bar bites into the bottom of the screen. */
   padding-bottom: env(safe-area-inset-bottom, 0);
-  /* The swipe sets a `transform`: the transition brings the panel back into
-     place when released too early, and carries it away once the threshold is
-     crossed. `touch-action` reserves the vertical gesture for the panel. */
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  touch-action: pan-y;
-}
-
-/* The handle: three pixels high, but it is what announces that the panel can
-   be pulled. With no cue, the gesture only exists for whoever guessed it. */
-.account-sheet-grip {
-  width: 2.5rem;
-  height: 4px;
-  margin: 0.5rem auto 0.1rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  flex-shrink: 0;
+  /* The panel closes with its cross, not with a swipe: pulling it down
+     reloaded the page instead (the maintainer, 2026-09-22). Its scrolling
+     stops at its own edges rather than passing on to the page's refresh. */
+  overscroll-behavior: contain;
 }
 
 .account-sheet-head {
@@ -146,16 +136,16 @@
 
 .account-sheet-chev { margin-left: auto; color: var(--muted); font-size: 1.15rem; }
 
-/* The language and signing out share one line, both at finger height. */
+/* The language, then signing out on a line of its own, both across the sheet. */
 .account-sheet-foot {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.75rem;
   padding: 0.75rem 1.1rem 1.1rem;
   border-top: 1px solid var(--border);
 }
 
-.account-sheet-logout { flex: 1; justify-content: center; min-height: 44px; }
+.account-sheet-logout { width: 100%; justify-content: center; min-height: 44px; }
 
 /* ── The bottom bar, on a phone ────────────────────────────────────────── */
 
@@ -236,56 +226,28 @@
   }
 }
 
-/* ── The language choice ──────────────────────────────────────────────────
- *
- * Two joined buttons, segmented-control style: there are only two languages,
- * and the current one reads at a glance. A drop-down would take two gestures
- * for the same thing, and hide the current state behind the first.
+/*
+ * The phone's language choice: the top bar's pill, once per language, sharing
+ * the sheet's width. Two languages, both in sight: the current one reads at a
+ * glance, and the other one is a single tap.
  */
-
 .lang-switch {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-  flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
 }
 
-.lang-switch-item {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  padding: 0.35rem 0.6rem;
-  cursor: pointer;
-  min-height: 30px;
-}
-
-/* The current language wears the gold of the application's active chips, not
-   a blue of its own. */
-.lang-switch-item.is-active {
-  background: rgba(245, 197, 66, 0.15);
-  color: var(--gold);
-  box-shadow: inset 0 0 0 1px var(--gold);
-}
-
-.lang-switch-item:not(.is-active):hover {
-  color: var(--fg);
-}
-
-/* In the account sheet, the target is finger-sized and the block takes its room. */
-.account-sheet-foot .lang-switch {
-  align-self: center;
-}
-
-.account-sheet-foot .lang-switch-item {
+.lang-switch .lang-switch-item {
+  flex: 1;
+  justify-content: center;
   min-height: 44px;
-  min-width: 56px;
   font-size: 0.85rem;
+}
+
+/* The current language wears the gold of the application's active chips. */
+.lang-switch .lang-switch-item.is-active {
+  background: rgba(245, 197, 66, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
 }
 
 /*
