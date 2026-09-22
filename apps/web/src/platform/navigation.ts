@@ -72,13 +72,6 @@ export async function refreshServiceState(): Promise<void> {
  * seconds would close an open menu under the pointer, which is the defect the
  * account sheet already taught us.
  */
-/**
- * Where the source is. ATEM is under the AGPL-3.0: whoever uses an instance
- * over the network can reach its source — a modified instance must point here
- * at its own.
- */
-const SOURCE_URL = "https://github.com/Altagen/ATEM";
-
 /** Whose navigation this is: the administrator's has only its console. */
 function audienceOf(user: NonNullable<ReturnType<typeof knownUser>>): Audience {
   return user.role === "admin" ? "admin" : "player";
@@ -149,19 +142,26 @@ function languagePill(): HTMLElement {
 }
 
 /**
- * The language choice, in the phone's account sheet: two finger-sized buttons,
- * where the choice has the room and the thumb needs a target.
+ * The language choice, in the phone's account sheet: the top bar's flag pill,
+ * once per language and side by side across the sheet — the current one in
+ * gold, the other one tap away.
  */
 function languageSwitch(): HTMLElement {
   const user = knownUser()!;
   const group = el("div", { class: "lang-switch", role: "group", "aria-label": t("Language") });
 
-  for (const code of ["fr", "en"] as const) {
+  for (const { code, flag, label } of [
+    { code: "fr", flag: "🇫🇷", label: "FR" },
+    { code: "en", flag: "🇬🇧", label: "EN" },
+  ] as const) {
     const button = el("button", {
       type: "button",
-      class: `lang-switch-item${user.locale === code ? " is-active" : ""}`,
+      class: `lang-pill lang-switch-item${user.locale === code ? " is-active" : ""}`,
       "aria-pressed": String(user.locale === code),
-    }, [t(code === "fr" ? "FR" : "EN")]);
+    }, [
+      el("span", { "aria-hidden": "true" }, [flag]),
+      el("span", {}, [t(label)]),
+    ]);
 
     button.addEventListener("click", () => {
       if (user.locale === code) return;
@@ -264,12 +264,7 @@ function userMenu(user: NonNullable<ReturnType<typeof knownUser>>, signal: Abort
       ]),
     );
   }
-  menu.append(
-    el("a", { class: "menu-item", role: "menuitem", href: SOURCE_URL, target: "_blank", rel: "noopener" }, [
-      el("span", { "aria-hidden": "true" }, ["📖"]), " ", t("Source code"),
-    ]),
-  );
-  menu.append(el("div", { class: "menu-sep", role: "separator" }));
+  if (menu.childElementCount > 0) menu.append(el("div", { class: "menu-sep", role: "separator" }));
 
   const signOut = el("button", { type: "button", class: "menu-item menu-item-danger", role: "menuitem" }, [
     t("Sign out"),
@@ -374,14 +369,9 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
       ]),
     );
   }
-  list.append(
-    el("a", { class: "account-sheet-item", href: SOURCE_URL, target: "_blank", rel: "noopener" }, [
-      el("span", { "aria-hidden": "true" }, ["📖"]),
-      el("span", {}, [t("Source code")]),
-      el("span", { class: "account-sheet-chev", "aria-hidden": "true" }, ["›"]),
-    ]),
-  );
-  const signOut = el("button", { type: "button", class: "account-sheet-logout" }, [
+  // The application's own danger button, not a bare one: it had kept the
+  // browser's grey (the maintainer, 2026-09-22).
+  const signOut = el("button", { type: "button", class: "account-sheet-logout btn-action-danger-red is-medium" }, [
     t("Sign out"),
   ]);
   signOut.addEventListener("click", () => void signOutNow());
@@ -394,14 +384,13 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
     "aria-label": t("My account"),
     hidden: "",
   }, [
-    el("span", { class: "account-sheet-grip", "aria-hidden": "true" }),
+    // Two lines across the whole width: the brand and the way out, then who
+    // you are and the service's state.
     el("header", { class: "account-sheet-head" }, [
       el("span", { class: "account-sheet-brand" }, ["ATEM"]),
-      el("span", { class: "account-sheet-identity" }, [
-        el("strong", {}, [`${user.displayName} #${user.tag}`]),
-        el("span", { class: `api-pill ${service.className}` }, [t(service.text)]),
-      ]),
       close,
+      el("strong", { class: "account-sheet-name" }, [`${user.displayName} #${user.tag}`]),
+      el("span", { class: `api-pill ${service.className}` }, [t(service.text)]),
     ]),
     ...(list.isConnected || list.childElementCount > 0 ? [list] : []),
     el("footer", { class: "account-sheet-foot" }, [languageSwitch(), signOut]),

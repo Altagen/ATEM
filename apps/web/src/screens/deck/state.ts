@@ -211,6 +211,8 @@ export type DeckState = {
    * draft; we display the reverse, briefly, because there is none.
    */
   savedAt: number | null;
+  /** The counter's “?” is open: what the sizes mean, and the server's own limit. */
+  limitsHelp: boolean;
   /**
    * The visible panel, on a narrow screen.
    *
@@ -247,6 +249,7 @@ const state: DeckState = {
   moving: null,
   listView: "gallery",
   savedAt: null,
+  limitsHelp: false,
   panel: "collection",
   error: "",
 };

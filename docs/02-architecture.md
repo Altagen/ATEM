@@ -38,7 +38,7 @@ reversible choices, unlike ADR-001/003/004 — so they do not have to be settled
 
 ## ADR-003 — Lazy resolution, optional mirror *(to settle at M1)*
 
-**Context.** the earlier prototype resolves on demand: `cardsetsinfo.php` on the scanned code,
+**Context.** The earlier prototype resolves on demand: `cardsetsinfo.php` on the scanned code,
 then `cardinfo.php?id=` for the EN and FR record, then local persistence. A card
 already met is never requested again. It works and is proven.
 
@@ -165,7 +165,7 @@ guild         (empty — reserved boundary)
 > **Note (2026-09-16).** As built: scanlists became their own module, `scanlist`,
 > which pours through `collection`'s contract; decks live in `deck`; account deletion
 > landed in `identity`. `social`, `data`, `duel` and `guild` do not exist yet. The
-> current tree and the enforced dependency directions are in `05-structure.md`.
+> current tree and the enforced dependency directions are in `04-structure.md`.
 
 **Cross-reading access rule.** Viewing another player's collection or decks goes
 through a single checkpoint combining the visibility declared in `UserProfile` and
@@ -405,3 +405,35 @@ failure mode on every sign-up — is paid by every host, forever.
 **This is settled.** It is a choice, not a gap: do not reopen it as a finding, and do
 not "fix" it by making the refusal vaguer still. Revisit only if ATEM gains email for
 another reason — then the mitigation above becomes free, and it becomes worth doing.
+
+---
+
+## ADR-012 — The application shows its own version *(proposed, after 0.1.0)*
+
+**Context.** Asked for by the maintainer on 2026-09-22: the settings should say
+which version of ATEM is running. A player reporting a problem, an operator
+checking an upgrade, both need it — and today nothing on screen says it.
+Deferred: not required for 0.1.0.
+
+**Constraint.** The version must not be written by hand anywhere a release does
+not already write it: a number to keep in step would be wrong the first time a
+release forgets it. Release-please (`release.yml`) already writes the version
+into every `package.json` in the release pull request.
+
+**Proposed decision.** Read it from there at build time:
+
+- the front: Vite's `define` injects `apps/web/package.json`'s version as a
+  constant, shown at the foot of the settings beside the license — built into
+  the image, so it is the version of the files actually served;
+- the API: `GET /health` answers `{ status, version }`, read from its own
+  `package.json` at start — so the front can also say when it and the API
+  disagree, which is what a half-finished upgrade looks like.
+
+**Alternatives set aside.** An environment variable set by the image build
+(`ATEM_VERSION` in the Containerfile): one more place for the number to live,
+and a local build would show whatever was last passed. Reading the git tag at
+build time: the image is built from a checkout that may not carry the tags.
+
+**Consequences.** No step added to a release, and the number shown is the one
+built. A development build shows the version of the last release, which is
+true of the code it starts from.

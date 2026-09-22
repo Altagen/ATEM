@@ -136,7 +136,7 @@ test("a deck's verdict names one thing at a time", () => {
   const full = { main: 40, extra: 0, side: 0 };
   const D = DECK_MAIN_TARGET_DEFAULT;
   assert.equal(deckStatus(full, 0, D).kind, "ready");
-  assert.equal(deckStatus({ main: 60, extra: 15, side: 15 }, 0, D).kind, "ready", "at the limits");
+  assert.equal(deckStatus({ main: 40, extra: 15, side: 15 }, 0, D).kind, "ready", "at the limits");
   assert.equal(deckStatus({ main: 0, extra: 0, side: 0 }, 0, D).kind, "empty");
 
   // Under construction: enough to write “28 more in the Main”.
@@ -144,9 +144,9 @@ test("a deck's verdict names one thing at a time", () => {
     kind: "short", missing: 28, target: 40,
   });
 
-  // Above a limit: the offending zone and how many to remove.
-  assert.deepEqual(deckStatus({ main: 61, extra: 0, side: 0 }, 0, D), {
-    kind: "over", zone: "main", excess: 1,
+  // Above a size: the offending zone and how many to remove.
+  assert.deepEqual(deckStatus({ main: 43, extra: 0, side: 0 }, 0, D), {
+    kind: "over", zone: "main", excess: 3,
   });
   assert.deepEqual(deckStatus({ main: 40, extra: 16, side: 0 }, 0, D), {
     kind: "over", zone: "extra", excess: 1,
@@ -156,7 +156,7 @@ test("a deck's verdict names one thing at a time", () => {
   assert.deepEqual(deckStatus(full, 2, D), { kind: "missing", missing: 2 });
 });
 
-test("the target moves the finish line, never the legality", () => {
+test("the target is the Main Deck's size, on both sides", () => {
   /**
    * A deck aimed at 60 is not finished at 40, even though it is playable there:
    * the player said 60. And a deck aimed at 40 is finished at 40, even though
@@ -169,12 +169,17 @@ test("the target moves the finish line, never the legality", () => {
   assert.equal(deckStatus({ main: 40, extra: 0, side: 0 }, 0, 40).kind, "ready");
 
   /**
-   * The sixty-first card is refused whatever the target, and a forty-first is
-   * accepted whatever the target — the earlier prototype showed “limit exceeded” there,
-   * which is the application inventing a rule.
+   * Past the target, the cards are too many — counted from the target, not
+   * from the rules' sixty: a deck aimed at 40 holding 43 has three to take out
+   * (the maintainer, 2026-09-22).
    */
-  assert.equal(deckStatus({ main: 61, extra: 0, side: 0 }, 0, 60).kind, "over");
-  assert.equal(deckStatus({ main: 41, extra: 0, side: 0 }, 0, 40).kind, "ready");
+  assert.deepEqual(deckStatus({ main: 43, extra: 0, side: 0 }, 0, 40), {
+    kind: "over", zone: "main", excess: 3,
+  });
+  assert.deepEqual(deckStatus({ main: 61, extra: 0, side: 0 }, 0, 60), {
+    kind: "over", zone: "main", excess: 1,
+  });
+  assert.equal(deckStatus({ main: 45, extra: 0, side: 0 }, 0, 50).kind, "short");
 
   // Every step the picker offers is a target the verdict understands.
   for (const step of DECK_MAIN_TARGET_STEPS) {

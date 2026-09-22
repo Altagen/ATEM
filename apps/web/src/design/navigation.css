@@ -52,6 +52,8 @@
   z-index: var(--z-modal);
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
+  /* A drag on the dimmed page is not a pull-to-refresh. */
+  touch-action: none;
 }
 
 .account-sheet {
@@ -68,54 +70,43 @@
   box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.55);
   /* The system gesture bar bites into the bottom of the screen. */
   padding-bottom: env(safe-area-inset-bottom, 0);
-  /* The swipe sets a `transform`: the transition brings the panel back into
-     place when released too early, and carries it away once the threshold is
-     crossed. `touch-action` reserves the vertical gesture for the panel. */
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  touch-action: pan-y;
-}
-
-/* The handle: three pixels high, but it is what announces that the panel can
-   be pulled. With no cue, the gesture only exists for whoever guessed it. */
-.account-sheet-grip {
-  width: 2.5rem;
-  height: 4px;
-  margin: 0.5rem auto 0.1rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  flex-shrink: 0;
+  /* The panel closes with its cross, not with a swipe: pulling it down
+     reloaded the page instead (the maintainer, 2026-09-22). Its scrolling
+     stops at its own edges rather than passing on to the page's refresh. */
+  overscroll-behavior: contain;
 }
 
 .account-sheet-head {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem 0.75rem;
   padding: 0.85rem 1.1rem;
   border-bottom: 1px solid var(--border);
 }
 
-/* The brand tops the panel, alone on its line: it is the only place it
-   remains on a phone, and from there it leads back home. */
+/* The brand opens the panel: it is the only place it remains on a phone. */
 .account-sheet-brand {
-  grid-column: 1 / -1;
   font-size: 1.05rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   color: var(--gold);
-  text-decoration: none;
 }
 
-.account-sheet-identity { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
-
-.account-sheet-identity strong { font-size: 0.95rem; }
-
-.account-sheet-identity .muted {
-  font-size: 0.75rem;
+/* The name reads first, at a size of its own; long ones end in an ellipsis
+   rather than pushing the state off the line. */
+.account-sheet-name {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--fg-fort);
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.account-sheet-head .api-pill,
+.account-sheet-head .icon-btn { justify-self: end; }
 
 .account-sheet-list { display: flex; flex-direction: column; padding: 0.35rem 0; }
 
@@ -145,9 +136,16 @@
 
 .account-sheet-chev { margin-left: auto; color: var(--muted); font-size: 1.15rem; }
 
-.account-sheet-foot { padding: 0.6rem 1.1rem 1.1rem; border-top: 1px solid var(--border); }
+/* The language, then signing out on a line of its own, both across the sheet. */
+.account-sheet-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 1.1rem 1.1rem;
+  border-top: 1px solid var(--border);
+}
 
-.account-sheet-logout { width: 100%; justify-content: center; color: var(--danger); }
+.account-sheet-logout { width: 100%; justify-content: center; min-height: 44px; }
 
 /* ── The bottom bar, on a phone ────────────────────────────────────────── */
 
@@ -228,53 +226,28 @@
   }
 }
 
-/* ── The language choice ──────────────────────────────────────────────────
- *
- * Two joined buttons, segmented-control style: there are only two languages,
- * and the current one reads at a glance. A drop-down would take two gestures
- * for the same thing, and hide the current state behind the first.
+/*
+ * The phone's language choice: the top bar's pill, once per language, sharing
+ * the sheet's width. Two languages, both in sight: the current one reads at a
+ * glance, and the other one is a single tap.
  */
-
 .lang-switch {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-  flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
 }
 
-.lang-switch-item {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  padding: 0.35rem 0.6rem;
-  cursor: pointer;
-  min-height: 30px;
-}
-
-.lang-switch-item.is-active {
-  background: var(--accent);
-  color: #061018;
-}
-
-.lang-switch-item:not(.is-active):hover {
-  color: var(--fg);
-}
-
-/* In the account sheet, the target is finger-sized and the block takes its room. */
-.account-sheet-foot .lang-switch {
-  align-self: center;
-}
-
-.account-sheet-foot .lang-switch-item {
+.lang-switch .lang-switch-item {
+  flex: 1;
+  justify-content: center;
   min-height: 44px;
-  min-width: 56px;
   font-size: 0.85rem;
+}
+
+/* The current language wears the gold of the application's active chips. */
+.lang-switch .lang-switch-item.is-active {
+  background: rgba(245, 197, 66, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
 }
 
 /*

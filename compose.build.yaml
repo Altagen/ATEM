@@ -1,0 +1,16 @@
+# Building the images from the sources instead of pulling them, in a clone of
+# the repository — layered over the production file:
+#
+#   docker compose -f compose.yaml -f compose.build.yaml up -d --build
+#
+# The images keep their names, so everything else in docs/deployment.md holds.
+# migrate carries the API's build line too: without one, compose may try to
+# pull its image before the API's build has tagged it; the second build reuses
+# every cached layer.
+services:
+  migrate:
+    build: { context: ., dockerfile: Containerfile }
+  api:
+    build: { context: ., dockerfile: Containerfile }
+  web:
+    build: { context: ., dockerfile: Containerfile.web }

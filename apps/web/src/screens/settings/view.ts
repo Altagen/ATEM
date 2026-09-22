@@ -48,6 +48,14 @@ export function deletionReady(state: SettingsState): boolean {
 const panelClass = (state: SettingsState, view: SettingsView): string =>
   `settings-view-panel${state.view === view ? " is-active" : ""}`;
 
+/**
+ * Where the source is. ATEM is under the AGPL-3.0: whoever uses an instance
+ * over the network can reach its source — a modified instance must point here
+ * at its own. In the settings rather than the account menu, where it sat
+ * among the everyday destinations (the maintainer, 2026-09-22).
+ */
+const SOURCE_URL = "https://github.com/Altagen/ATEM";
+
 function backButton(): SafeHtml {
   return html`<button type="button" class="settings-back-btn" data-target-view="root">
     <span aria-hidden="true">←</span><span>${t("Settings")}</span>
@@ -80,6 +88,12 @@ function rootPanel(state: SettingsState): SafeHtml {
       ${menuRow("import", "⬆️", t("Import a collection"), t("Read a file from ATEM, ScanFlip or Cardmarket — merging or replacing"))}
       ${menuRow("history", "📜", t("Import history"), t("The files you imported lately, and what each one did"))}
       ${menuRow("danger", "⚠️", t("Danger zone"), t("Erase your collection, or delete your account"), true)}
+    </div>
+    <div class="settings-about">
+      <p class="caption">${t("ATEM is free software, under the AGPL-3.0 license.")}</p>
+      <a class="btn-showcase-secondary is-small is-auto" href="${SOURCE_URL}" target="_blank" rel="noopener">
+        📖 ${t("Source code")}
+      </a>
     </div>
   </div>`;
 }

@@ -705,7 +705,7 @@ export async function requeuePendingResolves(db: Database): Promise<number> {
  * Picks up a printing left provisional, and re-attaches the rows that pointed
  * at it to the real edition.
  *
- * **Everything holds in one transaction.** the earlier prototype lived the failure: between
+ * **Everything holds in one transaction.** The earlier prototype lived the failure: between
  * deleting the provisional row and writing the consolidated one, an
  * interruption lost copies. That is not a rare case — it is the normal path of
  * every scanned card: “on an import of eight hundred cards, the window opens

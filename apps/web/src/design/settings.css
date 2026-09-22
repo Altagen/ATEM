@@ -365,3 +365,16 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* What ATEM is, under the menu: its license and where its source is. */
+.settings-about {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.settings-about .caption { margin: 0; }

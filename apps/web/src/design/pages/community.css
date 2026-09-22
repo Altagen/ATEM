@@ -3,7 +3,7 @@
  *
  * Taken as it was from the earlier prototype's community sheet, the
  * reference. What styled its guild tab and rank badges was purged: no markup
- * sets them here, and guilds have no module yet (`docs/06-deferred.md`).
+ * sets them here, and guilds have no module yet (`docs/05-deferred.md`).
  */
 /* Tokens and base are imported by ../index.css: do not import them again here. */
 

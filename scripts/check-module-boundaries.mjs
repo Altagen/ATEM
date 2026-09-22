@@ -1,7 +1,7 @@
 /**
  * A module never touches another module's internal files.
  *
- * It is rule R1 of `docs/05-structure.md`, and it does not exist for style: in
+ * It is rule R1 of `docs/04-structure.md`, and it does not exist for style: in
  * The earlier prototype, `collection` and `decks` wrote directly into the catalogue's tables.
  * The result was **three competing implementations** of “card not resolved
  * yet”, each unaware of the other two, and a negative passcode whose sign
@@ -105,6 +105,6 @@ for (const violation of external) {
 }
 console.log(
   "\n  A module addresses another through its index.ts, never through its files." +
-    "\n  See docs/05-structure.md, rule R1.",
+    "\n  See docs/04-structure.md, rule R1.",
 );
 process.exit(1);

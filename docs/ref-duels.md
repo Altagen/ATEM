@@ -162,7 +162,7 @@ they count from.
   around one mat both write to the same duel, and each sees the other's turns on
   its next read. A permanent connection for a pastime measured in minutes is not
   worth the infrastructure.
-- **No ranking, no ladder, no rating.** the earlier prototype displayed a rank that rested on
+- **No ranking, no ladder, no rating.** The earlier prototype displayed a rank that rested on
   nothing; the counted duels are the count, and that is all.
 - **No spectators.** A duel is visible to its two players. Whether it appears on
   a public profile is a visibility question, and visibility has no setting yet.

@@ -26,7 +26,7 @@ const switchLanguage = async (page: import("@playwright/test").Page, code: "FR" 
   }
   await page.getByRole("button", { name: /Mon compte|My account/ }).click();
   await page.locator("#account-sheet .lang-switch-item", { hasText: code }).click();
-  await expect(page.locator("#account-sheet .lang-switch-item.is-active")).toHaveText(code);
+  await expect(page.locator("#account-sheet .lang-switch-item.is-active")).toContainText(code);
 
   /**
    * On a phone, the sheet closes by itself: changing language rebuilds the whole

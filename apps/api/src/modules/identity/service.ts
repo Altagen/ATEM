@@ -261,7 +261,7 @@ export async function setLocale(
  *
  * — the **collection** and the **scanlists**, through `on delete cascade`;
  * — the **authentication attempts**, which do not cascade: they have no
- *   `user_id`, but their key carries the address — `email:ange@example.com`.
+ *   `user_id`, but their key carries the address — `email:someone@example.com`.
  *   That is personal data, and forgetting it would make “everything has been
  *   erased” a lie. Found by listing the foreign keys pointing at `users`, which
  *   showed only two.

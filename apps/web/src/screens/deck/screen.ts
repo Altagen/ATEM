@@ -445,6 +445,10 @@ export async function deckScreen(
       if (state.moving) void drop(state.moving, state.folderId);
     });
     root.querySelector("#btn-delete")?.addEventListener("click", () => void deleteDeck());
+    root.querySelector("#btn-deck-limits")?.addEventListener("click", () => {
+      state.limitsHelp = !state.limitsHelp;
+      paint();
+    });
     // Only in the workshop: the sheet is for looking, and two ways in to the
     // same window would be one too many — as for the bin.
     root.querySelector("#btn-deck-options")?.addEventListener("click", () => {

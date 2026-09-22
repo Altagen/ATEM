@@ -648,7 +648,7 @@ export function shellHtml(state: ViewState, facets: Facets): SafeHtml {
         <button type="button" class="btn-scan" id="btn-scan" title="${t("Scan the set code")}"
                 aria-label="${t("Scan")}"><span class="i-scan" aria-hidden="true"></span></button>
         <!--
-          The pin sits on this row, not on the search one — The maintainer's idea, and the
+          The pin sits on this row, not on the search one — the maintainer's idea, and the
           measurements agree. It acts on the whole rail, both rows, so either
           would be honest; but at 393 px the search field has 145 px where the
           set code field has 235. The 44 px this button costs come from the one

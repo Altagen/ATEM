@@ -52,7 +52,7 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [
-    // Case must not create two accounts: `the maintainer@x.fr` and `ange@x.fr` are the
+    // Case must not create two accounts: `Someone@x.fr` and `someone@x.fr` are the
     // same person to everyone but a naive index.
     uniqueIndex("users_email_uidx").on(sql`lower(${t.email})`),
     uniqueIndex("users_name_tag_uidx").on(t.displayName, t.tag),

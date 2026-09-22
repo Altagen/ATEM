@@ -4,7 +4,7 @@
  * A scanned card enters the inventory immediately, as `pending`. It is this
  * queue that then asks YGOPRODeck what it is.
  *
- * **De-duplication is by (user, code), not by code alone.** the earlier prototype lived the
+ * **De-duplication is by (user, code), not by code alone.** The earlier prototype lived the
  * bug: if A had already queued `LOB-FR001`, B's entry was dropped as a
  * duplicate — and B's line stayed provisional indefinitely. The work to do is
  * not “resolve this code”, it is “repair this person's line”.

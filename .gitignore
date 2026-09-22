@@ -21,3 +21,6 @@ e2e/shots/
 
 # Development certificate, specific to each machine.
 apps/web/.certs/
+
+# Local Claude Code settings, specific to each machine.
+.claude/

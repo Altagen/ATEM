@@ -6,7 +6,7 @@ the next once the previous one really runs with `docker compose up`.
 Up to 0.1.0, each milestone began with a targeted look at the earlier
 prototype: only what concerned the milestone, each element classified **Take /
 Adapt / Redo**. The prototype has since left the project; what it had and ATEM
-does not do yet is in `06-deferred.md`.
+does not do yet is in `05-deferred.md`.
 
 ---
 
@@ -384,7 +384,7 @@ takes the whole tree despite the non-cascading `parent_id`.
 The maintainer: “can we tackle the deck page with folders and card previews?”. Split in three:
 previews, then the folder foundation, then the explorer.
 
-**The cover is derived, not chosen.** the earlier prototype had a `cover_url` column — so a picker
+**The cover is derived, not chosen.** The earlier prototype had a `cover_url` column — so a picker
 to write, and a fix-up to do when the card leaves the deck. Ours is the card the deck
 holds **the most copies of in the Main**, its identity in practice, with ties broken
 by passcode so the artwork does not change from one refresh to the next. Zero
@@ -422,25 +422,32 @@ size, a Side size and a link to the banlist. **Only one of the five was transpos
 and the reasons are worth keeping:
 
 - the **folder** is not chosen here: filing a deck is a move, and moving is a mode you
-  navigate — The maintainer's own design, better than a drop-down that makes you picture the
+  navigate — the maintainer's own design, better than a drop-down that makes you picture the
   tree instead of looking at it;
 - the **banlist** has no table on this side, and a link to nothing is worse than no
   link;
 - the **Extra and Side sizes** are the interesting refusal. Their rule minimum is
   zero, so a target there counts towards nothing; the earlier prototype used them as *maxima* and
   displayed “limit exceeded” on a legal deck — the application inventing a rule of its
-  own. What refuses stays the rules': 15, and 60 in the Main.
+  own. Their size is the rules' 15 — reported when passed, not refused (below).
 - the **Main size aimed at** is the one that carries meaning. The rules allow 40 to 60
   and both ends are playable: a 40-card deck draws its combo more often, a 60-card one
   survives decking out. Nothing in the cards says which a deck is going for — only the
   player does.
 
-**What it changes, and what it does not.** The target moves the line between “still
-building” and “ready”, never legality: the sixty-first card is still refused, the
-forty-first still accepted. The counter keeps the rules' ceiling as its denominator —
-`Main 45/60` answers “how many more may I legally add?”, which no target changes —
-while the sentence carries the intention: “Deck incomplete: 15 more in the Main
-(aiming for 60).”
+**What it changes, and what it does not.** The target is the Main Deck's size: below it
+the deck is still being built, above it the deck has cards too many. The counter counts
+towards it — `Main 45/60` on a deck aimed at 60 — and the sentence carries the
+intention: “Deck incomplete: 15 more in the Main (aiming for 60).”
+
+**Sizes are said, not refused** (the maintainer, 2026-09-22). The counter used to keep
+the rules' sixty as its denominator, and a finished forty-card deck read “40/60”; and
+the sixty-first Main card or sixteenth Extra card was refused. Now a deck aimed at 40
+may hold 43 — “Main Deck: 3 too many (aiming for 40)” — and the Extra or Side may pass
+15 the same way: a deck is worked on, and a Side sorted out of twenty candidates is a
+normal state. The one refusal left is not a rule of the game but the server's bound,
+`DECK_ZONE_CAPACITY`: a hundred cards per zone, so no deck grows without end. The
+counter's “?” says both.
 
 The default is 40, which is both the usual format and the value that makes every
 verdict identical to what it was before targets existed. The migration gives 40 to

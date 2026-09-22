@@ -11,7 +11,7 @@
  *
  * Any signed-in duellist may read any profile but a blocked one. The collection
  * and the decks follow what their owner chose to show (M4, 2026-09-21). Both
- * questions are `social`'s single checkpoint (R3, `docs/05-structure.md`); this
+ * questions are `social`'s single checkpoint (R3, `docs/04-structure.md`); this
  * module asks it, and never tests anything itself.
  */
 import type { Database } from "../../db/client.js";
