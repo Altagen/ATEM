@@ -75,6 +75,15 @@ prototype had more, and these are the parts worth having one day:
 - **An administrator acting inside a guild** (the prototype's “admin
   override”), once guilds exist — and logged like every other administrator
   action.
+- **A direct message** from the administrator to one player, landing in their
+  inbox — the announcement's single-recipient form.
+
+## Inbox
+
+- **Archiving** a message instead of deleting it, with an archive to read
+  back later.
+- **Clearing every read message** in one gesture. Today a message is deleted
+  one at a time, and everything is marked read at once.
 
 ## The landing page
 
@@ -103,6 +112,9 @@ friends.
 - **Banlist enforcement per deck** — choosing, deck by deck, whether the
   banlist limits apply (a casual deck may ignore them). The one functional gap
   the prototype had listed itself.
+- **Reading the banlist itself** — a panel listing the forbidden, limited and
+  semi-limited cards the workshop applies. Today each card shows its own
+  status, and the list as a whole is not shown.
 - **Foil and holographic cards**: glare makes the set code hard to read. A
   pre-processing step that removes specular highlights before the OCR.
 - **Installable application** (PWA): a manifest, a service worker, the static
@@ -131,6 +143,15 @@ ATEM does not complete the reference data by hand.
 - **Favourite decks on the profile.** A profile is not a shelf; the decks are
   one click away, as their owner chooses to show them.
 - **A score per duel.** A duel has a winner (`ref-duels.md`).
+- **A live connection** (the prototype's server-sent events). Polling every
+  few seconds answers every question the screens ask — ADR-006.
+- **An onboarding step** to choose one's display name after signing up: ATEM
+  asks for it on the sign-up form, and the number after it (`#0042`) removes
+  the need to check availability.
+- **Uploaded avatars**: the picture is one of the product's presets, never an
+  upload — the prototype had already removed its own.
+- **Several administrators**, or promoting a player: there is one, and the
+  configuration names it.
 
 ## The screenshots
 

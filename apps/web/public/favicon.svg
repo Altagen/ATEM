@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ATEM">
+  <!--
+    ATEM's emblem, and the project's logo: a stylised Eye of Horus, in the
+    palette's gold. Drawn in SVG rather than PNG: one image, sharp at every
+    size, and nothing to regenerate when the palette moves.
+  -->
+  <rect width="64" height="64" rx="14" fill="#0a0a12"/>
+  <path d="M14 34c6-9 13-13 18-13s12 4 18 13c-6 9-13 13-18 13s-12-4-18-13z"
+        fill="none" stroke="#f5c542" stroke-width="3.5" stroke-linejoin="round"/>
+  <circle cx="32" cy="34" r="5.5" fill="#f5c542"/>
+  <path d="M32 47v6M27 51l-4 4" fill="none" stroke="#f5c542" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

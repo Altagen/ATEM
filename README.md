@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/web/public/favicon.svg" alt="ATEM" width="96" height="96" />
+</p>
+
 # ATEM
 
 A self-hostable web application for paper Yu-Gi-Oh! players: a digital
@@ -89,3 +93,9 @@ screen is not.
 
 **Never write a prose project status file.** A state is measured by an
 executable gate, not asserted in a document.
+
+## License
+
+ATEM is free software, under the [GNU Affero General Public License
+v3.0](LICENSE): anyone who runs a modified version as a service must offer its
+source to the people using it.
