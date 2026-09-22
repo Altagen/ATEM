@@ -4,7 +4,7 @@ All notable changes, by version. The format follows
 [Keep a Changelog](https://keepachangelog.com), and versions follow
 [semantic versioning](https://semver.org).
 
-## [Unreleased] — 0.1.0
+## [0.1.0] — 2026-09-22
 
 The first release.
 

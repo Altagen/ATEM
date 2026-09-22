@@ -2,7 +2,7 @@
   "name": "atem",
   "private": true,
   "license": "AGPL-3.0-only",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "ATEM — a self-hostable Yu-Gi-Oh! companion for paper players: collection and decks",
   "packageManager": "pnpm@9.15.0",
   "engines": {
