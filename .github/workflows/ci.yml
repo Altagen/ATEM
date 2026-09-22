@@ -10,6 +10,9 @@ on:
   push:
     branches: [develop, main]
   pull_request:
+  # Dispatched by release.yml on the release pull request, which a pull
+  # request opened by the workflow's own token would not trigger.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -47,6 +50,33 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: ./scripts/check-all.sh
+
+  commits:
+    name: Conventional commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # The releases are written from these messages (release.yml): a commit
+      # release-please cannot read is a change the changelog will not tell.
+      - name: Every commit of the pull request is a conventional commit
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='^(feat|fix|perf|refactor|docs|test|build|ci|chore|style|revert)(\([a-z0-9._/-]+\))?!?: .+'
+          bad=0
+          while IFS= read -r line; do
+            sha=${line%% *}; subject=${line#* }
+            if ! grep -qE "$pattern" <<<"$subject"; then
+              echo "::error::$sha is not a conventional commit: $subject"
+              bad=1
+            fi
+          done < <(git log --no-merges --format='%h %s' "$BASE..$HEAD")
+          exit "$bad"
 
   dependency-review:
     name: Dependency review

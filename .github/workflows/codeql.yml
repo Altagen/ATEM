@@ -8,6 +8,8 @@ on:
   pull_request:
   schedule:
     - cron: "17 4 * * 1"
+  # Dispatched by release.yml on the release pull request (see ci.yml).
+  workflow_dispatch:
 
 permissions:
   contents: read
