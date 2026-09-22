@@ -323,13 +323,13 @@ export async function deleteDeck(db: Database, viewerId: string, deckId: string)
 /**
  * Sets the quantity of a card in a zone.
  *
- * **Everything is decided here, once.** the earlier prototype had the right computation —
+ * **Everything is decided here, once.** The earlier prototype had the right computation —
  * `checkDeckAdd` — and never called it server-side: it was a display helper.
  * The screen greyed a button out, nothing stopped the request.
  *
  * Three bounds overlap, and the lowest decides: the rule of the game (three per
  * deck, guaranteed in the database by a constraint), the banlist (which moves
- * with the catalogue, hence here), and the collection — The maintainer's decision: you do
+ * with the catalogue, hence here), and the collection — the maintainer's decision: you do
  * not put in a deck a card you do not have.
  */
 export async function setDeckCard(
@@ -346,7 +346,6 @@ export async function setDeckCard(
   }
 
   await deckForWrite(db, viewerId, deckId);
-  const rows = await db.select().from(deckCards).where(eq(deckCards.deckId, deckId));
 
   const card = (await cardsByPasscode(db, [input.passcode])).get(input.passcode);
   if (!card) throw notFound("Unknown card.");
@@ -365,54 +364,69 @@ export async function setDeckCard(
     throw invalidInput("This card belongs in the Extra Deck, not the Main Deck.");
   }
 
-  const existingRow = rows.find((row) => row.passcode === input.passcode);
-  const otherZones =
-    (existingRow ? existingRow.mainQty + existingRow.extraQty + existingRow.sideQty : 0) -
-    (existingRow ? existingRow[`${input.zone}Qty`] : 0);
-
-  if (quantity > 0) {
-    const owned = await ownedByPasscode(db, viewerId, [input.passcode]);
-    const issue = checkDeckAdd({
-      banlistTcg: card.banlistTcg,
-      owned: owned.get(input.passcode) ?? 0,
-      // What is already there **outside the zone being written**: we replace
-      // that zone, we do not add to it.
-      inDeck: otherZones,
-      wanted: quantity,
-    });
-
-    if (issue.blockedBy) {
-      throw invalidInput(BLOCKED_LABELS[issue.blockedBy], {
-        reason: issue.blockedBy,
-        remainingLegal: issue.remainingLegal,
-        owned: issue.hardCap,
-      });
-    }
-  }
+  // Read before the transaction: it holds a connection, and waiting inside it
+  // for a second one is how a full pool deadlocks.
+  const owned = quantity > 0
+    ? (await ownedByPasscode(db, viewerId, [input.passcode])).get(input.passcode) ?? 0
+    : 0;
 
   /**
-   * The zone stays within what the server holds.
+   * The deck is read and written under its own row lock.
    *
-   * The game's sizes are not checked here: a zone above them is reported on
-   * the screen, not refused (the maintainer, 2026-09-22). The capacity is the
-   * server's own bound, so a deck cannot be grown without end.
+   * The capacity below is a total over rows, which no constraint can hold:
+   * without the lock, requests fired together each read the zone before the
+   * others wrote, and all went through (found auditing 0.1.0).
    */
-  const zoneTotal =
-    rows.reduce((sum, row) => sum + row[`${input.zone}Qty`], 0) -
-    (existingRow?.[`${input.zone}Qty`] ?? 0) +
-    quantity;
-  if (zoneTotal > DECK_ZONE_CAPACITY) {
-    // Spelled out, like the copies: the translation gate reads literals only.
-    throw invalidInput("A zone holds no more than 100 cards.");
-  }
-
-  const zones = {
-    mainQty: input.zone === "main" ? quantity : (existingRow?.mainQty ?? 0),
-    extraQty: input.zone === "extra" ? quantity : (existingRow?.extraQty ?? 0),
-    sideQty: input.zone === "side" ? quantity : (existingRow?.sideQty ?? 0),
-  };
-
   await db.transaction(async (tx) => {
+    await tx.select({ id: decks.id }).from(decks).where(eq(decks.id, deckId)).for("update");
+    const rows = await tx.select().from(deckCards).where(eq(deckCards.deckId, deckId));
+
+    const existingRow = rows.find((row) => row.passcode === input.passcode);
+    const otherZones =
+      (existingRow ? existingRow.mainQty + existingRow.extraQty + existingRow.sideQty : 0) -
+      (existingRow ? existingRow[`${input.zone}Qty`] : 0);
+
+    if (quantity > 0) {
+      const issue = checkDeckAdd({
+        banlistTcg: card.banlistTcg,
+        owned,
+        // What is already there **outside the zone being written**: we replace
+        // that zone, we do not add to it.
+        inDeck: otherZones,
+        wanted: quantity,
+      });
+
+      if (issue.blockedBy) {
+        throw invalidInput(BLOCKED_LABELS[issue.blockedBy], {
+          reason: issue.blockedBy,
+          remainingLegal: issue.remainingLegal,
+          owned: issue.hardCap,
+        });
+      }
+    }
+
+    /**
+     * The zone stays within what the server holds.
+     *
+     * The game's sizes are not checked here: a zone above them is reported on
+     * the screen, not refused (the maintainer, 2026-09-22). The capacity is the
+     * server's own bound, so a deck cannot be grown without end.
+     */
+    const zoneTotal =
+      rows.reduce((sum, row) => sum + row[`${input.zone}Qty`], 0) -
+      (existingRow?.[`${input.zone}Qty`] ?? 0) +
+      quantity;
+    if (zoneTotal > DECK_ZONE_CAPACITY) {
+      // Spelled out, like the copies: the translation gate reads literals only.
+      throw invalidInput("A zone holds no more than 100 cards.");
+    }
+
+    const zones = {
+      mainQty: input.zone === "main" ? quantity : (existingRow?.mainQty ?? 0),
+      extraQty: input.zone === "extra" ? quantity : (existingRow?.extraQty ?? 0),
+      sideQty: input.zone === "side" ? quantity : (existingRow?.sideQty ?? 0),
+    };
+
     if (zones.mainQty + zones.extraQty + zones.sideQty === 0) {
       // A card at zero everywhere is not in the deck: we do not keep an empty
       // row that would count towards the totals.

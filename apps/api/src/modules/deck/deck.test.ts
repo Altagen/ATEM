@@ -378,6 +378,30 @@ test("a zone may go past the game's size, not past the server's capacity", async
   );
 });
 
+test("requests fired together do not pass the capacity between them", async () => {
+  // Each one read the zone before the others wrote: without the deck's row
+  // lock, all five went through.
+  const user = await newUser();
+  const deck = await createDeck(db, user.id, "Raced Side");
+  const fullRows = Math.floor((DECK_ZONE_CAPACITY - 1) / 3);
+  for (let i = 0; i < fullRows; i += 1) {
+    const passcode = 72000500 + i;
+    await seed(passcode, `DKRC-FR${String(500 + i)}`, { owner: user.id, copies: 3 });
+    await setDeckCard(db, user.id, deck.id, { passcode, zone: "side", quantity: 3 });
+  }
+  const room = DECK_ZONE_CAPACITY - fullRows * 3;
+  const racers = Array.from({ length: room + 4 }, (_, i) => 72000700 + i);
+  for (const passcode of racers) {
+    await seed(passcode, `DKRC-FR${String(passcode - 72000000)}`, { owner: user.id, copies: 1 });
+  }
+
+  const results = await Promise.allSettled(
+    racers.map((passcode) => setDeckCard(db, user.id, deck.id, { passcode, zone: "side", quantity: 1 })),
+  );
+  assert.equal(results.filter((result) => result.status === "fulfilled").length, room);
+  assert.equal((await getDeck(db, user.id, deck.id)).counts.side, DECK_ZONE_CAPACITY);
+});
+
 test("replacing a quantity in a zone at its size stays possible", async () => {
   // The total is computed **outside the row being rewritten**: going from 3 to
   // 2 in a maxed-out zone must not be refused as an addition.
