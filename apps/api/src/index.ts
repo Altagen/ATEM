@@ -4,7 +4,7 @@ import { createDatabase } from "./db/client.js";
 import {
   configureResolveQueue, requeuePendingResolves, reresolve,
 } from "./modules/collection/index.js";
-import { markUnidentified } from "./modules/referential/index.js";
+import { catalogueIsEmpty, markUnidentified } from "./modules/referential/index.js";
 import { requireJwtSecret } from "./modules/identity/secret.js";
 import { requireAdminConfig } from "./modules/identity/admin-config.js";
 import { ensureAdministrator } from "./modules/identity/index.js";
@@ -58,6 +58,17 @@ void requeuePendingResolves(db)
     if (count > 0) console.log(`[atem] ${count} identification(s) resumed at startup`);
   })
   .catch((err) => console.error("[atem] could not resume identifications:", loggableError(err)));
+
+void catalogueIsEmpty(db)
+  .then((empty) => {
+    if (empty) {
+      console.warn(
+        "[atem] the card catalogue is empty: cards will be looked up one by one on YGOPRODeck. " +
+          "Sync it once — node dist/modules/referential/sync.js (see docs/deployment.md).",
+      );
+    }
+  })
+  .catch((err) => console.error("[atem] could not read the catalogue:", loggableError(err)));
 
 installShutdownHandlers();
 onShutdown(async () => {

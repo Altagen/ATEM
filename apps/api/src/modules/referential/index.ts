@@ -7,6 +7,7 @@
  */
 export {
   cardsByPasscode,
+  catalogueIsEmpty,
   ensurePlaceholderPrint,
   getCard,
   listPrintsForCard,

@@ -102,13 +102,21 @@ for (const [, values] of directives) {
   }
 }
 
+/**
+ * Hosts the application **links to** and never loads: a link opened by the
+ * reader is navigation, which the policy does not govern. One entry today —
+ * the source code, which the AGPL asks an instance to point at. Anything the
+ * page fetches, embeds or runs still has to be in the policy above.
+ */
+const LINKED_ONLY = new Set(["github.com"]);
+
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
 
 for (const { file, text } of sources) {
   for (const match of stripComments(text).matchAll(/https:\/\/([a-z0-9][a-z0-9.-]*\.[a-z]{2,})/gi)) {
     const host = match[1].toLowerCase();
-    if (!declared.has(host)) {
+    if (!declared.has(host) && !LINKED_ONLY.has(host)) {
       fault(`${path.relative(ROOT, file)} loads ${host}, which the policy does not allow`);
     }
   }

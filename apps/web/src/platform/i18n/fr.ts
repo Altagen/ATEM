@@ -515,6 +515,7 @@ export const FR: Record<string, string> = {
   "Since {date}": "Depuis le {date}",
   "Sort and filter": "Trier et filtrer",
   "Sort": "Trier",
+  "Source code": "Code source",
   "Spell": "Magie",
   "Spell / Trap property": "Propriété magie / piège",
   "Spellcaster": "Magicien",

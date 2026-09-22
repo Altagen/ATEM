@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildCollectionCsv, isCsvExportFormat, type CsvExportLine } from "./collection-csv.js";
+import { parseCollectionFile } from "./collection-import.js";
 
 const line = (overrides: Partial<CsvExportLine> = {}): CsvExportLine => ({
   setCode: "LOB-FR001",
@@ -74,4 +75,19 @@ test("only the three known formats are accepted", () => {
   assert.equal(isCsvExportFormat("cardmarket"), true);
   assert.equal(isCsvExportFormat("excel"), false);
   assert.equal(isCsvExportFormat(""), false);
+});
+
+test("a cell a spreadsheet would run is written as text, and reads back as written", () => {
+  /**
+   * Security audit, 2026-09-22: a note written `=HYPERLINK(…)` was exported as a
+   * live formula. The export disarms it with a leading apostrophe; the import
+   * takes the apostrophe off, so an ATEM file still reads back as it was.
+   */
+  const notes = ["=HYPERLINK(\"http://x\")", "+1 extra", "- worn", "@home", "'tis mine"];
+  const csv = buildCollectionCsv("atem", notes.map((note, i) => line({ setCode: `LOB-FR00${i + 1}`, notes: note })));
+  const cells = csv.trim().split("\n").slice(1).map((row) => row.slice(row.lastIndexOf(",") + 1));
+  assert.deepEqual(cells, ["\"'=HYPERLINK(\"\"http://x\"\")\"", "'+1 extra", "'- worn", "'@home", "'tis mine"]);
+
+  const parsed = parseCollectionFile(csv);
+  assert.deepEqual(parsed.rows.map((row) => row.notes), notes);
 });

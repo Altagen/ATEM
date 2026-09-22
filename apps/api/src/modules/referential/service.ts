@@ -582,3 +582,18 @@ export function printIndex(db: Database) {
 }
 
 export type PrintIndex = ReturnType<typeof printIndex>;
+
+/**
+ * Whether the catalogue has been synced at all.
+ *
+ * An instance started without the sync still works — each set code is then
+ * fetched from YGOPRODeck the first time it is scanned, three requests a card.
+ * That is the slow path, and a large import on an empty catalogue is exactly
+ * the volume the outbound bucket has to spread over minutes: the start says
+ * so, once, rather than leaving the operator to wonder why identification
+ * crawls (performance audit, 2026-09-22).
+ */
+export async function catalogueIsEmpty(db: Database): Promise<boolean> {
+  const [row] = await db.select({ passcode: cards.passcode }).from(cards).limit(1);
+  return row === undefined;
+}

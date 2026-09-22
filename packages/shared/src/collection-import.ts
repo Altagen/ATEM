@@ -16,6 +16,7 @@
  * - **A set code appearing twice was “last line wins”**, with no test. The
  *   reference settles it: quantities add up, the first name found is kept.
  */
+import { FORMULA_START } from "./collection-csv.js";
 import { LIMITS } from "./limits.js";
 import { languageFromSetCode, normalizeSetCode } from "./set-code.js";
 
@@ -70,6 +71,15 @@ const LANGUAGES: Record<string, string[]> = {
   ja: ["ja", "jp", "japanese", "japonais", "7"],
   ko: ["ko", "kr", "korean", "coréen", "coreen", "8"],
 };
+
+/**
+ * The export's formula guard, taken off again: a text cell written `'=…` by
+ * `collection-csv.ts` reads back as `=…`. Only before what the guard protects —
+ * an apostrophe anywhere else is the text's own.
+ */
+function unguarded(text: string): string {
+  return text.startsWith("'") && FORMULA_START.test(text.slice(1)) ? text.slice(1) : text;
+}
 
 function normalizeLanguage(raw: string, setCode: string): string {
   const clean = raw.trim().toLowerCase();
@@ -185,13 +195,13 @@ function toRow(
     : Number(String(fields.passcode).trim());
   const passcode = Number.isInteger(rawPasscode) && rawPasscode > 0 ? rawPasscode : null;
 
-  const notes = (fields.notes ?? "").trim() || null;
+  const notes = unguarded((fields.notes ?? "").trim()) || null;
   if (notes && notes.length > LIMITS.note.max) return { line, setCode, error: "note_too_long" };
 
   return {
     line,
     setCode,
-    name: (fields.name ?? "").trim() || null,
+    name: unguarded((fields.name ?? "").trim()) || null,
     quantity,
     rarity: (fields.rarity ?? "").trim() || null,
     language: normalizeLanguage(fields.language ?? "", setCode),

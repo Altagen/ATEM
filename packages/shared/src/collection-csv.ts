@@ -85,10 +85,21 @@ const CARDMARKET_LANGUAGES: Record<string, string> = {
  * Quoted as soon as it holds a comma, **a semicolon**, a quote or a line break —
  * the semicolon even in a comma file, because a French spreadsheet reads it as a
  * separator. An inner quote is doubled. Nothing becomes the empty string.
+ *
+ * **A cell a spreadsheet would run is disarmed**: one starting with `=`, `+`,
+ * `-`, `@`, a tab or a carriage return gets a leading apostrophe, which
+ * spreadsheets read as “this is text”. A note written `=HYPERLINK(…)` was
+ * exported as a live formula — found by the security audit of 2026-09-22.
+ * The import removes that apostrophe again (`FORMULA_GUARD`), so an ATEM file
+ * reads back as it was written.
  */
+/** What a spreadsheet takes for the start of a formula. */
+export const FORMULA_START = /^[=+\-@\t\r]/;
+
 function cell(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const text = String(value);
+  const raw = String(value);
+  const text = FORMULA_START.test(raw) ? `'${raw}` : raw;
   return /[",;\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 

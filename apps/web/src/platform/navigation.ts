@@ -72,6 +72,13 @@ export async function refreshServiceState(): Promise<void> {
  * seconds would close an open menu under the pointer, which is the defect the
  * account sheet already taught us.
  */
+/**
+ * Where the source is. ATEM is under the AGPL-3.0: whoever uses an instance
+ * over the network can reach its source — a modified instance must point here
+ * at its own.
+ */
+const SOURCE_URL = "https://github.com/Altagen/ATEM";
+
 /** Whose navigation this is: the administrator's has only its console. */
 function audienceOf(user: NonNullable<ReturnType<typeof knownUser>>): Audience {
   return user.role === "admin" ? "admin" : "player";
@@ -257,7 +264,12 @@ function userMenu(user: NonNullable<ReturnType<typeof knownUser>>, signal: Abort
       ]),
     );
   }
-  if (menu.childElementCount > 0) menu.append(el("div", { class: "menu-sep", role: "separator" }));
+  menu.append(
+    el("a", { class: "menu-item", role: "menuitem", href: SOURCE_URL, target: "_blank", rel: "noopener" }, [
+      el("span", { "aria-hidden": "true" }, ["📖"]), " ", t("Source code"),
+    ]),
+  );
+  menu.append(el("div", { class: "menu-sep", role: "separator" }));
 
   const signOut = el("button", { type: "button", class: "menu-item menu-item-danger", role: "menuitem" }, [
     t("Sign out"),
@@ -362,6 +374,13 @@ function accountSheet(): { backdrop: HTMLElement; sheet: HTMLElement } {
       ]),
     );
   }
+  list.append(
+    el("a", { class: "account-sheet-item", href: SOURCE_URL, target: "_blank", rel: "noopener" }, [
+      el("span", { "aria-hidden": "true" }, ["📖"]),
+      el("span", {}, [t("Source code")]),
+      el("span", { class: "account-sheet-chev", "aria-hidden": "true" }, ["›"]),
+    ]),
+  );
   const signOut = el("button", { type: "button", class: "account-sheet-logout" }, [
     t("Sign out"),
   ]);
