@@ -44,7 +44,7 @@ const HOOK_ONLY = new Set([
 
 function files(dir, ext, acc = []) {
   for (const name of readdirSync(dir)) {
-    if (name === "staged" || name === "node_modules" || name === "dist") continue;
+    if (name === "node_modules" || name === "dist") continue;
     const full = path.join(dir, name);
     if (statSync(full).isDirectory()) files(full, ext, acc);
     else if (full.endsWith(ext)) acc.push(full);

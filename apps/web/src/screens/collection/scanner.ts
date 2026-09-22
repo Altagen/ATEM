@@ -1,9 +1,8 @@
 /**
  * The set-code scanner.
  *
- * Markup and classes taken from the earlier prototype
- * (`design/styles/components/scanner.css` and the `.scan-*` classes of
- * `collection.css`). So is the recognition engine, without a line changed: its
+ * Markup and classes taken from the earlier prototype (its scanner sheet and
+ * the `.scan-*` classes of its collection sheet). So is the recognition engine, without a line changed: its
  * settings are the product of repeated measurements, documented in
  * `ocr/README.md`.
  *

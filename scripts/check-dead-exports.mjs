@@ -18,10 +18,6 @@
  *   not. Reported without blocking, because the answer depends on which of the
  *   two it is.
  *
- * What the check does **not** read: code staged for the next feature in
- * `design/staged/`. We look for what no longer relates to anything, not for what
- * has not been used yet.
- *
  * Usage:
  *   node scripts/check-dead-exports.mjs           # gate
  *   node scripts/check-dead-exports.mjs --list    # details
@@ -31,7 +27,7 @@ import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const AREAS = ["apps/api/src", "apps/web/src", "packages/shared/src"];
-const IGNORED_DIRS = new Set(["node_modules", "dist", "staged"]);
+const IGNORED_DIRS = new Set(["node_modules", "dist"]);
 
 /**
  * Exports for which having no caller is normal.

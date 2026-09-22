@@ -1,9 +1,7 @@
 /**
  * The scanlists' markup.
  *
- * Classes taken from the earlier prototype's mock-up
- * (`design/styles/pages/scanlist.css`), whose stylesheet had been waiting in
- * `design/staged/pages/scanlist.css` since the start of the milestone.
+ * Classes taken from the earlier prototype's mock-up, with its stylesheet.
  */
 import { t } from "../../platform/i18n/index.js";
 import { html, raw, when, type SafeHtml } from "../../platform/ui.js";

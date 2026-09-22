@@ -32,7 +32,7 @@ const DEFINITION = path.join(WEB, "platform/ui.ts");
 
 function files(dir, acc = []) {
   for (const name of readdirSync(dir)) {
-    if (name === "node_modules" || name === "dist" || name === "staged") continue;
+    if (name === "node_modules" || name === "dist") continue;
     const full = path.join(dir, name);
     if (statSync(full).isDirectory()) files(full, acc);
     else if (full.endsWith(".ts") && !full.endsWith(".test.ts")) acc.push(full);

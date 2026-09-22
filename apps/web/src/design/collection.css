@@ -353,7 +353,7 @@
    * label. Measured at 390 px: the bubble stopped at 188, the field went to 218
    * — thirty pixels outside, over the display toggle.
    *
-   * The rule comes from `design/styles/components.css`, which carries it with
+   * The rule comes from the earlier prototype's component sheet, which carries it with
    * the same finding. It had never been ported: the previous day's survey only
    * compared `@media` blocks, and this one is a base rule.
    */
@@ -1599,7 +1599,7 @@
    * of height for two targets. Ange: “it takes a lot of vertical pixels for
    * nothing in the bar”.
    *
-   * `design/styles/pages/collection.css` has carried these rules from the start.
+   * The earlier prototype's collection sheet carried these rules from the start.
    * They had never been ported here. The `min-width: 0` is the half people
    * forget: without it, a flex item refuses to shrink below its content's width,
    * and the row breaks anyway.

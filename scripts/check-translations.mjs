@@ -41,7 +41,7 @@ const EXCLUDED = [
   "platform/ygo-labels.ts",
 ];
 
-const IGNORED_DIRS = new Set(["node_modules", "dist", "staged"]);
+const IGNORED_DIRS = new Set(["node_modules", "dist"]);
 
 function files(dir, acc = []) {
   for (const name of readdirSync(dir)) {

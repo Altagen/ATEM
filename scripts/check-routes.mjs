@@ -22,7 +22,7 @@ const WEB = path.join(ROOT, "apps/web/src");
 
 function files(dir, acc = []) {
   for (const name of readdirSync(dir)) {
-    if (name === "node_modules" || name === "dist" || name === "staged") continue;
+    if (name === "node_modules" || name === "dist") continue;
     const full = path.join(dir, name);
     if (statSync(full).isDirectory()) files(full, acc);
     else if (full.endsWith(".ts")) acc.push(full);

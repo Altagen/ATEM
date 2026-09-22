@@ -13,11 +13,10 @@ import path from "node:path";
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
 
-export function files(dir, ext, acc = [], ignored = new Set(["staged"])) {
+export function files(dir, ext, acc = []) {
   for (const name of readdirSync(dir)) {
-    if (ignored.has(name)) continue;
     const full = path.join(dir, name);
-    if (statSync(full).isDirectory()) files(full, ext, acc, ignored);
+    if (statSync(full).isDirectory()) files(full, ext, acc);
     else if (full.endsWith(ext)) acc.push(full);
   }
   return acc;

@@ -290,8 +290,7 @@ a.menu-item {
 }
 
 /**
- * The account menu's avatar button and head — from the earlier prototype's design,
- * brought up from `staged/components.css`.
+ * The account menu's avatar button and head — from the earlier prototype's design.
  */
 
 /* The avatar keeps its gold ring at all times, as in the mock-up. */
@@ -325,7 +324,7 @@ a.menu-item {
 .app-user-menu-name { display: block; font-weight: 800; font-size: 0.88rem; color: #fff; }
 .app-user-menu-mail { display: block; font-size: 0.75rem; }
 
-/* The top bar's language pill — the earlier prototype's, from `staged/components.css`. */
+/* The top bar's language pill — the earlier prototype's. */
 .lang-pill {
   appearance: none;
   background: rgba(255, 255, 255, 0.08);

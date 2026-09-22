@@ -1,8 +1,8 @@
 /**
  * The inbox.
  *
- * Item rules brought up from `staged/components.css`, where the earlier prototype kept them
- * for the modal its inbox used to be.
+ * Item rules taken from the earlier prototype, which kept them for the modal
+ * its inbox used to be.
  */
 
 .inbox-item-ico { font-size: 1.25rem; }

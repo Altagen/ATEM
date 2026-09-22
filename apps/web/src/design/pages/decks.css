@@ -760,10 +760,9 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
  * existed somewhere.
  */
 
-/* depuis design/styles/pages/decks.css */
 .zone-edit-empty { padding: 0.6rem 0.4rem; font-style: italic; font-size: 0.84rem; }
 
-/* Mobile pass ported from design/styles/pages/decks.css — see the survey of 3 September 2026. */
+/* Mobile pass ported from the earlier prototype's deck sheet (survey of 3 September 2026). */
 @media (max-width: 850px) {
   .drive-main { grid-template-columns: 1.75rem minmax(0, 1fr); row-gap: 0.1rem; }
   .drive-meta { grid-column: 2; }
@@ -800,10 +799,8 @@ a.icon-btn { display: inline-flex; align-items: center; justify-content: center;
 
 /* ── The card sheet opened from the workshop ───────────────────────────────
  *
- * Brought back up from `staged/pruned/` with their markup: the full-size sheet
- * arrived in the workshop, and these rules style it. That is the intended
- * movement — a rule goes down when its markup disappears, it comes back up when
- * the markup returns.
+ * Brought back with their markup: the full-size sheet arrived in the workshop,
+ * and these rules style it.
  */
 .deck-edit-coll-list .item-main.js-open-card{
   flex:1 1 auto;min-width:0;width:auto !important;max-width:none;

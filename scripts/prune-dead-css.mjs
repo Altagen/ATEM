@@ -1,20 +1,18 @@
 /**
- * Removes from the shipped sheets the rules nothing sets — without losing them.
+ * Removes from the shipped sheets the rules nothing sets.
  *
- * Removed rules are written to `design/staged/pruned/`, one file per original
- * sheet. They are no longer loaded, so they weigh nothing; and the day the
- * screen they styled arrives, we know where they are instead of rediscovering
- * them in the earlier prototype.
+ * They are not set aside: the day a screen needs one again, the history has
+ * it, and a folder of rules waiting for screens was dead code by another name
+ * (it went before the first release, 2026-09-22).
  *
  * Usage: node scripts/prune-dead-css.mjs [--dry]
  */
-import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { files, groupBody, readMarkup, rules } from "./lib/dead-css.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "apps", "web", "src");
 const STYLES = path.join(ROOT, "design");
-const PRUNED = path.join(STYLES, "staged", "pruned");
 const dry = process.argv.includes("--dry");
 
 // The same judgement as the gate, literally: the same function.
@@ -85,29 +83,11 @@ for (const sheet of files(STYLES, ".css")) {
 
   if (dry) continue;
 
-  /**
-   * Append, do not overwrite.
-   *
-   * Otherwise a second pass overwrote what the first had set aside: 208 rules
-   * kept, then replaced by the next 47. The file told the truth about the last
-   * pass, not about what had been removed.
-   */
-  const target = path.join(PRUNED, relative);
-  if (!existsSync(target)) {
-    writeFileSync(
-      target,
-      `/**\n * Rules removed from \`design/${path.relative(STYLES, sheet)}\`.\n *\n` +
-        ` * Nothing set them in the shipped markup: they styled screens that do not\n` +
-        ` * exist here yet (guilds, settings, administration, landing page).\n` +
-        ` * Kept as they were — when their screen arrives, they move back up.\n */\n`,
-    );
-  }
-  appendFileSync(target, `\n${drop.join("\n\n")}\n`);
   writeFileSync(sheet, keep.join("").replace(/\n{3,}/g, "\n\n"));
 }
 
 console.log(
   removedRules === 0
     ? "✓ nothing to remove"
-    : `\n${removedRules} rules removed from the shipped sheets, kept in design/staged/pruned/`,
+    : `\n${removedRules} rules removed from the shipped sheets`,
 );

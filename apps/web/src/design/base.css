@@ -65,7 +65,7 @@ h2 {
   margin-right: 0.25rem;
 }
 
-/* Mobile pass ported from design/styles/components.css — see the survey of 3 September 2026. */
+/* Mobile pass ported from the earlier prototype's component sheet (survey of 3 September 2026). */
 @media (max-width: 900px) {
   .inspect-panel {
     /* Aligned to the top: centring content taller than the window pushes it
@@ -143,7 +143,7 @@ h2 {
 }
 
 /*
- * Touch targets, ported from design/styles/components.css.
+ * Touch targets, ported from the earlier prototype's component sheet.
  *
  * Measured there: a deck's gear at 30×30, below the finger threshold. Apple's
  * and Google's guidelines give 44 and 48 points; the mock-up holds 40, which
@@ -238,10 +238,8 @@ h2 {
 /**
  * A page section's title.
  *
- * Brought back up from `staged/pruned/` with the scanlists screen: the purge had
- * rightly set it aside, nothing set it any more. That is the intended movement —
- * a rule goes down when its markup disappears, it comes back up when the markup
- * returns.
+ * Brought back with the scanlists screen: the dead-CSS purge had rightly
+ * removed it while nothing set it.
  */
 .section-title {
   margin: 0 0 0.35rem;
@@ -253,10 +251,8 @@ h2 {
 /**
  * A screen's error banner.
  *
- * Brought back up from `staged/pruned/` with the deck workshop: the purge had
- * set it aside when no screen set it any more. That is the intended movement —
- * a rule goes down when its markup disappears, it comes back up when the markup
- * returns.
+ * Brought back with the deck workshop: the dead-CSS purge had removed it
+ * while no screen set it.
  *
  * Sticky under the top bar: an error scrolled off screen is an error one
  * believes resolved.

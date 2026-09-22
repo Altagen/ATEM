@@ -1,7 +1,7 @@
 /*
- * Form controls from the earlier prototype's component library — buttons and fields —
- * brought up from `staged/components.css` when the settings screen gave them
- * markup to style. Only what some screen sets stays here; the rest is pruned back.
+ * Form controls from the earlier prototype's component library — buttons and
+ * fields — taken when the settings screen gave them markup to style. Only what
+ * some screen sets stays here; the rest is pruned.
  */
 
 /* FULL WIDTH Glowing Gold Primary 'Lancer un Duel' Button */
@@ -236,7 +236,7 @@ a.btn-showcase-primary-full {
 /**
  * The secondary button — its base rule.
  *
- * Only its size modifiers had come up from `staged/components.css`: the class was
+ * Only its size modifiers had been taken from the prototype: the class was
  * cited, so the unstyled-classes gate counted it as styled, and every
  * “Retirer des amis”, “Annuler la demande” and “Refuser” rendered as a bare grey
  * button (Ange, 2026-09-21). The same trap as `.btn-hero` on the scanlists.

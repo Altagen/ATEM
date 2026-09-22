@@ -3,7 +3,7 @@
  *
  * Taken from the earlier prototype's profile sheet, whose rendering Ange validated. The
  * rules for what this screen does not show — trophies, title, presence, guild
- * strip — went to `staged/pruned/pages-profile.css`, to come back with those features.
+ * strip — were purged (`docs/06-deferred.md`).
  *
  * The earlier prototype declared some rules twice, a first block then an override further
  * down; they are merged here, keeping the value that won.

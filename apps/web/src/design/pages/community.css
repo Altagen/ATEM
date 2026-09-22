@@ -2,9 +2,8 @@
  * The community page — the duellist directory.
  *
  * Taken as it was from the earlier prototype's community sheet, the
- * reference. What styled the guild tab and the rank badges went to
- * `staged/pruned/pages-community.css` with the dead-CSS purge: no markup sets
- * them here, and guilds have no module yet.
+ * reference. What styled its guild tab and rank badges was purged: no markup
+ * sets them here, and guilds have no module yet (`docs/06-deferred.md`).
  */
 /* tokens et base sont importés par ../app.css : ne pas les réimporter ici. */
 
@@ -186,7 +185,7 @@ button.player-row-name:hover { color: var(--gold); }
 /* ── The duellist preview ────────────────────────────────────────────────────
  * The earlier prototype's showcase card, opened by a click on a row. Its values were read
  * off the browser on the mock with the modal open, not guessed; they came here
- * from `staged/components.css` on 2026-09-21, when Ange asked for the card back.
+ * on 2026-09-21, when Ange asked for the card back.
  */
 .modal-backdrop {
   position: fixed;

@@ -77,7 +77,7 @@ if (scriptSrc.includes("'unsafe-eval'")) {
 
 function files(dir, acc = []) {
   for (const name of readdirSync(dir)) {
-    if (name === "staged" || name === "node_modules" || name === "dist") continue;
+    if (name === "node_modules" || name === "dist") continue;
     const full = path.join(dir, name);
     if (statSync(full).isDirectory()) files(full, acc);
     else if (/\.(ts|css)$/.test(full) && !full.endsWith(".test.ts")) acc.push(full);

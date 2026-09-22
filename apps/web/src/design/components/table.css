@@ -1,6 +1,6 @@
 /*
- * The data table from the earlier prototype's component library, brought up from
- * `staged/components.css` for the import history. It styles the table itself
+ * The data table from the earlier prototype's component library, taken for the
+ * import history. It styles the table itself
  * rather than hiding behind a page container, so any screen can use it.
  */
 .admin-table-container {
