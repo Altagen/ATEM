@@ -22,7 +22,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm --filter @atem/web build
 
-FROM docker.io/library/nginx:1.30-alpine AS runtime
+FROM docker.io/library/nginx:1.31-alpine AS runtime
 LABEL org.opencontainers.image.title="ATEM web" \
       org.opencontainers.image.source="https://github.com/Altagen/ATEM" \
       org.opencontainers.image.licenses="AGPL-3.0-only"
