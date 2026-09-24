@@ -38,6 +38,16 @@ declare module "hono" {
  * entries, and a cached one would ignore a changed environment — which is
  * exactly what the tests need to vary.
  */
+/**
+ * The entries `ATEM_TRUSTED_PROXIES` names, whatever their shape.
+ *
+ * Read for the startup summary: “trusted proxies: none” is the difference
+ * between an instance that rate-limits per visitor and one where every visitor
+ * shares a single bucket — and 0.1.0 said nothing either way.
+ */
+export const trustedProxies = (): string[] =>
+  (process.env.ATEM_TRUSTED_PROXIES ?? "").split(",").map((entry) => entry.trim()).filter(Boolean);
+
 function trustedList(): BlockList | null {
   const entries = (process.env.ATEM_TRUSTED_PROXIES ?? "")
     .split(",")
@@ -111,7 +121,30 @@ export function resolveCallerIp(direct: string, forwarded: string | undefined): 
   return first ? unmap(first) : unmap(direct);
 }
 
+/**
+ * Said once, when a request proves the instance is misconfigured.
+ *
+ * A proxy in front and no `ATEM_TRUSTED_PROXIES` puts every visitor in one
+ * rate-limit bucket: ten failed sign-ins, anyone's, lock the instance for
+ * fifteen minutes. Nothing looks wrong until it happens. Warning at startup
+ * instead would fire in development too, where there is no proxy and nothing
+ * to fix — a warning nobody can act on is one nobody reads.
+ */
+let forwardedIgnoredSaid = false;
+
 export const attachCallerIp: MiddlewareHandler = async (c, next) => {
-  c.set("callerIp", resolveCallerIp(connectionAddress(c), c.req.header("X-Forwarded-For")));
+  const direct = connectionAddress(c);
+  const forwarded = c.req.header("X-Forwarded-For");
+
+  if (forwarded !== undefined && !forwardedIgnoredSaid && !isTrusted(direct)) {
+    forwardedIgnoredSaid = true;
+    console.warn(
+      `[atem] a request from ${unmap(direct)} carries X-Forwarded-For, and that address is not ` +
+        "in ATEM_TRUSTED_PROXIES: the header is ignored and every visitor shares one rate-limit " +
+        "bucket. See docs/deployment.md.",
+    );
+  }
+
+  c.set("callerIp", resolveCallerIp(direct, forwarded));
   await next();
 };

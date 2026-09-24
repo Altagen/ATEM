@@ -10,6 +10,8 @@ import { requireAdminConfig } from "./modules/identity/admin-config.js";
 import { ensureAdministrator } from "./modules/identity/index.js";
 import { installShutdownHandlers, onShutdown } from "./platform/shutdown.js";
 import { loggableError } from "./platform/errors.js";
+import { envInt, takeFallbacks } from "./platform/settings.js";
+import { trustedProxies } from "./platform/caller-ip.js";
 
 // The configuration requirements are checked before opening the port: a
 // misconfigured instance must refuse to serve, not serve halfway.
@@ -37,9 +39,25 @@ configureResolveQueue({
 });
 
 const app = createApp(db);
-const port = Number(process.env.ATEM_PORT ?? 3000);
+const port = envInt("ATEM_PORT", 3000);
 const hostname = process.env.ATEM_HOST ?? "127.0.0.1";
 
+/**
+ * What the instance is actually running with.
+ *
+ * Printed once, at startup, because the settings that matter fail **quietly**:
+ * a trusted-proxy list nobody parsed puts every visitor in one rate-limit
+ * bucket, and nothing looks wrong until ten failed sign-ins lock out an entire
+ * instance. One line makes that visible before anyone is locked out.
+ */
+for (const rejected of takeFallbacks()) console.warn(`[atem] ${rejected}`);
+const proxies = trustedProxies();
+console.log(
+  `[atem] settings: pool ${envInt("ATEM_DB_POOL", 10)}, ` +
+    `sign-ups ${envInt("ATEM_REGISTER_ATTEMPTS_MAX", 5)}/h, ` +
+    `sign-ins ${envInt("ATEM_LOGIN_ATTEMPTS_MAX", 10)}/15min, ` +
+    `trusted proxies: ${proxies.length > 0 ? proxies.join(" ") : "none"}`,
+);
 const server = serve({ fetch: app.fetch, port, hostname }, (info) => {
   console.log(`[atem] listening on http://${hostname}:${info.port}`);
 });
