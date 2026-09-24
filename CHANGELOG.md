@@ -2,6 +2,27 @@
 
 All notable changes, by version, following [semantic versioning](https://semver.org).
 
+## [0.1.1](https://github.com/Altagen/ATEM/compare/0.1.0...0.1.1) (2026-09-24)
+
+
+**0.1.0 could not be installed on a Debian or Ubuntu host.** Three defects, each
+found by running the released images on a server: the database container started
+and logged nothing while PostgreSQL never ran; the API exited with
+`RangeError: Invalid array length` when `ATEM_DB_POOL` was not a clean number;
+and `ATEM_TRUSTED_PROXIES` arrived as literal text, so every visitor shared one
+rate-limit bucket. Upgrading is enough — no schema change.
+
+### Bug fixes
+
+* **api:** a setting that cannot be read falls back instead of killing the API ([da50b6e](https://github.com/Altagen/ATEM/commit/da50b6eba77ac283e542da6ab0e61d9483145453))
+* **deploy:** let the database start on an AppArmor host ([9aacaea](https://github.com/Altagen/ATEM/commit/9aacaea36d7e9806b83ae1b651170b370bfeca1c))
+* **deploy:** spell out the tunables, and ship the systemd units ([1b86a51](https://github.com/Altagen/ATEM/commit/1b86a514dc52fabc3298903b2878c50cef9cfca0))
+
+
+### Documentation
+
+* **deferred:** keep the idea of syncing the catalogue from the console ([40675e4](https://github.com/Altagen/ATEM/commit/40675e467f9bdef0b4be2f8556958ffbade237f5))
+
 ## 0.1.0 (2026-09-22)
 
 The first release.
