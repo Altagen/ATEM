@@ -121,17 +121,19 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    # On the job, not on the step that boots: every later compose command
+    # interpolates the same file, and compose refuses to run without them.
+    env:
+      # The administrator's rules apply here too: a weak one stops the API.
+      JWT_SECRET: ci-secret-ci-secret-ci-secret-32ch
+      POSTGRES_PASSWORD: ci_password
+      ATEM_ADMIN_EMAIL: admin@example.test
+      ATEM_ADMIN_PASSWORD: Ci-Password-Strong-7!
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Boot the production stack from the sources
-        env:
-          # The administrator's rules apply here too: a weak one stops the API.
-          JWT_SECRET: ci-secret-ci-secret-ci-secret-32ch
-          POSTGRES_PASSWORD: ci_password
-          ATEM_ADMIN_EMAIL: admin@example.test
-          ATEM_ADMIN_PASSWORD: Ci-Password-Strong-7!
         run: docker compose -f compose.yaml -f compose.build.yaml up -d --build --wait --wait-timeout 240
       - name: The API answers, and the front is served
         run: |
