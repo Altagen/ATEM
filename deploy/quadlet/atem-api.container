@@ -1,0 +1,21 @@
+[Unit]
+Description=ATEM — API
+Requires=atem-migrate.service
+After=atem-migrate.service
+
+[Container]
+ContainerName=atem-api
+Image=ghcr.io/altagen/atem-api:latest
+Network=atem.network
+# The web image's nginx proxies to the name "api".
+PodmanArgs=--network-alias=api
+Volume=atem-media.volume:/app/data/media
+EnvironmentFile=%h/services/atem/.env
+NoNewPrivileges=true
+DropCapability=ALL
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

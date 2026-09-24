@@ -288,6 +288,18 @@ same:
 docker compose -f compose.yaml -f compose.build.yaml up -d --build
 ```
 
+## podman: systemd units instead of compose
+
+On a podman host, `deploy/quadlet/` holds the same deployment as systemd units
+— one service per container, ordering and restart-on-boot handled by systemd,
+and rootless by design so a container escape lands as an unprivileged user
+rather than as root. `deploy/quadlet/README.md` has the steps.
+
+It exists because `podman-compose` 1.3.0, the version Debian and Ubuntu
+package, cannot start this stack: it fails to resolve the dependency graph
+(`depends on container … not found in input list`) and does not expand
+`${VAR:-default}`. Docker Compose runs `compose.yaml` as written.
+
 ## When the database never starts
 
 Symptom: `podman ps` shows the database container up, `podman logs` prints

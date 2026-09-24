@@ -1,0 +1,5 @@
+[Network]
+NetworkName=atem-internal
+# The range the API trusts as its proxy (ATEM_TRUSTED_PROXIES): fixed, so the
+# declaration holds on every machine.
+Subnet=10.89.42.0/24
