@@ -6,6 +6,7 @@
  */
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { envInt } from "../platform/settings.js";
 import * as schema from "./schema.js";
 
 export type Database = ReturnType<typeof createDatabase>["db"];
@@ -18,7 +19,7 @@ export function createDatabase(url = process.env.DATABASE_URL) {
   }
 
   const sql = postgres(url, {
-    max: Number(process.env.ATEM_DB_POOL ?? 10),
+    max: envInt("ATEM_DB_POOL", 10),
     // Prepared statements do not survive a PgBouncer in transaction mode: it
     // redistributes connections and the prepared statement is no longer there.
     prepare: false,

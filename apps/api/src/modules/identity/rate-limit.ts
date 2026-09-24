@@ -9,6 +9,7 @@
 import { and, eq, gte, sql } from "drizzle-orm";
 import type { Database } from "../../db/client.js";
 import { AppError } from "../../platform/errors.js";
+import { envInt } from "../../platform/settings.js";
 import { authAttempts } from "./schema.js";
 
 export type LimitRule = { max: number; windowMs: number };
@@ -21,11 +22,6 @@ export type LimitRule = { max: number; windowMs: number };
  * have no way to loosen it. The defaults stay strict; configuration exists for
  * the real cases.
  */
-const envInt = (name: string, fallback: number): number => {
-  const raw = Number(process.env[name]);
-  return Number.isFinite(raw) && raw > 0 ? raw : fallback;
-};
-
 /**
  * Read at each call, not once at import: a table frozen on the first import
  * ignores an instance that changed its ceilings, and leaves the tests unable to

@@ -1,0 +1,24 @@
+[Unit]
+Description=ATEM — web
+Requires=atem-api.service
+After=atem-api.service
+
+[Container]
+ContainerName=atem-web
+Image=ghcr.io/altagen/atem-web:latest
+Network=atem.network
+Network=edge.network
+# Nothing is published: the reverse proxy on the edge network reaches
+# atem-web:80. Add PublishPort=127.0.0.1:8080:80 to expose it directly.
+NoNewPrivileges=true
+DropCapability=ALL
+AddCapability=CHOWN
+AddCapability=NET_BIND_SERVICE
+AddCapability=SETGID
+AddCapability=SETUID
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

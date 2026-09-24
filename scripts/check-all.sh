@@ -50,6 +50,7 @@ step "Dead CSS" node scripts/check-dead-css.mjs
 step "Unstyled classes" node scripts/check-unstyled-classes.mjs
 step "Dead exports" node scripts/check-dead-exports.mjs
 step "Deployment page" node scripts/check-deployment-doc.mjs
+step "Deployment settings" node scripts/check-env-example.mjs
 step "Types" pnpm typecheck
 step "Unit and integration tests" pnpm test
 

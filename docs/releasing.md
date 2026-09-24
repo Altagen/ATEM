@@ -37,9 +37,6 @@ develop ──(PR, validated)──▶ main ──▶ release-please opens “re
    and `latest`, and attaches their SPDX SBOMs. Images are the only artefacts,
    so there is no checksum file.
 
-0.1.0 is pinned by `release-as` in `release-please-config.json`; remove that
-line once it is out.
-
 ## Versions
 
 [Semantic versioning](https://semver.org). Below 1.0, a minor version (`0.2.0`)

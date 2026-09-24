@@ -1,0 +1,4 @@
+# The network the reverse proxy shares with each service it fronts. Only
+# atem-web joins it; the API and the database stay on atem-internal.
+[Network]
+NetworkName=edge

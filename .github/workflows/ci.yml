@@ -111,6 +111,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # The deployment itself, booted: 0.1.0 shipped a compose file whose database
+  # never started on an AppArmor host, and every gate was green — because none
+  # of them ran the thing. This one does, from the files an operator uses.
+  deployment:
+    name: Deployment boots
+    if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    # On the job, not on the step that boots: every later compose command
+    # interpolates the same file, and compose refuses to run without them.
+    env:
+      # The administrator's rules apply here too: a weak one stops the API.
+      JWT_SECRET: ci-secret-ci-secret-ci-secret-32ch
+      POSTGRES_PASSWORD: ci_password
+      ATEM_ADMIN_EMAIL: admin@example.test
+      ATEM_ADMIN_PASSWORD: Ci-Password-Strong-7!
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Boot the production stack from the sources
+        run: docker compose -f compose.yaml -f compose.build.yaml up -d --build --wait --wait-timeout 240
+      - name: The API answers, and the front is served
+        run: |
+          curl -fsS --retry 10 --retry-delay 3 --retry-all-errors http://127.0.0.1:8080/api/health | tee /dev/stderr | grep -q '"status":"ok"'
+          curl -fsS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/
+      - name: The schema is the migrations', not a leftover
+        run: docker compose exec -T db psql -U atem -d atem -Atc "select count(*) from drizzle.__drizzle_migrations"
+      - if: always()
+        run: docker compose logs --tail 40
+      - if: always()
+        run: docker compose down -v
+
   images:
     name: Images build and scan
     # The release path: a pull request to main, and main itself.

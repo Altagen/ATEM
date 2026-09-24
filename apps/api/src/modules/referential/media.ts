@@ -20,6 +20,7 @@
 import { randomBytes } from "node:crypto";
 import { mkdir, rename, stat, statfs, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { envBytes } from "../../platform/settings.js";
 import { loggableError } from "../../platform/errors.js";
 import { retryAfterMs, throttleOutbound, withOutboundSlot } from "./outbound-rate.js";
 
@@ -91,9 +92,7 @@ export function publicImageUrls(
 const DEFAULT_RESERVE_BYTES = 200 * 1024 * 1024;
 
 function reserveBytes(): number {
-  const raw = (process.env.ATEM_DISK_RESERVE_BYTES ?? "").trim();
-  const value = Number(raw);
-  return raw !== "" && Number.isFinite(value) && value >= 0 ? value : DEFAULT_RESERVE_BYTES;
+  return envBytes("ATEM_DISK_RESERVE_BYTES", DEFAULT_RESERVE_BYTES);
 }
 
 /**

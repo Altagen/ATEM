@@ -72,8 +72,17 @@ services:
     image: docker.io/library/postgres:16-alpine
     restart: unless-stopped
     # PostgreSQL starts as root to take ownership of its data directory, then
-    # drops to the postgres user: these capabilities are what that needs.
-    security_opt: ["no-new-privileges:true"]
+    # drops to the postgres user with gosu: these capabilities are what that
+    # needs.
+    #
+    # **No `no-new-privileges` here, unlike the three services below.** On an
+    # AppArmor host — Debian, Ubuntu — that flag stops the runtime from moving
+    # the container into its profile, so its processes keep the launcher's
+    # stacked label and the policy then forbids them to signal each other.
+    # gosu signals its child and waits for an answer that never comes: the
+    # container stays up, PostgreSQL never starts, and **nothing is logged**.
+    # Found on a Debian 13 instance, 2026-09-23, after 0.1.0 shipped it.
+    # The other services never drop privileges, so they keep the flag.
     cap_drop: [ALL]
     cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
     environment:
@@ -277,6 +286,45 @@ same:
 
 ```sh
 docker compose -f compose.yaml -f compose.build.yaml up -d --build
+```
+
+## podman: systemd units instead of compose
+
+On a podman host, `deploy/quadlet/` holds the same deployment as systemd units
+— one service per container, ordering and restart-on-boot handled by systemd,
+and rootless by design so a container escape lands as an unprivileged user
+rather than as root. `deploy/quadlet/README.md` has the steps.
+
+It exists because `podman-compose` 1.3.0, the version Debian and Ubuntu
+package, cannot start this stack: it fails to resolve the dependency graph
+(`depends on container … not found in input list`) and does not expand
+`${VAR:-default}`. Docker Compose runs `compose.yaml` as written.
+
+## When the database never starts
+
+Symptom: `podman ps` shows the database container up, `podman logs` prints
+**nothing at all**, and every health check says `no response`. Inside it, PID 1
+is `gosu postgres …`, waiting.
+
+Cause: on an AppArmor host — Debian, Ubuntu — `no-new-privileges` stops the
+runtime from moving the container into its AppArmor profile, so its processes
+keep the launcher's stacked label, and the policy forbids them to signal each
+other. The postgres image drops from root to the postgres user with gosu,
+which signals its child and waits forever. `dmesg` names it:
+
+```
+apparmor="DENIED" operation="signal" profile="containers-default-…"
+  comm="gosu" peer="containers-default-…//&crun"
+```
+
+ATEM 0.1.0 set that flag on the database service; 0.1.1 does not. Upgrading is
+enough — take the release's `compose.yaml`. To stay on 0.1.0, drop the flag for
+that service in a `compose.override.yaml` beside it:
+
+```yaml
+services:
+  db:
+    security_opt: []
 ```
 
 ## Health
