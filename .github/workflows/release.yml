@@ -103,7 +103,7 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
           format: table
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -135,7 +135,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}
       # What the image is made of, in SPDX, beside the release: the images are
       # the only thing ATEM ships, so there is no archive to checksum.
-      - uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           image: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
           format: spdx-json
